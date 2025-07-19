@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from "@/hooks/use-toast"
 import { Plus, FileText, Download, Edit, Search } from "lucide-react"
+import html2pdf from "html2pdf.js"
 
 interface FormData {
   [key: string]: string
@@ -256,18 +257,20 @@ export default function Documents() {
     }
   }
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     const template = templates.find(t => t.id === selectedTemplate)
     if (!template) return
 
-    let content = ""
-    let htmlContent = ""
-    
-    if (selectedTemplate === "location-agreement") {
-      const agreementData = generateLocationAgreementContent()
+    try {
+      let htmlContent = ""
+      let filename = ""
       
-      // Create a professional HTML document for PDF generation
-      htmlContent = `
+      if (selectedTemplate === "location-agreement") {
+        const agreementData = generateLocationAgreementContent()
+        filename = `${formData["Business Name"] || "Location"}_Agreement_${new Date().toISOString().split('T')[0]}.pdf`
+        
+        // Create a professional HTML document for PDF generation
+        htmlContent = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -499,41 +502,18 @@ export default function Documents() {
             font-size: 12px;
             font-style: italic;
         }
-
-        @media print {
-            body {
-                margin: 0;
-                padding: 15mm;
-                background: white;
-            }
-            
-            .header-section {
-                margin-bottom: 30px;
-            }
-            
-            .term-item {
-                page-break-inside: avoid;
-            }
-            
-            .signatures-section {
-                page-break-before: auto;
-            }
-        }
-
-        @page {
-            margin: 15mm;
-            size: A4;
-        }
     </style>
 </head>
 <body>
     ${agreementData.content}
 </body>
 </html>
-      `
-    } else {
-      // For other templates, use the simple format
-      content = `
+        `
+      } else {
+        // For other templates, use the simple format
+        filename = `${formData["Client Name"] || formData["Business Name"] || "Document"}_${template.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
+        
+        const content = `
 ${template.title}
 ${"=".repeat(template.title.length)}
 
@@ -541,9 +521,9 @@ ${template.fields.map(field => `${field}: ${formData[field] || '[Not provided]'}
 
 Generated on: ${new Date().toLocaleDateString()}
 ClawOps Document Creator
-      `.trim()
+        `.trim()
 
-      htmlContent = `
+        htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -559,33 +539,60 @@ ClawOps Document Creator
             color: #333;
         }
         h1 { text-align: center; color: #2563eb; }
-        @media print { body { margin: 0; padding: 15px; } }
     </style>
 </head>
 <body>
     <pre style="font-family: Arial, sans-serif; white-space: pre-wrap;">${content}</pre>
 </body>
 </html>
-      `
-    }
-
-    const blob = new Blob([htmlContent], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    
-    // Open in new window for printing to PDF
-    const printWindow = window.open(url, '_blank')
-    if (printWindow) {
-      printWindow.onload = () => {
-        setTimeout(() => {
-          printWindow.print()
-        }, 500)
+        `
       }
-    }
 
-    toast({
-      title: "Document Generated",
-      description: `${template.title} opened in new window. Use Ctrl+P to save as PDF.`,
-    })
+      // Create a temporary element for PDF generation
+      const element = document.createElement('div')
+      element.innerHTML = htmlContent
+      element.style.position = 'absolute'
+      element.style.left = '-9999px'
+      document.body.appendChild(element)
+
+      // Configure PDF options
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          letterRendering: true
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait',
+          putOnlyUsedFonts: true,
+          floatPrecision: 16
+        }
+      }
+
+      // Generate and download PDF
+      await html2pdf().set(opt).from(element).save()
+
+      // Clean up
+      document.body.removeChild(element)
+
+      toast({
+        title: "PDF Downloaded Successfully",
+        description: `${template.title} has been saved to your downloads folder.`,
+      })
+
+    } catch (error) {
+      console.error('PDF generation error:', error)
+      toast({
+        title: "PDF Generation Failed",
+        description: "There was an error generating the PDF. Please try again.",
+        variant: "destructive"
+      })
+    }
   }
 
   const handleSaveDraft = () => {
