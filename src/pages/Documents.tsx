@@ -551,9 +551,17 @@ ClawOps Document Creator
       // Create a temporary element for PDF generation
       const element = document.createElement('div')
       element.innerHTML = htmlContent
-      element.style.position = 'absolute'
-      element.style.left = '-9999px'
+      element.style.position = 'fixed'
+      element.style.top = '0'
+      element.style.left = '0'
+      element.style.width = '210mm'
+      element.style.background = 'white'
+      element.style.zIndex = '-1'
+      element.style.visibility = 'hidden'
       document.body.appendChild(element)
+
+      // Wait for content to render
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       // Configure PDF options
       const opt = {
@@ -563,14 +571,14 @@ ClawOps Document Creator
         html2canvas: { 
           scale: 2,
           useCORS: true,
-          letterRendering: true
+          letterRendering: true,
+          width: 794, // A4 width in pixels at 96 DPI
+          height: 1123 // A4 height in pixels at 96 DPI
         },
         jsPDF: { 
           unit: 'mm', 
           format: 'a4', 
-          orientation: 'portrait',
-          putOnlyUsedFonts: true,
-          floatPrecision: 16
+          orientation: 'portrait'
         }
       }
 
