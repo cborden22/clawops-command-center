@@ -262,328 +262,186 @@ export default function Documents() {
     if (!template) return
 
     try {
-      let htmlContent = ""
+      let element: HTMLElement
       let filename = ""
       
       if (selectedTemplate === "location-agreement") {
         const agreementData = generateLocationAgreementContent()
         filename = `${formData["Business Name"] || "Location"}_Agreement_${new Date().toISOString().split('T')[0]}.pdf`
         
-        // Create a professional HTML document for PDF generation
-        htmlContent = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${agreementData.title}</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Georgia', 'Times New Roman', serif;
-            line-height: 1.6;
-            color: #1a1a1a;
-            background: white;
-            max-width: 210mm;
-            margin: 0 auto;
-            padding: 20mm;
-        }
-
-        .header-section {
-            text-align: center;
-            margin-bottom: 40px;
-            border-bottom: 3px solid #2563eb;
-            padding-bottom: 20px;
-        }
-
-        .header-section h1 {
-            font-size: 24px;
-            font-weight: bold;
-            color: #1e40af;
-            margin-bottom: 8px;
-            letter-spacing: 1px;
-        }
-
-        .header-section h2 {
-            font-size: 16px;
-            color: #64748b;
-            font-weight: normal;
-            margin-bottom: 15px;
-        }
-
-        .effective-date {
-            font-size: 14px;
-            color: #475569;
-            font-style: italic;
-        }
-
-        .parties-section {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 25px;
-            margin-bottom: 30px;
-        }
-
-        .parties-section h3 {
-            font-size: 18px;
-            color: #1e40af;
-            margin-bottom: 20px;
-            text-align: center;
-            border-bottom: 1px solid #cbd5e1;
-            padding-bottom: 10px;
-        }
-
-        .party-block {
-            background: white;
-            border-radius: 6px;
-            padding: 18px;
-            margin-bottom: 15px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .party-block h4 {
-            font-size: 16px;
-            color: #2563eb;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        .party-block p {
-            margin-bottom: 6px;
-            font-size: 14px;
-        }
-
-        .parties-note {
-            text-align: center;
-            font-style: italic;
-            color: #64748b;
-            margin-top: 15px;
-            margin-bottom: 0;
-        }
-
-        .terms-section {
-            margin-bottom: 40px;
-        }
-
-        .term-item {
-            margin-bottom: 25px;
-            page-break-inside: avoid;
-        }
-
-        .term-item h3 {
-            font-size: 16px;
-            color: #1e40af;
-            margin-bottom: 12px;
-            padding: 8px 0;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .term-item p {
-            margin-bottom: 10px;
-            text-align: justify;
-            font-size: 14px;
-        }
-
-        .highlight-section {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            border-left: 4px solid #f59e0b;
-            padding: 20px;
-            border-radius: 0 8px 8px 0;
-        }
-
-        .compensation-detail {
-            background: white;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 16px !important;
-            font-weight: 600;
-            color: #1e40af;
-            text-align: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .responsibility-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: 15px;
-        }
-
-        .responsibility-column {
-            background: #f8fafc;
-            padding: 18px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .responsibility-column h4 {
-            font-size: 15px;
-            color: #2563eb;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-
-        ul {
-            margin-left: 18px;
-            margin-top: 10px;
-        }
-
-        li {
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .cooperation-list {
-            background: #f8fafc;
-            padding: 15px 20px;
-            border-radius: 6px;
-            border-left: 3px solid #2563eb;
-            margin-top: 10px;
-        }
-
-        .signatures-section {
-            margin-top: 50px;
-            page-break-inside: avoid;
-        }
-
-        .signatures-section h3 {
-            font-size: 18px;
-            color: #1e40af;
-            text-align: center;
-            margin-bottom: 30px;
-            border-top: 2px solid #2563eb;
-            padding-top: 20px;
-        }
-
-        .signature-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-        }
-
-        .signature-block {
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 25px;
-            background: #fafafa;
-        }
-
-        .signature-block h4 {
-            font-size: 16px;
-            color: #2563eb;
-            margin-bottom: 15px;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .signature-line {
-            margin-top: 25px;
-            border-top: 1px solid #cbd5e1;
-            padding-top: 15px;
-        }
-
-        .signature-line p {
-            margin-bottom: 15px;
-            font-size: 13px;
-        }
-
-        .footer-section {
-            margin-top: 40px;
-            text-align: center;
-            padding-top: 20px;
-            border-top: 1px solid #e2e8f0;
-            color: #64748b;
-            font-size: 12px;
-            font-style: italic;
-        }
-    </style>
-</head>
-<body>
-    ${agreementData.content}
-</body>
-</html>
+        // Create a simple, clean element for PDF generation
+        element = document.createElement('div')
+        element.style.cssText = `
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          color: #000;
+          background: white;
+          padding: 20px;
+          max-width: 800px;
+          font-size: 12px;
         `
+        
+        const currentDate = formData["Agreement Date"] || new Date().toLocaleDateString()
+        const paymentDetails = paymentType === "percentage" 
+          ? `${formData["Revenue Share Percentage"] || "[%]"}% of all revenue generated by the Machine(s)`
+          : `$${formData["Flat Fee Amount"] || "[Amount]"} per month (flat fee)`
+
+        element.innerHTML = `
+          <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px;">
+            <h1 style="font-size: 18px; margin: 0 0 10px 0; font-weight: bold;">CLAW MACHINE PLACEMENT AGREEMENT</h1>
+            <h2 style="font-size: 14px; margin: 0 0 10px 0; font-weight: normal;">Standard 1-Year Term</h2>
+            <p style="font-size: 12px; margin: 0;">Effective Date: ${currentDate}</p>
+          </div>
+
+          <div style="margin-bottom: 25px;">
+            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 15px 0;">PARTIES TO THIS AGREEMENT</h3>
+            
+            <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ccc;">
+              <h4 style="font-size: 12px; font-weight: bold; margin: 0 0 8px 0;">Claw Machine Provider</h4>
+              <p style="margin: 3px 0;"><strong>Name:</strong> ${formData["Provider Name"] || "[Provider Name]"}</p>
+              <p style="margin: 3px 0;"><strong>Address:</strong> ${formData["Provider Address"] || "[Provider Address]"}</p>
+              <p style="margin: 3px 0;"><strong>Contact:</strong> ${formData["Provider Contact Info"] || "[Contact Information]"}</p>
+            </div>
+            
+            <div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ccc;">
+              <h4 style="font-size: 12px; font-weight: bold; margin: 0 0 8px 0;">Business Location Owner</h4>
+              <p style="margin: 3px 0;"><strong>Name:</strong> ${formData["Business Name"] || "[Business Name]"}</p>
+              <p style="margin: 3px 0;"><strong>Address:</strong> ${formData["Business Address"] || "[Business Address]"}</p>
+              <p style="margin: 3px 0;"><strong>Contact:</strong> ${formData["Business Contact Info"] || "[Contact Information]"}</p>
+            </div>
+            
+            <p style="font-style: italic; margin: 10px 0 0 0;">Together referred to as "the Parties."</p>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">1. PURPOSE</h3>
+            <p style="margin: 0 0 15px 0;">The Provider agrees to place and operate one or more claw machines (the "Machine(s)") at the Location Owner's place of business. The Location Owner agrees to host the Machine(s) in exchange for compensation as outlined in Section 3.</p>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">2. TERM</h3>
+            <p style="margin: 0;">This Agreement is valid for <strong>12 months</strong>, beginning on <strong>${formData["Start Date"] || "[Start Date]"}</strong> and ending on <strong>${formData["End Date"] || "[End Date]"}</strong>, unless terminated earlier as outlined in Section 9.</p>
+          </div>
+
+          <div style="margin-bottom: 20px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd;">
+            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">3. COMPENSATION</h3>
+            <p style="margin: 0 0 8px 0;">The Provider will collect all revenue from the Machine(s) and compensate the Location Owner with:</p>
+            <p style="margin: 0 0 8px 0; font-weight: bold; font-size: 13px;">${paymentDetails}</p>
+            <p style="margin: 0;">Payments will be made by the <strong>10th of each month</strong> for the prior month's earnings via <strong>${formData["Payment Method"] || "[Payment Method]"}</strong>.</p>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">4. RESPONSIBILITIES</h3>
+            
+            <div style="margin-bottom: 15px;">
+              <h4 style="font-size: 12px; font-weight: bold; margin: 0 0 8px 0;">Provider Responsibilities</h4>
+              <ul style="margin: 0; padding-left: 20px;">
+                <li>Owns all machines and their contents</li>
+                <li>Handles installation, restocking, and servicing</li>
+                <li>Covers all maintenance and repairs</li>
+                <li>Pays for electricity usage</li>
+                <li>Provides timely revenue reporting</li>
+              </ul>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+              <h4 style="font-size: 12px; font-weight: bold; margin: 0 0 8px 0;">Location Owner Responsibilities</h4>
+              <ul style="margin: 0; padding-left: 20px;">
+                <li>Provides accessible space for Machine(s)</li>
+                <li>Supplies power outlet near placement area</li>
+                <li>Maintains general cleanliness around machine</li>
+                <li>Ensures customer access during business hours</li>
+                <li>Cooperates with maintenance schedules</li>
+              </ul>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">5. THEFT, DAMAGE & COOPERATION</h3>
+            <p style="margin: 0 0 8px 0;">The Location Owner will not be held liable for theft, vandalism, or accidental damage to the Machine(s).</p>
+            <p style="margin: 0 0 8px 0; font-weight: bold;">In the event of incidents, the Location Owner agrees to:</p>
+            <ul style="margin: 0; padding-left: 20px;">
+              <li>Provide available security footage, if applicable</li>
+              <li>Allow access for inspection and assessment</li>
+              <li>Cooperate with law enforcement or insurance representatives</li>
+              <li>Notify Provider within 24 hours of any incidents</li>
+            </ul>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">6. TERMINATION</h3>
+            <p style="margin: 0;">Either party may terminate this agreement with 30 days written notice.</p>
+          </div>
+
+          <div style="margin-top: 40px; border-top: 1px solid #000; padding-top: 20px;">
+            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 20px 0;">SIGNATURES</h3>
+            
+            <div style="display: flex; justify-content: space-between; margin-top: 40px;">
+              <div style="width: 45%;">
+                <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
+                <p style="font-size: 10px; margin: 0;"><strong>Provider Signature</strong></p>
+                <p style="font-size: 10px; margin: 5px 0 0 0;">Date: _______________</p>
+              </div>
+              
+              <div style="width: 45%;">
+                <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
+                <p style="font-size: 10px; margin: 0;"><strong>Location Owner Signature</strong></p>
+                <p style="font-size: 10px; margin: 5px 0 0 0;">Date: _______________</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666;">
+            <p style="margin: 0;">Generated on ${new Date().toLocaleDateString()} by ClawOps Document Creator</p>
+          </div>
+        `
+        
       } else {
-        // For other templates, use the simple format
+        // For other templates, use simple format
         filename = `${formData["Client Name"] || formData["Business Name"] || "Document"}_${template.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
         
-        const content = `
-${template.title}
-${"=".repeat(template.title.length)}
+        element = document.createElement('div')
+        element.style.cssText = `
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          color: #000;
+          background: white;
+          padding: 20px;
+          max-width: 800px;
+        `
+        
+        const content = Object.entries(formData)
+          .filter(([key, value]) => value.trim())
+          .map(([key, value]) => `${key}: ${value}`)
+          .join('\n')
 
-${template.fields.map(field => `${field}: ${formData[field] || '[Not provided]'}`).join('\n')}
+        element.innerHTML = `
+          <h1 style="text-align: center; color: #2563eb; margin-bottom: 20px;">${template.title}</h1>
+          <pre style="font-family: Arial, sans-serif; white-space: pre-wrap; line-height: 1.6;">${content}
 
 Generated on: ${new Date().toLocaleDateString()}
-ClawOps Document Creator
-        `.trim()
-
-        htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>${template.title}</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            color: #333;
-        }
-        h1 { text-align: center; color: #2563eb; }
-    </style>
-</head>
-<body>
-    <pre style="font-family: Arial, sans-serif; white-space: pre-wrap;">${content}</pre>
-</body>
-</html>
+ClawOps Document Creator</pre>
         `
       }
 
-      // Create a temporary element for PDF generation
-      const element = document.createElement('div')
-      element.innerHTML = htmlContent
-      element.style.position = 'fixed'
-      element.style.top = '0'
+      // Add element to body temporarily for rendering
+      element.style.position = 'absolute'
       element.style.left = '0'
-      element.style.width = '210mm'
-      element.style.background = 'white'
-      element.style.zIndex = '-1'
+      element.style.top = '0'
       element.style.visibility = 'hidden'
       document.body.appendChild(element)
 
-      // Wait for content to render
-      await new Promise(resolve => setTimeout(resolve, 100))
-
-      // Configure PDF options
+      // Simple PDF options that work reliably
       const opt = {
-        margin: [10, 10, 10, 10],
+        margin: 10,
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          scale: 2,
-          useCORS: true,
-          letterRendering: true,
-          width: 794, // A4 width in pixels at 96 DPI
-          height: 1123 // A4 height in pixels at 96 DPI
-        },
-        jsPDF: { 
-          unit: 'mm', 
-          format: 'a4', 
-          orientation: 'portrait'
-        }
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       }
 
-      // Generate and download PDF
-      await html2pdf().set(opt).from(element).save()
+      // Generate PDF
+      await html2pdf().from(element).set(opt).save()
 
       // Clean up
       document.body.removeChild(element)
