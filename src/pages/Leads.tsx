@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Search, Calendar, Phone, Mail, MapPin, Filter } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { Plus, Search, Calendar, Phone, Mail, MapPin, Filter, X } from "lucide-react"
 
 interface Lead {
   id: string
@@ -22,9 +23,20 @@ interface Lead {
 }
 
 export default function Leads() {
+  const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [showAddForm, setShowAddForm] = useState(false)
+  const [editingLead, setEditingLead] = useState<Lead | null>(null)
+  const [newLead, setNewLead] = useState<Partial<Lead>>({
+    businessName: "",
+    contactPerson: "",
+    email: "",
+    phone: "",
+    location: "",
+    notes: "",
+    status: "not-contacted"
+  })
 
   const [leads, setLeads] = useState<Lead[]>([
     {
@@ -91,6 +103,102 @@ export default function Leads() {
     
     return matchesSearch && matchesStatus
   })
+
+  const handleAddLead = () => {
+    if (!newLead.businessName?.trim() || !newLead.contactPerson?.trim()) {
+      toast({
+        title: "Error",
+        description: "Business name and contact person are required.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    const lead: Lead = {
+      id: Date.now().toString(),
+      businessName: newLead.businessName!,
+      contactPerson: newLead.contactPerson!,
+      email: newLead.email || "",
+      phone: newLead.phone || "",
+      location: newLead.location || "",
+      status: "not-contacted",
+      notes: newLead.notes || "",
+      createdAt: new Date().toISOString().split('T')[0]
+    }
+
+    setLeads(prev => [lead, ...prev])
+    setNewLead({
+      businessName: "",
+      contactPerson: "",
+      email: "",
+      phone: "",
+      location: "",
+      notes: "",
+      status: "not-contacted"
+    })
+    setShowAddForm(false)
+    
+    toast({
+      title: "Lead Added",
+      description: `${lead.businessName} has been added to your leads.`,
+    })
+  }
+
+  const updateLeadStatus = (leadId: string, newStatus: Lead["status"]) => {
+    setLeads(prev => prev.map(lead => 
+      lead.id === leadId ? { ...lead, status: newStatus } : lead
+    ))
+    
+    toast({
+      title: "Status Updated",
+      description: "Lead status has been updated successfully.",
+    })
+  }
+
+  const handleEditLead = (lead: Lead) => {
+    setEditingLead(lead)
+    setNewLead(lead)
+    setShowAddForm(true)
+  }
+
+  const handleUpdateLead = () => {
+    if (!editingLead) return handleAddLead()
+
+    setLeads(prev => prev.map(lead => 
+      lead.id === editingLead.id ? { ...lead, ...newLead } : lead
+    ))
+    
+    setEditingLead(null)
+    setNewLead({
+      businessName: "",
+      contactPerson: "",
+      email: "",
+      phone: "",
+      location: "",
+      notes: "",
+      status: "not-contacted"
+    })
+    setShowAddForm(false)
+    
+    toast({
+      title: "Lead Updated",
+      description: "Lead has been updated successfully.",
+    })
+  }
+
+  const resetForm = () => {
+    setEditingLead(null)
+    setNewLead({
+      businessName: "",
+      contactPerson: "",
+      email: "",
+      phone: "",
+      location: "",
+      notes: "",
+      status: "not-contacted"
+    })
+    setShowAddForm(false)
+  }
 
   return (
     <div className="space-y-6">
@@ -200,15 +308,26 @@ export default function Leads() {
               )}
               
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => handleEditLead(lead)}
+                >
                   Edit
                 </Button>
-                <Button variant="outline" size="sm">
-                  <Phone className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Mail className="h-4 w-4" />
-                </Button>
+                <Select value={lead.status} onValueChange={(value) => updateLeadStatus(lead.id, value as Lead["status"])}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
@@ -227,44 +346,89 @@ export default function Leads() {
         </Card>
       )}
 
-      {/* Add Lead Form Modal (simplified for now) */}
+      {/* Add/Edit Lead Form Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
             <CardHeader>
-              <CardTitle>Add New Lead</CardTitle>
-              <CardDescription>
-                Enter the details for your new business prospect
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>{editingLead ? "Edit Lead" : "Add New Lead"}</CardTitle>
+                  <CardDescription>
+                    {editingLead ? "Update lead information" : "Enter the details for your new business prospect"}
+                  </CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" onClick={resetForm}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="businessName">Business Name</Label>
-                <Input id="businessName" placeholder="Enter business name" />
+                <Label htmlFor="businessName">Business Name *</Label>
+                <Input 
+                  id="businessName" 
+                  placeholder="Enter business name"
+                  value={newLead.businessName || ""}
+                  onChange={(e) => setNewLead(prev => ({ ...prev, businessName: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="contactPerson">Contact Person</Label>
-                <Input id="contactPerson" placeholder="Enter contact name" />
+                <Label htmlFor="contactPerson">Contact Person *</Label>
+                <Input 
+                  id="contactPerson" 
+                  placeholder="Enter contact name"
+                  value={newLead.contactPerson || ""}
+                  onChange={(e) => setNewLead(prev => ({ ...prev, contactPerson: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="Enter email address" />
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="Enter email address"
+                  value={newLead.email || ""}
+                  onChange={(e) => setNewLead(prev => ({ ...prev, email: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" placeholder="Enter phone number" />
+                <Input 
+                  id="phone" 
+                  placeholder="Enter phone number"
+                  value={newLead.phone || ""}
+                  onChange={(e) => setNewLead(prev => ({ ...prev, phone: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input 
+                  id="location" 
+                  placeholder="Enter business location"
+                  value={newLead.location || ""}
+                  onChange={(e) => setNewLead(prev => ({ ...prev, location: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
-                <Textarea id="notes" placeholder="Add any initial notes..." />
+                <Textarea 
+                  id="notes" 
+                  placeholder="Add any initial notes..."
+                  value={newLead.notes || ""}
+                  onChange={(e) => setNewLead(prev => ({ ...prev, notes: e.target.value }))}
+                />
               </div>
               <div className="flex gap-3 pt-4">
-                <Button className="flex-1 bg-gradient-primary hover:bg-primary/90">
-                  Add Lead
+                <Button 
+                  className="flex-1 bg-gradient-primary hover:bg-primary/90"
+                  onClick={editingLead ? handleUpdateLead : handleAddLead}
+                >
+                  {editingLead ? "Update Lead" : "Add Lead"}
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => setShowAddForm(false)}
+                  onClick={resetForm}
                 >
                   Cancel
                 </Button>

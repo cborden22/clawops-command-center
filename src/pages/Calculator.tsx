@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Calculator as CalcIcon, Plus, Trash2, Download, Target } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { Calculator as CalcIcon, Plus, Trash2, Download, Target, Save } from "lucide-react"
 
 interface Expense {
   id: string
@@ -11,13 +12,24 @@ interface Expense {
   amount: number
 }
 
+interface SavedScenario {
+  id: string
+  name: string
+  profitPerMachine: number
+  expenses: Expense[]
+  createdAt: string
+}
+
 export default function Calculator() {
+  const { toast } = useToast()
   const [profitPerMachine, setProfitPerMachine] = useState(300)
   const [expenses, setExpenses] = useState<Expense[]>([
     { id: "1", name: "Rent", amount: 1200 },
     { id: "2", name: "Car Payment", amount: 450 },
     { id: "3", name: "Insurance", amount: 200 }
   ])
+  const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>([])
+  const [scenarioName, setScenarioName] = useState("")
 
   const addExpense = () => {
     const newExpense: Expense = {
@@ -42,6 +54,78 @@ export default function Calculator() {
   const machinesNeeded = Math.ceil(totalExpenses / profitPerMachine)
   const totalRevenue = machinesNeeded * profitPerMachine
   const surplus = totalRevenue - totalExpenses
+
+  const handleExportReport = () => {
+    const reportContent = `
+ClawOps Machine Calculator Report
+================================
+
+Profit per Machine: $${profitPerMachine}
+
+Monthly Expenses:
+${expenses.map(expense => `- ${expense.name}: $${expense.amount}`).join('\n')}
+
+Total Monthly Expenses: $${totalExpenses.toFixed(2)}
+Machines Needed: ${machinesNeeded}
+Projected Revenue: $${totalRevenue.toFixed(2)}
+Monthly Surplus: $${surplus.toFixed(2)}
+
+Generated on: ${new Date().toLocaleDateString()}
+ClawOps Calculator
+    `.trim()
+
+    const blob = new Blob([reportContent], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ClawOps_Calculator_Report_${new Date().toISOString().split('T')[0]}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    toast({
+      title: "Report Exported",
+      description: "Calculator report has been downloaded successfully.",
+    })
+  }
+
+  const handleSaveScenario = () => {
+    if (!scenarioName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a scenario name.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    const newScenario: SavedScenario = {
+      id: Date.now().toString(),
+      name: scenarioName,
+      profitPerMachine,
+      expenses: [...expenses],
+      createdAt: new Date().toISOString().split('T')[0]
+    }
+
+    setSavedScenarios(prev => [newScenario, ...prev])
+    setScenarioName("")
+    
+    toast({
+      title: "Scenario Saved",
+      description: `"${scenarioName}" has been saved successfully.`,
+    })
+  }
+
+  const loadScenario = (scenario: SavedScenario) => {
+    setProfitPerMachine(scenario.profitPerMachine)
+    setExpenses(scenario.expenses)
+    
+    toast({
+      title: "Scenario Loaded",
+      description: `"${scenario.name}" has been loaded.`,
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -177,13 +261,32 @@ export default function Calculator() {
                 </div>
               </div>
 
+              {/* Save Scenario */}
+              <div className="space-y-2">
+                <Label htmlFor="scenario-name">Scenario Name</Label>
+                <Input
+                  id="scenario-name"
+                  placeholder="Enter scenario name..."
+                  value={scenarioName}
+                  onChange={(e) => setScenarioName(e.target.value)}
+                />
+              </div>
+
               {/* Actions */}
               <div className="space-y-2">
-                <Button className="w-full bg-gradient-primary hover:bg-primary/90">
+                <Button 
+                  className="w-full bg-gradient-primary hover:bg-primary/90"
+                  onClick={handleExportReport}
+                >
                   <Download className="h-4 w-4 mr-2" />
                   Export Report
                 </Button>
-                <Button variant="outline" className="w-full">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={handleSaveScenario}
+                >
+                  <Save className="h-4 w-4 mr-2" />
                   Save Scenario
                 </Button>
               </div>
@@ -212,6 +315,39 @@ export default function Calculator() {
           </Card>
         </div>
       </div>
+
+      {/* Saved Scenarios */}
+      {savedScenarios.length > 0 && (
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle>Saved Scenarios</CardTitle>
+            <CardDescription>
+              Your previously saved calculation scenarios
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {savedScenarios.map((scenario) => (
+                <div key={scenario.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-smooth">
+                  <div>
+                    <p className="font-medium">{scenario.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {scenario.expenses.length} expenses • $${scenario.profitPerMachine}/machine • {scenario.createdAt}
+                    </p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => loadScenario(scenario)}
+                  >
+                    Load
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

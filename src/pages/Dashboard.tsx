@@ -1,5 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { FileText, Calculator, Users, TrendingUp, Target, DollarSign } from "lucide-react"
+import { Link } from "react-router-dom"
 
 export default function Dashboard() {
   const stats = [
@@ -95,21 +97,23 @@ export default function Dashboard() {
         <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
         <div className="grid gap-4 md:grid-cols-3">
           {quickActions.map((action) => (
-            <Card key={action.title} className="group cursor-pointer hover:shadow-hover transition-smooth">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg ${action.color} flex items-center justify-center`}>
-                    <action.icon className="h-5 w-5 text-white" />
+            <Link key={action.title} to={action.href}>
+              <Card className="group cursor-pointer hover:shadow-hover transition-smooth h-full">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-lg ${action.color} flex items-center justify-center`}>
+                      <action.icon className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">{action.title}</CardTitle>
+                      <CardDescription className="text-sm">
+                        {action.description}
+                      </CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-base">{action.title}</CardTitle>
-                    <CardDescription className="text-sm">
-                      {action.description}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
+                </CardHeader>
+              </Card>
+            </Link>
           ))}
         </div>
       </div>

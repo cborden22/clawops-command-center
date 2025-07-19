@@ -4,11 +4,27 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { useToast } from "@/hooks/use-toast"
 import { Plus, FileText, Download, Edit, Search } from "lucide-react"
 
+interface FormData {
+  [key: string]: string
+}
+
+interface SavedDocument {
+  id: string
+  name: string
+  template: string
+  created: string
+  status: "Signed" | "Pending" | "Draft"
+  formData: FormData
+}
+
 export default function Documents() {
+  const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
+  const [formData, setFormData] = useState<FormData>({})
 
   const templates = [
     {
@@ -37,16 +53,99 @@ export default function Documents() {
     }
   ]
 
-  const savedDocuments = [
-    { name: "Downtown Arcade Agreement", template: "Location Agreement", created: "2024-01-15", status: "Signed" },
-    { name: "Pizza Palace Contract", template: "Service Contract", created: "2024-01-14", status: "Pending" },
-    { name: "Mall Kiosk Agreement", template: "Location Agreement", created: "2024-01-13", status: "Draft" }
-  ]
+  const [savedDocuments, setSavedDocuments] = useState<SavedDocument[]>([
+    { 
+      id: "1",
+      name: "Downtown Arcade Agreement", 
+      template: "Location Agreement", 
+      created: "2024-01-15", 
+      status: "Signed",
+      formData: {}
+    },
+    { 
+      id: "2",
+      name: "Pizza Palace Contract", 
+      template: "Service Contract", 
+      created: "2024-01-14", 
+      status: "Pending",
+      formData: {}
+    },
+    { 
+      id: "3",
+      name: "Mall Kiosk Agreement", 
+      template: "Location Agreement", 
+      created: "2024-01-13", 
+      status: "Draft",
+      formData: {}
+    }
+  ])
 
   const filteredTemplates = templates.filter(template =>
     template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     template.description.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  const handleFormChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleDownloadPDF = () => {
+    const template = templates.find(t => t.id === selectedTemplate)
+    if (!template) return
+
+    // Generate a simple text document since we can't use jsPDF
+    const content = `
+${template.title}
+${"=".repeat(template.title.length)}
+
+${template.fields.map(field => `${field}: ${formData[field] || '[Not provided]'}`).join('\n')}
+
+Generated on: ${new Date().toLocaleDateString()}
+ClawOps Document Creator
+    `.trim()
+
+    const blob = new Blob([content], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${template.title.replace(/\s+/g, '_')}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    toast({
+      title: "Document Downloaded",
+      description: `${template.title} has been downloaded successfully.`,
+    })
+  }
+
+  const handleSaveDraft = () => {
+    const template = templates.find(t => t.id === selectedTemplate)
+    if (!template) return
+
+    const businessName = formData["Business Name"] || formData["Client Name"] || "Untitled"
+    const newDocument: SavedDocument = {
+      id: Date.now().toString(),
+      name: `${businessName} ${template.title}`,
+      template: template.title,
+      created: new Date().toISOString().split('T')[0],
+      status: "Draft",
+      formData: { ...formData }
+    }
+
+    setSavedDocuments(prev => [newDocument, ...prev])
+    
+    toast({
+      title: "Draft Saved",
+      description: `Document saved as draft successfully.`,
+    })
+  }
+
+  const handleNewDocument = () => {
+    setSelectedTemplate(null)
+    setFormData({})
+  }
 
   return (
     <div className="space-y-6">
@@ -58,7 +157,10 @@ export default function Documents() {
             Create and manage business documents with smart templates
           </p>
         </div>
-        <Button className="bg-gradient-primary hover:bg-primary/90">
+        <Button 
+          className="bg-gradient-primary hover:bg-primary/90"
+          onClick={handleNewDocument}
+        >
           <Plus className="h-4 w-4 mr-2" />
           New Document
         </Button>
@@ -123,22 +225,32 @@ export default function Documents() {
                         id={field.toLowerCase().replace(' ', '-')}
                         placeholder={`Enter ${field.toLowerCase()}...`}
                         className="min-h-20"
+                        value={formData[field] || ""}
+                        onChange={(e) => handleFormChange(field, e.target.value)}
                       />
                     ) : (
                       <Input
                         id={field.toLowerCase().replace(' ', '-')}
                         placeholder={`Enter ${field.toLowerCase()}...`}
+                        value={formData[field] || ""}
+                        onChange={(e) => handleFormChange(field, e.target.value)}
                       />
                     )}
                   </div>
                 ))}
                 
                 <div className="flex gap-3 pt-4">
-                  <Button className="bg-gradient-primary hover:bg-primary/90">
+                  <Button 
+                    className="bg-gradient-primary hover:bg-primary/90"
+                    onClick={handleDownloadPDF}
+                  >
                     <Download className="h-4 w-4 mr-2" />
-                    Download PDF
+                    Download Document
                   </Button>
-                  <Button variant="outline">
+                  <Button 
+                    variant="outline"
+                    onClick={handleSaveDraft}
+                  >
                     <Edit className="h-4 w-4 mr-2" />
                     Save as Draft
                   </Button>
@@ -166,8 +278,8 @@ export default function Documents() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {savedDocuments.map((doc, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-smooth">
+            {savedDocuments.map((doc) => (
+              <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-smooth">
                 <div className="flex items-center gap-3">
                   <FileText className="h-5 w-5 text-muted-foreground" />
                   <div>
@@ -183,7 +295,16 @@ export default function Documents() {
                   }`}>
                     {doc.status}
                   </span>
-                  <Button variant="ghost" size="sm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "Document Downloaded",
+                        description: `${doc.name} has been downloaded.`,
+                      })
+                    }}
+                  >
                     <Download className="h-4 w-4" />
                   </Button>
                 </div>
