@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from "@/hooks/use-toast"
 import { Plus, FileText, Download, Edit, Search } from "lucide-react"
 
@@ -25,6 +26,7 @@ export default function Documents() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
   const [formData, setFormData] = useState<FormData>({})
+  const [paymentType, setPaymentType] = useState<"percentage" | "flat">("percentage")
 
   const templates = [
     {
@@ -40,9 +42,7 @@ export default function Documents() {
         "Business Address", 
         "Business Contact Info",
         "Start Date",
-        "End Date", 
-        "Revenue Share Percentage",
-        "Flat Fee Amount",
+        "End Date",
         "Payment Method",
         "Notice Period (Hours/Days)"
       ]
@@ -127,7 +127,11 @@ The Provider agrees to place and operate one or more claw machines (the "Machine
 This Agreement is valid for 12 months, beginning on ${formData["Start Date"] || "[Start Date]"} and ending on ${formData["End Date"] || "[End Date]"}, unless terminated earlier as outlined in Section 9.
 
 3. REVENUE SHARE
-The Provider will collect all revenue from the Machine(s) and pay the Location Owner a ${formData["Revenue Share Percentage"] || "[%]"}% share, or a flat fee of $${formData["Flat Fee Amount"] || "[Amount]"} per month.
+The Provider will collect all revenue from the Machine(s) and pay the Location Owner ${
+  paymentType === "percentage" 
+    ? `a ${formData["Revenue Share Percentage"] || "[%]"}% share of all revenue generated`
+    : `a flat fee of $${formData["Flat Fee Amount"] || "[Amount]"} per month`
+}.
 
 Payments will be made by the 10th of each month for the prior month's earnings, via ${formData["Payment Method"] || "[Payment Method]"}.
 
@@ -309,6 +313,7 @@ ClawOps Document Creator
   const handleNewDocument = () => {
     setSelectedTemplate(null)
     setFormData({})
+    setPaymentType("percentage")
   }
 
   return (
@@ -402,6 +407,59 @@ ClawOps Document Creator
                     )}
                   </div>
                 ))}
+
+                {/* Payment Type Selection for Location Agreement */}
+                {selectedTemplate === "location-agreement" && (
+                  <div className="space-y-4 border-t pt-4">
+                    <Label className="text-base font-semibold">Payment Structure</Label>
+                    <RadioGroup 
+                      value={paymentType} 
+                      onValueChange={(value: "percentage" | "flat") => setPaymentType(value)}
+                      className="space-y-3"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="percentage" id="percentage" />
+                        <Label htmlFor="percentage" className="cursor-pointer">
+                          Revenue Share Percentage
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="flat" id="flat" />
+                        <Label htmlFor="flat" className="cursor-pointer">
+                          Flat Monthly Fee
+                        </Label>
+                      </div>
+                    </RadioGroup>
+
+                    {/* Conditional Input Fields */}
+                    {paymentType === "percentage" ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="revenue-share">Revenue Share Percentage (%)</Label>
+                        <Input
+                          id="revenue-share"
+                          type="number"
+                          min="0"
+                          max="100"
+                          placeholder="e.g., 50"
+                          value={formData["Revenue Share Percentage"] || ""}
+                          onChange={(e) => handleFormChange("Revenue Share Percentage", e.target.value)}
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label htmlFor="flat-fee">Monthly Flat Fee ($)</Label>
+                        <Input
+                          id="flat-fee"
+                          type="number"
+                          min="0"
+                          placeholder="e.g., 500"
+                          value={formData["Flat Fee Amount"] || ""}
+                          onChange={(e) => handleFormChange("Flat Fee Amount", e.target.value)}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
                 
                 <div className="flex gap-3 pt-4">
                   <Button 
