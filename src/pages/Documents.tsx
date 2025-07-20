@@ -53,6 +53,7 @@ export default function Documents() {
       tempDiv.style.top = '-9999px'
       tempDiv.style.width = '210mm'
       tempDiv.style.fontFamily = 'Arial, sans-serif'
+      tempDiv.style.background = 'white'
       
       tempDiv.innerHTML = `
         <div style="max-width: 700px; margin: 0 auto; padding: 30px; font-family: Arial, sans-serif; line-height: 1.4; color: #333;">
