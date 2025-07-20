@@ -3,8 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
-import { Calculator as CalcIcon, Plus, Trash2, Download, Target, Save } from "lucide-react"
+import { Calculator as CalcIcon, Plus, Trash2, Download, Target, Save, TrendingUp } from "lucide-react"
+
+type TrafficLevel = 'low' | 'medium' | 'high'
+
+const TRAFFIC_LEVELS = {
+  low: { label: 'Low Traffic', profit: 200, description: '$200/month per machine' },
+  medium: { label: 'Medium Traffic', profit: 350, description: '$350/month per machine' },
+  high: { label: 'High Traffic', profit: 500, description: '$500/month per machine' }
+}
 
 interface Expense {
   id: string
@@ -15,6 +24,7 @@ interface Expense {
 interface SavedScenario {
   id: string
   name: string
+  trafficLevel: TrafficLevel
   profitPerMachine: number
   expenses: Expense[]
   createdAt: string
@@ -22,7 +32,7 @@ interface SavedScenario {
 
 export default function Calculator() {
   const { toast } = useToast()
-  const [profitPerMachine, setProfitPerMachine] = useState(300)
+  const [trafficLevel, setTrafficLevel] = useState<TrafficLevel>('medium')
   const [expenses, setExpenses] = useState<Expense[]>([
     { id: "1", name: "Rent", amount: 1200 },
     { id: "2", name: "Car Payment", amount: 450 },
@@ -30,6 +40,8 @@ export default function Calculator() {
   ])
   const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>([])
   const [scenarioName, setScenarioName] = useState("")
+
+  const profitPerMachine = TRAFFIC_LEVELS[trafficLevel].profit
 
   const addExpense = () => {
     const newExpense: Expense = {
@@ -60,6 +72,7 @@ export default function Calculator() {
 ClawOps Machine Calculator Report
 ================================
 
+Traffic Level: ${TRAFFIC_LEVELS[trafficLevel].label}
 Profit per Machine: $${profitPerMachine}
 
 Monthly Expenses:
@@ -103,6 +116,7 @@ ClawOps Calculator
     const newScenario: SavedScenario = {
       id: Date.now().toString(),
       name: scenarioName,
+      trafficLevel,
       profitPerMachine,
       expenses: [...expenses],
       createdAt: new Date().toISOString().split('T')[0]
@@ -118,7 +132,7 @@ ClawOps Calculator
   }
 
   const loadScenario = (scenario: SavedScenario) => {
-    setProfitPerMachine(scenario.profitPerMachine)
+    setTrafficLevel(scenario.trafficLevel)
     setExpenses(scenario.expenses)
     
     toast({
@@ -140,27 +154,45 @@ ClawOps Calculator
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Input Section */}
         <div className="space-y-6">
-          {/* Profit Per Machine */}
+          {/* Traffic Level Selection */}
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Profit Per Machine
+                <TrendingUp className="h-5 w-5" />
+                Location Traffic Level
               </CardTitle>
               <CardDescription>
-                Average monthly profit expected per machine
+                Select your location's expected foot traffic to auto-configure profit estimates
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <Label htmlFor="profit">Monthly Profit ($)</Label>
-                <Input
-                  id="profit"
-                  type="number"
-                  value={profitPerMachine}
-                  onChange={(e) => setProfitPerMachine(Number(e.target.value) || 0)}
-                  className="text-lg font-semibold"
-                />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="traffic">Traffic Level</Label>
+                  <Select value={trafficLevel} onValueChange={(value: TrafficLevel) => setTrafficLevel(value)}>
+                    <SelectTrigger className="text-lg">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(TRAFFIC_LEVELS).map(([key, config]) => (
+                        <SelectItem key={key} value={key}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{config.label}</span>
+                            <span className="text-sm text-muted-foreground">{config.description}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Current Profit Display */}
+                <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Current Profit Rate</span>
+                    <span className="text-xl font-bold text-primary">${profitPerMachine}/month</span>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -332,7 +364,7 @@ ClawOps Calculator
                   <div>
                     <p className="font-medium">{scenario.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {scenario.expenses.length} expenses • $${scenario.profitPerMachine}/machine • {scenario.createdAt}
+                      {TRAFFIC_LEVELS[scenario.trafficLevel]?.label || 'Custom'} • {scenario.expenses.length} expenses • $${scenario.profitPerMachine}/machine • {scenario.createdAt}
                     </p>
                   </div>
                   <Button 
