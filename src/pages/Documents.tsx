@@ -261,6 +261,8 @@ export default function Documents() {
     const template = templates.find(t => t.id === selectedTemplate)
     if (!template) return
 
+    console.log('Starting PDF generation...', { selectedTemplate, formData })
+
     try {
       let element: HTMLElement
       let filename = ""
@@ -277,7 +279,7 @@ export default function Documents() {
           color: #000;
           background: white;
           padding: 20px;
-          max-width: 800px;
+          width: 700px;
           font-size: 12px;
         `
         
@@ -369,26 +371,53 @@ export default function Documents() {
           </div>
 
           <div style="margin-bottom: 20px;">
-            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">6. TERMINATION</h3>
-            <p style="margin: 0;">Either party may terminate this agreement with 30 days written notice.</p>
+            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">6. INSURANCE & LIABILITY</h3>
+            <p style="margin: 0;">The Provider is responsible for carrying comprehensive insurance for equipment and general liability. The Location Owner assumes no liability for injuries or damages related to the Machine(s), except in cases of gross negligence.</p>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">7. MARKETING & SIGNAGE</h3>
+            <p style="margin: 0;">The Provider may display branding and promotional signage on or immediately near the Machine(s). Any additional signage in other areas of the premises must receive prior written approval from the Location Owner.</p>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">8. RELOCATION OR REMOVAL</h3>
+            <p style="margin: 0;">The Provider may replace, relocate, or remove the Machine(s) with <strong>${formData["Notice Period (Hours/Days)"] || "[Notice Period]"}</strong> notice to the Location Owner. The Location Owner may request relocation of the machine within the business premises if operationally necessary.</p>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">9. TERMINATION</h3>
+            <p style="margin: 0;">Either party may terminate this Agreement with <strong>30 days' written notice</strong>. Immediate termination is permitted in the event of material breach that remains uncured after 7 days' written notice.</p>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">10. RENEWAL</h3>
+            <p style="margin: 0;">If neither party provides written notice of termination at least 30 days before the end date, this Agreement automatically renews for another 12-month term under the same conditions.</p>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">11. ENTIRE AGREEMENT</h3>
+            <p style="margin: 0;">This document represents the complete agreement between the Parties. Any amendments must be in writing and signed by both Parties. This Agreement supersedes all prior negotiations, understandings, or agreements.</p>
           </div>
 
           <div style="margin-top: 40px; border-top: 1px solid #000; padding-top: 20px;">
             <h3 style="font-size: 14px; font-weight: bold; margin: 0 0 20px 0;">SIGNATURES</h3>
             
-            <div style="display: flex; justify-content: space-between; margin-top: 40px;">
-              <div style="width: 45%;">
-                <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
-                <p style="font-size: 10px; margin: 0;"><strong>Provider Signature</strong></p>
-                <p style="font-size: 10px; margin: 5px 0 0 0;">Date: _______________</p>
-              </div>
-              
-              <div style="width: 45%;">
-                <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
-                <p style="font-size: 10px; margin: 0;"><strong>Location Owner Signature</strong></p>
-                <p style="font-size: 10px; margin: 5px 0 0 0;">Date: _______________</p>
-              </div>
-            </div>
+            <table style="width: 100%; margin-top: 40px;">
+              <tr>
+                <td style="width: 45%; vertical-align: top;">
+                  <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
+                  <p style="font-size: 10px; margin: 0;"><strong>Provider Signature</strong></p>
+                  <p style="font-size: 10px; margin: 5px 0 0 0;">Date: _______________</p>
+                </td>
+                <td style="width: 10%;"></td>
+                <td style="width: 45%; vertical-align: top;">
+                  <div style="border-bottom: 1px solid #000; margin-bottom: 5px; height: 20px;"></div>
+                  <p style="font-size: 10px; margin: 0;"><strong>Location Owner Signature</strong></p>
+                  <p style="font-size: 10px; margin: 5px 0 0 0;">Date: _______________</p>
+                </td>
+              </tr>
+            </table>
           </div>
 
           <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666;">
@@ -407,11 +436,11 @@ export default function Documents() {
           color: #000;
           background: white;
           padding: 20px;
-          max-width: 800px;
+          width: 700px;
         `
         
         const content = Object.entries(formData)
-          .filter(([key, value]) => value.trim())
+          .filter(([key, value]) => value && value.trim())
           .map(([key, value]) => `${key}: ${value}`)
           .join('\n')
 
@@ -424,24 +453,45 @@ ClawOps Document Creator</pre>
         `
       }
 
+      console.log('Element created, content length:', element.innerHTML.length)
+
       // Add element to body temporarily for rendering
       element.style.position = 'absolute'
-      element.style.left = '0'
+      element.style.left = '-9999px'
       element.style.top = '0'
-      element.style.visibility = 'hidden'
+      element.style.visibility = 'visible'
       document.body.appendChild(element)
+
+      console.log('Element added to DOM')
+
+      // Wait a moment for the DOM to update
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       // Simple PDF options that work reliably
       const opt = {
-        margin: 10,
+        margin: [10, 10, 10, 10],
         filename: filename,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        html2canvas: { 
+          scale: 1,
+          useCORS: true,
+          letterRendering: true,
+          allowTaint: false
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait',
+          compress: true
+        }
       }
+
+      console.log('Starting html2pdf generation...')
 
       // Generate PDF
       await html2pdf().from(element).set(opt).save()
+
+      console.log('PDF generation completed')
 
       // Clean up
       document.body.removeChild(element)
