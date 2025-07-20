@@ -457,9 +457,11 @@ ClawOps Document Creator</pre>
 
       // Add element to body temporarily for rendering
       element.style.position = 'absolute'
-      element.style.left = '-9999px'
+      element.style.left = '0'
       element.style.top = '0'
-      element.style.visibility = 'visible'
+      element.style.zIndex = '-1000'
+      element.style.opacity = '0'
+      element.style.pointerEvents = 'none'
       document.body.appendChild(element)
 
       console.log('Element added to DOM')
