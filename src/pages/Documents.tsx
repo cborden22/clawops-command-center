@@ -57,129 +57,444 @@ export default function Documents() {
 <html>
 <head>
     <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            line-height: 1.5; 
-            margin: 20px; 
-            color: #000; 
-            background: #fff;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        h1 { font-size: 18px; text-align: center; margin: 20px 0; }
-        h2 { font-size: 14px; text-align: center; margin: 10px 0; }
-        h3 { font-size: 14px; margin: 15px 0 8px 0; font-weight: bold; }
-        h4 { font-size: 12px; margin: 10px 0 5px 0; font-weight: bold; }
-        p { margin: 5px 0; font-size: 12px; }
-        .party-info { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
-        .highlight { background: #f5f5f5; padding: 10px; border: 1px solid #ddd; }
-        ul { margin: 5px 0; padding-left: 20px; }
-        li { margin: 2px 0; }
-        .signatures { margin-top: 40px; }
-        .sig-line { border-bottom: 1px solid #000; width: 200px; height: 20px; display: inline-block; }
+        
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+            line-height: 1.6; 
+            margin: 0;
+            padding: 40px;
+            color: #1a1a1a; 
+            background: #ffffff;
+            font-size: 11pt;
+        }
+        
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 30px 0 40px 0;
+            border-bottom: 3px solid #2563eb;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 { 
+            font-size: 22pt; 
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+        
+        .header h2 { 
+            font-size: 14pt; 
+            font-weight: 500;
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+        
+        .effective-date {
+            font-size: 12pt;
+            font-weight: 600;
+            color: #374151;
+            background: #f8fafc;
+            padding: 12px 24px;
+            border-radius: 6px;
+            display: inline-block;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .section {
+            margin-bottom: 35px;
+        }
+        
+        .section-title {
+            font-size: 14pt;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .parties-container {
+            display: flex;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .party-card { 
+            flex: 1;
+            border: 2px solid #e2e8f0; 
+            padding: 20px; 
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+        
+        .party-card h4 {
+            font-size: 12pt;
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 15px;
+            text-align: center;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #cbd5e1;
+        }
+        
+        .party-card p {
+            margin-bottom: 8px;
+            font-size: 10pt;
+            line-height: 1.5;
+        }
+        
+        .party-card strong {
+            color: #374151;
+            font-weight: 600;
+        }
+        
+        .parties-note {
+            text-align: center;
+            font-style: italic;
+            color: #64748b;
+            font-size: 10pt;
+            margin-top: 15px;
+        }
+        
+        .term-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+            background: #fafbff;
+        }
+        
+        .term-number {
+            font-size: 13pt;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 12px;
+        }
+        
+        .term-content {
+            font-size: 11pt;
+            line-height: 1.7;
+            color: #374151;
+        }
+        
+        .compensation-highlight {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-left: 4px solid #d97706;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 25px 0;
+        }
+        
+        .compensation-highlight .term-number {
+            color: #92400e;
+        }
+        
+        .compensation-amount {
+            font-size: 13pt;
+            font-weight: 700;
+            color: #92400e;
+            background: #fffbeb;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            text-align: center;
+            border: 1px solid #fbbf24;
+        }
+        
+        .responsibilities-grid {
+            display: flex;
+            gap: 25px;
+            margin-top: 15px;
+        }
+        
+        .responsibility-column {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .responsibility-column h4 {
+            font-size: 11pt;
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 15px;
+            text-align: center;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        ul { 
+            margin: 10px 0;
+            padding-left: 0;
+            list-style: none;
+        }
+        
+        li { 
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+            font-size: 10pt;
+            line-height: 1.6;
+        }
+        
+        li::before {
+            content: "•";
+            color: #3b82f6;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        
+        .signatures-section { 
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 3px solid #e2e8f0;
+        }
+        
+        .signatures-title {
+            text-align: center;
+            font-size: 14pt;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .signature-grid {
+            display: flex;
+            gap: 40px;
+            justify-content: space-between;
+        }
+        
+        .signature-block {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .signature-block h4 {
+            font-size: 11pt;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 20px;
+        }
+        
+        .signature-line {
+            border-bottom: 2px solid #1e40af;
+            width: 200px;
+            height: 40px;
+            margin: 0 auto 15px auto;
+        }
+        
+        .signature-date {
+            font-size: 10pt;
+            color: #64748b;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 9pt;
+            color: #9ca3af;
+        }
+        
+        strong {
+            font-weight: 600;
+        }
+        
+        @media print {
+            body { padding: 20px; }
+            .container { box-shadow: none; }
+        }
     </style>
 </head>
 <body>
-    <h1>CLAW MACHINE PLACEMENT AGREEMENT</h1>
-    <h2>Standard 1-Year Term</h2>
-    <p style="text-align: center;"><strong>Effective Date: ${currentDate}</strong></p>
-    
-    <h3>PARTIES TO THIS AGREEMENT</h3>
-    
-    <div class="party-info">
-        <h4>Claw Machine Provider</h4>
-        <p><strong>Name:</strong> ${formData["Provider Name"] || "[Provider Name]"}</p>
-        <p><strong>Address:</strong> ${formData["Provider Address"] || "[Provider Address]"}</p>
-        <p><strong>Contact:</strong> ${formData["Provider Contact Info"] || "[Contact Information]"}</p>
-    </div>
-    
-    <div class="party-info">
-        <h4>Business Location Owner</h4>
-        <p><strong>Name:</strong> ${formData["Business Name"] || "[Business Name]"}</p>
-        <p><strong>Address:</strong> ${formData["Business Address"] || "[Business Address]"}</p>
-        <p><strong>Contact:</strong> ${formData["Business Contact Info"] || "[Contact Information]"}</p>
-    </div>
-    
-    <p><em>Together referred to as "the Parties."</em></p>
-
-    <h3>1. PURPOSE</h3>
-    <p>The Provider agrees to place and operate one or more claw machines (the "Machine(s)") at the Location Owner's place of business. The Location Owner agrees to host the Machine(s) in exchange for compensation as outlined in Section 3.</p>
-
-    <h3>2. TERM</h3>
-    <p>This Agreement is valid for <strong>12 months</strong>, beginning on <strong>${formData["Start Date"] || "[Start Date]"}</strong> and ending on <strong>${formData["End Date"] || "[End Date]"}</strong>, unless terminated earlier as outlined in Section 9.</p>
-
-    <div class="highlight">
-        <h3>3. COMPENSATION</h3>
-        <p>The Provider will collect all revenue from the Machine(s) and compensate the Location Owner with:</p>
-        <p><strong>${paymentDetails}</strong></p>
-        <p>Payments will be made by the <strong>10th of each month</strong> for the prior month's earnings via <strong>${formData["Payment Method"] || "[Payment Method]"}</strong>.</p>
-    </div>
-
-    <h3>4. RESPONSIBILITIES</h3>
-    
-    <h4>Provider Responsibilities</h4>
-    <ul>
-        <li>Owns all machines and their contents</li>
-        <li>Handles installation, restocking, and servicing</li>
-        <li>Covers all maintenance and repairs</li>
-        <li>Pays for electricity usage</li>
-        <li>Provides timely revenue reporting</li>
-    </ul>
-    
-    <h4>Location Owner Responsibilities</h4>
-    <ul>
-        <li>Provides accessible space for Machine(s)</li>
-        <li>Supplies power outlet near placement area</li>
-        <li>Maintains general cleanliness around machine</li>
-        <li>Ensures customer access during business hours</li>
-        <li>Cooperates with maintenance schedules</li>
-    </ul>
-
-    <h3>5. THEFT, DAMAGE & COOPERATION</h3>
-    <p>The Location Owner will not be held liable for theft, vandalism, or accidental damage to the Machine(s).</p>
-    <p><strong>In the event of incidents, the Location Owner agrees to:</strong></p>
-    <ul>
-        <li>Provide available security footage, if applicable</li>
-        <li>Allow access for inspection and assessment</li>
-        <li>Cooperate with law enforcement or insurance representatives</li>
-        <li>Notify Provider within 24 hours of any incidents</li>
-    </ul>
-
-    <h3>6. INSURANCE & LIABILITY</h3>
-    <p>The Provider is responsible for carrying comprehensive insurance for equipment and general liability. The Location Owner assumes no liability for injuries or damages related to the Machine(s), except in cases of gross negligence.</p>
-
-    <h3>7. MARKETING & SIGNAGE</h3>
-    <p>The Provider may display branding and promotional signage on or immediately near the Machine(s). Any additional signage in other areas of the premises must receive prior written approval from the Location Owner.</p>
-
-    <h3>8. RELOCATION OR REMOVAL</h3>
-    <p>The Provider may replace, relocate, or remove the Machine(s) with <strong>${formData["Notice Period (Hours/Days)"] || "[Notice Period]"}</strong> notice to the Location Owner. The Location Owner may request relocation of the machine within the business premises if operationally necessary.</p>
-
-    <h3>9. TERMINATION</h3>
-    <p>Either party may terminate this Agreement with <strong>30 days' written notice</strong>. Immediate termination is permitted in the event of material breach that remains uncured after 7 days' written notice.</p>
-
-    <h3>10. RENEWAL</h3>
-    <p>If neither party provides written notice of termination at least 30 days before the end date, this Agreement automatically renews for another 12-month term under the same conditions.</p>
-
-    <h3>11. ENTIRE AGREEMENT</h3>
-    <p>This document represents the complete agreement between the Parties. Any amendments must be in writing and signed by both Parties. This Agreement supersedes all prior negotiations, understandings, or agreements.</p>
-
-    <div class="signatures">
-        <h3>SIGNATURES</h3>
-        <br><br>
-        <div style="display: inline-block; width: 45%; vertical-align: top;">
-            <div class="sig-line"></div><br>
-            <strong>Provider Signature</strong><br>
-            Date: _______________
+    <div class="container">
+        <div class="header">
+            <h1>CLAW MACHINE PLACEMENT AGREEMENT</h1>
+            <h2>Standard 1-Year Term</h2>
+            <div class="effective-date">Effective Date: ${currentDate}</div>
         </div>
-        <div style="display: inline-block; width: 45%; margin-left: 5%; vertical-align: top;">
-            <div class="sig-line"></div><br>
-            <strong>Location Owner Signature</strong><br>
-            Date: _______________
+        
+        <div class="section">
+            <div class="section-title">Parties to This Agreement</div>
+            
+            <div class="parties-container">
+                <div class="party-card">
+                    <h4>Claw Machine Provider</h4>
+                    <p><strong>Name:</strong> ${formData["Provider Name"] || "[Provider Name]"}</p>
+                    <p><strong>Address:</strong> ${formData["Provider Address"] || "[Provider Address]"}</p>
+                    <p><strong>Contact:</strong> ${formData["Provider Contact Info"] || "[Contact Information]"}</p>
+                </div>
+                
+                <div class="party-card">
+                    <h4>Business Location Owner</h4>
+                    <p><strong>Name:</strong> ${formData["Business Name"] || "[Business Name]"}</p>
+                    <p><strong>Address:</strong> ${formData["Business Address"] || "[Business Address]"}</p>
+                    <p><strong>Contact:</strong> ${formData["Business Contact Info"] || "[Contact Information]"}</p>
+                </div>
+            </div>
+            
+            <p class="parties-note">Together referred to as "the Parties."</p>
+        </div>
+
+        <div class="term-section">
+            <div class="term-number">1. PURPOSE</div>
+            <div class="term-content">
+                The Provider agrees to place and operate one or more claw machines (the "Machine(s)") at the Location Owner's place of business. The Location Owner agrees to host the Machine(s) in exchange for compensation as outlined in Section 3.
+            </div>
+        </div>
+
+        <div class="term-section">
+            <div class="term-number">2. TERM</div>
+            <div class="term-content">
+                This Agreement is valid for <strong>12 months</strong>, beginning on <strong>${formData["Start Date"] || "[Start Date]"}</strong> and ending on <strong>${formData["End Date"] || "[End Date]"}</strong>, unless terminated earlier as outlined in Section 9.
+            </div>
+        </div>
+
+        <div class="compensation-highlight">
+            <div class="term-number">3. COMPENSATION</div>
+            <div class="term-content">
+                The Provider will collect all revenue from the Machine(s) and compensate the Location Owner with:
+                <div class="compensation-amount">${paymentDetails}</div>
+                Payments will be made by the <strong>10th of each month</strong> for the prior month's earnings via <strong>${formData["Payment Method"] || "[Payment Method]"}</strong>.
+            </div>
+        </div>
+
+        <div class="term-section">
+            <div class="term-number">4. RESPONSIBILITIES</div>
+            <div class="responsibilities-grid">
+                <div class="responsibility-column">
+                    <h4>Provider Responsibilities</h4>
+                    <ul>
+                        <li>Owns all machines and their contents</li>
+                        <li>Handles installation, restocking, and servicing</li>
+                        <li>Covers all maintenance and repairs</li>
+                        <li>Pays for electricity usage</li>
+                        <li>Provides timely revenue reporting</li>
+                    </ul>
+                </div>
+                
+                <div class="responsibility-column">
+                    <h4>Location Owner Responsibilities</h4>
+                    <ul>
+                        <li>Provides accessible space for Machine(s)</li>
+                        <li>Supplies power outlet near placement area</li>
+                        <li>Maintains general cleanliness around machine</li>
+                        <li>Ensures customer access during business hours</li>
+                        <li>Cooperates with maintenance schedules</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="term-section">
+            <div class="term-number">5. THEFT, DAMAGE & COOPERATION</div>
+            <div class="term-content">
+                The Location Owner will not be held liable for theft, vandalism, or accidental damage to the Machine(s).
+                <br><br>
+                <strong>In the event of incidents, the Location Owner agrees to:</strong>
+                <ul>
+                    <li>Provide available security footage, if applicable</li>
+                    <li>Allow access for inspection and assessment</li>
+                    <li>Cooperate with law enforcement or insurance representatives</li>
+                    <li>Notify Provider within 24 hours of any incidents</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="term-section">
+            <div class="term-number">6. INSURANCE & LIABILITY</div>
+            <div class="term-content">
+                The Provider is responsible for carrying comprehensive insurance for equipment and general liability. The Location Owner assumes no liability for injuries or damages related to the Machine(s), except in cases of gross negligence.
+            </div>
+        </div>
+
+        <div class="term-section">
+            <div class="term-number">7. MARKETING & SIGNAGE</div>
+            <div class="term-content">
+                The Provider may display branding and promotional signage on or immediately near the Machine(s). Any additional signage in other areas of the premises must receive prior written approval from the Location Owner.
+            </div>
+        </div>
+
+        <div class="term-section">
+            <div class="term-number">8. RELOCATION OR REMOVAL</div>
+            <div class="term-content">
+                The Provider may replace, relocate, or remove the Machine(s) with <strong>${formData["Notice Period (Hours/Days)"] || "[Notice Period]"}</strong> notice to the Location Owner. The Location Owner may request relocation of the machine within the business premises if operationally necessary.
+            </div>
+        </div>
+
+        <div class="term-section">
+            <div class="term-number">9. TERMINATION</div>
+            <div class="term-content">
+                Either party may terminate this Agreement with <strong>30 days' written notice</strong>. Immediate termination is permitted in the event of material breach that remains uncured after 7 days' written notice.
+            </div>
+        </div>
+
+        <div class="term-section">
+            <div class="term-number">10. RENEWAL</div>
+            <div class="term-content">
+                If neither party provides written notice of termination at least 30 days before the end date, this Agreement automatically renews for another 12-month term under the same conditions.
+            </div>
+        </div>
+
+        <div class="term-section">
+            <div class="term-number">11. ENTIRE AGREEMENT</div>
+            <div class="term-content">
+                This document represents the complete agreement between the Parties. Any amendments must be in writing and signed by both Parties. This Agreement supersedes all prior negotiations, understandings, or agreements.
+            </div>
+        </div>
+
+        <div class="signatures-section">
+            <div class="signatures-title">Signatures</div>
+            <div class="signature-grid">
+                <div class="signature-block">
+                    <h4>Claw Machine Provider</h4>
+                    <div class="signature-line"></div>
+                    <div class="signature-date">
+                        <strong>Signature</strong><br>
+                        Date: _________________
+                    </div>
+                </div>
+                
+                <div class="signature-block">
+                    <h4>Business Location Owner</h4>
+                    <div class="signature-line"></div>
+                    <div class="signature-date">
+                        <strong>Signature</strong><br>
+                        Date: _________________
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Generated on ${new Date().toLocaleDateString()} by ClawOps Document Creator
         </div>
     </div>
-
-    <p style="text-align: center; margin-top: 30px; font-size: 10px; color: #666;">
-        Generated on ${new Date().toLocaleDateString()} by ClawOps Document Creator
-    </p>
 </body>
 </html>`
 
