@@ -56,40 +56,101 @@ export default function Documents() {
           <style>
             body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: white; color: #333; }
             .container { max-width: 700px; margin: 0 auto; }
-            .header { text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #2563eb; }
+            
+            /* Page break handling */
+            .page-break-avoid { page-break-inside: avoid; break-inside: avoid; }
+            .page-break-before { page-break-before: always; }
+            .page-break-after { page-break-after: always; }
+            
+            .header { 
+              text-align: center; 
+              margin-bottom: 30px; 
+              padding-bottom: 20px; 
+              border-bottom: 3px solid #2563eb; 
+              page-break-inside: avoid;
+            }
             .title { font-size: 24px; font-weight: bold; color: #1e40af; margin: 0 0 10px 0; }
             .subtitle { font-size: 16px; color: #64748b; margin: 0 0 20px 0; }
             .date-box { background: #f1f5f9; padding: 12px 20px; border-radius: 8px; display: inline-block; border: 1px solid #cbd5e1; }
-            .parties { margin-bottom: 35px; }
+            
+            .parties { 
+              margin-bottom: 25px; 
+              page-break-inside: avoid;
+            }
             .party-boxes { display: flex; gap: 20px; margin-bottom: 20px; }
             .party-box { flex: 1; border: 2px solid #e2e8f0; padding: 20px; border-radius: 8px; background: #f8fafc; }
             .party-title { font-size: 14px; font-weight: bold; color: #1e40af; margin: 0 0 15px 0; text-align: center; padding-bottom: 8px; border-bottom: 1px solid #cbd5e1; }
             .party-info { margin: 0 0 8px 0; font-size: 12px; }
-            .section { margin-bottom: 25px; padding: 20px; border-left: 4px solid #3b82f6; background: #fafbff; border-radius: 0 8px 8px 0; }
+            
+            .section { 
+              margin-bottom: 20px; 
+              padding: 20px; 
+              border-left: 4px solid #3b82f6; 
+              background: #fafbff; 
+              border-radius: 0 8px 8px 0; 
+              page-break-inside: avoid;
+            }
             .section-title { font-size: 14px; font-weight: bold; color: #1e40af; margin: 0 0 12px 0; }
             .section-content { font-size: 12px; line-height: 1.6; margin: 0; color: #374151; }
-            .compensation { margin-bottom: 25px; padding: 25px; background: linear-gradient(135deg, #fef3c7, #fde68a); border: 2px solid #f59e0b; border-radius: 8px; }
+            
+            .compensation { 
+              margin-bottom: 20px; 
+              padding: 25px; 
+              background: linear-gradient(135deg, #fef3c7, #fde68a); 
+              border: 2px solid #f59e0b; 
+              border-radius: 8px; 
+              page-break-inside: avoid;
+            }
             .compensation-title { font-size: 14px; font-weight: bold; color: #92400e; margin: 0 0 15px 0; }
             .compensation-amount { font-size: 14px; font-weight: bold; color: #92400e; background: #fffbeb; padding: 12px 15px; border-radius: 6px; text-align: center; border: 1px solid #fbbf24; margin: 10px 0; }
-            .responsibilities { display: flex; gap: 20px; }
+            
+            .responsibilities { 
+              display: flex; 
+              gap: 20px; 
+              page-break-inside: avoid;
+            }
             .responsibility-box { flex: 1; background: white; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
             .responsibility-title { font-size: 12px; font-weight: bold; color: #1e40af; margin: 0 0 12px 0; text-align: center; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0; }
             .responsibility-list { margin: 0; padding: 0; list-style: none; }
             .responsibility-item { margin-bottom: 6px; padding-left: 15px; position: relative; font-size: 11px; }
             .responsibility-item:before { content: "•"; position: absolute; left: 0; }
-            .signatures { margin-top: 40px; padding-top: 25px; border-top: 3px solid #e2e8f0; }
+            
+            .signatures { 
+              margin-top: 30px; 
+              padding-top: 25px; 
+              border-top: 3px solid #e2e8f0; 
+              page-break-inside: avoid;
+            }
             .signatures-title { text-align: center; font-size: 16px; font-weight: bold; color: #1e40af; margin: 0 0 30px 0; }
             .signature-boxes { display: flex; gap: 40px; justify-content: space-between; }
             .signature-box { flex: 1; text-align: center; }
             .signature-label { font-size: 12px; font-weight: bold; color: #374151; margin: 0 0 20px 0; }
             .signature-line { border-bottom: 2px solid #1e40af; width: 200px; height: 30px; margin: 0 auto 10px auto; }
             .signature-date { font-size: 11px; color: #64748b; margin: 0; }
-            .footer { text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #9ca3af; }
+            
+            .footer { 
+              text-align: center; 
+              margin-top: 20px; 
+              padding-top: 15px; 
+              border-top: 1px solid #e2e8f0; 
+              font-size: 10px; 
+              color: #9ca3af; 
+              page-break-inside: avoid;
+            }
+            
+            /* Ensure specific sections don't break */
+            .section-4-content { page-break-inside: avoid; }
+            .section-5-content { page-break-inside: avoid; }
+            
+            @media print {
+              body { -webkit-print-color-adjust: exact; }
+              .page-break-avoid { page-break-inside: avoid !important; }
+            }
           </style>
         </head>
         <body>
           <div class="container">
-            <div class="header">
+            <div class="header page-break-avoid">
               <h1 class="title">CLAW MACHINE PLACEMENT AGREEMENT</h1>
               <h2 class="subtitle">Standard 1-Year Term</h2>
               <div class="date-box">
@@ -97,7 +158,7 @@ export default function Documents() {
               </div>
             </div>
 
-            <div class="parties">
+            <div class="parties page-break-avoid">
               <h3 class="section-title">PARTIES TO THIS AGREEMENT</h3>
               <div class="party-boxes">
                 <div class="party-box">
@@ -115,21 +176,21 @@ export default function Documents() {
               </div>
             </div>
 
-            <div class="section">
+            <div class="section page-break-avoid">
               <h3 class="section-title">1. PURPOSE</h3>
               <p class="section-content">
                 The Provider agrees to place and operate one or more claw machines (the "Machine(s)") at the Location Owner's place of business. The Location Owner agrees to host the Machine(s) in exchange for compensation as outlined in Section 3.
               </p>
             </div>
 
-            <div class="section">
+            <div class="section page-break-avoid">
               <h3 class="section-title">2. TERM</h3>
               <p class="section-content">
                 This Agreement is valid for <strong>12 months</strong>, beginning on <strong>${formData["Start Date"] || "[Start Date]"}</strong> and ending on <strong>${formData["End Date"] || "[End Date]"}</strong>, unless terminated earlier as outlined in Section 9.
               </p>
             </div>
 
-            <div class="compensation">
+            <div class="compensation page-break-avoid">
               <h3 class="compensation-title">3. COMPENSATION</h3>
               <p class="section-content">
                 The Provider will collect all revenue from the Machine(s) and compensate the Location Owner with:
@@ -142,9 +203,9 @@ export default function Documents() {
               </p>
             </div>
 
-            <div class="section">
+            <div class="section page-break-avoid">
               <h3 class="section-title">4. RESPONSIBILITIES</h3>
-              <div class="responsibilities">
+              <div class="responsibilities section-4-content">
                 <div class="responsibility-box">
                   <h4 class="responsibility-title">Provider Responsibilities</h4>
                   <ul class="responsibility-list">
@@ -168,65 +229,67 @@ export default function Documents() {
               </div>
             </div>
 
-            <div class="section">
+            <div class="section page-break-avoid">
               <h3 class="section-title">5. THEFT, DAMAGE & COOPERATION</h3>
-              <p class="section-content">
-                The Location Owner will not be held liable for theft, vandalism, or accidental damage to the Machine(s).
-              </p>
-              <p class="section-content">
-                <strong>In the event of incidents, the Location Owner agrees to:</strong>
-              </p>
-              <ul class="responsibility-list">
-                <li class="responsibility-item">Provide available security footage, if applicable</li>
-                <li class="responsibility-item">Allow access for inspection and assessment</li>
-                <li class="responsibility-item">Cooperate with law enforcement or insurance representatives</li>
-                <li class="responsibility-item">Notify Provider within 24 hours of any incidents</li>
-              </ul>
+              <div class="section-5-content">
+                <p class="section-content">
+                  The Location Owner will not be held liable for theft, vandalism, or accidental damage to the Machine(s).
+                </p>
+                <p class="section-content">
+                  <strong>In the event of incidents, the Location Owner agrees to:</strong>
+                </p>
+                <ul class="responsibility-list">
+                  <li class="responsibility-item">Provide available security footage, if applicable</li>
+                  <li class="responsibility-item">Allow access for inspection and assessment</li>
+                  <li class="responsibility-item">Cooperate with law enforcement or insurance representatives</li>
+                  <li class="responsibility-item">Notify Provider within 24 hours of any incidents</li>
+                </ul>
+              </div>
             </div>
 
-            <div class="section">
+            <div class="section page-break-avoid">
               <h3 class="section-title">6. INSURANCE & LIABILITY</h3>
               <p class="section-content">
                 The Provider is responsible for carrying comprehensive insurance for equipment and general liability. The Location Owner assumes no liability for injuries or damages related to the Machine(s), except in cases of gross negligence.
               </p>
             </div>
 
-            <div class="section">
+            <div class="section page-break-avoid">
               <h3 class="section-title">7. MARKETING & SIGNAGE</h3>
               <p class="section-content">
                 The Provider may display branding and promotional signage on or immediately near the Machine(s). Any additional signage in other areas of the premises must receive prior written approval from the Location Owner.
               </p>
             </div>
 
-            <div class="section">
+            <div class="section page-break-avoid">
               <h3 class="section-title">8. RELOCATION OR REMOVAL</h3>
               <p class="section-content">
                 The Provider may replace, relocate, or remove the Machine(s) with <strong>${formData["Notice Period (Hours/Days)"] || "[Notice Period]"}</strong> notice to the Location Owner. The Location Owner may request relocation of the machine within the business premises if operationally necessary.
               </p>
             </div>
 
-            <div class="section">
+            <div class="section page-break-avoid">
               <h3 class="section-title">9. TERMINATION</h3>
               <p class="section-content">
                 Either party may terminate this Agreement with <strong>30 days' written notice</strong>. Immediate termination is permitted in the event of material breach that remains uncured after 7 days' written notice.
               </p>
             </div>
 
-            <div class="section">
+            <div class="section page-break-avoid">
               <h3 class="section-title">10. RENEWAL</h3>
               <p class="section-content">
                 If neither party provides written notice of termination at least 30 days before the end date, this Agreement automatically renews for another 12-month term under the same conditions.
               </p>
             </div>
 
-            <div class="section">
+            <div class="section page-break-avoid">
               <h3 class="section-title">11. ENTIRE AGREEMENT</h3>
               <p class="section-content">
                 This document represents the complete agreement between the Parties. Any amendments must be in writing and signed by both Parties. This Agreement supersedes all prior negotiations, understandings, or agreements.
               </p>
             </div>
 
-            <div class="signatures">
+            <div class="signatures page-break-avoid">
               <h3 class="signatures-title">SIGNATURES</h3>
               <div class="signature-boxes">
                 <div class="signature-box">
@@ -248,7 +311,7 @@ export default function Documents() {
               </div>
             </div>
 
-            <div class="footer">
+            <div class="footer page-break-avoid">
               Generated on ${new Date().toLocaleDateString()} by ClawOps Document Creator
             </div>
           </div>
