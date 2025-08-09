@@ -1,4 +1,4 @@
-import { FileText, Calculator, Users, BarChart3 } from "lucide-react"
+import { FileText, Calculator, Users, BarChart3, Receipt } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
   Sidebar,
@@ -17,6 +17,7 @@ const items = [
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Machine Calculator", url: "/calculator", icon: Calculator },
   { title: "Lead Tracker", url: "/leads", icon: Users },
+  { title: "Commission Summary", url: "/commission-summary", icon: Receipt },
 ]
 
 export function AppSidebar() {

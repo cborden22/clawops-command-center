@@ -1,9 +1,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileText, Calculator, Users, DollarSign } from "lucide-react"
+import { FileText, Calculator, Users, DollarSign, Receipt } from "lucide-react"
 import { Link } from "react-router-dom"
-import { CommissionSummaryGenerator } from "@/components/CommissionSummaryGenerator"
 
 export default function Dashboard() {
   const stats = [
@@ -36,6 +35,11 @@ export default function Dashboard() {
       title: "Leads",
       href: "/leads",
       icon: Users
+    },
+    {
+      title: "Commission Summary",
+      href: "/commission-summary",
+      icon: Receipt
     }
   ]
 
@@ -70,12 +74,12 @@ export default function Dashboard() {
           <CardTitle className="text-lg">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-3">
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
             {quickActions.map((action) => (
               <Link key={action.title} to={action.href}>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <action.icon className="h-4 w-4" />
-                  {action.title}
+                <Button variant="outline" className="w-full flex items-center gap-2 h-auto p-4 flex-col">
+                  <action.icon className="h-6 w-6" />
+                  <span className="text-sm">{action.title}</span>
                 </Button>
               </Link>
             ))}
@@ -83,8 +87,28 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Commission Summary Generator */}
-      <CommissionSummaryGenerator />
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Machine #12 - Downtown Mall</span>
+              <span className="font-medium">+$45.50</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Machine #08 - Shopping Center</span>
+              <span className="font-medium">+$32.75</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Machine #15 - Airport</span>
+              <span className="font-medium">+$67.25</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
