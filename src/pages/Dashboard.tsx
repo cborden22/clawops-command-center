@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { FileText, Users, DollarSign, Receipt } from "lucide-react"
@@ -77,29 +78,6 @@ export default function Dashboard() {
                 </Button>
               </Link>
             ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Machine #12 - Downtown Mall</span>
-              <span className="font-medium">+$45.50</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Machine #08 - Shopping Center</span>
-              <span className="font-medium">+$32.75</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Machine #15 - Airport</span>
-              <span className="font-medium">+$67.25</span>
-            </div>
           </div>
         </CardContent>
       </Card>
