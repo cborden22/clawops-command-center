@@ -3,11 +3,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import Dashboard from "./pages/Dashboard";
 import Documents from "./pages/Documents";
-import Leads from "./pages/Leads";
 import CommissionSummary from "./pages/CommissionSummary";
 import NotFound from "./pages/NotFound";
 
@@ -21,9 +19,8 @@ const App = () => (
       <BrowserRouter>
         <AppLayout>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<Navigate to="/documents" replace />} />
             <Route path="/documents" element={<Documents />} />
-            <Route path="/leads" element={<Leads />} />
             <Route path="/commission-summary" element={<CommissionSummary />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

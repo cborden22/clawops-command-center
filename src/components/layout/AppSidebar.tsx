@@ -1,4 +1,5 @@
-import { FileText, Users, BarChart3, Receipt } from "lucide-react"
+
+import { FileText, Receipt } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
   Sidebar,
@@ -14,9 +15,7 @@ import {
 } from "@/components/ui/sidebar"
 
 const items = [
-  { title: "Dashboard", url: "/", icon: BarChart3 },
   { title: "Documents", url: "/documents", icon: FileText },
-  { title: "Lead Tracker", url: "/leads", icon: Users },
   { title: "Commission Summary", url: "/commission-summary", icon: Receipt },
 ]
 
