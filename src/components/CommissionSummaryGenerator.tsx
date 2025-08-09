@@ -6,8 +6,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useToast } from "@/hooks/use-toast"
-import { FileText, Download, Calendar, DollarSign, TrendingUp } from "lucide-react"
+import { FileText, Download, Calendar as CalendarIcon, DollarSign, TrendingUp } from "lucide-react"
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
 import html2pdf from "html2pdf.js"
 
 interface LocationData {
@@ -16,7 +20,8 @@ interface LocationData {
   totalRevenue: number
   commissionRate: number
   commissionAmount: number
-  period: string
+  startDate: Date | undefined
+  endDate: Date | undefined
   machineCount: number
   notes: string
 }
@@ -29,7 +34,8 @@ export function CommissionSummaryGenerator() {
     totalRevenue: 0,
     commissionRate: 50,
     commissionAmount: 0,
-    period: "",
+    startDate: undefined,
+    endDate: undefined,
     machineCount: 1,
     notes: ""
   })
@@ -58,17 +64,23 @@ export function CommissionSummaryGenerator() {
     }))
   }
 
+  const getFormattedPeriod = () => {
+    if (!locationData.startDate || !locationData.endDate) return ""
+    return `${format(locationData.startDate, "MMM dd, yyyy")} - ${format(locationData.endDate, "MMM dd, yyyy")}`
+  }
+
   const generatePDF = () => {
-    if (!locationData.name || !locationData.period) {
+    if (!locationData.name || !locationData.startDate || !locationData.endDate) {
       toast({
         title: "Missing Information",
-        description: "Please fill in the location name and period.",
+        description: "Please fill in the location name and select both start and end dates.",
         variant: "destructive"
       })
       return
     }
 
     const currentDate = new Date().toLocaleDateString()
+    const periodText = getFormattedPeriod()
     
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
@@ -87,7 +99,7 @@ export function CommissionSummaryGenerator() {
               <strong>Contact Person:</strong> ${locationData.contactPerson || 'N/A'}
             </div>
             <div>
-              <strong>Reporting Period:</strong> ${locationData.period}
+              <strong>Reporting Period:</strong> ${periodText}
             </div>
             <div>
               <strong>Number of Machines:</strong> ${locationData.machineCount}
@@ -133,7 +145,7 @@ export function CommissionSummaryGenerator() {
 
     const opt = {
       margin: 1,
-      filename: `commission-summary-${locationData.name.replace(/\s+/g, '-').toLowerCase()}-${locationData.period.replace(/\s+/g, '-').toLowerCase()}.pdf`,
+      filename: `commission-summary-${locationData.name.replace(/\s+/g, '-').toLowerCase()}-${format(locationData.startDate, 'yyyy-MM-dd')}-to-${format(locationData.endDate, 'yyyy-MM-dd')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
@@ -185,24 +197,69 @@ export function CommissionSummaryGenerator() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="period">Reporting Period *</Label>
-            <Input
-              id="period"
-              placeholder="e.g., January 2024, Q1 2024"
-              value={locationData.period}
-              onChange={(e) => setLocationData(prev => ({ ...prev, period: e.target.value }))}
-            />
+            <Label>Start Date *</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !locationData.startDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {locationData.startDate ? format(locationData.startDate, "PPP") : <span>Pick start date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={locationData.startDate}
+                  onSelect={(date) => setLocationData(prev => ({ ...prev, startDate: date }))}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="machineCount">Number of Machines</Label>
-            <Input
-              id="machineCount"
-              type="number"
-              min="1"
-              value={locationData.machineCount}
-              onChange={(e) => setLocationData(prev => ({ ...prev, machineCount: parseInt(e.target.value) || 1 }))}
-            />
+            <Label>End Date *</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !locationData.endDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {locationData.endDate ? format(locationData.endDate, "PPP") : <span>Pick end date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={locationData.endDate}
+                  onSelect={(date) => setLocationData(prev => ({ ...prev, endDate: date }))}
+                  disabled={(date) => locationData.startDate ? date < locationData.startDate : false}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="machineCount">Number of Machines</Label>
+          <Input
+            id="machineCount"
+            type="number"
+            min="1"
+            value={locationData.machineCount}
+            onChange={(e) => setLocationData(prev => ({ ...prev, machineCount: parseInt(e.target.value) || 1 }))}
+          />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -254,7 +311,7 @@ export function CommissionSummaryGenerator() {
         <Button 
           onClick={generatePDF}
           className="w-full"
-          disabled={!locationData.name || !locationData.period}
+          disabled={!locationData.name || !locationData.startDate || !locationData.endDate}
         >
           <Download className="h-4 w-4 mr-2" />
           Generate Commission Summary PDF
