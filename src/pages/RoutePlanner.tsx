@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -64,16 +63,11 @@ const RoutePlanner = () => {
 
       setOptimizedRoute(optimized)
       
-      // Generate Google Maps URL with waypoints
-      const origin = encodeURIComponent(optimized[0])
-      const destination = encodeURIComponent(optimized[optimized.length - 1])
-      const waypoints = optimized.slice(1, -1).map(addr => encodeURIComponent(addr)).join('|')
+      // Generate Google Maps URL with all addresses as waypoints
+      const allAddresses = optimized.map(addr => encodeURIComponent(addr))
       
-      let mapsUrl = `https://www.google.com/maps/dir/${origin}`
-      if (waypoints) {
-        mapsUrl += `/${waypoints}`
-      }
-      mapsUrl += `/${destination}`
+      // For Google Maps, we'll create a directions URL that includes all stops
+      let mapsUrl = `https://www.google.com/maps/dir/${allAddresses.join('/')}`
       
       setGoogleMapsUrl(mapsUrl)
       
