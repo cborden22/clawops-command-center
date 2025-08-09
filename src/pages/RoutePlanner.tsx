@@ -32,6 +32,13 @@ const RoutePlanner = () => {
     setAddresses(newAddresses)
   }
 
+  const calculateDistance = (addr1: string, addr2: string): number => {
+    // For demo purposes, we'll use string similarity as a proxy for distance
+    // In a real implementation, you'd use geocoding + distance calculation
+    const similarity = addr1.toLowerCase().localeCompare(addr2.toLowerCase())
+    return Math.abs(similarity) + Math.random() * 10 // Add some randomness for demo
+  }
+
   const optimizeRoute = async () => {
     // Filter out empty addresses
     const validAddresses = addresses.filter(addr => addr.trim().length > 0)
@@ -49,16 +56,30 @@ const RoutePlanner = () => {
     setIsLoading(true)
     
     try {
-      // For demonstration, we'll do a simple optimization
-      // In a real implementation, you could use routing APIs
-      const shuffled = [...validAddresses]
-      
-      // Simple nearest-neighbor approach (for demo purposes)
+      // Implement nearest neighbor algorithm for route optimization
+      const unvisited = [...validAddresses]
       const optimized = [startingPoint] // Start with starting point
-      
-      while (shuffled.length > 0) {
-        // Just add remaining addresses (in a real app, calculate distances)
-        optimized.push(shuffled.shift()!)
+      let currentLocation = startingPoint
+
+      // Find the nearest unvisited address at each step
+      while (unvisited.length > 0) {
+        let nearestIndex = 0
+        let shortestDistance = calculateDistance(currentLocation, unvisited[0])
+
+        // Find the nearest unvisited address
+        for (let i = 1; i < unvisited.length; i++) {
+          const distance = calculateDistance(currentLocation, unvisited[i])
+          if (distance < shortestDistance) {
+            shortestDistance = distance
+            nearestIndex = i
+          }
+        }
+
+        // Move to the nearest address
+        const nearestAddress = unvisited[nearestIndex]
+        optimized.push(nearestAddress)
+        currentLocation = nearestAddress
+        unvisited.splice(nearestIndex, 1)
       }
 
       setOptimizedRoute(optimized)
