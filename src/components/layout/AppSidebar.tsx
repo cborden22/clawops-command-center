@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar"
 
 const items = [
-  { title: "Documents", url: "/documents", icon: FileText },
+  { title: "Location Agreement Generator", url: "/documents", icon: FileText },
   { title: "Commission Summary", url: "/commission-summary", icon: Receipt },
 ]
 
