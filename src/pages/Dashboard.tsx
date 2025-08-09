@@ -3,13 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { FileText, Calculator, Users, DollarSign } from "lucide-react"
 import { Link } from "react-router-dom"
+import { CommissionSummaryGenerator } from "@/components/CommissionSummaryGenerator"
 
 export default function Dashboard() {
   const stats = [
     {
       title: "Total Machines",
       value: "24",
-      icon: Users,
+      icon: DollarSign,
       trend: "+2 this month"
     },
     {
@@ -36,12 +37,6 @@ export default function Dashboard() {
       href: "/leads",
       icon: Users
     }
-  ]
-
-  const recentActivity = [
-    { action: "New lead added", time: "2 hours ago" },
-    { action: "Document created", time: "5 hours ago" },
-    { action: "Machine installed", time: "1 day ago" }
   ]
 
   return (
@@ -88,22 +83,8 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {recentActivity.map((activity, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="text-sm">{activity.action}</span>
-                <span className="text-xs text-muted-foreground">{activity.time}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Commission Summary Generator */}
+      <CommissionSummaryGenerator />
     </div>
   )
 }
