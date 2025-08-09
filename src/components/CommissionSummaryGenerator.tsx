@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -110,14 +109,10 @@ export function CommissionSummaryGenerator() {
         <div style="margin-bottom: 30px;">
           <h2 style="color: #333; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Financial Summary</h2>
           <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 15px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px;">
               <div style="text-align: center;">
                 <div style="color: #666; font-size: 14px;">Total Revenue</div>
                 <div style="font-size: 24px; font-weight: bold; color: #333;">$${locationData.totalRevenue.toFixed(2)}</div>
-              </div>
-              <div style="text-align: center;">
-                <div style="color: #666; font-size: 14px;">Commission Rate</div>
-                <div style="font-size: 24px; font-weight: bold; color: #333;">${locationData.commissionRate}%</div>
               </div>
             </div>
             <div style="text-align: center; border-top: 1px solid #ddd; padding-top: 20px;">
