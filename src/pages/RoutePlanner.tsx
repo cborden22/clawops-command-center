@@ -2,41 +2,51 @@
 import React, { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { MapPin, Route, Copy, ExternalLink } from 'lucide-react'
+import { MapPin, Route, Copy, ExternalLink, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 const RoutePlanner = () => {
-  const [addresses, setAddresses] = useState('')
+  const [addresses, setAddresses] = useState<string[]>(['', ''])
   const [optimizedRoute, setOptimizedRoute] = useState<string[]>([])
   const [googleMapsUrl, setGoogleMapsUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
+  const addAddress = () => {
+    setAddresses([...addresses, ''])
+  }
+
+  const removeAddress = (index: number) => {
+    if (addresses.length <= 2) {
+      toast.error('You need at least 2 addresses for a route')
+      return
+    }
+    const newAddresses = addresses.filter((_, i) => i !== index)
+    setAddresses(newAddresses)
+  }
+
+  const updateAddress = (index: number, value: string) => {
+    const newAddresses = [...addresses]
+    newAddresses[index] = value
+    setAddresses(newAddresses)
+  }
+
   const optimizeRoute = async () => {
-    if (!addresses.trim()) {
+    // Filter out empty addresses
+    const validAddresses = addresses.filter(addr => addr.trim().length > 0)
+    
+    if (validAddresses.length < 2) {
       toast.error('Please enter at least 2 addresses')
       return
     }
 
     setIsLoading(true)
     
-    // Parse addresses from textarea
-    const addressList = addresses
-      .split('\n')
-      .map(addr => addr.trim())
-      .filter(addr => addr.length > 0)
-
-    if (addressList.length < 2) {
-      toast.error('Please enter at least 2 addresses')
-      setIsLoading(false)
-      return
-    }
-
     try {
       // For demonstration, we'll do a simple optimization
       // In a real implementation, you could use routing APIs
-      const shuffled = [...addressList]
+      const shuffled = [...validAddresses]
       
       // Simple nearest-neighbor approach (for demo purposes)
       const optimized = [shuffled[0]] // Start with first address
@@ -81,7 +91,7 @@ const RoutePlanner = () => {
   }
 
   const clearAll = () => {
-    setAddresses('')
+    setAddresses(['', ''])
     setOptimizedRoute([])
     setGoogleMapsUrl('')
   }
@@ -103,22 +113,44 @@ const RoutePlanner = () => {
           <CardHeader>
             <CardTitle>Enter Addresses</CardTitle>
             <CardDescription>
-              Enter one address per line. Include city and state for best results.
+              Add addresses one by one. Include city and state for best results.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="addresses">Addresses</Label>
-              <Textarea
-                id="addresses"
-                placeholder="123 Main St, City, State&#10;456 Oak Ave, City, State&#10;789 Pine Rd, City, State"
-                value={addresses}
-                onChange={(e) => setAddresses(e.target.value)}
-                className="min-h-[200px]"
-              />
+            <div className="space-y-3">
+              <Label>Addresses</Label>
+              {addresses.map((address, index) => (
+                <div key={index} className="flex gap-2">
+                  <div className="flex-1">
+                    <Input
+                      placeholder={`Address ${index + 1} (e.g., 123 Main St, City, State)`}
+                      value={address}
+                      onChange={(e) => updateAddress(index, e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => removeAddress(index)}
+                    disabled={addresses.length <= 2}
+                    className="flex-shrink-0"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              
+              <Button
+                variant="outline"
+                onClick={addAddress}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Another Address
+              </Button>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-4">
               <Button 
                 onClick={optimizeRoute} 
                 disabled={isLoading}
