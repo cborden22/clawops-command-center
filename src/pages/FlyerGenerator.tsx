@@ -184,8 +184,10 @@ const FlyerGenerator = () => {
                     />
                     <FlyerExport
                       flyerData={flyerData}
+                      template={selectedTemplate}
                       onExport={handleExport}
                       onShare={handleShare}
+                      qrCodeUrl={qrCodeUrl}
                     />
                   </div>
                 ) : (

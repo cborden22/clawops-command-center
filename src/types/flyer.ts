@@ -7,6 +7,7 @@ export interface FlyerTemplate {
   size: '8.5x11' | '11x17' | 'square' | 'story'
   preview: string
   backgroundImage?: string
+  layout?: string
 }
 
 export interface FlyerData {

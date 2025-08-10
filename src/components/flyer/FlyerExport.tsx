@@ -1,21 +1,25 @@
 
 import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Download, Share2, FileText, Image, Mail, Facebook, Instagram, MessageCircle, Zap, Sparkles } from 'lucide-react'
-import { ExportFormat, SharePlatform, FlyerData } from '@/types/flyer'
+import { ExportFormat, SharePlatform, FlyerData, FlyerTemplate } from '@/types/flyer'
 import { toast } from 'sonner'
+import { generatePDF } from '@/utils/pdfGenerator'
 
 interface FlyerExportProps {
   flyerData: FlyerData
+  template: FlyerTemplate
   onExport: (format: ExportFormat) => void
   onShare: (platform: SharePlatform) => void
+  qrCodeUrl?: string
 }
 
 const FlyerExport: React.FC<FlyerExportProps> = ({
   flyerData,
+  template,
   onExport,
-  onShare
+  onShare,
+  qrCodeUrl
 }) => {
   const generateFileName = (format: ExportFormat) => {
     const locationName = flyerData.locationName || flyerData.businessName || 'Flyer'
@@ -23,10 +27,22 @@ const FlyerExport: React.FC<FlyerExportProps> = ({
     return `Flyer_${locationName.replace(/\s+/g, '_')}_${date}.${format}`
   }
 
-  const handleExport = (format: ExportFormat) => {
+  const handleExport = async (format: ExportFormat) => {
     const fileName = generateFileName(format)
-    toast.success(`Exporting as ${fileName}`)
-    onExport(format)
+    
+    try {
+      if (format === 'pdf') {
+        toast.loading('Generating PDF...', { id: 'pdf-generation' })
+        await generatePDF(template, flyerData, qrCodeUrl)
+        toast.success('PDF downloaded successfully!', { id: 'pdf-generation' })
+      } else {
+        toast.success(`Exporting as ${fileName}`)
+        onExport(format)
+      }
+    } catch (error) {
+      console.error('Export error:', error)
+      toast.error('Failed to generate PDF. Please try again.', { id: 'pdf-generation' })
+    }
   }
 
   const handleShare = (platform: SharePlatform) => {
@@ -55,7 +71,7 @@ const FlyerExport: React.FC<FlyerExportProps> = ({
               </div>
               <div className="text-left flex-1">
                 <div className="font-medium">PDF Export</div>
-                <div className="text-xs text-muted-foreground">300 DPI • Print Ready</div>
+                <div className="text-xs text-muted-foreground">High Quality • Print Ready</div>
               </div>
               <Sparkles className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>

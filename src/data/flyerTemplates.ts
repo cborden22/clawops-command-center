@@ -41,96 +41,158 @@ export const colorPalettes: ColorPalette[] = [
     secondary: 'hsl(192, 100%, 67%)',
     accent: 'hsl(45, 100%, 51%)',
     background: 'hsl(0, 0%, 100%)'
+  },
+  {
+    id: 'electric-purple',
+    name: 'Electric Purple',
+    primary: 'hsl(270, 100%, 60%)',
+    secondary: 'hsl(320, 100%, 70%)',
+    accent: 'hsl(50, 100%, 60%)',
+    background: 'hsl(0, 0%, 100%)'
+  },
+  {
+    id: 'retro-orange',
+    name: 'Retro Orange',
+    primary: 'hsl(25, 100%, 55%)',
+    secondary: 'hsl(45, 100%, 65%)',
+    accent: 'hsl(5, 100%, 60%)',
+    background: 'hsl(0, 0%, 100%)'
   }
 ]
 
 export const flyerTemplates: FlyerTemplate[] = [
   // New Machine Templates
   {
-    id: 'new-machine-flyer',
-    name: 'New Machine Alert',
-    description: 'Eye-catching design for announcing new claw machines',
+    id: 'new-machine-bold',
+    name: 'Bold New Machine',
+    description: 'Eye-catching bold design with large text and vibrant colors',
     category: 'new-machine',
     size: '8.5x11',
-    preview: 'bg-gradient-to-br from-pink-500 to-purple-600'
+    preview: 'bg-gradient-to-br from-pink-500 via-purple-600 to-blue-700',
+    layout: 'bold-header'
+  },
+  {
+    id: 'new-machine-modern',
+    name: 'Modern Launch',
+    description: 'Clean, modern design perfect for contemporary locations',
+    category: 'new-machine',
+    size: '8.5x11',
+    preview: 'bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-600',
+    layout: 'modern-clean'
   },
   {
     id: 'new-machine-poster',
     name: 'Grand Opening Poster',
-    description: 'Large format poster for new machine launches',
+    description: 'Large format poster for maximum impact',
     category: 'new-machine',
     size: '11x17',
-    preview: 'bg-gradient-to-br from-orange-500 to-red-500'
+    preview: 'bg-gradient-to-br from-orange-500 via-red-500 to-pink-600',
+    layout: 'poster-style'
   },
   {
     id: 'new-machine-social',
-    name: 'New Machine Social Post',
+    name: 'Social Media Square',
     description: 'Perfect for Instagram and Facebook posts',
     category: 'new-machine',
     size: 'square',
-    preview: 'bg-gradient-to-br from-blue-500 to-teal-500'
+    preview: 'bg-gradient-to-br from-purple-500 via-pink-500 to-red-500',
+    layout: 'social-square'
   },
   
   // Prize Templates
   {
     id: 'prizes-showcase',
     name: 'Prize Showcase',
-    description: 'Highlight your best prizes with style',
+    description: 'Highlight your best prizes with elegant design',
     category: 'prizes',
     size: '8.5x11',
-    preview: 'bg-gradient-to-br from-yellow-400 to-orange-500'
+    preview: 'bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500',
+    layout: 'prize-grid'
   },
   {
     id: 'win-big-poster',
-    name: 'Win Big Poster',
-    description: 'Large format prize display',
+    name: 'Win Big Display',
+    description: 'Large format prize showcase',
     category: 'prizes',
     size: '11x17',
-    preview: 'bg-gradient-to-br from-green-500 to-emerald-600'
+    preview: 'bg-gradient-to-br from-green-400 via-emerald-500 to-teal-600',
+    layout: 'big-prizes'
   },
   {
     id: 'prize-story',
     name: 'Prize Story',
-    description: 'Instagram/TikTok story format',
+    description: 'Vertical format for stories and mobile viewing',
     category: 'prizes',
     size: 'story',
-    preview: 'bg-gradient-to-br from-purple-500 to-pink-500'
+    preview: 'bg-gradient-to-b from-purple-400 via-pink-500 to-red-500',
+    layout: 'vertical-story'
+  },
+  {
+    id: 'prizes-elegant',
+    name: 'Elegant Prizes',
+    description: 'Sophisticated design for upscale locations',
+    category: 'prizes',
+    size: '8.5x11',
+    preview: 'bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600',
+    layout: 'elegant-showcase'
   },
 
   // Limited Event Templates
   {
-    id: 'limited-event-flyer',
-    name: 'Limited Time Event',
-    description: 'Create urgency with time-sensitive promotions',
+    id: 'flash-sale-urgent',
+    name: 'Flash Sale Alert',
+    description: 'High-energy design that creates urgency',
     category: 'limited-event',
     size: '8.5x11',
-    preview: 'bg-gradient-to-br from-red-500 to-pink-600'
+    preview: 'bg-gradient-to-br from-red-500 via-orange-500 to-yellow-500',
+    layout: 'urgent-flash'
   },
   {
-    id: 'flash-sale-square',
-    name: 'Flash Sale Social',
-    description: 'Quick promotion for social media',
+    id: 'limited-time-classic',
+    name: 'Limited Time Classic',
+    description: 'Traditional event promotion style',
+    category: 'limited-event',
+    size: '8.5x11',
+    preview: 'bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700',
+    layout: 'classic-event'
+  },
+  {
+    id: 'weekend-special',
+    name: 'Weekend Special',
+    description: 'Perfect for weekend promotions',
     category: 'limited-event',
     size: 'square',
-    preview: 'bg-gradient-to-br from-indigo-500 to-purple-600'
+    preview: 'bg-gradient-to-br from-green-500 via-teal-500 to-blue-600',
+    layout: 'weekend-fun'
   },
 
   // Holiday Templates
   {
-    id: 'holiday-special',
-    name: 'Holiday Special',
-    description: 'Seasonal promotions and themed events',
+    id: 'holiday-festive',
+    name: 'Festive Celebration',
+    description: 'Warm, festive design for any holiday',
     category: 'holiday',
-    size: '8.5x11',  
-    preview: 'bg-gradient-to-br from-red-600 to-green-600'
+    size: '8.5x11',
+    preview: 'bg-gradient-to-br from-red-600 via-green-600 to-gold',
+    layout: 'festive-holiday'
   },
   {
-    id: 'holiday-poster',
-    name: 'Holiday Celebration Poster',
-    description: 'Large format holiday promotions',
+    id: 'holiday-winter',
+    name: 'Winter Wonderland',
+    description: 'Cool, elegant winter theme',
     category: 'holiday',
     size: '11x17',
-    preview: 'bg-gradient-to-br from-green-500 to-red-500'
+    preview: 'bg-gradient-to-br from-blue-400 via-cyan-300 to-white',
+    layout: 'winter-theme'
+  },
+  {
+    id: 'holiday-party',
+    name: 'Holiday Party',
+    description: 'Fun, party-themed holiday design',
+    category: 'holiday',
+    size: 'square',
+    preview: 'bg-gradient-to-br from-purple-500 via-pink-500 to-red-500',
+    layout: 'party-theme'
   }
 ]
 
