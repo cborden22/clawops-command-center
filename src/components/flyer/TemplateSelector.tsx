@@ -14,12 +14,12 @@ interface TemplateSelectorProps {
 }
 
 const categories = [
-  { id: 'all', name: 'All Templates', icon: Sparkles },
-  { id: 'new-machine', name: 'New Machine', icon: Zap },
-  { id: 'prizes', name: 'Win Prizes', icon: '🎁' },
-  { id: 'limited-event', name: 'Limited Event', icon: '⏰' },
-  { id: 'holiday', name: 'Holiday Specials', icon: '🎄' },
-  { id: 'partnership', name: 'Partnerships', icon: '🤝' }
+  { id: 'all', name: 'All Templates', icon: Sparkles, isComponent: true },
+  { id: 'new-machine', name: 'New Machine', icon: Zap, isComponent: true },
+  { id: 'prizes', name: 'Win Prizes', icon: '🎁', isComponent: false },
+  { id: 'limited-event', name: 'Limited Event', icon: '⏰', isComponent: false },
+  { id: 'holiday', name: 'Holiday Specials', icon: '🎄', isComponent: false },
+  { id: 'partnership', name: 'Partnerships', icon: '🤝', isComponent: false }
 ]
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({
@@ -58,7 +58,6 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       {/* Category Filter */}
       <div className="grid grid-cols-2 gap-2">
         {categories.map((category) => {
-          const IconComponent = typeof category.icon === 'string' ? null : category.icon
           return (
             <button
               key={category.id}
@@ -70,8 +69,8 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               }`}
             >
               <div className="flex items-center justify-center gap-2">
-                {IconComponent ? (
-                  <IconComponent className="h-4 w-4" />
+                {category.isComponent ? (
+                  <category.icon className="h-4 w-4" />
                 ) : (
                   <span className="text-base">{category.icon}</span>
                 )}
