@@ -1,12 +1,14 @@
 
 import React, { useState } from 'react'
 import { toast } from 'sonner'
+import { Sparkles, Wand2 } from 'lucide-react'
 import { FlyerTemplate, FlyerData, ExportFormat, SharePlatform } from '@/types/flyer'
 import { flyerTemplates, colorPalettes } from '@/data/flyerTemplates'
 import TemplateSelector from '@/components/flyer/TemplateSelector'
 import FlyerForm from '@/components/flyer/FlyerForm'
 import FlyerPreview from '@/components/flyer/FlyerPreview'
 import FlyerExport from '@/components/flyer/FlyerExport'
+import { Button } from '@/components/ui/button'
 
 const FlyerGenerator = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<FlyerTemplate | null>(null)
@@ -37,7 +39,6 @@ const FlyerGenerator = () => {
       return
     }
 
-    // In a real implementation, this would generate the actual file
     toast.success(`Exporting flyer as ${format.toUpperCase()}...`)
     console.log('Exporting flyer:', { format, template: selectedTemplate, data: flyerData })
   }
@@ -70,14 +71,13 @@ const FlyerGenerator = () => {
     const currentMonth = new Date().getMonth()
     let seasonalPalette = colorPalettes[0]
     
-    // Auto-detect season and apply appropriate colors
-    if (currentMonth >= 11 || currentMonth <= 1) { // Winter/Holiday
+    if (currentMonth >= 11 || currentMonth <= 1) {
       seasonalPalette = colorPalettes.find(p => p.id === 'holiday-red') || colorPalettes[0]
-    } else if (currentMonth >= 2 && currentMonth <= 4) { // Spring
+    } else if (currentMonth >= 2 && currentMonth <= 4) {
       seasonalPalette = colorPalettes.find(p => p.id === 'pastel-fun') || colorPalettes[0]
-    } else if (currentMonth >= 5 && currentMonth <= 7) { // Summer
+    } else if (currentMonth >= 5 && currentMonth <= 7) {
       seasonalPalette = colorPalettes.find(p => p.id === 'bright-arcade') || colorPalettes[0]
-    } else { // Fall
+    } else {
       seasonalPalette = colorPalettes.find(p => p.id === 'ocean-blue') || colorPalettes[0]
     }
     
@@ -86,72 +86,125 @@ const FlyerGenerator = () => {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Professional Flyer & Poster Generator</h1>
-        <p className="text-muted-foreground">
-          Create stunning promotional materials for your claw machine business in minutes
-        </p>
-        
-        {/* Quick Actions */}
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={handleSeasonalMode}
-            className="px-3 py-1 text-sm bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
-          >
-            🎄 Seasonal Mode
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* Left Column - Template Selection */}
-        <div className="xl:col-span-1">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-4">Choose Template</h2>
-            <TemplateSelector
-              templates={flyerTemplates}
-              selectedTemplate={selectedTemplate}
-              onTemplateSelect={setSelectedTemplate}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-            />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
+      <div className="container mx-auto py-12 px-6">
+        {/* Hero Header */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-primary font-medium text-sm mb-6">
+            <Sparkles className="h-4 w-4" />
+            Professional Design Tool
+          </div>
+          
+          <h1 className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-4">
+            Flyer & Poster Generator
+          </h1>
+          
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
+            Create stunning promotional materials for your claw machine business in minutes. 
+            Professional templates, easy customization, instant downloads.
+          </p>
+          
+          <div className="flex flex-wrap justify-center gap-4">
+            <Button
+              onClick={handleSeasonalMode}
+              variant="outline"
+              className="group bg-gradient-card border-primary/20 hover:border-primary/40 hover:shadow-hover transition-all duration-300"
+            >
+              <Wand2 className="h-4 w-4 mr-2 group-hover:rotate-12 transition-transform" />
+              🎄 Seasonal Mode
+            </Button>
+            
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              No data stored • Session only
+            </div>
           </div>
         </div>
 
-        {/* Middle Column - Form */}
-        <div className="xl:col-span-1">
-          <h2 className="text-xl font-semibold mb-4">Customize Your Flyer</h2>
-          <FlyerForm
-            flyerData={flyerData}
-            onDataChange={handleDataChange}
-            colorPalettes={colorPalettes}
-            onGenerateQR={setQrCodeUrl}
-          />
-        </div>
-
-        {/* Right Column - Preview & Export */}
-        <div className="xl:col-span-1 space-y-6">
-          {selectedTemplate && flyerData.businessName ? (
-            <>
-              <FlyerPreview
-                template={selectedTemplate}
-                flyerData={flyerData}
-                qrCodeUrl={qrCodeUrl}
-              />
-              <FlyerExport
-                flyerData={flyerData}
-                onExport={handleExport}
-                onShare={handleShare}
-              />
-            </>
-          ) : (
-            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-              <p className="text-muted-foreground">
-                {!selectedTemplate ? 'Select a template to get started' : 'Enter your business name to see preview'}
-              </p>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 2xl:grid-cols-12 gap-8">
+          {/* Template Selection - Left Column */}
+          <div className="2xl:col-span-4">
+            <div className="sticky top-8">
+              <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-card p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <span className="text-primary font-bold text-sm">1</span>
+                  </div>
+                  <h2 className="text-2xl font-bold">Choose Template</h2>
+                </div>
+                
+                <TemplateSelector
+                  templates={flyerTemplates}
+                  selectedTemplate={selectedTemplate}
+                  onTemplateSelect={setSelectedTemplate}
+                  selectedCategory={selectedCategory}
+                  onCategoryChange={setSelectedCategory}
+                />
+              </div>
             </div>
-          )}
+          </div>
+
+          {/* Form - Middle Column */}
+          <div className="2xl:col-span-4">
+            <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-card p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <span className="text-primary font-bold text-sm">2</span>
+                </div>
+                <h2 className="text-2xl font-bold">Customize Design</h2>
+              </div>
+              
+              <FlyerForm
+                flyerData={flyerData}
+                onDataChange={handleDataChange}
+                colorPalettes={colorPalettes}
+                onGenerateQR={setQrCodeUrl}
+              />
+            </div>
+          </div>
+
+          {/* Preview & Export - Right Column */}
+          <div className="2xl:col-span-4">
+            <div className="sticky top-8 space-y-6">
+              <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-card p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <span className="text-primary font-bold text-sm">3</span>
+                  </div>
+                  <h2 className="text-2xl font-bold">Preview & Export</h2>
+                </div>
+                
+                {selectedTemplate && flyerData.businessName ? (
+                  <div className="space-y-6">
+                    <FlyerPreview
+                      template={selectedTemplate}
+                      flyerData={flyerData}
+                      qrCodeUrl={qrCodeUrl}
+                    />
+                    <FlyerExport
+                      flyerData={flyerData}
+                      onExport={handleExport}
+                      onShare={handleShare}
+                    />
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-primary/20 rounded-2xl p-12 text-center bg-gradient-to-br from-primary/5 to-transparent">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Sparkles className="h-8 w-8 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2">Ready to Create?</h3>
+                    <p className="text-muted-foreground">
+                      {!selectedTemplate 
+                        ? 'Select a template to get started' 
+                        : 'Enter your business name to see preview'
+                      }
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

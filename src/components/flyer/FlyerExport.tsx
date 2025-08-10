@@ -2,7 +2,7 @@
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Download, Share2, FileText, Image, Mail, Facebook, Instagram, MessageCircle } from 'lucide-react'
+import { Download, Share2, FileText, Image, Mail, Facebook, Instagram, MessageCircle, Zap, Sparkles } from 'lucide-react'
 import { ExportFormat, SharePlatform, FlyerData } from '@/types/flyer'
 import { toast } from 'sonner'
 
@@ -35,122 +35,150 @@ const FlyerExport: React.FC<FlyerExportProps> = ({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Download className="h-5 w-5" />
-          Export & Share
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Export Options */}
-        <div>
-          <h4 className="font-semibold mb-3">Export Options</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Button
-              variant="outline"
-              onClick={() => handleExport('pdf')}
-              className="flex items-center gap-2 h-auto py-3"
-            >
-              <FileText className="h-5 w-5" />
-              <div className="text-left">
-                <div className="font-medium">PDF</div>
-                <div className="text-xs text-muted-foreground">Print Ready</div>
+    <div className="space-y-6">
+      {/* Export Options */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Download className="h-4 w-4 text-primary" />
+          <h4 className="font-semibold">Export Options</h4>
+        </div>
+        
+        <div className="grid grid-cols-1 gap-3">
+          <Button
+            variant="outline"
+            onClick={() => handleExport('pdf')}
+            className="group h-auto p-4 bg-gradient-card border-primary/20 hover:border-primary/40 hover:shadow-hover transition-all duration-300"
+          >
+            <div className="flex items-center gap-3 w-full">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center group-hover:bg-red-500/20 transition-colors">
+                <FileText className="h-5 w-5 text-red-600" />
               </div>
-            </Button>
-            
+              <div className="text-left flex-1">
+                <div className="font-medium">PDF Export</div>
+                <div className="text-xs text-muted-foreground">300 DPI • Print Ready</div>
+              </div>
+              <Sparkles className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          </Button>
+          
+          <div className="grid grid-cols-2 gap-3">
             <Button
               variant="outline"
               onClick={() => handleExport('png')}
-              className="flex items-center gap-2 h-auto py-3"
+              className="group h-auto p-3 bg-gradient-card border-primary/20 hover:border-primary/40 hover:shadow-hover transition-all duration-300"
             >
-              <Image className="h-5 w-5" />
-              <div className="text-left">
-                <div className="font-medium">PNG</div>
-                <div className="text-xs text-muted-foreground">High Quality</div>
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                  <Image className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="text-center">
+                  <div className="font-medium text-sm">PNG</div>
+                  <div className="text-xs text-muted-foreground">High Quality</div>
+                </div>
               </div>
             </Button>
             
             <Button
               variant="outline"
               onClick={() => handleExport('jpeg')}
-              className="flex items-center gap-2 h-auto py-3"
+              className="group h-auto p-3 bg-gradient-card border-primary/20 hover:border-primary/40 hover:shadow-hover transition-all duration-300"
             >
-              <Image className="h-5 w-5" />
-              <div className="text-left">
-                <div className="font-medium">JPEG</div>
-                <div className="text-xs text-muted-foreground">Smaller Size</div>
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
+                  <Image className="h-4 w-4 text-green-600" />
+                </div>
+                <div className="text-center">
+                  <div className="font-medium text-sm">JPEG</div>
+                  <div className="text-xs text-muted-foreground">Smaller Size</div>
+                </div>
               </div>
             </Button>
           </div>
         </div>
+      </div>
 
-        {/* Share Options */}
-        <div>
-          <h4 className="font-semibold mb-3">Share Directly</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleShare('email')}
-              className="flex items-center gap-2"
-            >
-              <Mail className="h-4 w-4" />
-              Email
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleShare('facebook')}
-              className="flex items-center gap-2"
-            >
-              <Facebook className="h-4 w-4" />
-              Facebook
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleShare('instagram')}
-              className="flex items-center gap-2"
-            >
-              <Instagram className="h-4 w-4" />
-              Instagram
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleShare('whatsapp')}
-              className="flex items-center gap-2"
-            >
-              <MessageCircle className="h-4 w-4" />
-              WhatsApp
-            </Button>
-          </div>
+      {/* Share Options */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Share2 className="h-4 w-4 text-primary" />
+          <h4 className="font-semibold">Share Directly</h4>
         </div>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleShare('email')}
+            className="group bg-gradient-card hover:shadow-md transition-all duration-200"
+          >
+            <Mail className="h-4 w-4 mr-2 text-gray-600 group-hover:text-primary transition-colors" />
+            Email
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleShare('facebook')}
+            className="group bg-gradient-card hover:shadow-md transition-all duration-200"
+          >
+            <Facebook className="h-4 w-4 mr-2 text-blue-600 group-hover:text-blue-700 transition-colors" />
+            Facebook
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleShare('instagram')}
+            className="group bg-gradient-card hover:shadow-md transition-all duration-200"
+          >
+            <Instagram className="h-4 w-4 mr-2 text-pink-600 group-hover:text-pink-700 transition-colors" />
+            Instagram
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleShare('whatsapp')}
+            className="group bg-gradient-card hover:shadow-md transition-all duration-200"
+          >
+            <MessageCircle className="h-4 w-4 mr-2 text-green-600 group-hover:text-green-700 transition-colors" />
+            WhatsApp
+          </Button>
+        </div>
+      </div>
 
-        {/* Quick Actions */}
-        <div className="pt-4 border-t">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Button onClick={() => handleExport('pdf')} className="w-full">
-              <Download className="h-4 w-4 mr-2" />
-              Download PDF
-            </Button>
-            <Button variant="outline" onClick={() => handleShare('facebook')} className="w-full">
-              <Share2 className="h-4 w-4 mr-2" />
-              Share Now
-            </Button>
-          </div>
+      {/* Quick Actions */}
+      <div className="pt-4 border-t border-border/50">
+        <div className="grid grid-cols-1 gap-3">
+          <Button 
+            onClick={() => handleExport('pdf')} 
+            className="group bg-gradient-primary hover:shadow-hover transition-all duration-300"
+          >
+            <Download className="h-4 w-4 mr-2 group-hover:animate-bounce" />
+            Download PDF
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            onClick={() => handleShare('facebook')} 
+            className="group border-primary/30 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300"
+          >
+            <Zap className="h-4 w-4 mr-2 group-hover:text-primary transition-colors" />
+            Share Now
+          </Button>
         </div>
+      </div>
 
-        {/* File Name Preview */}
-        <div className="text-xs text-muted-foreground">
-          File will be saved as: {generateFileName('pdf')}
+      {/* File Name Preview */}
+      <div className="text-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-muted/50 rounded-full">
+          <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+          <span className="text-xs text-muted-foreground">
+            {generateFileName('pdf')}
+          </span>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 
