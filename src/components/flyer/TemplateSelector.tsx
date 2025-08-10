@@ -14,12 +14,12 @@ interface TemplateSelectorProps {
 }
 
 const categories = [
-  { id: 'all', name: 'All Templates', icon: Sparkles, isComponent: true },
-  { id: 'new-machine', name: 'New Machine', icon: Zap, isComponent: true },
-  { id: 'prizes', name: 'Win Prizes', icon: '🎁', isComponent: false },
-  { id: 'limited-event', name: 'Limited Event', icon: '⏰', isComponent: false },
-  { id: 'holiday', name: 'Holiday Specials', icon: '🎄', isComponent: false },
-  { id: 'partnership', name: 'Partnerships', icon: '🤝', isComponent: false }
+  { id: 'all', name: 'All Templates', IconComponent: Sparkles, emoji: null },
+  { id: 'new-machine', name: 'New Machine', IconComponent: Zap, emoji: null },
+  { id: 'prizes', name: 'Win Prizes', IconComponent: null, emoji: '🎁' },
+  { id: 'limited-event', name: 'Limited Event', IconComponent: null, emoji: '⏰' },
+  { id: 'holiday', name: 'Holiday Specials', IconComponent: null, emoji: '🎄' },
+  { id: 'partnership', name: 'Partnerships', IconComponent: null, emoji: '🤝' }
 ]
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({
@@ -69,10 +69,10 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               }`}
             >
               <div className="flex items-center justify-center gap-2">
-                {category.isComponent ? (
-                  <category.icon className="h-4 w-4" />
+                {category.IconComponent ? (
+                  <category.IconComponent className="h-4 w-4" />
                 ) : (
-                  <span className="text-base">{category.icon}</span>
+                  <span className="text-base">{category.emoji}</span>
                 )}
                 <span className="hidden sm:inline">{category.name}</span>
               </div>
