@@ -1,335 +1,156 @@
 
 import React, { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Download, Printer, Share2 } from 'lucide-react'
-
-interface BusinessInfo {
-  businessName: string
-  tagline: string
-  phone: string
-  email: string
-  address: string
-  website: string
-  description: string
-}
-
-interface Template {
-  id: string
-  name: string
-  description: string
-  preview: string
-  category: 'flyer' | 'poster'
-}
-
-const templates: Template[] = [
-  {
-    id: 'modern-flyer',
-    name: 'Modern Business Flyer',
-    description: 'Clean and professional design perfect for service businesses',
-    preview: 'bg-gradient-to-br from-blue-500 to-purple-600',
-    category: 'flyer'
-  },
-  {
-    id: 'restaurant-flyer',
-    name: 'Restaurant Special Flyer',
-    description: 'Appetizing design ideal for food promotions',
-    preview: 'bg-gradient-to-br from-orange-500 to-red-500',
-    category: 'flyer'
-  },
-  {
-    id: 'event-poster',
-    name: 'Event Announcement Poster',
-    description: 'Bold design for concerts, parties, and events',
-    preview: 'bg-gradient-to-br from-pink-500 to-yellow-500',
-    category: 'poster'
-  },
-  {
-    id: 'sale-poster',
-    name: 'Sale Promotion Poster',
-    description: 'Eye-catching design for retail promotions',
-    preview: 'bg-gradient-to-br from-green-500 to-teal-500',
-    category: 'poster'
-  },
-  {
-    id: 'real-estate-flyer',
-    name: 'Real Estate Flyer',
-    description: 'Professional layout for property listings',
-    preview: 'bg-gradient-to-br from-indigo-500 to-blue-600',
-    category: 'flyer'
-  },
-  {
-    id: 'fitness-poster',
-    name: 'Fitness Class Poster',
-    description: 'Dynamic design for gym and wellness businesses',
-    preview: 'bg-gradient-to-br from-purple-500 to-pink-500',
-    category: 'poster'
-  }
-]
+import { toast } from 'sonner'
+import { FlyerTemplate, FlyerData, ExportFormat, SharePlatform } from '@/types/flyer'
+import { flyerTemplates, colorPalettes } from '@/data/flyerTemplates'
+import TemplateSelector from '@/components/flyer/TemplateSelector'
+import FlyerForm from '@/components/flyer/FlyerForm'
+import FlyerPreview from '@/components/flyer/FlyerPreview'
+import FlyerExport from '@/components/flyer/FlyerExport'
 
 const FlyerGenerator = () => {
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
-  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
+  const [selectedTemplate, setSelectedTemplate] = useState<FlyerTemplate | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('')
+  
+  const [flyerData, setFlyerData] = useState<FlyerData>({
     businessName: '',
-    tagline: '',
-    phone: '',
-    email: '',
+    locationName: '',
     address: '',
-    website: '',
-    description: ''
+    prizeHighlights: [],
+    specialOffer: '',
+    contactInfo: '',
+    socialHandles: '',
+    websiteUrl: '',
+    selectedColors: colorPalettes[0],
+    logoFile: null,
+    customImage: null
   })
-  const [isGenerating, setIsGenerating] = useState(false)
 
-  const handleInputChange = (field: keyof BusinessInfo, value: string) => {
-    setBusinessInfo(prev => ({ ...prev, [field]: value }))
+  const handleDataChange = (newData: Partial<FlyerData>) => {
+    setFlyerData(prev => ({ ...prev, ...newData }))
   }
 
-  const generateFlyer = async () => {
-    if (!selectedTemplate || !businessInfo.businessName.trim()) {
+  const handleExport = (format: ExportFormat) => {
+    if (!selectedTemplate || !flyerData.businessName.trim()) {
+      toast.error('Please select a template and enter your business name')
       return
     }
 
-    setIsGenerating(true)
+    // In a real implementation, this would generate the actual file
+    toast.success(`Exporting flyer as ${format.toUpperCase()}...`)
+    console.log('Exporting flyer:', { format, template: selectedTemplate, data: flyerData })
+  }
+
+  const handleShare = (platform: SharePlatform) => {
+    if (!selectedTemplate || !flyerData.businessName.trim()) {
+      toast.error('Please select a template and enter your business name')
+      return
+    }
+
+    const shareText = `Check out ${flyerData.businessName}${flyerData.specialOffer ? ` - ${flyerData.specialOffer}` : '!'}`
     
-    try {
-      // Simulate generation process
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      console.log('Generating flyer with:', { selectedTemplate, businessInfo })
-    } catch (error) {
-      console.error('Error generating flyer:', error)
-    } finally {
-      setIsGenerating(false)
+    switch (platform) {
+      case 'email':
+        window.location.href = `mailto:?subject=${encodeURIComponent(shareText)}&body=${encodeURIComponent(`${shareText}\n\n${flyerData.address || ''}`)}`
+        break
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(shareText)}`, '_blank')
+        break
+      case 'instagram':
+        toast.info('Save the image and share it on Instagram')
+        break
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank')
+        break
     }
   }
 
-  const handleDownload = () => {
-    console.log('Downloading flyer...')
-  }
-
-  const handlePrint = () => {
-    window.print()
-  }
-
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: `${businessInfo.businessName} Flyer`,
-        text: 'Check out this flyer!',
-        url: window.location.href
-      })
+  const handleSeasonalMode = () => {
+    const currentMonth = new Date().getMonth()
+    let seasonalPalette = colorPalettes[0]
+    
+    // Auto-detect season and apply appropriate colors
+    if (currentMonth >= 11 || currentMonth <= 1) { // Winter/Holiday
+      seasonalPalette = colorPalettes.find(p => p.id === 'holiday-red') || colorPalettes[0]
+    } else if (currentMonth >= 2 && currentMonth <= 4) { // Spring
+      seasonalPalette = colorPalettes.find(p => p.id === 'pastel-fun') || colorPalettes[0]
+    } else if (currentMonth >= 5 && currentMonth <= 7) { // Summer
+      seasonalPalette = colorPalettes.find(p => p.id === 'bright-arcade') || colorPalettes[0]
+    } else { // Fall
+      seasonalPalette = colorPalettes.find(p => p.id === 'ocean-blue') || colorPalettes[0]
     }
+    
+    setFlyerData(prev => ({ ...prev, selectedColors: seasonalPalette }))
+    toast.success('Applied seasonal colors!')
   }
 
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Flyer & Poster Generator</h1>
+        <h1 className="text-3xl font-bold mb-2">Professional Flyer & Poster Generator</h1>
         <p className="text-muted-foreground">
-          Create professional flyers and posters for your business in minutes
+          Create stunning promotional materials for your claw machine business in minutes
         </p>
+        
+        {/* Quick Actions */}
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={handleSeasonalMode}
+            className="px-3 py-1 text-sm bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
+          >
+            🎄 Seasonal Mode
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Template Selection & Business Info */}
-        <div className="space-y-6">
-          {/* Template Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Choose a Template</CardTitle>
-              <CardDescription>
-                Select a design that matches your business needs
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {templates.map((template) => (
-                  <div
-                    key={template.id}
-                    className={`relative cursor-pointer rounded-lg border-2 transition-all hover:shadow-md ${
-                      selectedTemplate?.id === template.id
-                        ? 'border-primary ring-2 ring-primary/20'
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                    onClick={() => setSelectedTemplate(template)}
-                  >
-                    <div className={`h-24 rounded-t-lg ${template.preview}`} />
-                    <div className="p-3">
-                      <h4 className="font-semibold text-sm">{template.name}</h4>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {template.description}
-                      </p>
-                      <span className="inline-block mt-2 text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded">
-                        {template.category}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Business Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Business Information</CardTitle>
-              <CardDescription>
-                Enter your business details to customize the template
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="businessName">Business Name *</Label>
-                <Input
-                  id="businessName"
-                  value={businessInfo.businessName}
-                  onChange={(e) => handleInputChange('businessName', e.target.value)}
-                  placeholder="Your Business Name"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="tagline">Tagline</Label>
-                <Input
-                  id="tagline"
-                  value={businessInfo.tagline}
-                  onChange={(e) => handleInputChange('tagline', e.target.value)}
-                  placeholder="Your catchy tagline"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={businessInfo.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    placeholder="(555) 123-4567"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={businessInfo.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    placeholder="info@business.com"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="website">Website</Label>
-                <Input
-                  id="website"
-                  value={businessInfo.website}
-                  onChange={(e) => handleInputChange('website', e.target.value)}
-                  placeholder="www.yourbusiness.com"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  value={businessInfo.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  placeholder="123 Main St, City, State 12345"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={businessInfo.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  placeholder="Brief description of your business or promotion"
-                  rows={3}
-                />
-              </div>
-
-              <Button
-                onClick={generateFlyer}
-                disabled={!selectedTemplate || !businessInfo.businessName.trim() || isGenerating}
-                className="w-full"
-              >
-                {isGenerating ? 'Generating...' : 'Generate Flyer'}
-              </Button>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        {/* Left Column - Template Selection */}
+        <div className="xl:col-span-1">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-4">Choose Template</h2>
+            <TemplateSelector
+              templates={flyerTemplates}
+              selectedTemplate={selectedTemplate}
+              onTemplateSelect={setSelectedTemplate}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+            />
+          </div>
         </div>
 
-        {/* Preview & Actions */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Preview</CardTitle>
-              <CardDescription>
-                Your flyer will appear here
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {selectedTemplate && businessInfo.businessName ? (
-                <div className="border-2 border-dashed border-border rounded-lg p-8">
-                  <div className={`w-full h-96 rounded-lg ${selectedTemplate.preview} text-white p-6 flex flex-col justify-between`}>
-                    <div>
-                      <h2 className="text-2xl font-bold mb-2">{businessInfo.businessName}</h2>
-                      {businessInfo.tagline && (
-                        <p className="text-lg opacity-90 mb-4">{businessInfo.tagline}</p>
-                      )}
-                      {businessInfo.description && (
-                        <p className="text-sm opacity-80">{businessInfo.description}</p>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-1 text-sm">
-                      {businessInfo.phone && <p>📞 {businessInfo.phone}</p>}
-                      {businessInfo.email && <p>✉️ {businessInfo.email}</p>}
-                      {businessInfo.website && <p>🌐 {businessInfo.website}</p>}
-                      {businessInfo.address && <p>📍 {businessInfo.address}</p>}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                  <p className="text-muted-foreground">
-                    Select a template and enter your business name to see preview
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {/* Middle Column - Form */}
+        <div className="xl:col-span-1">
+          <h2 className="text-xl font-semibold mb-4">Customize Your Flyer</h2>
+          <FlyerForm
+            flyerData={flyerData}
+            onDataChange={handleDataChange}
+            colorPalettes={colorPalettes}
+            onGenerateQR={setQrCodeUrl}
+          />
+        </div>
 
-          {selectedTemplate && businessInfo.businessName && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Actions</CardTitle>
-                <CardDescription>
-                  Download, print, or share your flyer
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <Button variant="outline" onClick={handleDownload} className="flex items-center gap-2">
-                    <Download className="h-4 w-4" />
-                    Download
-                  </Button>
-                  <Button variant="outline" onClick={handlePrint} className="flex items-center gap-2">
-                    <Printer className="h-4 w-4" />
-                    Print
-                  </Button>
-                  <Button variant="outline" onClick={handleShare} className="flex items-center gap-2">
-                    <Share2 className="h-4 w-4" />
-                    Share
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Right Column - Preview & Export */}
+        <div className="xl:col-span-1 space-y-6">
+          {selectedTemplate && flyerData.businessName ? (
+            <>
+              <FlyerPreview
+                template={selectedTemplate}
+                flyerData={flyerData}
+                qrCodeUrl={qrCodeUrl}
+              />
+              <FlyerExport
+                flyerData={flyerData}
+                onExport={handleExport}
+                onShare={handleShare}
+              />
+            </>
+          ) : (
+            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+              <p className="text-muted-foreground">
+                {!selectedTemplate ? 'Select a template to get started' : 'Enter your business name to see preview'}
+              </p>
+            </div>
           )}
         </div>
       </div>
