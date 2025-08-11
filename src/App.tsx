@@ -1,5 +1,5 @@
 
-import React from "react";
+import * as React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,28 +12,37 @@ import RoutePlanner from "./pages/RoutePlanner";
 import Compliance from "./pages/Compliance";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App: React.FC = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppLayout>
-            <Routes>
-              <Route path="/" element={<Navigate to="/documents" replace />} />
-              <Route path="/documents" element={<Documents />} />
-              <Route path="/commission-summary" element={<CommissionSummary />} />
-              <Route path="/route-planner" element={<RoutePlanner />} />
-              <Route path="/compliance" element={<Compliance />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AppLayout>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AppLayout>
+              <Routes>
+                <Route path="/" element={<Navigate to="/documents" replace />} />
+                <Route path="/documents" element={<Documents />} />
+                <Route path="/commission-summary" element={<CommissionSummary />} />
+                <Route path="/route-planner" element={<RoutePlanner />} />
+                <Route path="/compliance" element={<Compliance />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AppLayout>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </React.StrictMode>
   );
 };
 
