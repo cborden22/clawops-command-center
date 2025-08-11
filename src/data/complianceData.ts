@@ -1,10 +1,11 @@
-
 import { ComplianceData } from '@/types/compliance';
+import { stateComplianceData } from './stateComplianceData';
 
 export const complianceData: ComplianceData = {
   schema_version: "1.0.0",
-  updated_at: "2025-08-11",
+  updated_at: "2025-01-15",
   states: [
+    ...stateComplianceData,
     {
       state: "Tennessee",
       abbr: "TN",
@@ -83,51 +84,6 @@ export const complianceData: ComplianceData = {
       red_flags: [],
       sources: [
         {"title": "Florida Statute 849.161", "url": "https://example.com"}
-      ],
-      disclaimer: "Not legal advice. Verify with regulator."
-    },
-    {
-      state: "California",
-      abbr: "CA",
-      status: "Restricted",
-      classification: "Mixed",
-      prize_caps: {
-        per_prize_usd: 0,
-        notes: "No monetary prizes allowed; merchandise under $10"
-      },
-      licensing: {
-        required: true,
-        permit_type: "Amusement device license",
-        who_licenses: "State",
-        fees_usd: [200, 300],
-        renewal: "Annual",
-        processing_time_days: 30
-      },
-      tax_finance: {
-        amusement_tax: "Varies by county",
-        sales_tax_on_plays: true,
-        distributor_reg: true
-      },
-      operational_rules: {
-        age_limits: "18+ in alcohol venues",
-        signage_required: ["No cash prizes", "Merchandise only", "Skill disclosure"],
-        payout_rules: "Merchandise only, no tickets convertible to cash",
-        inspection: "Annual",
-        machine_marking: "State license number visible"
-      },
-      local_overrides: [
-        {
-          jurisdiction: "Los Angeles, CA",
-          notes: "Additional city permit required; zoning restrictions",
-          source: [{"title":"LA Municipal Code","url":"https://example.com"}]
-        }
-      ],
-      red_flags: [
-        "Coin pushers often classified as gambling",
-        "Strict enforcement in some counties"
-      ],
-      sources: [
-        {"title": "California Penal Code 330b", "url": "https://example.com"}
       ],
       disclaimer: "Not legal advice. Verify with regulator."
     },

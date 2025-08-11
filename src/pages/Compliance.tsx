@@ -1,13 +1,9 @@
 
 import React from 'react';
-import { ComplianceLookup } from '@/components/compliance/ComplianceLookup';
+import { ComplianceTabs } from '@/components/compliance/ComplianceTabs';
 
 const Compliance = () => {
-  return (
-    <div className="container mx-auto p-6">
-      <ComplianceLookup />
-    </div>
-  );
+  return <ComplianceTabs />;
 };
 
 export default Compliance;
