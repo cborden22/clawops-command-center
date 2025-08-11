@@ -1,4 +1,5 @@
 
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -82,6 +83,7 @@ export default {
 			boxShadow: {
 				'card': 'var(--shadow-card)',
 				'hover': 'var(--shadow-hover)',
+				'glow': 'var(--shadow-glow)',
 			},
 			transitionTimingFunction: {
 				'smooth': 'var(--transition-smooth)',
@@ -117,3 +119,4 @@ export default {
 	},
 	plugins: [require("tailwindcss-animate")],
 } satisfies Config;
+
