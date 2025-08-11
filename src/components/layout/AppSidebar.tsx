@@ -1,5 +1,5 @@
 
-import { FileText, Receipt, MapPin, Image } from "lucide-react"
+import { FileText, Receipt, MapPin } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
   Sidebar,
@@ -18,7 +18,6 @@ const items = [
   { title: "Location Agreement Generator", url: "/documents", icon: FileText },
   { title: "Commission Summary", url: "/commission-summary", icon: Receipt },
   { title: "Route Planner", url: "/route-planner", icon: MapPin },
-  { title: "Flyer & Poster Generator", url: "/flyer-generator", icon: Image },
 ]
 
 export function AppSidebar() {
