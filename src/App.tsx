@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -9,7 +8,6 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import Documents from "./pages/Documents";
 import CommissionSummary from "./pages/CommissionSummary";
 import RoutePlanner from "./pages/RoutePlanner";
-import Compliance from "./pages/Compliance";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -35,7 +33,6 @@ const App: React.FC = () => {
                 <Route path="/documents" element={<Documents />} />
                 <Route path="/commission-summary" element={<CommissionSummary />} />
                 <Route path="/route-planner" element={<RoutePlanner />} />
-                <Route path="/compliance" element={<Compliance />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AppLayout>
