@@ -94,243 +94,215 @@ export function CommissionSummaryGenerator() {
             box-sizing: border-box; 
           }
           body { 
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif; 
-            line-height: 1.3; 
-            color: #2d3748; 
-            background: white;
-            padding: 20px;
-            font-size: 12px;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-          }
-          .container {
-            max-width: 100%;
-            margin: 0 auto;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
+            font-family: Arial, sans-serif; 
+            font-size: 11px;
+            line-height: 1.2;
+            color: #333;
+            padding: 15px;
+            width: 8.5in;
+            height: 11in;
+            overflow: hidden;
           }
           .header { 
             text-align: center; 
-            margin-bottom: 20px; 
-            border-bottom: 2px solid #3182ce; 
-            padding-bottom: 10px; 
+            margin-bottom: 15px;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 8px;
           }
           .header h1 { 
-            font-size: 20px; 
-            color: #2d3748; 
-            margin-bottom: 3px; 
-            font-weight: 700;
+            font-size: 18px;
+            color: #1e40af;
+            margin-bottom: 3px;
+            font-weight: bold;
           }
           .header p { 
-            color: #718096; 
-            font-size: 10px; 
+            color: #64748b;
+            font-size: 9px;
           }
           .content {
-            flex: 1;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
             margin-bottom: 15px;
           }
-          .section { 
-            background: #f7fafc;
-            padding: 15px; 
-            border-radius: 6px;
+          .info-box {
+            flex: 1;
+            min-width: 180px;
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 4px;
             border: 1px solid #e2e8f0;
-            height: fit-content;
           }
-          .section h2 { 
-            color: #2d3748; 
-            font-size: 13px; 
-            margin-bottom: 10px; 
-            font-weight: 600;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 3px;
-          }
-          .info-row { 
-            display: flex; 
-            justify-content: space-between; 
+          .info-box h3 {
+            font-size: 11px;
+            color: #1e40af;
             margin-bottom: 6px;
-            align-items: center;
-          }
-          .info-label { 
-            font-weight: 500; 
-            color: #4a5568; 
-            font-size: 11px;
-          }
-          .info-value { 
-            color: #2d3748; 
             font-weight: 600;
-            font-size: 11px;
           }
-          .financial-section {
-            grid-column: 1 / -1;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+          .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+            font-size: 10px;
+          }
+          .info-label {
+            color: #64748b;
+            font-weight: 500;
+          }
+          .info-value {
+            color: #1e293b;
+            font-weight: 600;
+          }
+          .revenue-highlight {
             text-align: center;
-            padding: 20px;
-            border-radius: 8px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
             margin: 10px 0;
           }
-          .revenue-display { 
-            font-size: 24px; 
-            font-weight: 700; 
-            margin-bottom: 8px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          .revenue-amount {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 3px;
           }
-          .revenue-label { 
-            font-size: 11px; 
+          .revenue-label {
+            font-size: 9px;
             opacity: 0.9;
-            text-transform: uppercase;
-            letter-spacing: 1px;
           }
-          .notes-section { 
-            grid-column: 1 / -1;
-            background: #fffbf0;
-            padding: 15px; 
-            border-radius: 6px;
-            border-left: 3px solid #ed8936;
+          .notes-section {
+            background: #fefce8;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 3px solid #eab308;
             margin-top: 10px;
-            max-height: 120px;
-            overflow: hidden;
           }
-          .notes-section h3 {
-            color: #2d3748;
-            font-size: 12px;
+          .notes-section h4 {
+            font-size: 10px;
+            color: #92400e;
+            margin-bottom: 5px;
             font-weight: 600;
-            margin-bottom: 8px;
           }
-          .notes-text { 
-            color: #4a5568; 
-            line-height: 1.4; 
-            white-space: pre-wrap;
-            font-size: 11px;
+          .notes-text {
+            font-size: 9px;
+            color: #78716c;
+            line-height: 1.3;
+            max-height: 40px;
             overflow: hidden;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 4;
-            -webkit-box-orient: vertical;
           }
-          .footer { 
-            margin-top: auto;
-            text-align: center; 
-            font-size: 9px; 
-            color: #a0aec0; 
-            border-top: 1px solid #e2e8f0; 
-            padding-top: 10px; 
+          .footer {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            right: 15px;
+            text-align: center;
+            font-size: 8px;
+            color: #94a3b8;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 8px;
           }
-          .footer strong {
-            color: #4a5568;
+          @page {
+            size: letter;
+            margin: 0;
           }
           @media print {
             body { height: auto; }
-            .container { height: auto; }
           }
         </style>
       </head>
       <body>
-        <div class="container">
-          <div class="header">
-            <h1>BUSINESS SUMMARY REPORT</h1>
-            <p>Generated on ${currentDate} | ClawOps Business Dashboard</p>
+        <div class="header">
+          <h1>BUSINESS SUMMARY REPORT</h1>
+          <p>Generated on ${currentDate} | ClawOps Business Dashboard</p>
+        </div>
+
+        <div class="content">
+          <div class="info-box">
+            <h3>📍 Location Details</h3>
+            <div class="info-row">
+              <span class="info-label">Business:</span>
+              <span class="info-value">${locationData.name}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Contact:</span>
+              <span class="info-value">${locationData.contactPerson || 'N/A'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Machines:</span>
+              <span class="info-value">${locationData.machineCount}</span>
+            </div>
           </div>
 
-          <div class="content">
-            <div class="section">
-              <h2>📍 Location Details</h2>
-              <div class="info-row">
-                <span class="info-label">Business Name:</span>
-                <span class="info-value">${locationData.name}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Contact Person:</span>
-                <span class="info-value">${locationData.contactPerson || 'N/A'}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Number of Machines:</span>
-                <span class="info-value">${locationData.machineCount}</span>
-              </div>
+          <div class="info-box">
+            <h3>📅 Period</h3>
+            <div class="info-row">
+              <span class="info-label">Dates:</span>
+              <span class="info-value">${periodText}</span>
             </div>
-
-            <div class="section">
-              <h2>📅 Reporting Period</h2>
-              <div class="info-row">
-                <span class="info-label">Period:</span>
-                <span class="info-value">${periodText}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Report Date:</span>
-                <span class="info-value">${currentDate}</span>
-              </div>
+            <div class="info-row">
+              <span class="info-label">Generated:</span>
+              <span class="info-value">${currentDate}</span>
             </div>
-
-            <div class="financial-section">
-              <div class="revenue-display">$${locationData.totalRevenue.toFixed(2)}</div>
-              <div class="revenue-label">Total Revenue Generated</div>
-            </div>
-
-            ${locationData.notes ? `
-            <div class="notes-section">
-              <h3>📝 Additional Notes</h3>
-              <div class="notes-text">${locationData.notes}</div>
-            </div>
-            ` : ''}
           </div>
+        </div>
 
-          <div class="footer">
-            <p><strong>ClawOps Business Dashboard</strong></p>
-            <p>This business summary was generated automatically. For questions or concerns, please contact our support team.</p>
-          </div>
+        <div class="revenue-highlight">
+          <div class="revenue-amount">$${locationData.totalRevenue.toFixed(2)}</div>
+          <div class="revenue-label">TOTAL REVENUE GENERATED</div>
+        </div>
+
+        ${locationData.notes ? `
+        <div class="notes-section">
+          <h4>📝 Notes</h4>
+          <div class="notes-text">${locationData.notes}</div>
+        </div>
+        ` : ''}
+
+        <div class="footer">
+          <strong>ClawOps Business Dashboard</strong> | Professional Business Reporting
         </div>
       </body>
       </html>
     `
 
     const opt = {
-      margin: 0.3,
-      filename: `business-summary-${locationData.name.replace(/\s+/g, '-').toLowerCase()}-${format(locationData.startDate, 'yyyy-MM-dd')}-to-${format(locationData.endDate, 'yyyy-MM-dd')}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
+      margin: 0,
+      filename: `business-summary-${locationData.name.replace(/\s+/g, '-').toLowerCase()}-${format(locationData.startDate, 'yyyy-MM-dd')}.pdf`,
+      image: { type: 'jpeg', quality: 0.95 },
       html2canvas: { 
-        scale: 1.2, 
+        scale: 1,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
+        width: 612,
         height: 792,
-        width: 612
+        letterRendering: true
       },
       jsPDF: { 
         unit: 'pt', 
         format: 'letter', 
-        orientation: 'portrait',
-        compress: true
+        orientation: 'portrait'
       }
     }
 
-    // Create a temporary element to render the HTML
     const element = document.createElement('div')
     element.innerHTML = htmlContent
     element.style.width = '612pt'
     element.style.height = '792pt'
-    element.style.backgroundColor = 'white'
-    element.style.overflow = 'hidden'
+    element.style.position = 'absolute'
+    element.style.left = '-9999px'
+    element.style.top = '-9999px'
     
-    // Temporarily add to DOM for rendering
     document.body.appendChild(element)
     
     html2pdf().set(opt).from(element).save().then(() => {
-      // Remove the temporary element
       document.body.removeChild(element)
-      
       toast({
         title: "Business Summary Generated",
         description: `Professional PDF report created for ${locationData.name}`,
       })
     }).catch((error) => {
-      // Remove the temporary element on error too
       document.body.removeChild(element)
-      
       toast({
         title: "PDF Generation Failed",
         description: "There was an error generating the PDF. Please try again.",
