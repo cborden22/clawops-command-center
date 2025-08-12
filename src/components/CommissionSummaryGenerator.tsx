@@ -1,14 +1,14 @@
+
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useToast } from "@/hooks/use-toast"
-import { FileText, Download, Calendar as CalendarIcon, DollarSign, TrendingUp } from "lucide-react"
+import { FileText, Download, Calendar as CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import html2pdf from "html2pdf.js"
@@ -231,18 +231,11 @@ export function CommissionSummaryGenerator() {
             font-weight: 600; 
             color: #334155; 
           }
-          .highlight-box { 
-            background: #dbeafe; 
-            border: 1px solid #93c5fd; 
-            padding: 15px; 
-            border-radius: 6px; 
-            margin: 15px 0; 
-          }
         </style>
       </head>
       <body>
         <div class="header">
-          <h1>COMMISSION SUMMARY REPORT</h1>
+          <h1>BUSINESS SUMMARY REPORT</h1>
           <p>Generated on ${currentDate} | ClawOps Business Dashboard</p>
         </div>
 
@@ -275,15 +268,11 @@ export function CommissionSummaryGenerator() {
               <div class="revenue-amount">$${locationData.totalRevenue.toFixed(2)}</div>
               <div class="revenue-label">TOTAL REVENUE GENERATED</div>
             </div>
-            
-            <div class="highlight-box">
-              <strong>Commission Rate: ${locationData.commissionRate}%</strong>
-            </div>
 
             <div class="commission-breakdown">
               <div class="breakdown-item">
                 <div class="breakdown-amount commission-amount">$${locationData.commissionAmount.toFixed(2)}</div>
-                <div class="breakdown-label">YOUR COMMISSION</div>
+                <div class="breakdown-label">LOCATION EARNINGS</div>
               </div>
               <div class="breakdown-item">
                 <div class="breakdown-amount operator-amount">$${operatorShare.toFixed(2)}</div>
@@ -300,24 +289,20 @@ export function CommissionSummaryGenerator() {
               <tr>
                 <th>Description</th>
                 <th>Amount</th>
-                <th>Percentage</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td>Total Revenue</td>
                 <td>$${locationData.totalRevenue.toFixed(2)}</td>
-                <td>100%</td>
               </tr>
               <tr>
-                <td>Location Commission (${locationData.commissionRate}%)</td>
+                <td>Location Earnings</td>
                 <td>$${locationData.commissionAmount.toFixed(2)}</td>
-                <td>${locationData.commissionRate}%</td>
               </tr>
               <tr>
                 <td>Operator Share</td>
                 <td>$${operatorShare.toFixed(2)}</td>
-                <td>${(100 - locationData.commissionRate)}%</td>
               </tr>
             </tbody>
           </table>
@@ -334,7 +319,7 @@ export function CommissionSummaryGenerator() {
 
         <div class="footer">
           <p><strong>ClawOps Business Dashboard</strong></p>
-          <p>This commission summary was generated automatically. For questions or concerns, please contact our support team.</p>
+          <p>This business summary was generated automatically. For questions or concerns, please contact our support team.</p>
           <p>Report generated: ${currentDate} | Period: ${periodText}</p>
         </div>
       </body>
@@ -343,7 +328,7 @@ export function CommissionSummaryGenerator() {
 
     const opt = {
       margin: 0.5,
-      filename: `commission-summary-${locationData.name.replace(/\s+/g, '-').toLowerCase()}-${format(locationData.startDate, 'yyyy-MM-dd')}-to-${format(locationData.endDate, 'yyyy-MM-dd')}.pdf`,
+      filename: `business-summary-${locationData.name.replace(/\s+/g, '-').toLowerCase()}-${format(locationData.startDate, 'yyyy-MM-dd')}-to-${format(locationData.endDate, 'yyyy-MM-dd')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
@@ -374,7 +359,7 @@ export function CommissionSummaryGenerator() {
       document.body.removeChild(element)
       
       toast({
-        title: "Commission Summary Generated",
+        title: "Business Summary Generated",
         description: `Professional PDF report created for ${locationData.name}`,
       })
     }).catch((error) => {
@@ -503,7 +488,7 @@ export function CommissionSummaryGenerator() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="commissionRate">Commission Rate (%)</Label>
+            <Label htmlFor="commissionRate">Split Rate (%)</Label>
             <Input
               id="commissionRate"
               type="number"
@@ -518,7 +503,7 @@ export function CommissionSummaryGenerator() {
 
         <div className="p-4 bg-muted rounded-lg">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Commission Amount:</span>
+            <span className="text-sm text-muted-foreground">Location Earnings:</span>
             <span className="text-lg font-bold text-primary">
               ${locationData.commissionAmount.toFixed(2)}
             </span>
@@ -542,7 +527,7 @@ export function CommissionSummaryGenerator() {
           disabled={!locationData.name || !locationData.startDate || !locationData.endDate}
         >
           <Download className="h-4 w-4 mr-2" />
-          Generate Commission Summary PDF
+          Generate Business Summary PDF
         </Button>
       </CardContent>
     </Card>
