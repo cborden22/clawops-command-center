@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -79,7 +80,6 @@ export function CommissionSummaryGenerator() {
 
     const currentDate = new Date().toLocaleDateString()
     const periodText = getFormattedPeriod()
-    const operatorShare = locationData.totalRevenue - locationData.commissionAmount
     
     const htmlContent = `
       <!DOCTYPE html>
@@ -95,142 +95,138 @@ export function CommissionSummaryGenerator() {
           }
           body { 
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif; 
-            line-height: 1.4; 
+            line-height: 1.3; 
             color: #2d3748; 
             background: white;
-            padding: 30px;
-            font-size: 14px;
+            padding: 20px;
+            font-size: 12px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
           }
           .container {
             max-width: 100%;
             margin: 0 auto;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
           }
           .header { 
             text-align: center; 
-            margin-bottom: 30px; 
+            margin-bottom: 20px; 
             border-bottom: 2px solid #3182ce; 
-            padding-bottom: 15px; 
+            padding-bottom: 10px; 
           }
           .header h1 { 
-            font-size: 24px; 
+            font-size: 20px; 
             color: #2d3748; 
-            margin-bottom: 5px; 
+            margin-bottom: 3px; 
             font-weight: 700;
           }
           .header p { 
             color: #718096; 
-            font-size: 12px; 
+            font-size: 10px; 
           }
           .content {
+            flex: 1;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 25px;
+            gap: 15px;
+            margin-bottom: 15px;
           }
           .section { 
             background: #f7fafc;
-            padding: 20px; 
-            border-radius: 8px;
+            padding: 15px; 
+            border-radius: 6px;
             border: 1px solid #e2e8f0;
+            height: fit-content;
           }
           .section h2 { 
             color: #2d3748; 
-            font-size: 16px; 
-            margin-bottom: 15px; 
+            font-size: 13px; 
+            margin-bottom: 10px; 
             font-weight: 600;
             border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 5px;
+            padding-bottom: 3px;
           }
           .info-row { 
             display: flex; 
             justify-content: space-between; 
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             align-items: center;
           }
           .info-label { 
             font-weight: 500; 
             color: #4a5568; 
-            font-size: 13px;
+            font-size: 11px;
           }
           .info-value { 
             color: #2d3748; 
             font-weight: 600;
-            font-size: 13px;
+            font-size: 11px;
           }
           .financial-section {
             grid-column: 1 / -1;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             text-align: center;
-            padding: 25px;
-            border-radius: 10px;
-            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 10px 0;
           }
           .revenue-display { 
-            font-size: 28px; 
+            font-size: 24px; 
             font-weight: 700; 
-            margin-bottom: 15px;
+            margin-bottom: 8px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.1);
           }
           .revenue-label { 
-            font-size: 12px; 
+            font-size: 11px; 
             opacity: 0.9;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 20px;
-          }
-          .split-container { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 15px; 
-          }
-          .split-item { 
-            background: rgba(255,255,255,0.15); 
-            padding: 15px; 
-            border-radius: 8px;
-            backdrop-filter: blur(10px);
-          }
-          .split-amount { 
-            font-size: 18px; 
-            font-weight: 600; 
-            margin-bottom: 5px; 
-          }
-          .split-label { 
-            font-size: 11px; 
-            opacity: 0.8;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
           }
           .notes-section { 
             grid-column: 1 / -1;
             background: #fffbf0;
-            padding: 20px; 
-            border-radius: 8px;
-            border-left: 4px solid #ed8936;
-            margin-top: 15px;
+            padding: 15px; 
+            border-radius: 6px;
+            border-left: 3px solid #ed8936;
+            margin-top: 10px;
+            max-height: 120px;
+            overflow: hidden;
           }
           .notes-section h3 {
             color: #2d3748;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 600;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
           }
           .notes-text { 
             color: #4a5568; 
-            line-height: 1.6; 
+            line-height: 1.4; 
             white-space: pre-wrap;
-            font-size: 13px;
+            font-size: 11px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
           }
           .footer { 
-            margin-top: 30px; 
+            margin-top: auto;
             text-align: center; 
-            font-size: 11px; 
+            font-size: 9px; 
             color: #a0aec0; 
             border-top: 1px solid #e2e8f0; 
-            padding-top: 15px; 
+            padding-top: 10px; 
           }
           .footer strong {
             color: #4a5568;
+          }
+          @media print {
+            body { height: auto; }
+            .container { height: auto; }
           }
         </style>
       </head>
@@ -269,30 +265,19 @@ export function CommissionSummaryGenerator() {
                 <span class="info-value">${currentDate}</span>
               </div>
             </div>
-          </div>
 
-          <div class="financial-section">
-            <div class="revenue-display">$${locationData.totalRevenue.toFixed(2)}</div>
-            <div class="revenue-label">Total Revenue Generated</div>
-            
-            <div class="split-container">
-              <div class="split-item">
-                <div class="split-amount">$${locationData.commissionAmount.toFixed(2)}</div>
-                <div class="split-label">Location Earnings</div>
-              </div>
-              <div class="split-item">
-                <div class="split-amount">$${operatorShare.toFixed(2)}</div>
-                <div class="split-label">Operator Share</div>
-              </div>
+            <div class="financial-section">
+              <div class="revenue-display">$${locationData.totalRevenue.toFixed(2)}</div>
+              <div class="revenue-label">Total Revenue Generated</div>
             </div>
-          </div>
 
-          ${locationData.notes ? `
-          <div class="notes-section">
-            <h3>📝 Additional Notes</h3>
-            <div class="notes-text">${locationData.notes}</div>
+            ${locationData.notes ? `
+            <div class="notes-section">
+              <h3>📝 Additional Notes</h3>
+              <div class="notes-text">${locationData.notes}</div>
+            </div>
+            ` : ''}
           </div>
-          ` : ''}
 
           <div class="footer">
             <p><strong>ClawOps Business Dashboard</strong></p>
@@ -304,11 +289,11 @@ export function CommissionSummaryGenerator() {
     `
 
     const opt = {
-      margin: 0.4,
+      margin: 0.3,
       filename: `business-summary-${locationData.name.replace(/\s+/g, '-').toLowerCase()}-${format(locationData.startDate, 'yyyy-MM-dd')}-to-${format(locationData.endDate, 'yyyy-MM-dd')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
-        scale: 1.5, 
+        scale: 1.2, 
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
@@ -327,7 +312,9 @@ export function CommissionSummaryGenerator() {
     const element = document.createElement('div')
     element.innerHTML = htmlContent
     element.style.width = '612pt'
+    element.style.height = '792pt'
     element.style.backgroundColor = 'white'
+    element.style.overflow = 'hidden'
     
     // Temporarily add to DOM for rendering
     document.body.appendChild(element)
