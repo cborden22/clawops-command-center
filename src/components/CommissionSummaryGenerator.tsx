@@ -17,6 +17,7 @@ interface LocationData {
   name: string
   contactPerson: string
   totalRevenue: number
+  commissionPercentage: number
   commissionAmount: number
   startDate: Date | undefined
   endDate: Date | undefined
@@ -30,12 +31,24 @@ export function CommissionSummaryGenerator() {
     name: "",
     contactPerson: "",
     totalRevenue: 0,
+    commissionPercentage: 0,
     commissionAmount: 0,
     startDate: undefined,
     endDate: undefined,
     machineCount: 1,
     notes: ""
   })
+
+  // Calculate commission amount when revenue or percentage changes
+  const updateCommissionFromPercentage = (revenue: number, percentage: number) => {
+    const calculatedAmount = (revenue * percentage) / 100
+    setLocationData(prev => ({ 
+      ...prev, 
+      totalRevenue: revenue,
+      commissionPercentage: percentage,
+      commissionAmount: calculatedAmount 
+    }))
+  }
 
   const getFormattedPeriod = () => {
     if (!locationData.startDate || !locationData.endDate) return ""
@@ -59,55 +72,55 @@ export function CommissionSummaryGenerator() {
     const periodText = getFormattedPeriod()
     
     const content = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="font-size: 24px; margin: 0; color: #333;">Commission Summary Report</h1>
-          <p style="color: #666; margin: 10px 0;">Generated on ${currentDate}</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333; line-height: 1.6;">
+        <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px;">
+          <h1 style="font-size: 28px; margin: 0; color: #1f2937; font-weight: bold;">COMMISSION SUMMARY</h1>
+          <p style="color: #6b7280; margin: 10px 0; font-size: 14px;">Generated on ${currentDate}</p>
         </div>
 
-        <div style="margin-bottom: 25px; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
-          <h2 style="font-size: 16px; margin: 0 0 15px 0; color: #333; border-bottom: 1px solid #e0e0e0; padding-bottom: 8px;">Location Information</h2>
-          <div style="display: table; width: 100%;">
-            <div style="display: table-row;">
-              <div style="display: table-cell; padding: 8px 0; font-weight: bold; width: 30%;">Business Name:</div>
-              <div style="display: table-cell; padding: 8px 0;">${locationData.name}</div>
-            </div>
-            <div style="display: table-row;">
-              <div style="display: table-cell; padding: 8px 0; font-weight: bold;">Contact Person:</div>
-              <div style="display: table-cell; padding: 8px 0;">${locationData.contactPerson || 'N/A'}</div>
-            </div>
-            <div style="display: table-row;">
-              <div style="display: table-cell; padding: 8px 0; font-weight: bold;">Period:</div>
-              <div style="display: table-cell; padding: 8px 0;">${periodText}</div>
-            </div>
-            <div style="display: table-row;">
-              <div style="display: table-cell; padding: 8px 0; font-weight: bold;">Number of Machines:</div>
-              <div style="display: table-cell; padding: 8px 0;">${locationData.machineCount}</div>
-            </div>
-          </div>
+        <div style="margin-bottom: 30px;">
+          <h2 style="font-size: 18px; margin: 0 0 20px 0; color: #374151; font-weight: 600;">Location Information</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 12px 0; font-weight: 600; color: #374151; width: 40%; border-bottom: 1px solid #f3f4f6;">Business Name:</td>
+              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${locationData.name}</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Contact Person:</td>
+              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${locationData.contactPerson || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Period:</td>
+              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${periodText}</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 0; font-weight: 600; color: #374151;">Number of Machines:</td>
+              <td style="padding: 12px 0; color: #1f2937;">${locationData.machineCount}</td>
+            </tr>
+          </table>
         </div>
 
-        <div style="text-align: center; margin: 30px 0;">
-          <div style="margin-bottom: 20px;">
-            <p style="color: #666; margin: 0; font-size: 14px;">Total Revenue</p>
-            <p style="font-size: 28px; font-weight: bold; margin: 8px 0; color: #333;">$${locationData.totalRevenue.toFixed(2)}</p>
+        <div style="text-align: center; margin: 40px 0; padding: 30px; background: #f9fafb; border-radius: 8px;">
+          <div style="margin-bottom: 25px;">
+            <p style="color: #6b7280; margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">TOTAL REVENUE</p>
+            <p style="font-size: 32px; font-weight: bold; margin: 10px 0; color: #1f2937;">$${locationData.totalRevenue.toFixed(2)}</p>
           </div>
 
-          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #22c55e;">
-            <p style="color: #666; margin: 0; font-size: 14px;">Commission Payment</p>
-            <p style="font-size: 32px; font-weight: bold; margin: 10px 0; color: #22c55e;">$${locationData.commissionAmount.toFixed(2)}</p>
+          <div style="background: #dcfce7; padding: 25px; border-radius: 8px; border: 2px solid #22c55e;">
+            <p style="color: #15803d; margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">COMMISSION PAYMENT</p>
+            <p style="font-size: 36px; font-weight: bold; margin: 15px 0; color: #15803d;">$${locationData.commissionAmount.toFixed(2)}</p>
           </div>
         </div>
 
         ${locationData.notes ? `
-        <div style="margin: 25px 0;">
-          <h3 style="font-size: 14px; color: #333; margin: 0 0 10px 0;">Additional Notes</h3>
-          <p style="color: #666; line-height: 1.5; margin: 0; padding: 15px; background: #f8f9fa; border-radius: 6px;">${locationData.notes}</p>
+        <div style="margin: 30px 0;">
+          <h3 style="font-size: 16px; color: #374151; margin: 0 0 15px 0; font-weight: 600;">Additional Notes</h3>
+          <div style="color: #4b5563; line-height: 1.6; margin: 0; padding: 20px; background: #f9fafb; border-radius: 6px; border-left: 4px solid #e5e7eb;">${locationData.notes}</div>
         </div>
         ` : ''}
 
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center;">
-          <p style="color: #999; font-size: 12px; margin: 0;">
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
             This commission summary was generated by ClawOps Business Dashboard
           </p>
         </div>
@@ -123,8 +136,7 @@ export function CommissionSummaryGenerator() {
       html2canvas: { 
         scale: 2,
         useCORS: true,
-        letterRendering: true,
-        logging: true
+        letterRendering: true
       },
       jsPDF: { 
         unit: 'in', 
@@ -256,7 +268,7 @@ export function CommissionSummaryGenerator() {
           />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
             <Label htmlFor="totalRevenue">Total Revenue ($)</Label>
             <Input
@@ -265,7 +277,20 @@ export function CommissionSummaryGenerator() {
               step="0.01"
               placeholder="0.00"
               value={locationData.totalRevenue || ""}
-              onChange={(e) => setLocationData(prev => ({ ...prev, totalRevenue: parseFloat(e.target.value) || 0 }))}
+              onChange={(e) => updateCommissionFromPercentage(parseFloat(e.target.value) || 0, locationData.commissionPercentage)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="commissionPercentage">Commission (%)</Label>
+            <Input
+              id="commissionPercentage"
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              placeholder="0.0"
+              value={locationData.commissionPercentage || ""}
+              onChange={(e) => updateCommissionFromPercentage(locationData.totalRevenue, parseFloat(e.target.value) || 0)}
             />
           </div>
           <div className="space-y-2">
@@ -275,8 +300,9 @@ export function CommissionSummaryGenerator() {
               type="number"
               step="0.01"
               placeholder="0.00"
-              value={locationData.commissionAmount || ""}
-              onChange={(e) => setLocationData(prev => ({ ...prev, commissionAmount: parseFloat(e.target.value) || 0 }))}
+              value={locationData.commissionAmount.toFixed(2)}
+              readOnly
+              className="bg-muted"
             />
           </div>
         </div>
