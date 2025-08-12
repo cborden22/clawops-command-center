@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -87,257 +86,237 @@ export function CommissionSummaryGenerator() {
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Commission Summary Report</title>
+        <title>Business Summary Report</title>
         <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
+          * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+          }
           body { 
-            font-family: 'Arial', sans-serif; 
-            line-height: 1.6; 
-            color: #333; 
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif; 
+            line-height: 1.4; 
+            color: #2d3748; 
             background: white;
-            padding: 40px;
+            padding: 30px;
+            font-size: 14px;
+          }
+          .container {
+            max-width: 100%;
+            margin: 0 auto;
           }
           .header { 
             text-align: center; 
-            margin-bottom: 40px; 
-            border-bottom: 3px solid #2563eb; 
-            padding-bottom: 20px; 
+            margin-bottom: 30px; 
+            border-bottom: 2px solid #3182ce; 
+            padding-bottom: 15px; 
           }
           .header h1 { 
-            font-size: 28px; 
-            color: #1e40af; 
-            margin-bottom: 8px; 
-            font-weight: bold;
+            font-size: 24px; 
+            color: #2d3748; 
+            margin-bottom: 5px; 
+            font-weight: 700;
           }
           .header p { 
-            color: #64748b; 
-            font-size: 14px; 
+            color: #718096; 
+            font-size: 12px; 
+          }
+          .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
           }
           .section { 
-            margin-bottom: 30px; 
+            background: #f7fafc;
             padding: 20px; 
-            border: 1px solid #e2e8f0; 
-            border-radius: 8px; 
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
           }
           .section h2 { 
-            color: #1e40af; 
-            font-size: 18px; 
+            color: #2d3748; 
+            font-size: 16px; 
             margin-bottom: 15px; 
-            border-bottom: 1px solid #e2e8f0; 
-            padding-bottom: 8px; 
+            font-weight: 600;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 5px;
           }
-          .info-grid { 
+          .info-row { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 8px;
+            align-items: center;
+          }
+          .info-label { 
+            font-weight: 500; 
+            color: #4a5568; 
+            font-size: 13px;
+          }
+          .info-value { 
+            color: #2d3748; 
+            font-weight: 600;
+            font-size: 13px;
+          }
+          .financial-section {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+          }
+          .revenue-display { 
+            font-size: 28px; 
+            font-weight: 700; 
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          }
+          .revenue-label { 
+            font-size: 12px; 
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+          }
+          .split-container { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
             gap: 15px; 
-            margin-bottom: 15px; 
           }
-          .info-item { 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 8px 0; 
-          }
-          .info-label { 
-            font-weight: 600; 
-            color: #475569; 
-          }
-          .info-value { 
-            color: #1e293b; 
-            font-weight: 500; 
-          }
-          .financial-summary { 
-            background: #f8fafc; 
-            padding: 25px; 
-            border-radius: 8px; 
-            text-align: center; 
-          }
-          .revenue-box { 
-            background: white; 
-            padding: 20px; 
-            border-radius: 6px; 
-            margin-bottom: 20px; 
-            border: 1px solid #e2e8f0; 
-          }
-          .revenue-amount { 
-            font-size: 32px; 
-            font-weight: bold; 
-            color: #1e40af; 
-            margin-bottom: 5px; 
-          }
-          .revenue-label { 
-            color: #64748b; 
-            font-size: 14px; 
-            font-weight: 500; 
-          }
-          .commission-breakdown { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 20px; 
-            margin-top: 20px; 
-          }
-          .breakdown-item { 
-            background: white; 
+          .split-item { 
+            background: rgba(255,255,255,0.15); 
             padding: 15px; 
-            border-radius: 6px; 
-            border: 1px solid #e2e8f0; 
-            text-align: center; 
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
           }
-          .breakdown-amount { 
-            font-size: 24px; 
-            font-weight: bold; 
+          .split-amount { 
+            font-size: 18px; 
+            font-weight: 600; 
             margin-bottom: 5px; 
           }
-          .commission-amount { 
-            color: #059669; 
-          }
-          .operator-amount { 
-            color: #dc2626; 
-          }
-          .breakdown-label { 
-            color: #64748b; 
-            font-size: 12px; 
+          .split-label { 
+            font-size: 11px; 
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
           }
           .notes-section { 
-            background: #f8fafc; 
+            grid-column: 1 / -1;
+            background: #fffbf0;
             padding: 20px; 
-            border-radius: 6px; 
-            border-left: 4px solid #2563eb; 
+            border-radius: 8px;
+            border-left: 4px solid #ed8936;
+            margin-top: 15px;
+          }
+          .notes-section h3 {
+            color: #2d3748;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
           }
           .notes-text { 
-            color: #374151; 
+            color: #4a5568; 
             line-height: 1.6; 
-            white-space: pre-wrap; 
+            white-space: pre-wrap;
+            font-size: 13px;
           }
           .footer { 
-            margin-top: 40px; 
+            margin-top: 30px; 
             text-align: center; 
-            font-size: 12px; 
-            color: #64748b; 
+            font-size: 11px; 
+            color: #a0aec0; 
             border-top: 1px solid #e2e8f0; 
-            padding-top: 20px; 
+            padding-top: 15px; 
           }
-          .summary-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin: 20px 0; 
-          }
-          .summary-table th, .summary-table td { 
-            padding: 12px; 
-            text-align: left; 
-            border-bottom: 1px solid #e2e8f0; 
-          }
-          .summary-table th { 
-            background: #f1f5f9; 
-            font-weight: 600; 
-            color: #334155; 
+          .footer strong {
+            color: #4a5568;
           }
         </style>
       </head>
       <body>
-        <div class="header">
-          <h1>BUSINESS SUMMARY REPORT</h1>
-          <p>Generated on ${currentDate} | ClawOps Business Dashboard</p>
-        </div>
-
-        <div class="section">
-          <h2>📍 Location Information</h2>
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">Business Name:</span>
-              <span class="info-value">${locationData.name}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Contact Person:</span>
-              <span class="info-value">${locationData.contactPerson || 'N/A'}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Reporting Period:</span>
-              <span class="info-value">${periodText}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Number of Machines:</span>
-              <span class="info-value">${locationData.machineCount}</span>
-            </div>
+        <div class="container">
+          <div class="header">
+            <h1>BUSINESS SUMMARY REPORT</h1>
+            <p>Generated on ${currentDate} | ClawOps Business Dashboard</p>
           </div>
-        </div>
 
-        <div class="section">
-          <h2>💰 Financial Summary</h2>
-          <div class="financial-summary">
-            <div class="revenue-box">
-              <div class="revenue-amount">$${locationData.totalRevenue.toFixed(2)}</div>
-              <div class="revenue-label">TOTAL REVENUE GENERATED</div>
+          <div class="content">
+            <div class="section">
+              <h2>📍 Location Details</h2>
+              <div class="info-row">
+                <span class="info-label">Business Name:</span>
+                <span class="info-value">${locationData.name}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Contact Person:</span>
+                <span class="info-value">${locationData.contactPerson || 'N/A'}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Number of Machines:</span>
+                <span class="info-value">${locationData.machineCount}</span>
+              </div>
             </div>
 
-            <div class="commission-breakdown">
-              <div class="breakdown-item">
-                <div class="breakdown-amount commission-amount">$${locationData.commissionAmount.toFixed(2)}</div>
-                <div class="breakdown-label">LOCATION EARNINGS</div>
+            <div class="section">
+              <h2>📅 Reporting Period</h2>
+              <div class="info-row">
+                <span class="info-label">Period:</span>
+                <span class="info-value">${periodText}</span>
               </div>
-              <div class="breakdown-item">
-                <div class="breakdown-amount operator-amount">$${operatorShare.toFixed(2)}</div>
-                <div class="breakdown-label">OPERATOR SHARE</div>
+              <div class="info-row">
+                <span class="info-label">Report Date:</span>
+                <span class="info-value">${currentDate}</span>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="section">
-          <h2>📊 Revenue Breakdown</h2>
-          <table class="summary-table">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Total Revenue</td>
-                <td>$${locationData.totalRevenue.toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td>Location Earnings</td>
-                <td>$${locationData.commissionAmount.toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td>Operator Share</td>
-                <td>$${operatorShare.toFixed(2)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          <div class="financial-section">
+            <div class="revenue-display">$${locationData.totalRevenue.toFixed(2)}</div>
+            <div class="revenue-label">Total Revenue Generated</div>
+            
+            <div class="split-container">
+              <div class="split-item">
+                <div class="split-amount">$${locationData.commissionAmount.toFixed(2)}</div>
+                <div class="split-label">Location Earnings</div>
+              </div>
+              <div class="split-item">
+                <div class="split-amount">$${operatorShare.toFixed(2)}</div>
+                <div class="split-label">Operator Share</div>
+              </div>
+            </div>
+          </div>
 
-        ${locationData.notes ? `
-        <div class="section">
-          <h2>📝 Additional Notes</h2>
+          ${locationData.notes ? `
           <div class="notes-section">
+            <h3>📝 Additional Notes</h3>
             <div class="notes-text">${locationData.notes}</div>
           </div>
-        </div>
-        ` : ''}
+          ` : ''}
 
-        <div class="footer">
-          <p><strong>ClawOps Business Dashboard</strong></p>
-          <p>This business summary was generated automatically. For questions or concerns, please contact our support team.</p>
-          <p>Report generated: ${currentDate} | Period: ${periodText}</p>
+          <div class="footer">
+            <p><strong>ClawOps Business Dashboard</strong></p>
+            <p>This business summary was generated automatically. For questions or concerns, please contact our support team.</p>
+          </div>
         </div>
       </body>
       </html>
     `
 
     const opt = {
-      margin: 0.5,
+      margin: 0.4,
       filename: `business-summary-${locationData.name.replace(/\s+/g, '-').toLowerCase()}-${format(locationData.startDate, 'yyyy-MM-dd')}-to-${format(locationData.endDate, 'yyyy-MM-dd')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
-        scale: 2, 
+        scale: 1.5, 
         useCORS: true,
         allowTaint: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        height: 792,
+        width: 612
       },
       jsPDF: { 
-        unit: 'in', 
+        unit: 'pt', 
         format: 'letter', 
         orientation: 'portrait',
         compress: true
@@ -347,8 +326,7 @@ export function CommissionSummaryGenerator() {
     // Create a temporary element to render the HTML
     const element = document.createElement('div')
     element.innerHTML = htmlContent
-    element.style.width = '8.5in'
-    element.style.minHeight = '11in'
+    element.style.width = '612pt'
     element.style.backgroundColor = 'white'
     
     // Temporarily add to DOM for rendering
