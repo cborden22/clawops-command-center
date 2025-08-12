@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -86,7 +85,7 @@ export function CommissionSummaryGenerator() {
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Business Summary Report</title>
+        <title>Commission Summary Report</title>
         <style>
           * { 
             margin: 0; 
@@ -94,172 +93,156 @@ export function CommissionSummaryGenerator() {
             box-sizing: border-box; 
           }
           body { 
-            font-family: Arial, sans-serif; 
-            font-size: 11px;
-            line-height: 1.2;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
             color: #333;
-            padding: 15px;
-            width: 8.5in;
-            height: 11in;
-            overflow: hidden;
+            padding: 60px;
+            background: white;
           }
           .header { 
             text-align: center; 
-            margin-bottom: 15px;
-            border-bottom: 2px solid #2563eb;
-            padding-bottom: 8px;
+            margin-bottom: 60px;
           }
           .header h1 { 
+            font-size: 36px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 12px;
+          }
+          .header .date { 
+            color: #666;
             font-size: 18px;
-            color: #1e40af;
-            margin-bottom: 3px;
-            font-weight: bold;
+            font-weight: 400;
           }
-          .header p { 
-            color: #64748b;
-            font-size: 9px;
+          .divider {
+            height: 2px;
+            background: #333;
+            margin: 40px 0;
           }
-          .content {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 15px;
+          .section-title {
+            font-size: 24px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 40px;
+            margin-top: 50px;
           }
-          .info-box {
-            flex: 1;
-            min-width: 180px;
-            background: #f8fafc;
-            padding: 10px;
-            border-radius: 4px;
-            border: 1px solid #e2e8f0;
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px 60px;
+            margin-bottom: 40px;
           }
-          .info-box h3 {
-            font-size: 11px;
-            color: #1e40af;
-            margin-bottom: 6px;
-            font-weight: 600;
-          }
-          .info-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 3px;
-            font-size: 10px;
+          .info-item {
+            margin-bottom: 20px;
           }
           .info-label {
-            color: #64748b;
-            font-weight: 500;
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 4px;
           }
           .info-value {
-            color: #1e293b;
-            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+            font-weight: 400;
           }
-          .revenue-highlight {
+          .financial-section {
             text-align: center;
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: white;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 10px 0;
+            margin-top: 60px;
           }
-          .revenue-amount {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 3px;
+          .revenue-container {
+            margin-bottom: 50px;
           }
           .revenue-label {
-            font-size: 9px;
-            opacity: 0.9;
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 400;
           }
-          .notes-section {
-            background: #fefce8;
-            padding: 10px;
-            border-radius: 4px;
-            border-left: 3px solid #eab308;
-            margin-top: 10px;
-          }
-          .notes-section h4 {
-            font-size: 10px;
-            color: #92400e;
-            margin-bottom: 5px;
+          .revenue-amount {
+            font-size: 42px;
             font-weight: 600;
+            color: #333;
           }
-          .notes-text {
-            font-size: 9px;
-            color: #78716c;
-            line-height: 1.3;
-            max-height: 40px;
-            overflow: hidden;
+          .commission-container {
+            margin-bottom: 80px;
+          }
+          .commission-label {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 400;
+          }
+          .commission-amount {
+            font-size: 42px;
+            font-weight: 600;
+            color: #4CAF50;
+          }
+          .footer-divider {
+            height: 1px;
+            background: #ccc;
+            margin: 60px 0 30px 0;
           }
           .footer {
-            position: absolute;
-            bottom: 15px;
-            left: 15px;
-            right: 15px;
             text-align: center;
-            font-size: 8px;
-            color: #94a3b8;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 8px;
+            font-size: 14px;
+            color: #666;
+            font-weight: 400;
           }
           @page {
             size: letter;
             margin: 0;
           }
-          @media print {
-            body { height: auto; }
-          }
         </style>
       </head>
       <body>
         <div class="header">
-          <h1>BUSINESS SUMMARY REPORT</h1>
-          <p>Generated on ${currentDate} | ClawOps Business Dashboard</p>
+          <h1>Commission Summary Report</h1>
+          <div class="date">Generated on ${currentDate}</div>
         </div>
 
-        <div class="content">
-          <div class="info-box">
-            <h3>📍 Location Details</h3>
-            <div class="info-row">
-              <span class="info-label">Business:</span>
-              <span class="info-value">${locationData.name}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Contact:</span>
-              <span class="info-value">${locationData.contactPerson || 'N/A'}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Machines:</span>
-              <span class="info-value">${locationData.machineCount}</span>
-            </div>
-          </div>
+        <div class="divider"></div>
 
-          <div class="info-box">
-            <h3>📅 Period</h3>
-            <div class="info-row">
-              <span class="info-label">Dates:</span>
-              <span class="info-value">${periodText}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Generated:</span>
-              <span class="info-value">${currentDate}</span>
-            </div>
+        <div class="section-title">Location Information</div>
+        
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Business Name:</div>
+            <div class="info-value">${locationData.name}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Contact Person:</div>
+            <div class="info-value">${locationData.contactPerson || 'N/A'}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Reporting Period:</div>
+            <div class="info-value">${periodText}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Number of Machines:</div>
+            <div class="info-value">${locationData.machineCount}</div>
           </div>
         </div>
 
-        <div class="revenue-highlight">
-          <div class="revenue-amount">$${locationData.totalRevenue.toFixed(2)}</div>
-          <div class="revenue-label">TOTAL REVENUE GENERATED</div>
+        <div class="section-title">Financial Summary</div>
+
+        <div class="financial-section">
+          <div class="revenue-container">
+            <div class="revenue-label">Total Revenue</div>
+            <div class="revenue-amount">$${locationData.totalRevenue.toFixed(2)}</div>
+          </div>
+
+          <div class="commission-container">
+            <div class="commission-label">Your Commission Payment</div>
+            <div class="commission-amount">$${locationData.commissionAmount.toFixed(2)}</div>
+          </div>
         </div>
 
-        ${locationData.notes ? `
-        <div class="notes-section">
-          <h4>📝 Notes</h4>
-          <div class="notes-text">${locationData.notes}</div>
-        </div>
-        ` : ''}
-
+        <div class="footer-divider"></div>
+        
         <div class="footer">
-          <strong>ClawOps Business Dashboard</strong> | Professional Business Reporting
+          This commission summary was generated automatically by ClawOps Business Dashboard.
         </div>
       </body>
       </html>
@@ -267,16 +250,15 @@ export function CommissionSummaryGenerator() {
 
     const opt = {
       margin: 0,
-      filename: `business-summary-${locationData.name.replace(/\s+/g, '-').toLowerCase()}-${format(locationData.startDate, 'yyyy-MM-dd')}.pdf`,
-      image: { type: 'jpeg', quality: 0.95 },
+      filename: `commission-summary-${locationData.name.replace(/\s+/g, '-').toLowerCase()}-${format(locationData.startDate, 'yyyy-MM-dd')}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
-        scale: 1,
+        scale: 2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         width: 612,
-        height: 792,
-        letterRendering: true
+        height: 792
       },
       jsPDF: { 
         unit: 'pt', 
@@ -298,8 +280,8 @@ export function CommissionSummaryGenerator() {
     html2pdf().set(opt).from(element).save().then(() => {
       document.body.removeChild(element)
       toast({
-        title: "Business Summary Generated",
-        description: `Professional PDF report created for ${locationData.name}`,
+        title: "Commission Summary Generated",
+        description: `PDF report created for ${locationData.name}`,
       })
     }).catch((error) => {
       document.body.removeChild(element)
@@ -464,7 +446,7 @@ export function CommissionSummaryGenerator() {
           disabled={!locationData.name || !locationData.startDate || !locationData.endDate}
         >
           <Download className="h-4 w-4 mr-2" />
-          Generate Business Summary PDF
+          Generate Commission Summary PDF
         </Button>
       </CardContent>
     </Card>
