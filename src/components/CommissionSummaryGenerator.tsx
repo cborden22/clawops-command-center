@@ -1,3 +1,4 @@
+
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -77,221 +78,106 @@ export function CommissionSummaryGenerator() {
       return
     }
 
+    console.log('Starting PDF generation...')
+    
     const currentDate = new Date().toLocaleDateString()
     const periodText = getFormattedPeriod()
     
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Commission Summary Report</title>
-        <style>
-          * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-          }
-          body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            font-size: 16px;
-            line-height: 1.5;
-            color: #333;
-            padding: 60px;
-            background: white;
-          }
-          .header { 
-            text-align: center; 
-            margin-bottom: 60px;
-          }
-          .header h1 { 
-            font-size: 36px;
-            font-weight: 500;
-            color: #333;
-            margin-bottom: 12px;
-          }
-          .header .date { 
-            color: #666;
-            font-size: 18px;
-            font-weight: 400;
-          }
-          .divider {
-            height: 2px;
-            background: #333;
-            margin: 40px 0;
-          }
-          .section-title {
-            font-size: 24px;
-            font-weight: 500;
-            color: #333;
-            margin-bottom: 40px;
-            margin-top: 50px;
-          }
-          .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px 60px;
-            margin-bottom: 40px;
-          }
-          .info-item {
-            margin-bottom: 20px;
-          }
-          .info-label {
-            font-weight: 600;
-            color: #333;
-            font-size: 16px;
-            margin-bottom: 4px;
-          }
-          .info-value {
-            color: #333;
-            font-size: 16px;
-            font-weight: 400;
-          }
-          .financial-section {
-            text-align: center;
-            margin-top: 60px;
-          }
-          .revenue-container {
-            margin-bottom: 50px;
-          }
-          .revenue-label {
-            font-size: 18px;
-            color: #666;
-            margin-bottom: 8px;
-            font-weight: 400;
-          }
-          .revenue-amount {
-            font-size: 42px;
-            font-weight: 600;
-            color: #333;
-          }
-          .commission-container {
-            margin-bottom: 80px;
-          }
-          .commission-label {
-            font-size: 18px;
-            color: #666;
-            margin-bottom: 8px;
-            font-weight: 400;
-          }
-          .commission-amount {
-            font-size: 42px;
-            font-weight: 600;
-            color: #4CAF50;
-          }
-          .footer-divider {
-            height: 1px;
-            background: #ccc;
-            margin: 60px 0 30px 0;
-          }
-          .footer {
-            text-align: center;
-            font-size: 14px;
-            color: #666;
-            font-weight: 400;
-          }
-          @page {
-            size: letter;
-            margin: 0;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>Commission Summary Report</h1>
-          <div class="date">Generated on ${currentDate}</div>
+    // Create a simple, clean HTML structure
+    const content = `
+      <div style="font-family: Arial, sans-serif; padding: 40px; max-width: 600px; margin: 0 auto;">
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 40px;">
+          <h1 style="font-size: 28px; margin: 0; color: #333;">Commission Summary Report</h1>
+          <p style="color: #666; margin: 8px 0 0 0;">Generated on ${currentDate}</p>
         </div>
 
-        <div class="divider"></div>
-
-        <div class="section-title">Location Information</div>
-        
-        <div class="info-grid">
-          <div class="info-item">
-            <div class="info-label">Business Name:</div>
-            <div class="info-value">${locationData.name}</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label">Contact Person:</div>
-            <div class="info-value">${locationData.contactPerson || 'N/A'}</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label">Reporting Period:</div>
-            <div class="info-value">${periodText}</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label">Number of Machines:</div>
-            <div class="info-value">${locationData.machineCount}</div>
+        <!-- Location Info -->
+        <div style="margin-bottom: 30px;">
+          <h2 style="font-size: 18px; color: #333; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Location Information</h2>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div><strong>Business Name:</strong><br>${locationData.name}</div>
+            <div><strong>Contact Person:</strong><br>${locationData.contactPerson || 'N/A'}</div>
+            <div><strong>Period:</strong><br>${periodText}</div>
+            <div><strong>Machines:</strong><br>${locationData.machineCount}</div>
           </div>
         </div>
 
-        <div class="section-title">Financial Summary</div>
-
-        <div class="financial-section">
-          <div class="revenue-container">
-            <div class="revenue-label">Total Revenue</div>
-            <div class="revenue-amount">$${locationData.totalRevenue.toFixed(2)}</div>
+        <!-- Financial Summary -->
+        <div style="text-align: center; margin: 40px 0;">
+          <h2 style="font-size: 18px; color: #333; margin-bottom: 20px;">Financial Summary</h2>
+          
+          <div style="margin-bottom: 25px;">
+            <p style="color: #666; margin: 0; font-size: 14px;">Total Revenue</p>
+            <p style="font-size: 32px; font-weight: bold; margin: 5px 0; color: #333;">$${locationData.totalRevenue.toFixed(2)}</p>
           </div>
 
-          <div class="commission-container">
-            <div class="commission-label">Your Commission Payment</div>
-            <div class="commission-amount">$${locationData.commissionAmount.toFixed(2)}</div>
+          <div style="margin-bottom: 25px;">
+            <p style="color: #666; margin: 0; font-size: 14px;">Commission Rate</p>
+            <p style="font-size: 24px; font-weight: bold; margin: 5px 0; color: #333;">${locationData.commissionRate}%</p>
+          </div>
+
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p style="color: #666; margin: 0; font-size: 14px;">Your Commission Payment</p>
+            <p style="font-size: 36px; font-weight: bold; margin: 10px 0; color: #22c55e;">$${locationData.commissionAmount.toFixed(2)}</p>
           </div>
         </div>
 
-        <div class="footer-divider"></div>
-        
-        <div class="footer">
-          This commission summary was generated automatically by ClawOps Business Dashboard.
+        ${locationData.notes ? `
+        <div style="margin: 30px 0;">
+          <h3 style="font-size: 16px; color: #333; margin-bottom: 10px;">Notes</h3>
+          <p style="color: #666; line-height: 1.5;">${locationData.notes}</p>
         </div>
-      </body>
-      </html>
+        ` : ''}
+
+        <!-- Footer -->
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
+          <p style="color: #999; font-size: 12px; margin: 0;">
+            This commission summary was generated by ClawOps Business Dashboard
+          </p>
+        </div>
+      </div>
     `
 
-    const opt = {
-      margin: 0,
-      filename: `commission-summary-${locationData.name.replace(/\s+/g, '-').toLowerCase()}-${format(locationData.startDate, 'yyyy-MM-dd')}.pdf`,
+    const filename = `commission-summary-${locationData.name.replace(/\s+/g, '-').toLowerCase()}-${format(locationData.startDate, 'yyyy-MM-dd')}.pdf`
+    
+    const options = {
+      margin: 0.5,
+      filename: filename,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2,
         useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        width: 612,
-        height: 792
+        letterRendering: true
       },
       jsPDF: { 
-        unit: 'pt', 
+        unit: 'in', 
         format: 'letter', 
-        orientation: 'portrait'
+        orientation: 'portrait' 
       }
     }
 
-    const element = document.createElement('div')
-    element.innerHTML = htmlContent
-    element.style.width = '612pt'
-    element.style.height = '792pt'
-    element.style.position = 'absolute'
-    element.style.left = '-9999px'
-    element.style.top = '-9999px'
+    console.log('Creating PDF with html2pdf...')
     
-    document.body.appendChild(element)
-    
-    html2pdf().set(opt).from(element).save().then(() => {
-      document.body.removeChild(element)
-      toast({
-        title: "Commission Summary Generated",
-        description: `PDF report created for ${locationData.name}`,
+    html2pdf()
+      .set(options)
+      .from(content)
+      .save()
+      .then(() => {
+        console.log('PDF generated successfully')
+        toast({
+          title: "Commission Summary Generated",
+          description: `PDF report created for ${locationData.name}`,
+        })
       })
-    }).catch((error) => {
-      document.body.removeChild(element)
-      toast({
-        title: "PDF Generation Failed",
-        description: "There was an error generating the PDF. Please try again.",
-        variant: "destructive"
+      .catch((error) => {
+        console.error('PDF generation error:', error)
+        toast({
+          title: "PDF Generation Failed",
+          description: "There was an error generating the PDF. Please try again.",
+          variant: "destructive"
+        })
       })
-      console.error('PDF generation error:', error)
-    })
   }
 
   return (
