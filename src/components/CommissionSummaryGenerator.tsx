@@ -17,7 +17,6 @@ interface LocationData {
   name: string
   contactPerson: string
   totalRevenue: number
-  commissionRate: number
   commissionAmount: number
   startDate: Date | undefined
   endDate: Date | undefined
@@ -31,37 +30,12 @@ export function CommissionSummaryGenerator() {
     name: "",
     contactPerson: "",
     totalRevenue: 0,
-    commissionRate: 50,
     commissionAmount: 0,
     startDate: undefined,
     endDate: undefined,
     machineCount: 1,
     notes: ""
   })
-
-  const calculateCommission = (revenue: number, rate: number) => {
-    return (revenue * rate) / 100
-  }
-
-  const handleRevenueChange = (value: string) => {
-    const revenue = parseFloat(value) || 0
-    const commission = calculateCommission(revenue, locationData.commissionRate)
-    setLocationData(prev => ({
-      ...prev,
-      totalRevenue: revenue,
-      commissionAmount: commission
-    }))
-  }
-
-  const handleRateChange = (value: string) => {
-    const rate = parseFloat(value) || 0
-    const commission = calculateCommission(locationData.totalRevenue, rate)
-    setLocationData(prev => ({
-      ...prev,
-      commissionRate: rate,
-      commissionAmount: commission
-    }))
-  }
 
   const getFormattedPeriod = () => {
     if (!locationData.startDate || !locationData.endDate) return ""
@@ -79,59 +53,60 @@ export function CommissionSummaryGenerator() {
     }
 
     console.log('Starting PDF generation...')
+    console.log('Location data:', locationData)
     
     const currentDate = new Date().toLocaleDateString()
     const periodText = getFormattedPeriod()
     
-    // Create a simple, clean HTML structure
     const content = `
-      <div style="font-family: Arial, sans-serif; padding: 40px; max-width: 600px; margin: 0 auto;">
-        <!-- Header -->
-        <div style="text-align: center; margin-bottom: 40px;">
-          <h1 style="font-size: 28px; margin: 0; color: #333;">Commission Summary Report</h1>
-          <p style="color: #666; margin: 8px 0 0 0;">Generated on ${currentDate}</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="font-size: 24px; margin: 0; color: #333;">Commission Summary Report</h1>
+          <p style="color: #666; margin: 10px 0;">Generated on ${currentDate}</p>
         </div>
 
-        <!-- Location Info -->
-        <div style="margin-bottom: 30px;">
-          <h2 style="font-size: 18px; color: #333; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Location Information</h2>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div><strong>Business Name:</strong><br>${locationData.name}</div>
-            <div><strong>Contact Person:</strong><br>${locationData.contactPerson || 'N/A'}</div>
-            <div><strong>Period:</strong><br>${periodText}</div>
-            <div><strong>Machines:</strong><br>${locationData.machineCount}</div>
+        <div style="margin-bottom: 25px; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+          <h2 style="font-size: 16px; margin: 0 0 15px 0; color: #333; border-bottom: 1px solid #e0e0e0; padding-bottom: 8px;">Location Information</h2>
+          <div style="display: table; width: 100%;">
+            <div style="display: table-row;">
+              <div style="display: table-cell; padding: 8px 0; font-weight: bold; width: 30%;">Business Name:</div>
+              <div style="display: table-cell; padding: 8px 0;">${locationData.name}</div>
+            </div>
+            <div style="display: table-row;">
+              <div style="display: table-cell; padding: 8px 0; font-weight: bold;">Contact Person:</div>
+              <div style="display: table-cell; padding: 8px 0;">${locationData.contactPerson || 'N/A'}</div>
+            </div>
+            <div style="display: table-row;">
+              <div style="display: table-cell; padding: 8px 0; font-weight: bold;">Period:</div>
+              <div style="display: table-cell; padding: 8px 0;">${periodText}</div>
+            </div>
+            <div style="display: table-row;">
+              <div style="display: table-cell; padding: 8px 0; font-weight: bold;">Number of Machines:</div>
+              <div style="display: table-cell; padding: 8px 0;">${locationData.machineCount}</div>
+            </div>
           </div>
         </div>
 
-        <!-- Financial Summary -->
-        <div style="text-align: center; margin: 40px 0;">
-          <h2 style="font-size: 18px; color: #333; margin-bottom: 20px;">Financial Summary</h2>
-          
-          <div style="margin-bottom: 25px;">
+        <div style="text-align: center; margin: 30px 0;">
+          <div style="margin-bottom: 20px;">
             <p style="color: #666; margin: 0; font-size: 14px;">Total Revenue</p>
-            <p style="font-size: 32px; font-weight: bold; margin: 5px 0; color: #333;">$${locationData.totalRevenue.toFixed(2)}</p>
+            <p style="font-size: 28px; font-weight: bold; margin: 8px 0; color: #333;">$${locationData.totalRevenue.toFixed(2)}</p>
           </div>
 
-          <div style="margin-bottom: 25px;">
-            <p style="color: #666; margin: 0; font-size: 14px;">Commission Rate</p>
-            <p style="font-size: 24px; font-weight: bold; margin: 5px 0; color: #333;">${locationData.commissionRate}%</p>
-          </div>
-
-          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p style="color: #666; margin: 0; font-size: 14px;">Your Commission Payment</p>
-            <p style="font-size: 36px; font-weight: bold; margin: 10px 0; color: #22c55e;">$${locationData.commissionAmount.toFixed(2)}</p>
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #22c55e;">
+            <p style="color: #666; margin: 0; font-size: 14px;">Commission Payment</p>
+            <p style="font-size: 32px; font-weight: bold; margin: 10px 0; color: #22c55e;">$${locationData.commissionAmount.toFixed(2)}</p>
           </div>
         </div>
 
         ${locationData.notes ? `
-        <div style="margin: 30px 0;">
-          <h3 style="font-size: 16px; color: #333; margin-bottom: 10px;">Notes</h3>
-          <p style="color: #666; line-height: 1.5;">${locationData.notes}</p>
+        <div style="margin: 25px 0;">
+          <h3 style="font-size: 14px; color: #333; margin: 0 0 10px 0;">Additional Notes</h3>
+          <p style="color: #666; line-height: 1.5; margin: 0; padding: 15px; background: #f8f9fa; border-radius: 6px;">${locationData.notes}</p>
         </div>
         ` : ''}
 
-        <!-- Footer -->
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center;">
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center;">
           <p style="color: #999; font-size: 12px; margin: 0;">
             This commission summary was generated by ClawOps Business Dashboard
           </p>
@@ -148,7 +123,8 @@ export function CommissionSummaryGenerator() {
       html2canvas: { 
         scale: 2,
         useCORS: true,
-        letterRendering: true
+        letterRendering: true,
+        logging: true
       },
       jsPDF: { 
         unit: 'in', 
@@ -157,7 +133,7 @@ export function CommissionSummaryGenerator() {
       }
     }
 
-    console.log('Creating PDF with html2pdf...')
+    console.log('Creating PDF with options:', options)
     
     html2pdf()
       .set(options)
@@ -289,19 +265,18 @@ export function CommissionSummaryGenerator() {
               step="0.01"
               placeholder="0.00"
               value={locationData.totalRevenue || ""}
-              onChange={(e) => handleRevenueChange(e.target.value)}
+              onChange={(e) => setLocationData(prev => ({ ...prev, totalRevenue: parseFloat(e.target.value) || 0 }))}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="commissionRate">Split Rate (%)</Label>
+            <Label htmlFor="commissionAmount">Commission Amount ($)</Label>
             <Input
-              id="commissionRate"
+              id="commissionAmount"
               type="number"
-              min="0"
-              max="100"
-              step="1"
-              value={locationData.commissionRate}
-              onChange={(e) => handleRateChange(e.target.value)}
+              step="0.01"
+              placeholder="0.00"
+              value={locationData.commissionAmount || ""}
+              onChange={(e) => setLocationData(prev => ({ ...prev, commissionAmount: parseFloat(e.target.value) || 0 }))}
             />
           </div>
         </div>
