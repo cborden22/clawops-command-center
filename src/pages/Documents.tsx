@@ -13,6 +13,7 @@ interface FormData {
 }
 
 export default function Documents() {
+  console.log('Documents: Component is rendering');
   const { toast } = useToast()
   const [formData, setFormData] = useState<FormData>({})
   const [paymentType, setPaymentType] = useState<"percentage" | "flat">("percentage")

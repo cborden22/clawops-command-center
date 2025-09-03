@@ -20,6 +20,7 @@ const queryClient = new QueryClient({
 });
 
 const App: React.FC = () => {
+  console.log('App: Rendering App component');
   return (
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>

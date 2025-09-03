@@ -10,4 +10,5 @@ if (!container) {
 }
 
 const root = createRoot(container);
+console.log('Main: About to render App component');
 root.render(<App />);

@@ -8,6 +8,7 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  console.log('AppLayout: Rendering with children:', !!children);
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background font-inter relative overflow-hidden">
