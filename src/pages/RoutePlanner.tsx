@@ -103,151 +103,162 @@ const RoutePlanner = () => {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Hero Section */}
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-gold-500/10 to-gold-600/5 rounded-2xl blur-xl" />
-        <div className="relative glass-card p-8 rounded-2xl">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="relative">
-              <div className="p-3 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl shadow-lg">
-                <Navigation className="h-8 w-8 text-primary-foreground" />
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="space-y-6">
+        {/* Hero Section */}
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-gold-500/10 to-gold-600/5 rounded-2xl blur-xl" />
+          <div className="relative glass-card p-6 lg:p-8 rounded-2xl">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4 mb-4">
+              <div className="relative flex-shrink-0">
+                <div className="p-3 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl shadow-lg">
+                  <Navigation className="h-6 w-6 lg:h-8 lg:w-8 text-primary-foreground" />
+                </div>
+                <div className="absolute -inset-1 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl opacity-20 blur animate-glow" />
               </div>
-              <div className="absolute -inset-1 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl opacity-20 blur animate-glow" />
+              <div className="flex-1">
+                <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
+                  Advanced Route Planner
+                </h1>
+                <p className="text-muted-foreground text-base lg:text-lg mt-2">
+                  Professional route optimization with service times, time windows, and estimated arrival times
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
-                Advanced Route Planner
-              </h1>
-              <p className="text-muted-foreground text-lg mt-2">
-                Professional route optimization with service times, time windows, and estimated arrival times
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-6 mt-6">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Zap className="h-4 w-4 text-gold-500" />
-              <span>2-opt Algorithm</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4 text-gold-500" />
-              <span>Time Windows Support</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="h-4 w-4 text-gold-500" />
-              <span>Real-time ETAs</span>
+            
+            <div className="flex flex-wrap items-center gap-4 lg:gap-6 mt-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Zap className="h-4 w-4 text-gold-500" />
+                <span>2-opt Algorithm</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4 text-gold-500" />
+                <span>Time Windows Support</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="h-4 w-4 text-gold-500" />
+                <span>Real-time ETAs</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        {/* Input Section */}
-        <Card className="glass-card border-white/10 accent-glow">
-          <CardHeader className="pb-6">
-            <CardTitle className="text-2xl font-bold flex items-center gap-2">
-              <Route className="h-6 w-6 text-gold-500" />
-              Route Configuration
-            </CardTitle>
-            <CardDescription className="text-base">
-              Configure your route with starting point, destinations, service times, and time windows.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startingPoint" className="text-sm font-semibold text-gold-500">Starting Point</Label>
-                <Input
-                  id="startingPoint"
-                  placeholder="123 Home St, City, State"
-                  value={startingPoint}
-                  onChange={(e) => setStartingPoint(e.target.value)}
-                  className="bg-white/5 border-white/20 focus:border-gold-500 transition-colors"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="startTime" className="text-sm font-semibold text-gold-500">Start Time</Label>
-                <Input
-                  id="startTime"
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="bg-white/5 border-white/20 focus:border-gold-500 transition-colors"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <Label className="text-sm font-semibold text-gold-500">Destinations</Label>
-              {routeStops.map((stop, index) => (
-                <div key={index} className="space-y-3 p-4 glass-card rounded-xl border border-white/10">
-                  <div className="flex gap-3">
-                    <div className="flex-1">
-                      <Input
-                        placeholder={`Destination ${index + 1}`}
-                        value={stop.address}
-                        onChange={(e) => updateStopAddress(index, e.target.value)}
-                        className="bg-white/5 border-white/20 focus:border-gold-500 transition-colors"
-                      />
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => removeStop(index)}
-                      disabled={routeStops.length <= 2}
-                      className="border-red-500/20 hover:bg-red-500/10 hover:border-red-500/40 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-400" />
-                    </Button>
+        {/* Main Content - Responsive Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+          {/* Input Section - Takes more space on larger screens */}
+          <div className="lg:col-span-7">
+            <Card className="glass-card border-white/10 accent-glow h-fit">
+              <CardHeader className="pb-4 lg:pb-6">
+                <CardTitle className="text-xl lg:text-2xl font-bold flex items-center gap-2">
+                  <Route className="h-5 w-5 lg:h-6 lg:w-6 text-gold-500" />
+                  Route Configuration
+                </CardTitle>
+                <CardDescription className="text-sm lg:text-base">
+                  Configure your route with starting point, destinations, service times, and time windows.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 lg:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="startingPoint" className="text-sm font-semibold text-gold-500">Starting Point</Label>
+                    <Input
+                      id="startingPoint"
+                      placeholder="123 Home St, City, State"
+                      value={startingPoint}
+                      onChange={(e) => setStartingPoint(e.target.value)}
+                      className="bg-white/5 border-white/20 focus:border-gold-500 transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="startTime" className="text-sm font-semibold text-gold-500">Start Time</Label>
+                    <Input
+                      id="startTime"
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="bg-white/5 border-white/20 focus:border-gold-500 transition-colors"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <Label className="text-sm font-semibold text-gold-500">Destinations</Label>
+                  <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                    {routeStops.map((stop, index) => (
+                      <div key={index} className="space-y-3 p-3 lg:p-4 glass-card rounded-xl border border-white/10">
+                        <div className="flex gap-3">
+                          <div className="flex-1 min-w-0">
+                            <Input
+                              placeholder={`Destination ${index + 1}`}
+                              value={stop.address}
+                              onChange={(e) => updateStopAddress(index, e.target.value)}
+                              className="bg-white/5 border-white/20 focus:border-gold-500 transition-colors w-full"
+                            />
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => removeStop(index)}
+                            disabled={routeStops.length <= 2}
+                            className="border-red-500/20 hover:bg-red-500/10 hover:border-red-500/40 transition-colors flex-shrink-0"
+                          >
+                            <Trash2 className="h-4 w-4 text-red-400" />
+                          </Button>
+                        </div>
+                        
+                        <ServiceTimeConfig
+                          serviceTime={stop.serviceTime}
+                          timeWindow={stop.timeWindow}
+                          onServiceTimeChange={(serviceTime) => updateStopServiceTime(index, serviceTime)}
+                          onTimeWindowChange={(timeWindow) => updateStopTimeWindow(index, timeWindow)}
+                          addressIndex={index}
+                        />
+                      </div>
+                    ))}
                   </div>
                   
-                  <ServiceTimeConfig
-                    serviceTime={stop.serviceTime}
-                    timeWindow={stop.timeWindow}
-                    onServiceTimeChange={(serviceTime) => updateStopServiceTime(index, serviceTime)}
-                    onTimeWindowChange={(timeWindow) => updateStopTimeWindow(index, timeWindow)}
-                    addressIndex={index}
-                  />
+                  <Button
+                    variant="outline"
+                    onClick={addStop}
+                    className="w-full border-gold-500/20 hover:bg-gold-500/10 hover:border-gold-500/40 transition-colors"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Destination
+                  </Button>
                 </div>
-              ))}
-              
-              <Button
-                variant="outline"
-                onClick={addStop}
-                className="w-full border-gold-500/20 hover:bg-gold-500/10 hover:border-gold-500/40 transition-colors"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Destination
-              </Button>
-            </div>
-            
-            <div className="flex gap-3 pt-6">
-              <Button 
-                onClick={optimizeRouteHandler} 
-                disabled={isLoading}
-                className="flex-1 premium-button"
-              >
-                <Route className="h-4 w-4 mr-2" />
-                {isLoading ? 'Optimizing Route...' : 'Optimize Route'}
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={clearAll}
-                className="border-white/20 hover:bg-white/5 transition-colors"
-              >
-                Clear All
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                
+                <div className="flex flex-col sm:flex-row gap-3 pt-4 lg:pt-6">
+                  <Button 
+                    onClick={optimizeRouteHandler} 
+                    disabled={isLoading}
+                    className="flex-1 premium-button"
+                  >
+                    <Route className="h-4 w-4 mr-2" />
+                    {isLoading ? 'Optimizing Route...' : 'Optimize Route'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={clearAll}
+                    className="border-white/20 hover:bg-white/5 transition-colors sm:w-auto"
+                  >
+                    Clear All
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Results Section */}
-        <OptimizedRouteDisplay 
-          route={optimizedRoute}
-          startingPoint={startingPoint}
-          startTime={startTime}
-        />
+          {/* Results Section - Takes remaining space */}
+          <div className="lg:col-span-5">
+            <div className="sticky top-6">
+              <OptimizedRouteDisplay 
+                route={optimizedRoute}
+                startingPoint={startingPoint}
+                startTime={startTime}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
