@@ -1,4 +1,4 @@
-import { FileText, Receipt, MapPin, Sparkles } from "lucide-react"
+import { FileText, Receipt, Sparkles } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
   Sidebar,
@@ -16,7 +16,6 @@ import {
 const items = [
   { title: "Location Agreement Generator", url: "/documents", icon: FileText },
   { title: "Commission Summary", url: "/commission-summary", icon: Receipt },
-  { title: "Route Planner", url: "/route-planner", icon: MapPin },
 ]
 
 export function AppSidebar() {
