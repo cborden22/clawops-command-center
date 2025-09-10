@@ -68,12 +68,20 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				gold: {
-					50: 'hsl(var(--gold-50))',
-					100: 'hsl(var(--gold-100))',
-					500: 'hsl(var(--gold-500))',
-					600: 'hsl(var(--gold-600))',
-					700: 'hsl(var(--gold-700))',
-					900: 'hsl(var(--gold-900))',
+					50: 'hsl(var(--blue-50))',
+					100: 'hsl(var(--blue-100))',
+					500: 'hsl(var(--blue-500))',
+					600: 'hsl(var(--blue-600))',
+					700: 'hsl(var(--blue-700))',
+					900: 'hsl(var(--blue-900))',
+				},
+				blue: {
+					50: 'hsl(var(--blue-50))',
+					100: 'hsl(var(--blue-100))',
+					500: 'hsl(var(--blue-500))',
+					600: 'hsl(var(--blue-600))',
+					700: 'hsl(var(--blue-700))',
+					900: 'hsl(var(--blue-900))',
 				}
 			},
 			backgroundImage: {
