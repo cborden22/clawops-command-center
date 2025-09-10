@@ -362,25 +362,55 @@ export default function Documents() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Location Agreement Creator</h1>
-          <p className="text-muted-foreground mt-2">
-            Create professional claw machine placement agreements
-          </p>
+    <div className="space-y-8">
+      {/* Hero Section */}
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-gold-500/10 to-gold-600/5 rounded-2xl blur-xl" />
+        <div className="relative glass-card p-8 rounded-2xl">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="p-3 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl shadow-lg">
+                  <FileText className="h-8 w-8 text-primary-foreground" />
+                </div>
+                <div className="absolute -inset-1 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl opacity-20 blur animate-glow" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
+                  Location Agreement Creator
+                </h1>
+                <p className="text-muted-foreground text-lg mt-2">
+                  Create professional claw machine placement agreements
+                </p>
+              </div>
+            </div>
+            <Button 
+              variant="outline"
+              onClick={handleClearForm}
+            >
+              Clear Form
+            </Button>
+          </div>
+          
+          <div className="flex items-center gap-6 mt-6">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <FileText className="h-4 w-4 text-gold-500" />
+              <span>Legal Documents</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Download className="h-4 w-4 text-gold-500" />
+              <span>PDF Generation</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <FileText className="h-4 w-4 text-gold-500" />
+              <span>Professional Templates</span>
+            </div>
+          </div>
         </div>
-        <Button 
-          variant="outline"
-          onClick={handleClearForm}
-        >
-          Clear Form
-        </Button>
       </div>
 
-      {/* Single Card for Location Agreement */}
-      <Card className="shadow-card">
+      {/* Main Content */}
+      <div className="glass-card rounded-2xl border-white/10 accent-glow">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -509,7 +539,7 @@ export default function Documents() {
             </Button>
           </div>
         </CardContent>
-      </Card>
+      </div>
     </div>
   )
 }
