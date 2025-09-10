@@ -68,9 +68,9 @@ export function AppSidebar() {
                         }`}>
                           <item.icon className="h-4 w-4" />
                         </div>
-                        <span className="text-sm font-medium">{item.title}</span>
+                        <span className="text-sm font-medium flex-1">{item.title}</span>
                         {isActive && (
-                          <div className="absolute right-2 w-2 h-8 bg-gradient-to-b from-gold-500 to-gold-600 rounded-full shadow-glow" />
+                          <div className="w-2 h-8 bg-gradient-to-b from-gold-500 to-gold-600 rounded-full shadow-glow ml-2" />
                         )}
                       </>
                     )}
@@ -83,15 +83,9 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-6 border-t border-white/10">
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <div className="w-1.5 h-1.5 bg-gold-500 rounded-full animate-pulse" />
-            <span>Premium Active</span>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Copyright © {new Date().getFullYear()} ClawOps
-          </p>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          Copyright © {new Date().getFullYear()} ClawOps
+        </p>
       </SidebarFooter>
     </Sidebar>
   )
