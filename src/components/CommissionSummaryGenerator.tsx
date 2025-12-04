@@ -1,5 +1,5 @@
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -7,11 +7,19 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { useToast } from "@/hooks/use-toast"
-import { FileText, Download, Calendar as CalendarIcon } from "lucide-react"
+import { FileText, Download, Calendar as CalendarIcon, Check, ChevronsUpDown } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import html2pdf from "html2pdf.js"
+
+const STORAGE_KEY = "commission-saved-entries"
+
+interface SavedEntry {
+  businessName: string
+  contactPerson: string
+}
 
 interface LocationData {
   name: string
@@ -38,6 +46,60 @@ export function CommissionSummaryGenerator() {
     machineCount: 1,
     notes: ""
   })
+  
+  const [savedEntries, setSavedEntries] = useState<SavedEntry[]>([])
+  const [businessOpen, setBusinessOpen] = useState(false)
+  const [contactOpen, setContactOpen] = useState(false)
+
+  // Load saved entries from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      try {
+        setSavedEntries(JSON.parse(saved))
+      } catch (e) {
+        console.error("Failed to parse saved entries:", e)
+      }
+    }
+  }, [])
+
+  // Save entry when generating PDF
+  const saveEntry = (businessName: string, contactPerson: string) => {
+    if (!businessName) return
+    
+    const existingIndex = savedEntries.findIndex(
+      entry => entry.businessName.toLowerCase() === businessName.toLowerCase()
+    )
+    
+    let updatedEntries: SavedEntry[]
+    if (existingIndex >= 0) {
+      // Update existing entry
+      updatedEntries = [...savedEntries]
+      updatedEntries[existingIndex] = { businessName, contactPerson }
+    } else {
+      // Add new entry
+      updatedEntries = [...savedEntries, { businessName, contactPerson }]
+    }
+    
+    setSavedEntries(updatedEntries)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEntries))
+  }
+
+  const selectSavedBusiness = (businessName: string) => {
+    const entry = savedEntries.find(e => e.businessName === businessName)
+    if (entry) {
+      setLocationData(prev => ({
+        ...prev,
+        name: entry.businessName,
+        contactPerson: entry.contactPerson
+      }))
+    }
+    setBusinessOpen(false)
+  }
+
+  const getUniqueContacts = () => {
+    return [...new Set(savedEntries.map(e => e.contactPerson).filter(Boolean))]
+  }
 
   // Calculate commission amount when revenue or percentage changes
   const updateCommissionFromPercentage = (revenue: number, percentage: number) => {
@@ -153,6 +215,8 @@ export function CommissionSummaryGenerator() {
       .save()
       .then(() => {
         console.log('PDF generated successfully')
+        // Save entry for future use
+        saveEntry(locationData.name, locationData.contactPerson)
         toast({
           title: "Commission Summary Generated",
           description: `PDF report created for ${locationData.name}`,
@@ -183,21 +247,113 @@ export function CommissionSummaryGenerator() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="locationName">Business Name *</Label>
-            <Input
-              id="locationName"
-              placeholder="Enter business name"
-              value={locationData.name}
-              onChange={(e) => setLocationData(prev => ({ ...prev, name: e.target.value }))}
-            />
+            <Popover open={businessOpen} onOpenChange={setBusinessOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={businessOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  {locationData.name || "Select or enter business name..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0" align="start">
+                <Command>
+                  <CommandInput 
+                    placeholder="Search or type new business..." 
+                    value={locationData.name}
+                    onValueChange={(value) => setLocationData(prev => ({ ...prev, name: value }))}
+                  />
+                  <CommandList>
+                    <CommandEmpty>
+                      <div className="p-2 text-sm text-muted-foreground">
+                        Press enter to use "{locationData.name}"
+                      </div>
+                    </CommandEmpty>
+                    {savedEntries.length > 0 && (
+                      <CommandGroup heading="Saved Businesses">
+                        {savedEntries.map((entry) => (
+                          <CommandItem
+                            key={entry.businessName}
+                            value={entry.businessName}
+                            onSelect={() => selectSavedBusiness(entry.businessName)}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                locationData.name === entry.businessName ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span>{entry.businessName}</span>
+                              {entry.contactPerson && (
+                                <span className="text-xs text-muted-foreground">{entry.contactPerson}</span>
+                              )}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="space-y-2">
             <Label htmlFor="contactPerson">Contact Person</Label>
-            <Input
-              id="contactPerson"
-              placeholder="Enter contact name"
-              value={locationData.contactPerson}
-              onChange={(e) => setLocationData(prev => ({ ...prev, contactPerson: e.target.value }))}
-            />
+            <Popover open={contactOpen} onOpenChange={setContactOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={contactOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  {locationData.contactPerson || "Select or enter contact..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0" align="start">
+                <Command>
+                  <CommandInput 
+                    placeholder="Search or type new contact..." 
+                    value={locationData.contactPerson}
+                    onValueChange={(value) => setLocationData(prev => ({ ...prev, contactPerson: value }))}
+                  />
+                  <CommandList>
+                    <CommandEmpty>
+                      <div className="p-2 text-sm text-muted-foreground">
+                        Press enter to use "{locationData.contactPerson}"
+                      </div>
+                    </CommandEmpty>
+                    {getUniqueContacts().length > 0 && (
+                      <CommandGroup heading="Saved Contacts">
+                        {getUniqueContacts().map((contact) => (
+                          <CommandItem
+                            key={contact}
+                            value={contact}
+                            onSelect={(value) => {
+                              setLocationData(prev => ({ ...prev, contactPerson: value }))
+                              setContactOpen(false)
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                locationData.contactPerson === contact ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {contact}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
