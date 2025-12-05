@@ -9,8 +9,8 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { useToast } from "@/hooks/use-toast"
-import { FileText, Download, Calendar as CalendarIcon, Check, ChevronsUpDown } from "lucide-react"
-import { format } from "date-fns"
+import { FileText, Download, Calendar as CalendarIcon, Check, ChevronsUpDown, Building2, User, DollarSign, Calculator } from "lucide-react"
+import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns"
 import { cn } from "@/lib/utils"
 import html2pdf from "html2pdf.js"
 
@@ -73,11 +73,9 @@ export function CommissionSummaryGenerator() {
     
     let updatedEntries: SavedEntry[]
     if (existingIndex >= 0) {
-      // Update existing entry
       updatedEntries = [...savedEntries]
       updatedEntries[existingIndex] = { businessName, contactPerson }
     } else {
-      // Add new entry
       updatedEntries = [...savedEntries, { businessName, contactPerson }]
     }
     
@@ -101,7 +99,6 @@ export function CommissionSummaryGenerator() {
     return [...new Set(savedEntries.map(e => e.contactPerson).filter(Boolean))]
   }
 
-  // Calculate commission amount when revenue or percentage changes
   const updateCommissionFromPercentage = (revenue: number, percentage: number) => {
     const calculatedAmount = (revenue * percentage) / 100
     setLocationData(prev => ({ 
@@ -109,6 +106,34 @@ export function CommissionSummaryGenerator() {
       totalRevenue: revenue,
       commissionPercentage: percentage,
       commissionAmount: calculatedAmount 
+    }))
+  }
+
+  // Quick date presets
+  const setLastWeek = () => {
+    const today = new Date()
+    setLocationData(prev => ({
+      ...prev,
+      startDate: subDays(today, 7),
+      endDate: today
+    }))
+  }
+
+  const setLastMonth = () => {
+    const lastMonth = subMonths(new Date(), 1)
+    setLocationData(prev => ({
+      ...prev,
+      startDate: startOfMonth(lastMonth),
+      endDate: endOfMonth(lastMonth)
+    }))
+  }
+
+  const setThisMonth = () => {
+    const today = new Date()
+    setLocationData(prev => ({
+      ...prev,
+      startDate: startOfMonth(today),
+      endDate: today
     }))
   }
 
@@ -215,7 +240,6 @@ export function CommissionSummaryGenerator() {
       .save()
       .then(() => {
         console.log('PDF generated successfully')
-        // Save entry for future use
         saveEntry(locationData.name, locationData.contactPerson)
         toast({
           title: "Commission Summary Generated",
@@ -232,263 +256,320 @@ export function CommissionSummaryGenerator() {
       })
   }
 
+  const isFormValid = locationData.name && locationData.startDate && locationData.endDate
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          Commission Summary Generator
+    <Card className="border-0 shadow-none bg-transparent">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-xl">
+          <FileText className="h-5 w-5 text-primary" />
+          Generate Report
         </CardTitle>
         <CardDescription>
-          Generate professional commission reports for your partner locations
+          Fill in the details below to create a commission summary PDF
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2">
+      <CardContent className="space-y-6">
+        
+        {/* Section 1: Location Info */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <Building2 className="h-4 w-4" />
+            Location Information
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="locationName">Business Name <span className="text-destructive">*</span></Label>
+              <Popover open={businessOpen} onOpenChange={setBusinessOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={businessOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    {locationData.name || "Select or type business..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0 bg-popover" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Search or type new..." 
+                      value={locationData.name}
+                      onValueChange={(value) => setLocationData(prev => ({ ...prev, name: value }))}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        <div className="p-2 text-sm text-muted-foreground">
+                          Press enter to use "{locationData.name}"
+                        </div>
+                      </CommandEmpty>
+                      {savedEntries.length > 0 && (
+                        <CommandGroup heading="Saved Businesses">
+                          {savedEntries.map((entry) => (
+                            <CommandItem
+                              key={entry.businessName}
+                              value={entry.businessName}
+                              onSelect={() => selectSavedBusiness(entry.businessName)}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  locationData.name === entry.businessName ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span>{entry.businessName}</span>
+                                {entry.contactPerson && (
+                                  <span className="text-xs text-muted-foreground">{entry.contactPerson}</span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contactPerson">Contact Person</Label>
+              <Popover open={contactOpen} onOpenChange={setContactOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={contactOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    {locationData.contactPerson || "Select or type contact..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0 bg-popover" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Search or type new..." 
+                      value={locationData.contactPerson}
+                      onValueChange={(value) => setLocationData(prev => ({ ...prev, contactPerson: value }))}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        <div className="p-2 text-sm text-muted-foreground">
+                          Press enter to use "{locationData.contactPerson}"
+                        </div>
+                      </CommandEmpty>
+                      {getUniqueContacts().length > 0 && (
+                        <CommandGroup heading="Saved Contacts">
+                          {getUniqueContacts().map((contact) => (
+                            <CommandItem
+                              key={contact}
+                              value={contact}
+                              onSelect={(value) => {
+                                setLocationData(prev => ({ ...prev, contactPerson: value }))
+                                setContactOpen(false)
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  locationData.contactPerson === contact ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {contact}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
           <div className="space-y-2">
-            <Label htmlFor="locationName">Business Name *</Label>
-            <Popover open={businessOpen} onOpenChange={setBusinessOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={businessOpen}
-                  className="w-full justify-between font-normal"
-                >
-                  {locationData.name || "Select or enter business name..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[300px] p-0" align="start">
-                <Command>
-                  <CommandInput 
-                    placeholder="Search or type new business..." 
-                    value={locationData.name}
-                    onValueChange={(value) => setLocationData(prev => ({ ...prev, name: value }))}
-                  />
-                  <CommandList>
-                    <CommandEmpty>
-                      <div className="p-2 text-sm text-muted-foreground">
-                        Press enter to use "{locationData.name}"
-                      </div>
-                    </CommandEmpty>
-                    {savedEntries.length > 0 && (
-                      <CommandGroup heading="Saved Businesses">
-                        {savedEntries.map((entry) => (
-                          <CommandItem
-                            key={entry.businessName}
-                            value={entry.businessName}
-                            onSelect={() => selectSavedBusiness(entry.businessName)}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                locationData.name === entry.businessName ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            <div className="flex flex-col">
-                              <span>{entry.businessName}</span>
-                              {entry.contactPerson && (
-                                <span className="text-xs text-muted-foreground">{entry.contactPerson}</span>
-                              )}
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
+            <Label htmlFor="machineCount">Number of Machines</Label>
+            <Input
+              id="machineCount"
+              type="number"
+              min="1"
+              className="md:w-1/4"
+              value={locationData.machineCount}
+              onChange={(e) => setLocationData(prev => ({ ...prev, machineCount: parseInt(e.target.value) || 1 }))}
+            />
+          </div>
+        </div>
+
+        <div className="border-t border-border" />
+
+        {/* Section 2: Report Period */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <CalendarIcon className="h-4 w-4" />
+            Report Period
+          </div>
+          
+          {/* Quick Date Presets */}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={setLastWeek}>
+              Last 7 Days
+            </Button>
+            <Button variant="outline" size="sm" onClick={setThisMonth}>
+              This Month
+            </Button>
+            <Button variant="outline" size="sm" onClick={setLastMonth}>
+              Last Month
+            </Button>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Start Date <span className="text-destructive">*</span></Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !locationData.startDate && "text-muted-foreground"
                     )}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="contactPerson">Contact Person</Label>
-            <Popover open={contactOpen} onOpenChange={setContactOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={contactOpen}
-                  className="w-full justify-between font-normal"
-                >
-                  {locationData.contactPerson || "Select or enter contact..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[300px] p-0" align="start">
-                <Command>
-                  <CommandInput 
-                    placeholder="Search or type new contact..." 
-                    value={locationData.contactPerson}
-                    onValueChange={(value) => setLocationData(prev => ({ ...prev, contactPerson: value }))}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {locationData.startDate ? format(locationData.startDate, "PPP") : <span>Pick start date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-popover" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={locationData.startDate}
+                    onSelect={(date) => setLocationData(prev => ({ ...prev, startDate: date }))}
+                    initialFocus
+                    className="pointer-events-auto"
                   />
-                  <CommandList>
-                    <CommandEmpty>
-                      <div className="p-2 text-sm text-muted-foreground">
-                        Press enter to use "{locationData.contactPerson}"
-                      </div>
-                    </CommandEmpty>
-                    {getUniqueContacts().length > 0 && (
-                      <CommandGroup heading="Saved Contacts">
-                        {getUniqueContacts().map((contact) => (
-                          <CommandItem
-                            key={contact}
-                            value={contact}
-                            onSelect={(value) => {
-                              setLocationData(prev => ({ ...prev, contactPerson: value }))
-                              setContactOpen(false)
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                locationData.contactPerson === contact ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {contact}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label>End Date <span className="text-destructive">*</span></Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !locationData.endDate && "text-muted-foreground"
                     )}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {locationData.endDate ? format(locationData.endDate, "PPP") : <span>Pick end date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 bg-popover" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={locationData.endDate}
+                    onSelect={(date) => setLocationData(prev => ({ ...prev, endDate: date }))}
+                    disabled={(date) => locationData.startDate ? date < locationData.startDate : false}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Start Date *</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !locationData.startDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {locationData.startDate ? format(locationData.startDate, "PPP") : <span>Pick start date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={locationData.startDate}
-                  onSelect={(date) => setLocationData(prev => ({ ...prev, startDate: date }))}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+        <div className="border-t border-border" />
+
+        {/* Section 3: Financial Data */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <DollarSign className="h-4 w-4" />
+            Financial Details
           </div>
-          <div className="space-y-2">
-            <Label>End Date *</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !locationData.endDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {locationData.endDate ? format(locationData.endDate, "PPP") : <span>Pick end date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={locationData.endDate}
-                  onSelect={(date) => setLocationData(prev => ({ ...prev, endDate: date }))}
-                  disabled={(date) => locationData.startDate ? date < locationData.startDate : false}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+          
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="totalRevenue">Total Revenue ($)</Label>
+              <Input
+                id="totalRevenue"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={locationData.totalRevenue || ""}
+                onChange={(e) => updateCommissionFromPercentage(parseFloat(e.target.value) || 0, locationData.commissionPercentage)}
+              />
+              <p className="text-xs text-muted-foreground">Total machine revenue for the period</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="commissionPercentage">Commission Rate (%)</Label>
+              <Input
+                id="commissionPercentage"
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                placeholder="0.0"
+                value={locationData.commissionPercentage || ""}
+                onChange={(e) => updateCommissionFromPercentage(locationData.totalRevenue, parseFloat(e.target.value) || 0)}
+              />
+              <p className="text-xs text-muted-foreground">Location's share of revenue</p>
+            </div>
+          </div>
+
+          {/* Live Commission Preview */}
+          <div className="rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/20 rounded-lg">
+                  <Calculator className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Commission to Pay</p>
+                  <p className="text-xs text-muted-foreground">
+                    {locationData.commissionPercentage > 0 
+                      ? `${locationData.commissionPercentage}% of $${locationData.totalRevenue.toFixed(2)}`
+                      : "Enter revenue and rate above"
+                    }
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-primary">
+                  ${locationData.commissionAmount.toFixed(2)}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="machineCount">Number of Machines</Label>
-          <Input
-            id="machineCount"
-            type="number"
-            min="1"
-            value={locationData.machineCount}
-            onChange={(e) => setLocationData(prev => ({ ...prev, machineCount: parseInt(e.target.value) || 1 }))}
-          />
-        </div>
+        <div className="border-t border-border" />
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <Label htmlFor="totalRevenue">Total Revenue ($)</Label>
-            <Input
-              id="totalRevenue"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={locationData.totalRevenue || ""}
-              onChange={(e) => updateCommissionFromPercentage(parseFloat(e.target.value) || 0, locationData.commissionPercentage)}
-            />
+        {/* Section 4: Notes */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <User className="h-4 w-4" />
+            Additional Notes
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="commissionPercentage">Commission (%)</Label>
-            <Input
-              id="commissionPercentage"
-              type="number"
-              step="0.1"
-              min="0"
-              max="100"
-              placeholder="0.0"
-              value={locationData.commissionPercentage || ""}
-              onChange={(e) => updateCommissionFromPercentage(locationData.totalRevenue, parseFloat(e.target.value) || 0)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="commissionAmount">Commission Amount ($)</Label>
-            <Input
-              id="commissionAmount"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={locationData.commissionAmount.toFixed(2)}
-              readOnly
-              className="bg-muted"
-            />
-          </div>
-        </div>
-
-        <div className="p-4 bg-muted rounded-lg">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Location Earnings:</span>
-            <span className="text-lg font-bold text-primary">
-              ${locationData.commissionAmount.toFixed(2)}
-            </span>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="notes">Additional Notes</Label>
           <Textarea
             id="notes"
-            placeholder="Add any additional information or notes for this location..."
+            placeholder="Add any additional information or notes for this report..."
             value={locationData.notes}
             onChange={(e) => setLocationData(prev => ({ ...prev, notes: e.target.value }))}
             rows={3}
+            className="resize-none"
           />
         </div>
 
+        {/* Generate Button */}
         <Button 
           onClick={generatePDF}
-          className="w-full"
-          disabled={!locationData.name || !locationData.startDate || !locationData.endDate}
+          className="w-full h-12 text-base"
+          disabled={!isFormValid}
         >
-          <Download className="h-4 w-4 mr-2" />
+          <Download className="h-5 w-5 mr-2" />
           Generate Commission Summary PDF
         </Button>
       </CardContent>
