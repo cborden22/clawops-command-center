@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Documents from "./pages/Documents";
 import CommissionSummary from "./pages/CommissionSummary";
+import InventoryTracker from "./pages/InventoryTracker";
 
 import NotFound from "./pages/NotFound";
 
@@ -33,6 +34,7 @@ const App: React.FC = () => {
                 <Route path="/" element={<Navigate to="/documents" replace />} />
                 <Route path="/documents" element={<Documents />} />
                 <Route path="/commission-summary" element={<CommissionSummary />} />
+                <Route path="/inventory" element={<InventoryTracker />} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>
