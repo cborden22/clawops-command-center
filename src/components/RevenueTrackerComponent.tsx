@@ -8,35 +8,82 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Plus, Trash2, TrendingUp, DollarSign, MapPin, Sparkles, AlertCircle } from "lucide-react";
-import { format, subDays, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  CalendarIcon, Plus, Trash2, TrendingUp, TrendingDown, DollarSign, 
+  MapPin, Sparkles, AlertCircle, ArrowUpCircle, ArrowDownCircle, Wallet 
+} from "lucide-react";
+import { 
+  format, subDays, startOfMonth, endOfMonth, isWithinInterval, 
+  startOfWeek, endOfWeek, subWeeks, startOfYear, endOfYear, subYears,
+  startOfQuarter, endOfQuarter, subQuarters
+} from "date-fns";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { toast } from "@/hooks/use-toast";
-import { useLocations } from "@/hooks/useLocations";
+import { useLocations, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocations";
 import { Link } from "react-router-dom";
+
+type EntryType = "income" | "expense";
+
+type FilterPeriod = 
+  | "past7days" 
+  | "lastWeek" 
+  | "thisWeek" 
+  | "lastMonth" 
+  | "thisMonth" 
+  | "lastQuarter"
+  | "thisQuarter"
+  | "lastYear" 
+  | "thisYear" 
+  | "custom" 
+  | "all";
 
 interface RevenueEntry {
   id: string;
+  type: EntryType;
   locationId: string;
+  machineType?: string; // optional machine type
   date: Date;
-  grossRevenue: number;
+  amount: number;
+  category?: string;
   notes: string;
 }
 
-const ENTRIES_STORAGE_KEY = "clawops-revenue-entries";
+const ENTRIES_STORAGE_KEY = "clawops-revenue-entries-v2";
+
+const EXPENSE_CATEGORIES = [
+  "Prize Restock",
+  "Maintenance",
+  "Commission Payout",
+  "Supplies",
+  "Transportation",
+  "Other",
+];
 
 export function RevenueTrackerComponent() {
   const { activeLocations, getLocationById, isLoaded } = useLocations();
   const [entries, setEntries] = useState<RevenueEntry[]>([]);
   
+  // Form state
+  const [entryType, setEntryType] = useState<EntryType>("income");
   const [selectedLocation, setSelectedLocation] = useState<string>("");
-  const [collectionDate, setCollectionDate] = useState<Date>(new Date());
-  const [grossRevenue, setGrossRevenue] = useState("");
+  const [selectedMachine, setSelectedMachine] = useState<string>("all");
+  const [entryDate, setEntryDate] = useState<Date>(new Date());
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState("");
   const [notes, setNotes] = useState("");
   
-  const [filterPeriod, setFilterPeriod] = useState<"7days" | "30days" | "thisMonth" | "all">("30days");
+  // Filter state
+  const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("thisMonth");
   const [filterLocation, setFilterLocation] = useState<string>("all");
+  const [filterType, setFilterType] = useState<"all" | EntryType>("all");
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
+
+  // Get machines for selected location
+  const selectedLocationData = selectedLocation ? getLocationById(selectedLocation) : null;
+  const locationMachines = selectedLocationData?.machines || [];
 
   useEffect(() => {
     const saved = localStorage.getItem(ENTRIES_STORAGE_KEY);
@@ -51,27 +98,69 @@ export function RevenueTrackerComponent() {
   }, [entries]);
 
   const addEntry = () => {
-    if (!selectedLocation || !grossRevenue) return;
+    if (!selectedLocation || !amount) return;
     const newEntry: RevenueEntry = {
       id: crypto.randomUUID(),
+      type: entryType,
       locationId: selectedLocation,
-      date: collectionDate,
-      grossRevenue: parseFloat(grossRevenue),
+      machineType: selectedMachine !== "all" ? selectedMachine : undefined,
+      date: entryDate,
+      amount: parseFloat(amount),
+      category: entryType === "expense" ? category : undefined,
       notes: notes.trim(),
     };
     setEntries([newEntry, ...entries]);
-    setGrossRevenue("");
+    setAmount("");
     setNotes("");
+    setCategory("");
+    setSelectedMachine("all");
     const loc = getLocationById(selectedLocation);
     toast({ 
-      title: "Collection Logged", 
-      description: `$${parseFloat(grossRevenue).toFixed(2)} recorded for ${loc?.name || "location"}` 
+      title: entryType === "income" ? "Income Logged" : "Expense Logged",
+      description: `$${parseFloat(amount).toFixed(2)} ${entryType} recorded for ${loc?.name || "location"}` 
     });
   };
 
   const deleteEntry = (id: string) => {
     setEntries(entries.filter(e => e.id !== id));
     toast({ title: "Entry Removed" });
+  };
+
+  const getDateRange = (period: FilterPeriod): { start: Date; end: Date } | null => {
+    const now = new Date();
+    
+    switch (period) {
+      case "past7days":
+        return { start: subDays(now, 7), end: now };
+      case "lastWeek":
+        const lastWeekEnd = endOfWeek(subWeeks(now, 1), { weekStartsOn: 0 });
+        return { start: startOfWeek(subWeeks(now, 1), { weekStartsOn: 0 }), end: lastWeekEnd };
+      case "thisWeek":
+        return { start: startOfWeek(now, { weekStartsOn: 0 }), end: endOfWeek(now, { weekStartsOn: 0 }) };
+      case "lastMonth":
+        const lastMonth = subDays(startOfMonth(now), 1);
+        return { start: startOfMonth(lastMonth), end: endOfMonth(lastMonth) };
+      case "thisMonth":
+        return { start: startOfMonth(now), end: endOfMonth(now) };
+      case "lastQuarter":
+        const lastQ = subQuarters(now, 1);
+        return { start: startOfQuarter(lastQ), end: endOfQuarter(lastQ) };
+      case "thisQuarter":
+        return { start: startOfQuarter(now), end: endOfQuarter(now) };
+      case "lastYear":
+        const lastYear = subYears(now, 1);
+        return { start: startOfYear(lastYear), end: endOfYear(lastYear) };
+      case "thisYear":
+        return { start: startOfYear(now), end: endOfYear(now) };
+      case "custom":
+        if (customStartDate && customEndDate) {
+          return { start: customStartDate, end: customEndDate };
+        }
+        return null;
+      case "all":
+      default:
+        return null;
+    }
   };
 
   const getFilteredEntries = () => {
@@ -81,34 +170,38 @@ export function RevenueTrackerComponent() {
       filtered = filtered.filter(e => e.locationId === filterLocation);
     }
     
-    const now = new Date();
-    if (filterPeriod === "7days") {
-      const start = subDays(now, 7);
-      filtered = filtered.filter(e => e.date >= start);
-    } else if (filterPeriod === "30days") {
-      const start = subDays(now, 30);
-      filtered = filtered.filter(e => e.date >= start);
-    } else if (filterPeriod === "thisMonth") {
-      const start = startOfMonth(now);
-      const end = endOfMonth(now);
-      filtered = filtered.filter(e => isWithinInterval(e.date, { start, end }));
+    if (filterType !== "all") {
+      filtered = filtered.filter(e => e.type === filterType);
+    }
+    
+    const range = getDateRange(filterPeriod);
+    if (range) {
+      filtered = filtered.filter(e => isWithinInterval(e.date, { start: range.start, end: range.end }));
     }
     
     return filtered.sort((a, b) => b.date.getTime() - a.date.getTime());
   };
 
   const filteredEntries = getFilteredEntries();
-  const totalRevenue = filteredEntries.reduce((sum, e) => sum + e.grossRevenue, 0);
-  const avgPerCollection = filteredEntries.length > 0 ? totalRevenue / filteredEntries.length : 0;
+  const totalIncome = filteredEntries.filter(e => e.type === "income").reduce((sum, e) => sum + e.amount, 0);
+  const totalExpenses = filteredEntries.filter(e => e.type === "expense").reduce((sum, e) => sum + e.amount, 0);
+  const netProfit = totalIncome - totalExpenses;
+  const incomeEntries = filteredEntries.filter(e => e.type === "income");
+  const avgPerCollection = incomeEntries.length > 0 ? totalIncome / incomeEntries.length : 0;
 
   const chartData = filteredEntries
-    .reduce((acc: { date: string; revenue: number }[], entry) => {
+    .reduce((acc: { date: string; income: number; expenses: number }[], entry) => {
       const dateStr = format(entry.date, "MM/dd");
       const existing = acc.find(d => d.date === dateStr);
       if (existing) {
-        existing.revenue += entry.grossRevenue;
+        if (entry.type === "income") existing.income += entry.amount;
+        else existing.expenses += entry.amount;
       } else {
-        acc.push({ date: dateStr, revenue: entry.grossRevenue });
+        acc.push({ 
+          date: dateStr, 
+          income: entry.type === "income" ? entry.amount : 0,
+          expenses: entry.type === "expense" ? entry.amount : 0
+        });
       }
       return acc;
     }, [])
@@ -117,11 +210,13 @@ export function RevenueTrackerComponent() {
 
   const locationPerformance = activeLocations.map(loc => {
     const locEntries = filteredEntries.filter(e => e.locationId === loc.id);
-    const total = locEntries.reduce((sum, e) => sum + e.grossRevenue, 0);
-    return { name: loc.name, revenue: total, collections: locEntries.length };
-  }).sort((a, b) => b.revenue - a.revenue);
+    const income = locEntries.filter(e => e.type === "income").reduce((sum, e) => sum + e.amount, 0);
+    const expenses = locEntries.filter(e => e.type === "expense").reduce((sum, e) => sum + e.amount, 0);
+    return { name: loc.name, income, expenses, net: income - expenses };
+  }).sort((a, b) => b.net - a.net);
 
   const getLocationName = (id: string) => getLocationById(id)?.name || "Unknown";
+  const getMachineLabel = (type: string) => MACHINE_TYPE_OPTIONS.find(m => m.value === type)?.label || type;
 
   if (!isLoaded) {
     return <div className="flex items-center justify-center py-12">Loading...</div>;
@@ -130,17 +225,55 @@ export function RevenueTrackerComponent() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
+          <CardContent className="pt-6 relative">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+            <div className="flex items-center gap-4 relative">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <ArrowUpCircle className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Income</p>
+                <p className="text-2xl font-bold text-foreground tracking-tight">${totalIncome.toFixed(2)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
+          <CardContent className="pt-6 relative">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+            <div className="flex items-center gap-4 relative">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <ArrowDownCircle className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
+                <p className="text-2xl font-bold text-foreground tracking-tight">${totalExpenses.toFixed(2)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
         <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
           <CardContent className="pt-6 relative">
             <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
             <div className="flex items-center gap-4 relative">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <DollarSign className="h-6 w-6 text-primary-foreground" />
+              <div className={cn(
+                "p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300",
+                netProfit >= 0 ? "bg-gradient-to-br from-primary to-primary/80" : "bg-gradient-to-br from-orange-500 to-orange-600"
+              )}>
+                <Wallet className="h-6 w-6 text-white" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
-                <p className="text-3xl font-bold text-foreground tracking-tight">${totalRevenue.toFixed(2)}</p>
+                <p className="text-sm font-medium text-muted-foreground">Net Profit</p>
+                <p className={cn(
+                  "text-2xl font-bold tracking-tight",
+                  netProfit >= 0 ? "text-foreground" : "text-orange-500"
+                )}>
+                  {netProfit < 0 ? "-" : ""}${Math.abs(netProfit).toFixed(2)}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -154,23 +287,8 @@ export function RevenueTrackerComponent() {
                 <TrendingUp className="h-6 w-6 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Avg per Collection</p>
-                <p className="text-3xl font-bold text-foreground tracking-tight">${avgPerCollection.toFixed(2)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-6 relative">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-accent/50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-4 relative">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-muted to-muted/80 shadow-md group-hover:scale-110 transition-transform duration-300">
-                <MapPin className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Active Locations</p>
-                <p className="text-3xl font-bold text-foreground tracking-tight">{activeLocations.length}</p>
+                <p className="text-sm font-medium text-muted-foreground">Avg Collection</p>
+                <p className="text-2xl font-bold text-foreground tracking-tight">${avgPerCollection.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -180,14 +298,13 @@ export function RevenueTrackerComponent() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Entry Form */}
         <div className="space-y-6">
-          {/* Add Collection Entry */}
           <Card className="glass-card overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b border-border/50">
               <CardTitle className="text-lg flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-primary/10">
                   <Sparkles className="h-4 w-4 text-primary" />
                 </div>
-                Log Collection
+                Log Entry
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
@@ -202,9 +319,23 @@ export function RevenueTrackerComponent() {
                 </div>
               ) : (
                 <>
+                  {/* Entry Type Toggle */}
+                  <Tabs value={entryType} onValueChange={(v) => setEntryType(v as EntryType)} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="income" className="gap-2">
+                        <ArrowUpCircle className="h-4 w-4" />
+                        Income
+                      </TabsTrigger>
+                      <TabsTrigger value="expense" className="gap-2">
+                        <ArrowDownCircle className="h-4 w-4" />
+                        Expense
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Location</Label>
-                    <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                    <Select value={selectedLocation} onValueChange={(v) => { setSelectedLocation(v); setSelectedMachine("all"); }}>
                       <SelectTrigger className="h-11 bg-background/50 hover:bg-background transition-colors">
                         <SelectValue placeholder="Select location" />
                       </SelectTrigger>
@@ -220,37 +351,75 @@ export function RevenueTrackerComponent() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Machine Type (optional) */}
+                  {locationMachines.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Machine (optional)</Label>
+                      <Select value={selectedMachine} onValueChange={setSelectedMachine}>
+                        <SelectTrigger className="h-11 bg-background/50 hover:bg-background transition-colors">
+                          <SelectValue placeholder="All machines" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Machines</SelectItem>
+                          {locationMachines.map(m => (
+                            <SelectItem key={m.type} value={m.type}>
+                              {m.label} ({m.count})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Collection Date</Label>
+                    <Label className="text-sm font-medium">Date</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start text-left font-normal h-11 bg-background/50 hover:bg-background">
                           <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                          {format(collectionDate, "PPP")}
+                          {format(entryDate, "PPP")}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={collectionDate}
-                          onSelect={(date) => date && setCollectionDate(date)}
+                          selected={entryDate}
+                          onSelect={(date) => date && setEntryDate(date)}
                           initialFocus
+                          className="pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>
                   </div>
+
+                  {/* Expense Category */}
+                  {entryType === "expense" && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Category</Label>
+                      <Select value={category} onValueChange={setCategory}>
+                        <SelectTrigger className="h-11 bg-background/50 hover:bg-background transition-colors">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EXPENSE_CATEGORIES.map(cat => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Gross Revenue</Label>
+                    <Label className="text-sm font-medium">Amount</Label>
                     <div className="relative">
                       <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         type="number"
                         step="0.01"
                         min="0"
-                        value={grossRevenue}
-                        onChange={(e) => setGrossRevenue(e.target.value)}
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
                         placeholder="0.00"
                         className="pl-9 h-11 bg-background/50 hover:bg-background transition-colors"
                       />
@@ -262,18 +431,23 @@ export function RevenueTrackerComponent() {
                     <Input
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder="e.g., Refilled prizes"
+                      placeholder={entryType === "income" ? "e.g., Weekend collection" : "e.g., New prizes for claw"}
                       className="h-11 bg-background/50 hover:bg-background transition-colors"
                     />
                   </div>
                   
                   <Button 
                     onClick={addEntry} 
-                    className="w-full h-11 premium-button"
-                    disabled={!selectedLocation || !grossRevenue}
+                    className={cn(
+                      "w-full h-11",
+                      entryType === "income" 
+                        ? "bg-green-600 hover:bg-green-700 text-white" 
+                        : "bg-red-600 hover:bg-red-700 text-white"
+                    )}
+                    disabled={!selectedLocation || !amount || (entryType === "expense" && !category)}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Collection
+                    Add {entryType === "income" ? "Income" : "Expense"}
                   </Button>
                 </>
               )}
@@ -287,21 +461,28 @@ export function RevenueTrackerComponent() {
           <Card className="glass-card">
             <CardContent className="pt-6">
               <div className="flex flex-wrap gap-4">
-                <div className="flex-1 min-w-[150px]">
+                <div className="flex-1 min-w-[140px]">
                   <Label className="text-xs font-medium text-muted-foreground mb-2 block">Time Period</Label>
-                  <Select value={filterPeriod} onValueChange={(v: any) => setFilterPeriod(v)}>
+                  <Select value={filterPeriod} onValueChange={(v: FilterPeriod) => setFilterPeriod(v)}>
                     <SelectTrigger className="h-10 bg-background/50">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="7days">Last 7 Days</SelectItem>
-                      <SelectItem value="30days">Last 30 Days</SelectItem>
+                      <SelectItem value="past7days">Past 7 Days</SelectItem>
+                      <SelectItem value="lastWeek">Last Week</SelectItem>
+                      <SelectItem value="thisWeek">This Week</SelectItem>
+                      <SelectItem value="lastMonth">Last Month</SelectItem>
                       <SelectItem value="thisMonth">This Month</SelectItem>
+                      <SelectItem value="lastQuarter">Last Quarter</SelectItem>
+                      <SelectItem value="thisQuarter">This Quarter</SelectItem>
+                      <SelectItem value="lastYear">Last Year</SelectItem>
+                      <SelectItem value="thisYear">This Year</SelectItem>
+                      <SelectItem value="custom">Custom Range</SelectItem>
                       <SelectItem value="all">All Time</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex-1 min-w-[150px]">
+                <div className="flex-1 min-w-[140px]">
                   <Label className="text-xs font-medium text-muted-foreground mb-2 block">Location</Label>
                   <Select value={filterLocation} onValueChange={setFilterLocation}>
                     <SelectTrigger className="h-10 bg-background/50">
@@ -315,11 +496,70 @@ export function RevenueTrackerComponent() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="flex-1 min-w-[120px]">
+                  <Label className="text-xs font-medium text-muted-foreground mb-2 block">Type</Label>
+                  <Select value={filterType} onValueChange={(v: "all" | EntryType) => setFilterType(v)}>
+                    <SelectTrigger className="h-10 bg-background/50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="income">Income Only</SelectItem>
+                      <SelectItem value="expense">Expenses Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+              
+              {/* Custom Date Range */}
+              {filterPeriod === "custom" && (
+                <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-border/50">
+                  <div className="flex-1 min-w-[150px]">
+                    <Label className="text-xs font-medium text-muted-foreground mb-2 block">Start Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal h-10 bg-background/50">
+                          <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                          {customStartDate ? format(customStartDate, "PP") : "Select date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={customStartDate}
+                          onSelect={setCustomStartDate}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="flex-1 min-w-[150px]">
+                    <Label className="text-xs font-medium text-muted-foreground mb-2 block">End Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal h-10 bg-background/50">
+                          <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                          {customEndDate ? format(customEndDate, "PP") : "Select date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={customEndDate}
+                          onSelect={setCustomEndDate}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Revenue Chart */}
+          {/* Income vs Expenses Chart */}
           {chartData.length > 0 && (
             <Card className="glass-card overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b border-border/50">
@@ -327,7 +567,7 @@ export function RevenueTrackerComponent() {
                   <div className="p-2 rounded-lg bg-primary/10">
                     <TrendingUp className="h-4 w-4 text-primary" />
                   </div>
-                  Revenue Trend
+                  Income vs Expenses
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
@@ -343,25 +583,43 @@ export function RevenueTrackerComponent() {
                           border: '1px solid hsl(var(--border))',
                           borderRadius: '8px'
                         }}
-                        formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
+                        formatter={(value: number, name: string) => [`$${value.toFixed(2)}`, name === 'income' ? 'Income' : 'Expenses']}
                       />
                       <Line 
                         type="monotone" 
-                        dataKey="revenue" 
-                        stroke="hsl(var(--primary))" 
+                        dataKey="income" 
+                        stroke="hsl(142, 76%, 36%)"
                         strokeWidth={2}
-                        dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2 }}
+                        dot={{ fill: 'hsl(142, 76%, 36%)', strokeWidth: 2 }}
+                        activeDot={{ r: 6 }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="expenses" 
+                        stroke="hsl(0, 84%, 60%)"
+                        strokeWidth={2}
+                        dot={{ fill: 'hsl(0, 84%, 60%)', strokeWidth: 2 }}
                         activeDot={{ r: 6 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
+                </div>
+                <div className="flex justify-center gap-6 mt-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-green-600" />
+                    <span className="text-sm text-muted-foreground">Income</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                    <span className="text-sm text-muted-foreground">Expenses</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
           {/* Location Performance */}
-          {locationPerformance.length > 0 && locationPerformance.some(l => l.revenue > 0) && (
+          {locationPerformance.length > 0 && locationPerformance.some(l => l.income > 0 || l.expenses > 0) && (
             <Card className="glass-card overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-muted/50 to-transparent border-b border-border/50">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -374,7 +632,7 @@ export function RevenueTrackerComponent() {
               <CardContent className="pt-6">
                 <div className="h-[200px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={locationPerformance.filter(l => l.revenue > 0)} layout="vertical">
+                    <BarChart data={locationPerformance.filter(l => l.income > 0 || l.expenses > 0)} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
                       <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `$${v}`} />
                       <YAxis type="category" dataKey="name" width={120} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
@@ -384,9 +642,10 @@ export function RevenueTrackerComponent() {
                           border: '1px solid hsl(var(--border))',
                           borderRadius: '8px'
                         }}
-                        formatter={(value: number) => [`$${value.toFixed(2)}`, 'Revenue']}
+                        formatter={(value: number, name: string) => [`$${value.toFixed(2)}`, name === 'income' ? 'Income' : 'Expenses']}
                       />
-                      <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="income" fill="hsl(142, 76%, 36%)" radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="expenses" fill="hsl(0, 84%, 60%)" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -394,14 +653,14 @@ export function RevenueTrackerComponent() {
             </Card>
           )}
 
-          {/* Collection History */}
+          {/* Entry History */}
           <Card className="glass-card overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-muted/50 to-transparent border-b border-border/50">
               <CardTitle className="text-lg flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-muted">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </div>
-                Collection History
+                Entry History
                 <Badge variant="secondary" className="ml-auto">{filteredEntries.length} entries</Badge>
               </CardTitle>
             </CardHeader>
@@ -409,7 +668,7 @@ export function RevenueTrackerComponent() {
               {filteredEntries.length === 0 ? (
                 <div className="text-center py-12">
                   <DollarSign className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                  <p className="text-muted-foreground">No collections recorded yet</p>
+                  <p className="text-muted-foreground">No entries recorded yet</p>
                 </div>
               ) : (
                 <div className="rounded-xl border overflow-hidden">
@@ -417,19 +676,41 @@ export function RevenueTrackerComponent() {
                     <TableHeader>
                       <TableRow className="bg-muted/30 hover:bg-muted/30">
                         <TableHead className="font-semibold">Date</TableHead>
+                        <TableHead className="font-semibold">Type</TableHead>
                         <TableHead className="font-semibold">Location</TableHead>
                         <TableHead className="text-right font-semibold">Amount</TableHead>
-                        <TableHead className="font-semibold">Notes</TableHead>
+                        <TableHead className="font-semibold">Details</TableHead>
                         <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredEntries.slice(0, 10).map((entry) => (
+                      {filteredEntries.slice(0, 15).map((entry) => (
                         <TableRow key={entry.id} className="group">
                           <TableCell className="text-muted-foreground">{format(entry.date, "MMM d, yyyy")}</TableCell>
-                          <TableCell className="font-medium">{getLocationName(entry.locationId)}</TableCell>
-                          <TableCell className="text-right font-bold text-primary">${entry.grossRevenue.toFixed(2)}</TableCell>
-                          <TableCell className="text-muted-foreground text-sm truncate max-w-[200px]">{entry.notes || "—"}</TableCell>
+                          <TableCell>
+                            <Badge variant={entry.type === "income" ? "default" : "destructive"} className="gap-1">
+                              {entry.type === "income" ? <ArrowUpCircle className="h-3 w-3" /> : <ArrowDownCircle className="h-3 w-3" />}
+                              {entry.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {getLocationName(entry.locationId)}
+                            {entry.machineType && (
+                              <span className="text-xs text-muted-foreground ml-1">
+                                ({getMachineLabel(entry.machineType)})
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className={cn(
+                            "text-right font-bold",
+                            entry.type === "income" ? "text-green-600" : "text-red-500"
+                          )}>
+                            {entry.type === "expense" ? "-" : ""}${entry.amount.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm truncate max-w-[200px]">
+                            {entry.category ? <Badge variant="outline" className="mr-2">{entry.category}</Badge> : null}
+                            {entry.notes || "—"}
+                          </TableCell>
                           <TableCell>
                             <Button
                               variant="ghost"
