@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils"
 import html2pdf from "html2pdf.js"
 import { useLocations } from "@/hooks/useLocationsDB"
 import { addRevenueExpense } from "@/hooks/useRevenueEntriesDB"
+import { useAuth } from "@/contexts/AuthContext"
 import { Link } from "react-router-dom"
 
 interface LocationData {
@@ -31,6 +32,7 @@ interface LocationData {
 
 export function CommissionSummaryGenerator() {
   const { toast } = useToast()
+  const { user } = useAuth()
   const { activeLocations, getLocationById, isLoaded, addCommissionSummary } = useLocations()
   const [locationData, setLocationData] = useState<LocationData>({
     locationId: "",
@@ -211,8 +213,9 @@ export function CommissionSummaryGenerator() {
         
         // Automatically log the commission as an expense in Revenue Tracker
         // Works whether location is selected or manually entered
-        if (locationData.commissionAmount > 0 && locationData.startDate && locationData.endDate) {
+        if (user && locationData.commissionAmount > 0 && locationData.startDate && locationData.endDate) {
           addRevenueExpense(
+            user.id,
             locationData.locationId || "manual",
             locationData.commissionAmount,
             "Commission Payout",
