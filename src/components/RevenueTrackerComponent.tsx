@@ -22,9 +22,8 @@ import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { toast } from "@/hooks/use-toast";
 import { useLocations, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocations";
+import { useRevenueEntries, EntryType } from "@/hooks/useRevenueEntries";
 import { Link } from "react-router-dom";
-
-type EntryType = "income" | "expense";
 
 type FilterPeriod = 
   | "past7days" 
@@ -39,19 +38,6 @@ type FilterPeriod =
   | "custom" 
   | "all";
 
-interface RevenueEntry {
-  id: string;
-  type: EntryType;
-  locationId: string;
-  machineType?: string; // optional machine type
-  date: Date;
-  amount: number;
-  category?: string;
-  notes: string;
-}
-
-const ENTRIES_STORAGE_KEY = "clawops-revenue-entries-v2";
-
 const EXPENSE_CATEGORIES = [
   "Prize Restock",
   "Maintenance",
@@ -63,7 +49,7 @@ const EXPENSE_CATEGORIES = [
 
 export function RevenueTrackerComponent() {
   const { activeLocations, getLocationById, isLoaded } = useLocations();
-  const [entries, setEntries] = useState<RevenueEntry[]>([]);
+  const { entries, addEntry, deleteEntry, isLoaded: entriesLoaded } = useRevenueEntries();
   
   // Form state
   const [entryType, setEntryType] = useState<EntryType>("income");
@@ -85,22 +71,9 @@ export function RevenueTrackerComponent() {
   const selectedLocationData = selectedLocation ? getLocationById(selectedLocation) : null;
   const locationMachines = selectedLocationData?.machines || [];
 
-  useEffect(() => {
-    const saved = localStorage.getItem(ENTRIES_STORAGE_KEY);
-    if (saved) {
-      const data = JSON.parse(saved);
-      setEntries((data || []).map((e: any) => ({ ...e, date: new Date(e.date) })));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(ENTRIES_STORAGE_KEY, JSON.stringify(entries));
-  }, [entries]);
-
-  const addEntry = () => {
+  const handleAddEntry = () => {
     if (!selectedLocation || !amount) return;
-    const newEntry: RevenueEntry = {
-      id: crypto.randomUUID(),
+    addEntry({
       type: entryType,
       locationId: selectedLocation,
       machineType: selectedMachine !== "all" ? selectedMachine : undefined,
@@ -108,8 +81,7 @@ export function RevenueTrackerComponent() {
       amount: parseFloat(amount),
       category: entryType === "expense" ? category : undefined,
       notes: notes.trim(),
-    };
-    setEntries([newEntry, ...entries]);
+    });
     setAmount("");
     setNotes("");
     setCategory("");
@@ -121,8 +93,8 @@ export function RevenueTrackerComponent() {
     });
   };
 
-  const deleteEntry = (id: string) => {
-    setEntries(entries.filter(e => e.id !== id));
+  const handleDeleteEntry = (id: string) => {
+    deleteEntry(id);
     toast({ title: "Entry Removed" });
   };
 
@@ -218,7 +190,7 @@ export function RevenueTrackerComponent() {
   const getLocationName = (id: string) => getLocationById(id)?.name || "Unknown";
   const getMachineLabel = (type: string) => MACHINE_TYPE_OPTIONS.find(m => m.value === type)?.label || type;
 
-  if (!isLoaded) {
+  if (!isLoaded || !entriesLoaded) {
     return <div className="flex items-center justify-center py-12">Loading...</div>;
   }
 
@@ -437,7 +409,7 @@ export function RevenueTrackerComponent() {
                   </div>
                   
                   <Button 
-                    onClick={addEntry} 
+                    onClick={handleAddEntry}
                     className={cn(
                       "w-full h-11",
                       entryType === "income" 
@@ -716,7 +688,7 @@ export function RevenueTrackerComponent() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
-                              onClick={() => deleteEntry(entry.id)}
+                              onClick={() => handleDeleteEntry(entry.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

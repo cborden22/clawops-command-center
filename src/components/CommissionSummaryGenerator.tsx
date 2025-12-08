@@ -13,6 +13,7 @@ import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns"
 import { cn } from "@/lib/utils"
 import html2pdf from "html2pdf.js"
 import { useLocations } from "@/hooks/useLocations"
+import { addRevenueExpense } from "@/hooks/useRevenueEntries"
 import { Link } from "react-router-dom"
 
 interface LocationData {
@@ -206,10 +207,21 @@ export function CommissionSummaryGenerator() {
             machineCount: locationData.machineCount,
             notes: locationData.notes,
           })
+          
+          // Automatically log the commission as an expense in Revenue Tracker
+          if (locationData.commissionAmount > 0) {
+            addRevenueExpense(
+              locationData.locationId,
+              locationData.commissionAmount,
+              "Commission Payout",
+              `Commission for ${locationData.name} (${periodText})`,
+              locationData.endDate
+            )
+          }
         }
         toast({
           title: "Commission Summary Generated",
-          description: `PDF report created for ${locationData.name}${locationData.locationId ? " and saved to location history" : ""}`,
+          description: `PDF created for ${locationData.name}${locationData.locationId ? " - commission logged as expense" : ""}`,
         })
       })
       .catch((error) => {
