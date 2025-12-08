@@ -30,7 +30,7 @@ interface LocationData {
 
 export function CommissionSummaryGenerator() {
   const { toast } = useToast()
-  const { activeLocations, getLocationById, isLoaded } = useLocations()
+  const { activeLocations, getLocationById, isLoaded, addCommissionSummary } = useLocations()
   const [locationData, setLocationData] = useState<LocationData>({
     locationId: "",
     name: "",
@@ -195,9 +195,21 @@ export function CommissionSummaryGenerator() {
       .from(content)
       .save()
       .then(() => {
+        // Save commission summary to location if a location was selected
+        if (locationData.locationId && locationData.startDate && locationData.endDate) {
+          addCommissionSummary(locationData.locationId, {
+            startDate: locationData.startDate.toISOString(),
+            endDate: locationData.endDate.toISOString(),
+            totalRevenue: locationData.totalRevenue,
+            commissionPercentage: locationData.commissionPercentage,
+            commissionAmount: locationData.commissionAmount,
+            machineCount: locationData.machineCount,
+            notes: locationData.notes,
+          })
+        }
         toast({
           title: "Commission Summary Generated",
-          description: `PDF report created for ${locationData.name}`,
+          description: `PDF report created for ${locationData.name}${locationData.locationId ? " and saved to location history" : ""}`,
         })
       })
       .catch((error) => {
