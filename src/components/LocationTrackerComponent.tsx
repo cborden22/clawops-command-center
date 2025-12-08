@@ -29,7 +29,6 @@ import {
   Edit,
   Building2,
   Phone,
-  Mail,
   User,
   Sparkles,
   Search,
@@ -38,6 +37,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useLocations, Location } from "@/hooks/useLocations";
+import { LocationDetailDialog } from "./LocationDetailDialog";
 
 const emptyFormData = {
   name: "",
@@ -536,70 +536,12 @@ export function LocationTrackerComponent() {
         </CardContent>
       </Card>
 
-      {/* View Location Dialog */}
-      <Dialog open={!!viewLocation} onOpenChange={() => setViewLocation(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-primary" />
-              {viewLocation?.name}
-            </DialogTitle>
-          </DialogHeader>
-          {viewLocation && (
-            <div className="space-y-4 py-2">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Address</p>
-                  <p className="font-medium">{viewLocation.address || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Status</p>
-                  <Badge
-                    variant={viewLocation.isActive ? "default" : "secondary"}
-                    className="mt-1"
-                  >
-                    {viewLocation.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Contact Person</p>
-                  <p className="font-medium">{viewLocation.contactPerson || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Phone</p>
-                  <p className="font-medium">{viewLocation.contactPhone || "—"}</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Email</p>
-                <p className="font-medium">{viewLocation.contactEmail || "—"}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Machines</p>
-                  <p className="font-medium">{viewLocation.machineCount}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Commission Rate</p>
-                  <p className="font-medium">
-                    {viewLocation.commissionRate > 0
-                      ? `${viewLocation.commissionRate}%`
-                      : "—"}
-                  </p>
-                </div>
-              </div>
-              {viewLocation.notes && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Notes</p>
-                  <p className="font-medium">{viewLocation.notes}</p>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* View Location Dialog with Tabs */}
+      <LocationDetailDialog
+        location={viewLocation}
+        open={!!viewLocation}
+        onOpenChange={(open) => !open && setViewLocation(null)}
+      />
     </div>
   );
 }
