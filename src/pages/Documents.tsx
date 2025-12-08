@@ -8,20 +8,38 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
-import { FileText, Download } from "lucide-react"
+import { FileText, Download, MapPin, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import html2pdf from "html2pdf.js"
+import { useLocations } from "@/hooks/useLocations"
+import { Link } from "react-router-dom"
 
 interface FormData {
   [key: string]: string | Date | undefined
 }
 
 export default function Documents() {
-  console.log('Documents: Component is rendering');
   const { toast } = useToast()
+  const { activeLocations, getLocationById, isLoaded } = useLocations()
   const [formData, setFormData] = useState<FormData>({})
   const [paymentType, setPaymentType] = useState<"percentage" | "flat">("percentage")
+  const [selectedLocationId, setSelectedLocationId] = useState<string>("")
+
+  const handleLocationSelect = (locationId: string) => {
+    const location = getLocationById(locationId)
+    if (location) {
+      setSelectedLocationId(locationId)
+      setFormData(prev => ({
+        ...prev,
+        "Business Name": location.name,
+        "Business Address": location.address,
+        "Business Contact Info": `${location.contactPerson}${location.contactPhone ? ` - ${location.contactPhone}` : ""}${location.contactEmail ? ` - ${location.contactEmail}` : ""}`,
+        "Revenue Share Percentage": location.commissionRate > 0 ? String(location.commissionRate) : ""
+      }))
+    }
+  }
 
   const locationAgreementFields = [
     "Agreement Date",
@@ -421,6 +439,48 @@ export default function Documents() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Quick Location Select */}
+          {activeLocations.length > 0 && (
+            <div className="space-y-2 pb-4 border-b border-border">
+              <Label className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Quick Select from Saved Locations
+              </Label>
+              <Select value={selectedLocationId} onValueChange={handleLocationSelect}>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Select a location to auto-fill business details..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeLocations.map((loc) => (
+                    <SelectItem key={loc.id} value={loc.id}>
+                      <span className="flex items-center gap-2">
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        {loc.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {activeLocations.length === 0 && (
+            <div className="p-4 rounded-xl bg-muted/30 border border-dashed border-muted-foreground/20 mb-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium">No saved locations</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Add locations in the Location Tracker to quickly fill in business details.
+                  </p>
+                  <Button asChild variant="outline" size="sm" className="mt-3">
+                    <Link to="/locations">Go to Locations</Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {locationAgreementFields.map((field) => {
             const isDateField = field === "Agreement Date" || field === "Start Date" || field === "End Date";
             

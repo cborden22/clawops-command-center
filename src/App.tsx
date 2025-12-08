@@ -9,6 +9,7 @@ import Documents from "./pages/Documents";
 import CommissionSummary from "./pages/CommissionSummary";
 import InventoryTracker from "./pages/InventoryTracker";
 import RevenueTracker from "./pages/RevenueTracker";
+import Locations from "./pages/Locations";
 
 import NotFound from "./pages/NotFound";
 
@@ -32,7 +33,8 @@ const App: React.FC = () => {
           <BrowserRouter>
             <AppLayout>
               <Routes>
-                <Route path="/" element={<Navigate to="/documents" replace />} />
+                <Route path="/" element={<Navigate to="/locations" replace />} />
+                <Route path="/locations" element={<Locations />} />
                 <Route path="/documents" element={<Documents />} />
                 <Route path="/commission-summary" element={<CommissionSummary />} />
                 <Route path="/inventory" element={<InventoryTracker />} />
