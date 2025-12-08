@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -26,12 +26,13 @@ import {
   Building2,
   Warehouse,
   DollarSign,
-  Palette,
-  Clock
+  Palette
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
-const STORAGE_KEY = "clawops-app-settings";
+const APP_SETTINGS_KEY = "clawops-app-settings";
+const INTEGRATIONS_KEY = "clawops-integrations";
+const NOTIFICATIONS_KEY = "clawops-notifications";
 
 interface AppSettings {
   businessName: string;
@@ -49,6 +50,25 @@ interface AppSettings {
   darkMode: boolean;
   compactView: boolean;
   autoBackup: boolean;
+}
+
+interface IntegrationSettings {
+  nayax: {
+    apiKey: string;
+    operatorId: string;
+    connected: boolean;
+  };
+  cantaloupe: {
+    apiKey: string;
+    clientId: string;
+    connected: boolean;
+  };
+}
+
+interface NotificationSettings {
+  emailNotifications: boolean;
+  lowStockAlerts: boolean;
+  dailyReports: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -69,43 +89,75 @@ const DEFAULT_SETTINGS: AppSettings = {
   autoBackup: true,
 };
 
+const DEFAULT_INTEGRATIONS: IntegrationSettings = {
+  nayax: { apiKey: "", operatorId: "", connected: false },
+  cantaloupe: { apiKey: "", clientId: "", connected: false },
+};
+
+const DEFAULT_NOTIFICATIONS: NotificationSettings = {
+  emailNotifications: true,
+  lowStockAlerts: true,
+  dailyReports: false,
+};
+
 export default function Settings() {
   const { user } = useAuth();
   
   // Profile state
-  const [fullName, setFullName] = useState(user?.user_metadata?.full_name || "");
+  const [fullName, setFullName] = useState("");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   
   // App Settings state
   const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   
-  // Nayax API state
-  const [nayaxApiKey, setNayaxApiKey] = useState("");
-  const [nayaxOperatorId, setNayaxOperatorId] = useState("");
+  // Integration state
+  const [integrations, setIntegrations] = useState<IntegrationSettings>(DEFAULT_INTEGRATIONS);
   const [showNayaxKey, setShowNayaxKey] = useState(false);
-  const [nayaxConnected, setNayaxConnected] = useState(false);
-  
-  // Cantaloupe API state
-  const [cantaloupeApiKey, setCantaloupeApiKey] = useState("");
-  const [cantaloupeClientId, setCantaloupeClientId] = useState("");
   const [showCantaloupeKey, setShowCantaloupeKey] = useState(false);
-  const [cantaloupeConnected, setCantaloupeConnected] = useState(false);
   
-  // Notification preferences
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [lowStockAlerts, setLowStockAlerts] = useState(true);
-  const [dailyReports, setDailyReports] = useState(false);
+  // Notification state
+  const [notifications, setNotifications] = useState<NotificationSettings>(DEFAULT_NOTIFICATIONS);
+  
+  // Security state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  // Load profile from user metadata
+  useEffect(() => {
+    if (user) {
+      setFullName(user.user_metadata?.full_name || "");
+    }
+  }, [user]);
 
   // Load app settings from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
+    const savedSettings = localStorage.getItem(APP_SETTINGS_KEY);
+    if (savedSettings) {
       try {
-        const parsed = JSON.parse(saved);
-        setAppSettings({ ...DEFAULT_SETTINGS, ...parsed });
+        setAppSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) });
       } catch (e) {
         console.error("Failed to load app settings:", e);
+      }
+    }
+
+    const savedIntegrations = localStorage.getItem(INTEGRATIONS_KEY);
+    if (savedIntegrations) {
+      try {
+        setIntegrations({ ...DEFAULT_INTEGRATIONS, ...JSON.parse(savedIntegrations) });
+      } catch (e) {
+        console.error("Failed to load integrations:", e);
+      }
+    }
+
+    const savedNotifications = localStorage.getItem(NOTIFICATIONS_KEY);
+    if (savedNotifications) {
+      try {
+        setNotifications({ ...DEFAULT_NOTIFICATIONS, ...JSON.parse(savedNotifications) });
+      } catch (e) {
+        console.error("Failed to load notifications:", e);
       }
     }
   }, []);
@@ -117,8 +169,7 @@ export default function Settings() {
   const handleSaveAppSettings = async () => {
     setIsSavingSettings(true);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(appSettings));
-      await new Promise(resolve => setTimeout(resolve, 500));
+      localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(appSettings));
       toast({
         title: "Settings Saved",
         description: "Your app settings have been saved successfully.",
@@ -135,17 +186,51 @@ export default function Settings() {
   };
 
   const handleSaveProfile = async () => {
+    if (!user) return;
+    
     setIsUpdatingProfile(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsUpdatingProfile(false);
-    toast({
-      title: "Profile Updated",
-      description: "Your profile has been saved successfully.",
-    });
+    try {
+      // Update user metadata in Supabase Auth
+      const { error: authError } = await supabase.auth.updateUser({
+        data: { full_name: fullName }
+      });
+      
+      if (authError) throw authError;
+
+      // Also update the profiles table
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert({
+          user_id: user.id,
+          full_name: fullName,
+          email: user.email,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "user_id" });
+
+      if (profileError) throw profileError;
+
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been saved successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
+
+  const saveIntegrations = (newIntegrations: IntegrationSettings) => {
+    setIntegrations(newIntegrations);
+    localStorage.setItem(INTEGRATIONS_KEY, JSON.stringify(newIntegrations));
   };
 
   const handleConnectNayax = async () => {
-    if (!nayaxApiKey || !nayaxOperatorId) {
+    if (!integrations.nayax.apiKey || !integrations.nayax.operatorId) {
       toast({
         title: "Missing Information",
         description: "Please enter both API Key and Operator ID.",
@@ -154,7 +239,11 @@ export default function Settings() {
       return;
     }
     
-    setNayaxConnected(true);
+    const updated = {
+      ...integrations,
+      nayax: { ...integrations.nayax, connected: true }
+    };
+    saveIntegrations(updated);
     toast({
       title: "Nayax Connected",
       description: "Your Nayax account has been connected successfully.",
@@ -162,7 +251,7 @@ export default function Settings() {
   };
 
   const handleConnectCantaloupe = async () => {
-    if (!cantaloupeApiKey || !cantaloupeClientId) {
+    if (!integrations.cantaloupe.apiKey || !integrations.cantaloupe.clientId) {
       toast({
         title: "Missing Information",
         description: "Please enter both API Key and Client ID.",
@@ -171,7 +260,11 @@ export default function Settings() {
       return;
     }
     
-    setCantaloupeConnected(true);
+    const updated = {
+      ...integrations,
+      cantaloupe: { ...integrations.cantaloupe, connected: true }
+    };
+    saveIntegrations(updated);
     toast({
       title: "Cantaloupe Connected",
       description: "Your Cantaloupe account has been connected successfully.",
@@ -179,9 +272,11 @@ export default function Settings() {
   };
 
   const handleDisconnectNayax = () => {
-    setNayaxConnected(false);
-    setNayaxApiKey("");
-    setNayaxOperatorId("");
+    const updated = {
+      ...integrations,
+      nayax: { apiKey: "", operatorId: "", connected: false }
+    };
+    saveIntegrations(updated);
     toast({
       title: "Nayax Disconnected",
       description: "Your Nayax integration has been removed.",
@@ -189,12 +284,90 @@ export default function Settings() {
   };
 
   const handleDisconnectCantaloupe = () => {
-    setCantaloupeConnected(false);
-    setCantaloupeApiKey("");
-    setCantaloupeClientId("");
+    const updated = {
+      ...integrations,
+      cantaloupe: { apiKey: "", clientId: "", connected: false }
+    };
+    saveIntegrations(updated);
     toast({
       title: "Cantaloupe Disconnected",
       description: "Your Cantaloupe integration has been removed.",
+    });
+  };
+
+  const updateNotification = <K extends keyof NotificationSettings>(key: K, value: boolean) => {
+    const updated = { ...notifications, [key]: value };
+    setNotifications(updated);
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
+    toast({
+      title: "Preferences Updated",
+      description: "Your notification preferences have been saved.",
+    });
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all password fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Passwords Don't Match",
+        description: "New password and confirmation must match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      
+      toast({
+        title: "Password Updated",
+        description: "Your password has been changed successfully.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update password.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+      return;
+    }
+
+    toast({
+      title: "Account Deletion",
+      description: "Please contact support to delete your account.",
     });
   };
 
@@ -556,7 +729,7 @@ export default function Settings() {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       Nayax Integration
-                      {nayaxConnected ? (
+                      {integrations.nayax.connected ? (
                         <Badge className="bg-green-500/10 text-green-500 border-green-500/20">
                           <CheckCircle2 className="h-3 w-3 mr-1" />
                           Connected
@@ -581,14 +754,17 @@ export default function Settings() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!nayaxConnected ? (
+              {!integrations.nayax.connected ? (
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="nayaxOperatorId">Operator ID</Label>
                     <Input
                       id="nayaxOperatorId"
-                      value={nayaxOperatorId}
-                      onChange={(e) => setNayaxOperatorId(e.target.value)}
+                      value={integrations.nayax.operatorId}
+                      onChange={(e) => setIntegrations(prev => ({
+                        ...prev,
+                        nayax: { ...prev.nayax, operatorId: e.target.value }
+                      }))}
                       placeholder="Enter your Nayax Operator ID"
                       maxLength={100}
                     />
@@ -600,8 +776,11 @@ export default function Settings() {
                       <Input
                         id="nayaxApiKey"
                         type={showNayaxKey ? "text" : "password"}
-                        value={nayaxApiKey}
-                        onChange={(e) => setNayaxApiKey(e.target.value)}
+                        value={integrations.nayax.apiKey}
+                        onChange={(e) => setIntegrations(prev => ({
+                          ...prev,
+                          nayax: { ...prev.nayax, apiKey: e.target.value }
+                        }))}
                         placeholder="Enter your Nayax API Key"
                         className="pr-10"
                         maxLength={200}
@@ -637,7 +816,7 @@ export default function Settings() {
                     <div>
                       <p className="font-medium">Nayax is connected</p>
                       <p className="text-sm text-muted-foreground">
-                        Operator ID: {nayaxOperatorId}
+                        Operator ID: {integrations.nayax.operatorId}
                       </p>
                     </div>
                   </div>
@@ -660,7 +839,7 @@ export default function Settings() {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       Cantaloupe Integration
-                      {cantaloupeConnected ? (
+                      {integrations.cantaloupe.connected ? (
                         <Badge className="bg-green-500/10 text-green-500 border-green-500/20">
                           <CheckCircle2 className="h-3 w-3 mr-1" />
                           Connected
@@ -685,14 +864,17 @@ export default function Settings() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!cantaloupeConnected ? (
+              {!integrations.cantaloupe.connected ? (
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="cantaloupeClientId">Client ID</Label>
                     <Input
                       id="cantaloupeClientId"
-                      value={cantaloupeClientId}
-                      onChange={(e) => setCantaloupeClientId(e.target.value)}
+                      value={integrations.cantaloupe.clientId}
+                      onChange={(e) => setIntegrations(prev => ({
+                        ...prev,
+                        cantaloupe: { ...prev.cantaloupe, clientId: e.target.value }
+                      }))}
                       placeholder="Enter your Cantaloupe Client ID"
                       maxLength={100}
                     />
@@ -704,8 +886,11 @@ export default function Settings() {
                       <Input
                         id="cantaloupeApiKey"
                         type={showCantaloupeKey ? "text" : "password"}
-                        value={cantaloupeApiKey}
-                        onChange={(e) => setCantaloupeApiKey(e.target.value)}
+                        value={integrations.cantaloupe.apiKey}
+                        onChange={(e) => setIntegrations(prev => ({
+                          ...prev,
+                          cantaloupe: { ...prev.cantaloupe, apiKey: e.target.value }
+                        }))}
                         placeholder="Enter your Cantaloupe API Key"
                         className="pr-10"
                         maxLength={200}
@@ -741,7 +926,7 @@ export default function Settings() {
                     <div>
                       <p className="font-medium">Cantaloupe is connected</p>
                       <p className="text-sm text-muted-foreground">
-                        Client ID: {cantaloupeClientId}
+                        Client ID: {integrations.cantaloupe.clientId}
                       </p>
                     </div>
                   </div>
@@ -776,8 +961,8 @@ export default function Settings() {
                 </div>
                 <Switch
                   id="emailNotifications"
-                  checked={emailNotifications}
-                  onCheckedChange={setEmailNotifications}
+                  checked={notifications.emailNotifications}
+                  onCheckedChange={(v) => updateNotification("emailNotifications", v)}
                 />
               </div>
 
@@ -792,8 +977,8 @@ export default function Settings() {
                 </div>
                 <Switch
                   id="lowStockAlerts"
-                  checked={lowStockAlerts}
-                  onCheckedChange={setLowStockAlerts}
+                  checked={notifications.lowStockAlerts}
+                  onCheckedChange={(v) => updateNotification("lowStockAlerts", v)}
                 />
               </div>
 
@@ -808,8 +993,8 @@ export default function Settings() {
                 </div>
                 <Switch
                   id="dailyReports"
-                  checked={dailyReports}
-                  onCheckedChange={setDailyReports}
+                  checked={notifications.dailyReports}
+                  onCheckedChange={(v) => updateNotification("dailyReports", v)}
                 />
               </div>
             </CardContent>
@@ -835,6 +1020,8 @@ export default function Settings() {
                   id="currentPassword"
                   type="password"
                   placeholder="Enter current password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
                 />
               </div>
 
@@ -844,6 +1031,8 @@ export default function Settings() {
                   id="newPassword"
                   type="password"
                   placeholder="Enter new password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                 />
               </div>
 
@@ -853,12 +1042,18 @@ export default function Settings() {
                   id="confirmPassword"
                   type="password"
                   placeholder="Confirm new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </div>
 
-              <Button className="gap-2">
+              <Button 
+                className="gap-2" 
+                onClick={handleUpdatePassword}
+                disabled={isUpdatingPassword}
+              >
                 <Shield className="h-4 w-4" />
-                Update Password
+                {isUpdatingPassword ? "Updating..." : "Update Password"}
               </Button>
             </CardContent>
           </Card>
@@ -871,7 +1066,9 @@ export default function Settings() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button variant="destructive">Delete Account</Button>
+              <Button variant="destructive" onClick={handleDeleteAccount}>
+                Delete Account
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
