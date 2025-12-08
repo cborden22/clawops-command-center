@@ -14,7 +14,317 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      commission_summaries: {
+        Row: {
+          commission_amount: number | null
+          commission_percentage: number | null
+          created_at: string | null
+          end_date: string
+          id: string
+          location_id: string
+          machine_count: number | null
+          notes: string | null
+          start_date: string
+          total_revenue: number | null
+        }
+        Insert: {
+          commission_amount?: number | null
+          commission_percentage?: number | null
+          created_at?: string | null
+          end_date: string
+          id?: string
+          location_id: string
+          machine_count?: number | null
+          notes?: string | null
+          start_date: string
+          total_revenue?: number | null
+        }
+        Update: {
+          commission_amount?: number | null
+          commission_percentage?: number | null
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          location_id?: string
+          machine_count?: number | null
+          notes?: string | null
+          start_date?: string
+          total_revenue?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_summaries_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_items: {
+        Row: {
+          category: string | null
+          id: string
+          last_updated: string | null
+          location: string | null
+          min_stock: number | null
+          name: string
+          quantity: number | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          id?: string
+          last_updated?: string | null
+          location?: string | null
+          min_stock?: number | null
+          name: string
+          quantity?: number | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          id?: string
+          last_updated?: string | null
+          location?: string | null
+          min_stock?: number | null
+          name?: string
+          quantity?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      location_agreements: {
+        Row: {
+          agreement_date: string | null
+          created_at: string | null
+          end_date: string | null
+          flat_fee_amount: number | null
+          id: string
+          location_id: string
+          notice_period: string | null
+          payment_method: string | null
+          payment_type: string | null
+          provider_address: string | null
+          provider_contact: string | null
+          provider_name: string | null
+          revenue_share_percentage: number | null
+          start_date: string | null
+        }
+        Insert: {
+          agreement_date?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          flat_fee_amount?: number | null
+          id?: string
+          location_id: string
+          notice_period?: string | null
+          payment_method?: string | null
+          payment_type?: string | null
+          provider_address?: string | null
+          provider_contact?: string | null
+          provider_name?: string | null
+          revenue_share_percentage?: number | null
+          start_date?: string | null
+        }
+        Update: {
+          agreement_date?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          flat_fee_amount?: number | null
+          id?: string
+          location_id?: string
+          notice_period?: string | null
+          payment_method?: string | null
+          payment_type?: string | null
+          provider_address?: string | null
+          provider_contact?: string | null
+          provider_name?: string | null
+          revenue_share_percentage?: number | null
+          start_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_agreements_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      location_machines: {
+        Row: {
+          count: number | null
+          id: string
+          location_id: string
+          machine_type: string
+        }
+        Insert: {
+          count?: number | null
+          id?: string
+          location_id: string
+          machine_type: string
+        }
+        Update: {
+          count?: number | null
+          id?: string
+          location_id?: string
+          machine_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_machines_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locations: {
+        Row: {
+          address: string | null
+          commission_rate: number | null
+          contact_email: string | null
+          contact_person: string | null
+          contact_phone: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          commission_rate?: number | null
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          commission_rate?: number | null
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      revenue_entries: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string | null
+          date: string
+          id: string
+          location_id: string | null
+          machine_type: string | null
+          notes: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category?: string | null
+          created_at?: string | null
+          date: string
+          id?: string
+          location_id?: string | null
+          machine_type?: string | null
+          notes?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          location_id?: string | null
+          machine_type?: string | null
+          notes?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_entries_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_preferences: {
+        Row: {
+          created_at: string | null
+          dashboard_layout: Json | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dashboard_layout?: Json | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dashboard_layout?: Json | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,5 +1,6 @@
-import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard } from "lucide-react"
+import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
+import { useAuth } from "@/contexts/AuthContext"
 import {
   Sidebar,
   SidebarContent,
@@ -12,6 +13,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -24,6 +26,11 @@ const items = [
 
 export function AppSidebar() {
   const location = useLocation()
+  const { user, signOut } = useAuth()
+
+  const handleSignOut = async () => {
+    await signOut()
+  }
 
   return (
     <Sidebar className="glass-card border-r border-white/10">
@@ -86,7 +93,23 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
 
-      <SidebarFooter className="p-6 border-t border-white/10">
+      <SidebarFooter className="p-6 border-t border-white/10 space-y-4">
+        {user && (
+          <div className="space-y-3">
+            <div className="px-2">
+              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleSignOut}
+              className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground hover:bg-white/5"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
+        )}
         <p className="text-xs text-muted-foreground">
           Copyright © {new Date().getFullYear()} ClawOps
         </p>

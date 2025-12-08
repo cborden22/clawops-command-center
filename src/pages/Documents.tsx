@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 import { FileText, Download, MapPin, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import html2pdf from "html2pdf.js"
-import { useLocations } from "@/hooks/useLocations"
+import { useLocations } from "@/hooks/useLocationsDB"
 import { Link } from "react-router-dom"
 
 interface FormData {

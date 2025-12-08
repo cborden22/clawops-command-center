@@ -1,5 +1,5 @@
-import { useLocations } from "@/hooks/useLocations";
-import { useRevenueEntries } from "@/hooks/useRevenueEntries";
+import { useLocations } from "@/hooks/useLocationsDB";
+import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

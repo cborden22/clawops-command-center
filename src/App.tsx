@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Documents from "./pages/Documents";
@@ -11,7 +12,7 @@ import CommissionSummary from "./pages/CommissionSummary";
 import InventoryTracker from "./pages/InventoryTracker";
 import RevenueTracker from "./pages/RevenueTracker";
 import Locations from "./pages/Locations";
-
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -23,6 +24,118 @@ const queryClient = new QueryClient({
   },
 });
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function AuthRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route
+        path="/auth"
+        element={
+          <AuthRoute>
+            <Auth />
+          </AuthRoute>
+        }
+      />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Dashboard />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/locations"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Locations />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/documents"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Documents />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/commission-summary"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <CommissionSummary />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/inventory"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <InventoryTracker />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/revenue"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <RevenueTracker />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
 const App: React.FC = () => {
   console.log('App: Rendering App component');
   return (
@@ -32,18 +145,9 @@ const App: React.FC = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <AppLayout>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/locations" element={<Locations />} />
-                <Route path="/documents" element={<Documents />} />
-                <Route path="/commission-summary" element={<CommissionSummary />} />
-                <Route path="/inventory" element={<InventoryTracker />} />
-                <Route path="/revenue" element={<RevenueTracker />} />
-                
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </AppLayout>
+            <AuthProvider>
+              <AppRoutes />
+            </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>

@@ -21,8 +21,8 @@ import {
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { toast } from "@/hooks/use-toast";
-import { useLocations, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocations";
-import { useRevenueEntries, EntryType } from "@/hooks/useRevenueEntries";
+import { useLocations, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocationsDB";
+import { useRevenueEntries, EntryType } from "@/hooks/useRevenueEntriesDB";
 import { Link } from "react-router-dom";
 
 type FilterPeriod = 
@@ -71,9 +71,9 @@ export function RevenueTrackerComponent() {
   const selectedLocationData = selectedLocation ? getLocationById(selectedLocation) : null;
   const locationMachines = selectedLocationData?.machines || [];
 
-  const handleAddEntry = () => {
+  const handleAddEntry = async () => {
     if (!selectedLocation || !amount) return;
-    addEntry({
+    await addEntry({
       type: entryType,
       locationId: selectedLocation,
       machineType: selectedMachine !== "all" ? selectedMachine : undefined,
@@ -93,8 +93,8 @@ export function RevenueTrackerComponent() {
     });
   };
 
-  const handleDeleteEntry = (id: string) => {
-    deleteEntry(id);
+  const handleDeleteEntry = async (id: string) => {
+    await deleteEntry(id);
     toast({ title: "Entry Removed" });
   };
 
