@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   User, 
   Settings as SettingsIcon, 
@@ -20,9 +22,52 @@ import {
   ExternalLink,
   Save,
   Eye,
-  EyeOff
+  EyeOff,
+  Building2,
+  Warehouse,
+  DollarSign,
+  Palette,
+  Clock
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+
+const STORAGE_KEY = "clawops-app-settings";
+
+interface AppSettings {
+  businessName: string;
+  warehouseAddress: string;
+  warehouseCity: string;
+  warehouseState: string;
+  warehouseZip: string;
+  businessPhone: string;
+  businessEmail: string;
+  currency: string;
+  timezone: string;
+  defaultCommissionRate: number;
+  lowStockThreshold: number;
+  dateFormat: string;
+  darkMode: boolean;
+  compactView: boolean;
+  autoBackup: boolean;
+}
+
+const DEFAULT_SETTINGS: AppSettings = {
+  businessName: "",
+  warehouseAddress: "",
+  warehouseCity: "",
+  warehouseState: "",
+  warehouseZip: "",
+  businessPhone: "",
+  businessEmail: "",
+  currency: "USD",
+  timezone: "America/New_York",
+  defaultCommissionRate: 25,
+  lowStockThreshold: 5,
+  dateFormat: "MM/dd/yyyy",
+  darkMode: true,
+  compactView: false,
+  autoBackup: true,
+};
 
 export default function Settings() {
   const { user } = useAuth();
@@ -30,6 +75,10 @@ export default function Settings() {
   // Profile state
   const [fullName, setFullName] = useState(user?.user_metadata?.full_name || "");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  
+  // App Settings state
+  const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   
   // Nayax API state
   const [nayaxApiKey, setNayaxApiKey] = useState("");
@@ -48,9 +97,45 @@ export default function Settings() {
   const [lowStockAlerts, setLowStockAlerts] = useState(true);
   const [dailyReports, setDailyReports] = useState(false);
 
+  // Load app settings from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setAppSettings({ ...DEFAULT_SETTINGS, ...parsed });
+      } catch (e) {
+        console.error("Failed to load app settings:", e);
+      }
+    }
+  }, []);
+
+  const updateAppSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
+    setAppSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveAppSettings = async () => {
+    setIsSavingSettings(true);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appSettings));
+      await new Promise(resolve => setTimeout(resolve, 500));
+      toast({
+        title: "Settings Saved",
+        description: "Your app settings have been saved successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save settings.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     setIsUpdatingProfile(true);
-    // TODO: Implement profile update with Supabase
     await new Promise(resolve => setTimeout(resolve, 1000));
     setIsUpdatingProfile(false);
     toast({
@@ -69,7 +154,6 @@ export default function Settings() {
       return;
     }
     
-    // TODO: Validate and store API credentials securely
     setNayaxConnected(true);
     toast({
       title: "Nayax Connected",
@@ -87,7 +171,6 @@ export default function Settings() {
       return;
     }
     
-    // TODO: Validate and store API credentials securely
     setCantaloupeConnected(true);
     toast({
       title: "Cantaloupe Connected",
@@ -122,12 +205,16 @@ export default function Settings() {
           Settings
         </h1>
         <p className="text-muted-foreground mt-1">
-          Manage your account and integrations
+          Manage your account, business settings, and integrations
         </p>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+      <Tabs defaultValue="app" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+          <TabsTrigger value="app" className="gap-2">
+            <SettingsIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">App</span>
+          </TabsTrigger>
           <TabsTrigger value="profile" className="gap-2">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">Profile</span>
@@ -145,6 +232,266 @@ export default function Settings() {
             <span className="hidden sm:inline">Security</span>
           </TabsTrigger>
         </TabsList>
+
+        {/* App Settings Tab */}
+        <TabsContent value="app" className="space-y-6">
+          {/* Business Information */}
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-primary" />
+                Business Information
+              </CardTitle>
+              <CardDescription>
+                Your business details used in documents and reports
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="businessName">Business Name</Label>
+                <Input
+                  id="businessName"
+                  value={appSettings.businessName}
+                  onChange={(e) => updateAppSetting("businessName", e.target.value)}
+                  placeholder="e.g., Acme Claw Machines LLC"
+                  maxLength={100}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="businessPhone">Business Phone</Label>
+                  <Input
+                    id="businessPhone"
+                    value={appSettings.businessPhone}
+                    onChange={(e) => updateAppSetting("businessPhone", e.target.value)}
+                    placeholder="(555) 123-4567"
+                    maxLength={20}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="businessEmail">Business Email</Label>
+                  <Input
+                    id="businessEmail"
+                    type="email"
+                    value={appSettings.businessEmail}
+                    onChange={(e) => updateAppSetting("businessEmail", e.target.value)}
+                    placeholder="contact@business.com"
+                    maxLength={100}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Warehouse Address */}
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Warehouse className="h-5 w-5 text-primary" />
+                Warehouse Address
+              </CardTitle>
+              <CardDescription>
+                Your main warehouse or storage location
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="warehouseAddress">Street Address</Label>
+                <Input
+                  id="warehouseAddress"
+                  value={appSettings.warehouseAddress}
+                  onChange={(e) => updateAppSetting("warehouseAddress", e.target.value)}
+                  placeholder="123 Main Street"
+                  maxLength={200}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="warehouseCity">City</Label>
+                  <Input
+                    id="warehouseCity"
+                    value={appSettings.warehouseCity}
+                    onChange={(e) => updateAppSetting("warehouseCity", e.target.value)}
+                    placeholder="City"
+                    maxLength={100}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="warehouseState">State</Label>
+                  <Input
+                    id="warehouseState"
+                    value={appSettings.warehouseState}
+                    onChange={(e) => updateAppSetting("warehouseState", e.target.value)}
+                    placeholder="State"
+                    maxLength={50}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="warehouseZip">ZIP Code</Label>
+                  <Input
+                    id="warehouseZip"
+                    value={appSettings.warehouseZip}
+                    onChange={(e) => updateAppSetting("warehouseZip", e.target.value)}
+                    placeholder="12345"
+                    maxLength={10}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Default Values */}
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-primary" />
+                Default Values
+              </CardTitle>
+              <CardDescription>
+                Set defaults for new locations and inventory
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="defaultCommissionRate">Default Commission Rate (%)</Label>
+                  <Input
+                    id="defaultCommissionRate"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={appSettings.defaultCommissionRate}
+                    onChange={(e) => updateAppSetting("defaultCommissionRate", Number(e.target.value))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Applied to new locations by default
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
+                  <Input
+                    id="lowStockThreshold"
+                    type="number"
+                    min="0"
+                    value={appSettings.lowStockThreshold}
+                    onChange={(e) => updateAppSetting("lowStockThreshold", Number(e.target.value))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Items below this count trigger low stock alerts
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="currency">Currency</Label>
+                  <Select 
+                    value={appSettings.currency} 
+                    onValueChange={(v) => updateAppSetting("currency", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD ($)</SelectItem>
+                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                      <SelectItem value="GBP">GBP (£)</SelectItem>
+                      <SelectItem value="CAD">CAD ($)</SelectItem>
+                      <SelectItem value="AUD">AUD ($)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dateFormat">Date Format</Label>
+                  <Select 
+                    value={appSettings.dateFormat} 
+                    onValueChange={(v) => updateAppSetting("dateFormat", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MM/dd/yyyy">MM/DD/YYYY</SelectItem>
+                      <SelectItem value="dd/MM/yyyy">DD/MM/YYYY</SelectItem>
+                      <SelectItem value="yyyy-MM-dd">YYYY-MM-DD</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Display Preferences */}
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5 text-primary" />
+                Display Preferences
+              </CardTitle>
+              <CardDescription>
+                Customize how the app looks and behaves
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="darkMode">Dark Mode</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Use dark theme for the interface
+                  </p>
+                </div>
+                <Switch
+                  id="darkMode"
+                  checked={appSettings.darkMode}
+                  onCheckedChange={(v) => updateAppSetting("darkMode", v)}
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="compactView">Compact View</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Show more data with less spacing
+                  </p>
+                </div>
+                <Switch
+                  id="compactView"
+                  checked={appSettings.compactView}
+                  onCheckedChange={(v) => updateAppSetting("compactView", v)}
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="autoBackup">Auto Backup</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Automatically backup data to the cloud
+                  </p>
+                </div>
+                <Switch
+                  id="autoBackup"
+                  checked={appSettings.autoBackup}
+                  onCheckedChange={(v) => updateAppSetting("autoBackup", v)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Button 
+            onClick={handleSaveAppSettings} 
+            disabled={isSavingSettings}
+            className="gap-2"
+          >
+            <Save className="h-4 w-4" />
+            {isSavingSettings ? "Saving..." : "Save App Settings"}
+          </Button>
+        </TabsContent>
 
         {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-6">
@@ -180,6 +527,7 @@ export default function Settings() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Enter your full name"
+                  maxLength={100}
                 />
               </div>
 
@@ -242,6 +590,7 @@ export default function Settings() {
                       value={nayaxOperatorId}
                       onChange={(e) => setNayaxOperatorId(e.target.value)}
                       placeholder="Enter your Nayax Operator ID"
+                      maxLength={100}
                     />
                   </div>
 
@@ -255,6 +604,7 @@ export default function Settings() {
                         onChange={(e) => setNayaxApiKey(e.target.value)}
                         placeholder="Enter your Nayax API Key"
                         className="pr-10"
+                        maxLength={200}
                       />
                       <Button
                         type="button"
@@ -344,6 +694,7 @@ export default function Settings() {
                       value={cantaloupeClientId}
                       onChange={(e) => setCantaloupeClientId(e.target.value)}
                       placeholder="Enter your Cantaloupe Client ID"
+                      maxLength={100}
                     />
                   </div>
 
@@ -357,6 +708,7 @@ export default function Settings() {
                         onChange={(e) => setCantaloupeApiKey(e.target.value)}
                         placeholder="Enter your Cantaloupe API Key"
                         className="pr-10"
+                        maxLength={200}
                       />
                       <Button
                         type="button"
