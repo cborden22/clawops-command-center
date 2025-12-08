@@ -22,7 +22,7 @@ interface FormData {
 
 export default function Documents() {
   const { toast } = useToast()
-  const { activeLocations, getLocationById, isLoaded } = useLocations()
+  const { activeLocations, getLocationById, isLoaded, addAgreement } = useLocations()
   const [formData, setFormData] = useState<FormData>({})
   const [paymentType, setPaymentType] = useState<"percentage" | "flat">("percentage")
   const [selectedLocationId, setSelectedLocationId] = useState<string>("")
@@ -359,9 +359,36 @@ export default function Documents() {
 
       await html2pdf().from(htmlContent).set(opt).save()
 
+      // Save agreement to location if a location was selected
+      if (selectedLocationId) {
+        const agreementDate = formData["Agreement Date"] instanceof Date 
+          ? formData["Agreement Date"].toISOString() 
+          : new Date().toISOString()
+        const startDate = formData["Start Date"] instanceof Date 
+          ? formData["Start Date"].toISOString() 
+          : ""
+        const endDate = formData["End Date"] instanceof Date 
+          ? formData["End Date"].toISOString() 
+          : ""
+
+        addAgreement(selectedLocationId, {
+          agreementDate,
+          startDate,
+          endDate,
+          providerName: String(formData["Provider Name"] || ""),
+          providerAddress: String(formData["Provider Address"] || ""),
+          providerContact: String(formData["Provider Contact Info"] || ""),
+          paymentType,
+          revenueSharePercentage: paymentType === "percentage" ? parseFloat(String(formData["Revenue Share Percentage"] || "0")) : undefined,
+          flatFeeAmount: paymentType === "flat" ? parseFloat(String(formData["Flat Fee Amount"] || "0")) : undefined,
+          paymentMethod: String(formData["Payment Method"] || ""),
+          noticePeriod: String(formData["Notice Period (Hours/Days)"] || ""),
+        })
+      }
+
       toast({
         title: "PDF Downloaded Successfully",
-        description: "Your location agreement has been saved to your downloads folder.",
+        description: `Your location agreement has been saved${selectedLocationId ? " and recorded to location history" : ""}.`,
       })
 
     } catch (error) {
