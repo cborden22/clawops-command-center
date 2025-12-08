@@ -19,8 +19,9 @@ import {
   DollarSign,
   Calendar,
   Building2,
+  Box,
 } from "lucide-react";
-import { Location } from "@/hooks/useLocations";
+import { Location, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocations";
 
 interface LocationDetailDialogProps {
   location: Location | null;
@@ -122,7 +123,7 @@ export function LocationDetailDialog({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Sparkles className="h-3 w-3" /> Machines
+                        <Sparkles className="h-3 w-3" /> Total Machines
                       </p>
                       <p className="font-medium">{location.machineCount}</p>
                     </div>
@@ -135,6 +136,22 @@ export function LocationDetailDialog({
                       </p>
                     </div>
                   </div>
+
+                  {/* Machine Types Breakdown */}
+                  {location.machines && location.machines.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1 mb-2">
+                        <Box className="h-3 w-3" /> Machine Breakdown
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {location.machines.map((machine, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {machine.label}: {machine.count}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {location.notes && (
                     <div>

@@ -30,6 +30,20 @@ export interface LocationAgreementRecord {
   createdAt: string;
 }
 
+export interface MachineType {
+  type: "claw" | "bulk" | "clip" | "sticker" | "other";
+  label: string;
+  count: number;
+}
+
+export const MACHINE_TYPE_OPTIONS: { value: MachineType["type"]; label: string }[] = [
+  { value: "claw", label: "Claw Machine" },
+  { value: "bulk", label: "Bulk Machine" },
+  { value: "clip", label: "Clip Machine" },
+  { value: "sticker", label: "Sticker Machine" },
+  { value: "other", label: "Other" },
+];
+
 export interface Location {
   id: string;
   name: string;
@@ -38,6 +52,7 @@ export interface Location {
   contactPhone: string;
   contactEmail: string;
   machineCount: number;
+  machines: MachineType[];
   commissionRate: number;
   notes: string;
   createdAt: string;
@@ -62,6 +77,7 @@ export function useLocations() {
           ...loc,
           commissionSummaries: loc.commissionSummaries || [],
           agreements: loc.agreements || [],
+          machines: loc.machines || [],
         }));
         setLocations(migrated);
       } catch (e) {
@@ -77,13 +93,14 @@ export function useLocations() {
     }
   }, [locations, isLoaded]);
 
-  const addLocation = (locationData: Omit<Location, "id" | "createdAt" | "commissionSummaries" | "agreements">) => {
+  const addLocation = (locationData: Omit<Location, "id" | "createdAt" | "commissionSummaries" | "agreements" | "machines"> & { machines?: MachineType[] }) => {
     const newLocation: Location = {
       ...locationData,
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
       commissionSummaries: [],
       agreements: [],
+      machines: locationData.machines || [],
     };
     setLocations((prev) => [...prev, newLocation]);
     return newLocation;
