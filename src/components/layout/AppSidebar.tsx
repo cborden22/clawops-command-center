@@ -15,10 +15,10 @@ import {
 
 const items = [
   { title: "Locations", url: "/locations", icon: MapPin },
-  { title: "Location Agreement Generator", url: "/documents", icon: FileText },
-  { title: "Commission Summary", url: "/commission-summary", icon: Receipt },
   { title: "Revenue Tracker", url: "/revenue", icon: DollarSign },
   { title: "Inventory Tracker", url: "/inventory", icon: Package },
+  { title: "Commission Summary", url: "/commission-summary", icon: Receipt },
+  { title: "Location Agreement Generator", url: "/documents", icon: FileText },
 ]
 
 export function AppSidebar() {
