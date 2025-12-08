@@ -36,8 +36,15 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useLocations, Location } from "@/hooks/useLocations";
+import { useLocations, Location, MachineType, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocations";
 import { LocationDetailDialog } from "./LocationDetailDialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const emptyFormData = {
   name: "",
@@ -46,6 +53,7 @@ const emptyFormData = {
   contactPhone: "",
   contactEmail: "",
   machineCount: 1,
+  machines: [] as MachineType[],
   commissionRate: 0,
   notes: "",
   isActive: true,
@@ -110,12 +118,44 @@ export function LocationTrackerComponent() {
       contactPhone: location.contactPhone,
       contactEmail: location.contactEmail,
       machineCount: location.machineCount,
+      machines: location.machines || [],
       commissionRate: location.commissionRate,
       notes: location.notes,
       isActive: location.isActive,
     });
     setShowAddDialog(true);
   };
+
+  const handleAddMachineType = () => {
+    setFormData((prev) => ({
+      ...prev,
+      machines: [...prev.machines, { type: "claw", label: "Claw Machine", count: 1 }],
+    }));
+  };
+
+  const handleRemoveMachineType = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      machines: prev.machines.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleMachineTypeChange = (index: number, field: keyof MachineType, value: string | number) => {
+    setFormData((prev) => ({
+      ...prev,
+      machines: prev.machines.map((m, i) => {
+        if (i !== index) return m;
+        if (field === "type") {
+          const option = MACHINE_TYPE_OPTIONS.find((o) => o.value === value);
+          return { ...m, type: value as MachineType["type"], label: option?.label || "Other" };
+        }
+        return { ...m, [field]: value };
+      }),
+    }));
+  };
+
+  // Calculate total machine count from machine types
+  const totalMachinesFromTypes = formData.machines.reduce((sum, m) => sum + m.count, 0);
 
   const handleDelete = (location: Location) => {
     deleteLocation(location.id);
@@ -318,9 +358,85 @@ export function LocationTrackerComponent() {
                     <Sparkles className="h-4 w-4" />
                     Machine & Commission Details
                   </h3>
+                  
+                  {/* Machine Types */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label>Machine Types</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAddMachineType}
+                        className="h-8"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add Type
+                      </Button>
+                    </div>
+                    
+                    {formData.machines.length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic py-2">
+                        No machine types added. Click "Add Type" to specify machines.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {formData.machines.map((machine, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/50"
+                          >
+                            <Select
+                              value={machine.type}
+                              onValueChange={(value) =>
+                                handleMachineTypeChange(index, "type", value)
+                              }
+                            >
+                              <SelectTrigger className="flex-1 bg-background">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-background z-50">
+                                {MACHINE_TYPE_OPTIONS.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={machine.count}
+                              onChange={(e) =>
+                                handleMachineTypeChange(
+                                  index,
+                                  "count",
+                                  parseInt(e.target.value) || 1
+                                )
+                              }
+                              className="w-20 bg-background"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRemoveMachineType(index)}
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <p className="text-xs text-muted-foreground">
+                          Total from types: {totalMachinesFromTypes} machines
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="machineCount">Number of Machines</Label>
+                      <Label htmlFor="machineCount">Total Machine Count</Label>
                       <Input
                         id="machineCount"
                         type="number"
@@ -333,6 +449,9 @@ export function LocationTrackerComponent() {
                           }))
                         }
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Override if different from types total
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="commissionRate">Commission Rate (%)</Label>
