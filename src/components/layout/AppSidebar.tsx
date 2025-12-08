@@ -1,5 +1,5 @@
-import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut } from "lucide-react"
-import { NavLink, useLocation } from "react-router-dom"
+import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight } from "lucide-react"
+import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import {
   Sidebar,
@@ -14,6 +14,14 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -26,11 +34,18 @@ const items = [
 
 export function AppSidebar() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { user, signOut } = useAuth()
 
   const handleSignOut = async () => {
     await signOut()
   }
+
+  const userInitials = user?.user_metadata?.full_name
+    ? user.user_metadata.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+    : user?.email?.slice(0, 2).toUpperCase() || "U"
+
+  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"
 
   return (
     <Sidebar className="glass-card border-r border-white/10">
@@ -93,24 +108,40 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
 
-      <SidebarFooter className="p-6 border-t border-white/10 space-y-4">
+      <SidebarFooter className="p-4 border-t border-white/10">
         {user && (
-          <div className="space-y-3">
-            <div className="px-2">
-              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-            </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleSignOut}
-              className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground hover:bg-white/5"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </Button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start gap-3 h-auto p-3 hover:bg-white/5"
+              >
+                <Avatar className="h-9 w-9">
+                  <AvatarFallback className="bg-gradient-to-br from-gold-500 to-gold-600 text-primary-foreground text-sm font-semibold">
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium truncate">{displayName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => navigate("/settings")}>
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground text-center mt-4">
           Copyright © {new Date().getFullYear()} ClawOps
         </p>
       </SidebarFooter>
