@@ -12,6 +12,7 @@ import CommissionSummary from "./pages/CommissionSummary";
 import InventoryTracker from "./pages/InventoryTracker";
 import RevenueTracker from "./pages/RevenueTracker";
 import Locations from "./pages/Locations";
+import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -127,6 +128,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <AppLayout>
               <RevenueTracker />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Settings />
             </AppLayout>
           </ProtectedRoute>
         }
