@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,23 +22,12 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Package, AlertTriangle, Minus, Search, Filter, Boxes } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-
-interface InventoryItem {
-  id: string;
-  name: string;
-  category: string;
-  quantity: number;
-  minStock: number;
-  location: string;
-  lastUpdated: string;
-}
+import { useInventory } from "@/hooks/useInventoryDB";
 
 const CATEGORIES = ["Plush Toys", "Electronics", "Accessories", "Supplies", "Other"];
 
-const STORAGE_KEY = "clawops-inventory";
-
 export function InventoryTrackerComponent() {
-  const [items, setItems] = useState<InventoryItem[]>([]);
+  const { items, isLoaded, addItem, deleteItem, updateQuantity } = useInventory();
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
@@ -50,22 +39,7 @@ export function InventoryTrackerComponent() {
     location: "",
   });
 
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setItems(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to load inventory:", e);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  }, [items]);
-
-  const addItem = () => {
+  const handleAddItem = async () => {
     if (!newItem.name || !newItem.category) {
       toast({
         title: "Missing Information",
@@ -75,46 +49,35 @@ export function InventoryTrackerComponent() {
       return;
     }
 
-    const item: InventoryItem = {
-      id: Date.now().toString(),
+    const item = await addItem({
       name: newItem.name,
       category: newItem.category,
       quantity: newItem.quantity,
       minStock: newItem.minStock,
       location: newItem.location,
-      lastUpdated: new Date().toLocaleDateString(),
-    };
-
-    setItems([...items, item]);
-    setNewItem({ name: "", category: "", quantity: 0, minStock: 5, location: "" });
-    setShowAddForm(false);
-    toast({
-      title: "Item Added",
-      description: `${item.name} has been added to inventory.`,
     });
+
+    if (item) {
+      setNewItem({ name: "", category: "", quantity: 0, minStock: 5, location: "" });
+      setShowAddForm(false);
+      toast({
+        title: "Item Added",
+        description: `${item.name} has been added to inventory.`,
+      });
+    }
   };
 
-  const deleteItem = (id: string) => {
+  const handleDeleteItem = async (id: string) => {
     const item = items.find(i => i.id === id);
-    setItems(items.filter((item) => item.id !== id));
+    await deleteItem(id);
     toast({
       title: "Item Removed",
       description: `${item?.name || "Item"} has been removed from inventory.`,
     });
   };
 
-  const updateQuantity = (id: string, change: number) => {
-    setItems(
-      items.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              quantity: Math.max(0, item.quantity + change),
-              lastUpdated: new Date().toLocaleDateString(),
-            }
-          : item
-      )
-    );
+  const handleUpdateQuantity = async (id: string, change: number) => {
+    await updateQuantity(id, change);
   };
 
   const filteredItems = items.filter(item => {
@@ -126,6 +89,10 @@ export function InventoryTrackerComponent() {
 
   const lowStockItems = items.filter((item) => item.quantity <= item.minStock);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  if (!isLoaded) {
+    return <div className="flex items-center justify-center py-12">Loading...</div>;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -286,7 +253,7 @@ export function InventoryTrackerComponent() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button onClick={addItem} className="gap-2">
+                <Button onClick={handleAddItem} className="gap-2">
                   <Plus className="h-4 w-4" />
                   Save Item
                 </Button>
@@ -387,7 +354,7 @@ export function InventoryTrackerComponent() {
                             variant="outline"
                             size="icon"
                             className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
-                            onClick={() => updateQuantity(item.id, -1)}
+                            onClick={() => handleUpdateQuantity(item.id, -1)}
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
@@ -401,7 +368,7 @@ export function InventoryTrackerComponent() {
                             variant="outline"
                             size="icon"
                             className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
-                            onClick={() => updateQuantity(item.id, 1)}
+                            onClick={() => handleUpdateQuantity(item.id, 1)}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
@@ -414,7 +381,7 @@ export function InventoryTrackerComponent() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => deleteItem(item.id)}
+                          onClick={() => handleDeleteItem(item.id)}
                           className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -429,48 +396,31 @@ export function InventoryTrackerComponent() {
         </CardContent>
       </Card>
 
-      {/* Low Stock Alert Section */}
+      {/* Low Stock Alert Card */}
       {lowStockItems.length > 0 && (
-        <Card className="glass-card border-destructive/30 overflow-hidden">
-          <CardHeader className="bg-destructive/5 border-b border-destructive/20">
+        <Card className="glass-card border-destructive/20 bg-destructive/5 overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-destructive/10 to-transparent border-b border-destructive/10">
             <CardTitle className="text-lg flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
               Low Stock Alerts
-              <Badge variant="destructive" className="ml-2">
-                {lowStockItems.length} items
-              </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <CardContent className="pt-4">
+            <ul className="space-y-2">
               {lowStockItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-destructive/5 border border-destructive/20 hover:bg-destructive/10 transition-colors"
-                >
+                <li key={item.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-background/50">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-destructive/10">
-                      <Package className="h-4 w-4 text-destructive" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.quantity} left (min: {item.minStock})
-                      </p>
-                    </div>
+                    <Badge variant="destructive" className="h-6 w-6 p-0 flex items-center justify-center rounded-full">
+                      {item.quantity}
+                    </Badge>
+                    <span className="font-medium">{item.name}</span>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 border-primary/30 hover:bg-primary/10"
-                    onClick={() => updateQuantity(item.id, 10)}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    +10
-                  </Button>
-                </div>
+                  <span className="text-sm text-muted-foreground">
+                    Min: {item.minStock}
+                  </span>
+                </li>
               ))}
-            </div>
+            </ul>
           </CardContent>
         </Card>
       )}

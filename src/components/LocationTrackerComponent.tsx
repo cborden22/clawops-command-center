@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useLocations, Location, MachineType, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocations";
+import { useLocations, Location, MachineType, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocationsDB";
 import { LocationDetailDialog } from "./LocationDetailDialog";
 import {
   Select,

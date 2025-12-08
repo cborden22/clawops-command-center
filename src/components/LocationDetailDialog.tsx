@@ -21,7 +21,7 @@ import {
   Building2,
   Box,
 } from "lucide-react";
-import { Location, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocations";
+import { Location, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocationsDB";
 
 interface LocationDetailDialogProps {
   location: Location | null;

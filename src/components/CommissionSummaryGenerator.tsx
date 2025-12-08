@@ -12,8 +12,8 @@ import { FileText, Download, Calendar as CalendarIcon, Building2, User, DollarSi
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns"
 import { cn } from "@/lib/utils"
 import html2pdf from "html2pdf.js"
-import { useLocations } from "@/hooks/useLocations"
-import { addRevenueExpense } from "@/hooks/useRevenueEntries"
+import { useLocations } from "@/hooks/useLocationsDB"
+import { addRevenueExpense } from "@/hooks/useRevenueEntriesDB"
 import { Link } from "react-router-dom"
 
 interface LocationData {
