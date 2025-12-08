@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -7,21 +6,17 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
-import { FileText, Download, Calendar as CalendarIcon, Check, ChevronsUpDown, Building2, User, DollarSign, Calculator } from "lucide-react"
+import { FileText, Download, Calendar as CalendarIcon, Building2, User, DollarSign, Calculator, MapPin, AlertCircle } from "lucide-react"
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns"
 import { cn } from "@/lib/utils"
 import html2pdf from "html2pdf.js"
-
-const STORAGE_KEY = "commission-saved-entries"
-
-interface SavedEntry {
-  businessName: string
-  contactPerson: string
-}
+import { useLocations } from "@/hooks/useLocations"
+import { Link } from "react-router-dom"
 
 interface LocationData {
+  locationId: string
   name: string
   contactPerson: string
   totalRevenue: number
@@ -35,7 +30,9 @@ interface LocationData {
 
 export function CommissionSummaryGenerator() {
   const { toast } = useToast()
+  const { activeLocations, getLocationById, isLoaded } = useLocations()
   const [locationData, setLocationData] = useState<LocationData>({
+    locationId: "",
     name: "",
     contactPerson: "",
     totalRevenue: 0,
@@ -46,57 +43,21 @@ export function CommissionSummaryGenerator() {
     machineCount: 1,
     notes: ""
   })
-  
-  const [savedEntries, setSavedEntries] = useState<SavedEntry[]>([])
-  const [businessOpen, setBusinessOpen] = useState(false)
-  const [contactOpen, setContactOpen] = useState(false)
 
-  // Load saved entries from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      try {
-        setSavedEntries(JSON.parse(saved))
-      } catch (e) {
-        console.error("Failed to parse saved entries:", e)
-      }
-    }
-  }, [])
-
-  // Save entry when generating PDF
-  const saveEntry = (businessName: string, contactPerson: string) => {
-    if (!businessName) return
-    
-    const existingIndex = savedEntries.findIndex(
-      entry => entry.businessName.toLowerCase() === businessName.toLowerCase()
-    )
-    
-    let updatedEntries: SavedEntry[]
-    if (existingIndex >= 0) {
-      updatedEntries = [...savedEntries]
-      updatedEntries[existingIndex] = { businessName, contactPerson }
-    } else {
-      updatedEntries = [...savedEntries, { businessName, contactPerson }]
-    }
-    
-    setSavedEntries(updatedEntries)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEntries))
-  }
-
-  const selectSavedBusiness = (businessName: string) => {
-    const entry = savedEntries.find(e => e.businessName === businessName)
-    if (entry) {
+  // When a location is selected, populate the form fields
+  const handleLocationSelect = (locationId: string) => {
+    const location = getLocationById(locationId)
+    if (location) {
       setLocationData(prev => ({
         ...prev,
-        name: entry.businessName,
-        contactPerson: entry.contactPerson
+        locationId: location.id,
+        name: location.name,
+        contactPerson: location.contactPerson,
+        machineCount: location.machineCount,
+        commissionPercentage: location.commissionRate,
+        commissionAmount: (prev.totalRevenue * location.commissionRate) / 100
       }))
     }
-    setBusinessOpen(false)
-  }
-
-  const getUniqueContacts = () => {
-    return [...new Set(savedEntries.map(e => e.contactPerson).filter(Boolean))]
   }
 
   const updateCommissionFromPercentage = (revenue: number, percentage: number) => {
@@ -151,9 +112,6 @@ export function CommissionSummaryGenerator() {
       })
       return
     }
-
-    console.log('Starting PDF generation...')
-    console.log('Location data:', locationData)
     
     const currentDate = new Date().toLocaleDateString()
     const periodText = getFormattedPeriod()
@@ -231,16 +189,12 @@ export function CommissionSummaryGenerator() {
         orientation: 'portrait' 
       }
     }
-
-    console.log('Creating PDF with options:', options)
     
     html2pdf()
       .set(options)
       .from(content)
       .save()
       .then(() => {
-        console.log('PDF generated successfully')
-        saveEntry(locationData.name, locationData.contactPerson)
         toast({
           title: "Commission Summary Generated",
           description: `PDF report created for ${locationData.name}`,
@@ -258,6 +212,10 @@ export function CommissionSummaryGenerator() {
 
   const isFormValid = locationData.name && locationData.startDate && locationData.endDate
 
+  if (!isLoaded) {
+    return <div className="flex items-center justify-center py-12">Loading...</div>
+  }
+
   return (
     <Card className="border-0 shadow-none bg-transparent">
       <CardHeader className="pb-2">
@@ -266,10 +224,57 @@ export function CommissionSummaryGenerator() {
           Generate Report
         </CardTitle>
         <CardDescription>
-          Fill in the details below to create a commission summary PDF
+          Select a location or fill in details manually to create a commission summary PDF
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        
+        {/* Quick Location Select */}
+        {activeLocations.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <MapPin className="h-4 w-4" />
+              Quick Select from Saved Locations
+            </div>
+            <Select value={locationData.locationId} onValueChange={handleLocationSelect}>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Select a location to auto-fill details..." />
+              </SelectTrigger>
+              <SelectContent>
+                {activeLocations.map((loc) => (
+                  <SelectItem key={loc.id} value={loc.id}>
+                    <span className="flex items-center gap-2">
+                      <MapPin className="h-3 w-3 text-muted-foreground" />
+                      {loc.name}
+                      {loc.commissionRate > 0 && (
+                        <span className="text-xs text-muted-foreground">({loc.commissionRate}%)</span>
+                      )}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {activeLocations.length === 0 && (
+          <div className="p-4 rounded-xl bg-muted/30 border border-dashed border-muted-foreground/20">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="text-sm font-medium">No saved locations</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Add locations in the Location Tracker to quickly fill in details, or enter them manually below.
+                </p>
+                <Button asChild variant="outline" size="sm" className="mt-3">
+                  <Link to="/locations">Go to Locations</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="border-t border-border" />
         
         {/* Section 1: Location Info */}
         <div className="space-y-4">
@@ -280,113 +285,21 @@ export function CommissionSummaryGenerator() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="locationName">Business Name <span className="text-destructive">*</span></Label>
-              <Popover open={businessOpen} onOpenChange={setBusinessOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={businessOpen}
-                    className="w-full justify-between font-normal"
-                  >
-                    {locationData.name || "Select or type business..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0 bg-popover" align="start">
-                  <Command>
-                    <CommandInput 
-                      placeholder="Search or type new..." 
-                      value={locationData.name}
-                      onValueChange={(value) => setLocationData(prev => ({ ...prev, name: value }))}
-                    />
-                    <CommandList>
-                      <CommandEmpty>
-                        <div className="p-2 text-sm text-muted-foreground">
-                          Press enter to use "{locationData.name}"
-                        </div>
-                      </CommandEmpty>
-                      {savedEntries.length > 0 && (
-                        <CommandGroup heading="Saved Businesses">
-                          {savedEntries.map((entry) => (
-                            <CommandItem
-                              key={entry.businessName}
-                              value={entry.businessName}
-                              onSelect={() => selectSavedBusiness(entry.businessName)}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  locationData.name === entry.businessName ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              <div className="flex flex-col">
-                                <span>{entry.businessName}</span>
-                                {entry.contactPerson && (
-                                  <span className="text-xs text-muted-foreground">{entry.contactPerson}</span>
-                                )}
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      )}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <Input
+                id="locationName"
+                placeholder="Enter business name..."
+                value={locationData.name}
+                onChange={(e) => setLocationData(prev => ({ ...prev, name: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="contactPerson">Contact Person</Label>
-              <Popover open={contactOpen} onOpenChange={setContactOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={contactOpen}
-                    className="w-full justify-between font-normal"
-                  >
-                    {locationData.contactPerson || "Select or type contact..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0 bg-popover" align="start">
-                  <Command>
-                    <CommandInput 
-                      placeholder="Search or type new..." 
-                      value={locationData.contactPerson}
-                      onValueChange={(value) => setLocationData(prev => ({ ...prev, contactPerson: value }))}
-                    />
-                    <CommandList>
-                      <CommandEmpty>
-                        <div className="p-2 text-sm text-muted-foreground">
-                          Press enter to use "{locationData.contactPerson}"
-                        </div>
-                      </CommandEmpty>
-                      {getUniqueContacts().length > 0 && (
-                        <CommandGroup heading="Saved Contacts">
-                          {getUniqueContacts().map((contact) => (
-                            <CommandItem
-                              key={contact}
-                              value={contact}
-                              onSelect={(value) => {
-                                setLocationData(prev => ({ ...prev, contactPerson: value }))
-                                setContactOpen(false)
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  locationData.contactPerson === contact ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              {contact}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      )}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <Input
+                id="contactPerson"
+                placeholder="Enter contact person..."
+                value={locationData.contactPerson}
+                onChange={(e) => setLocationData(prev => ({ ...prev, contactPerson: e.target.value }))}
+              />
             </div>
           </div>
           <div className="space-y-2">
