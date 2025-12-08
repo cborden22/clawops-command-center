@@ -1,4 +1,4 @@
-import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin } from "lucide-react"
+import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import {
   Sidebar,
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sidebar"
 
 const items = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Locations", url: "/locations", icon: MapPin },
   { title: "Revenue Tracker", url: "/revenue", icon: DollarSign },
   { title: "Inventory Tracker", url: "/inventory", icon: Package },
