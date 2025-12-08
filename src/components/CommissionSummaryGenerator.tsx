@@ -207,21 +207,23 @@ export function CommissionSummaryGenerator() {
             machineCount: locationData.machineCount,
             notes: locationData.notes,
           })
-          
-          // Automatically log the commission as an expense in Revenue Tracker
-          if (locationData.commissionAmount > 0) {
-            addRevenueExpense(
-              locationData.locationId,
-              locationData.commissionAmount,
-              "Commission Payout",
-              `Commission for ${locationData.name} (${periodText})`,
-              locationData.endDate
-            )
-          }
         }
+        
+        // Automatically log the commission as an expense in Revenue Tracker
+        // Works whether location is selected or manually entered
+        if (locationData.commissionAmount > 0 && locationData.startDate && locationData.endDate) {
+          addRevenueExpense(
+            locationData.locationId || "manual",
+            locationData.commissionAmount,
+            "Commission Payout",
+            `Commission for ${locationData.name} (${periodText})`,
+            locationData.endDate
+          )
+        }
+        
         toast({
           title: "Commission Summary Generated",
-          description: `PDF created for ${locationData.name}${locationData.locationId ? " - commission logged as expense" : ""}`,
+          description: `PDF created for ${locationData.name} - commission logged as expense`,
         })
       })
       .catch((error) => {
