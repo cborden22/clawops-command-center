@@ -58,8 +58,13 @@ export function useInventory() {
   };
 
   useEffect(() => {
-    fetchItems();
-  }, [user]);
+    if (user) {
+      fetchItems();
+    } else {
+      setItems([]);
+      setIsLoaded(true);
+    }
+  }, [user?.id]);
 
   const addItem = async (item: Omit<InventoryItem, "id" | "lastUpdated">) => {
     if (!user) return null;

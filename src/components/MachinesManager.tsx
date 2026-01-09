@@ -45,7 +45,7 @@ interface MachineWithLocation {
 }
 
 export function MachinesManager() {
-  const { locations, updateLocation } = useLocations();
+  const { locations, updateLocation, isLoaded } = useLocations();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingMachine, setEditingMachine] = useState<MachineWithLocation | null>(null);
@@ -161,6 +161,10 @@ export function MachinesManager() {
       customLabel: "",
     });
   };
+
+  if (!isLoaded) {
+    return <div className="flex items-center justify-center py-12">Loading...</div>;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">

@@ -200,8 +200,13 @@ export function useLocations() {
   };
 
   useEffect(() => {
-    fetchLocations();
-  }, [user]);
+    if (user) {
+      fetchLocations();
+    } else {
+      setLocations([]);
+      setIsLoaded(true);
+    }
+  }, [user?.id]);
 
   const addLocation = async (locationData: Omit<Location, "id" | "createdAt" | "commissionSummaries" | "agreements" | "machines"> & { machines?: MachineType[] }) => {
     if (!user) return null;
