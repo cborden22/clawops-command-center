@@ -62,8 +62,13 @@ export function useRevenueEntries() {
   };
 
   useEffect(() => {
-    fetchEntries();
-  }, [user]);
+    if (user) {
+      fetchEntries();
+    } else {
+      setEntries([]);
+      setIsLoaded(true);
+    }
+  }, [user?.id]);
 
   const addEntry = async (entry: Omit<RevenueEntry, "id">) => {
     if (!user) return null;

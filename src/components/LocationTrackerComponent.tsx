@@ -63,6 +63,7 @@ export function LocationTrackerComponent() {
   const {
     locations,
     activeLocations,
+    isLoaded,
     addLocation,
     updateLocation,
     deleteLocation,
@@ -80,7 +81,7 @@ export function LocationTrackerComponent() {
       loc.contactPerson.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.name.trim()) {
       toast({
         title: "Missing Information",
@@ -91,14 +92,14 @@ export function LocationTrackerComponent() {
     }
 
     if (editingLocation) {
-      updateLocation(editingLocation.id, formData);
+      await updateLocation(editingLocation.id, formData);
       toast({
         title: "Location Updated",
         description: `${formData.name} has been updated.`,
       });
       setEditingLocation(null);
     } else {
-      addLocation(formData);
+      await addLocation(formData);
       toast({
         title: "Location Added",
         description: `${formData.name} has been added.`,
@@ -157,8 +158,8 @@ export function LocationTrackerComponent() {
   // Calculate total machine count from machine types
   const totalMachinesFromTypes = formData.machines.reduce((sum, m) => sum + m.count, 0);
 
-  const handleDelete = (location: Location) => {
-    deleteLocation(location.id);
+  const handleDelete = async (location: Location) => {
+    await deleteLocation(location.id);
     toast({
       title: "Location Removed",
       description: `${location.name} has been removed.`,
@@ -172,6 +173,10 @@ export function LocationTrackerComponent() {
   };
 
   const totalMachines = locations.reduce((sum, loc) => sum + loc.machineCount, 0);
+
+  if (!isLoaded) {
+    return <div className="flex items-center justify-center py-12">Loading...</div>;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
