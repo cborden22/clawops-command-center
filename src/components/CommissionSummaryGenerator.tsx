@@ -197,10 +197,12 @@ export function CommissionSummaryGenerator() {
       .set(options)
       .from(content)
       .save()
-      .then(() => {
+      .then(async () => {
+        let savedToLocation = false
+        
         // Save commission summary to location if a location was selected
         if (locationData.locationId && locationData.startDate && locationData.endDate) {
-          addCommissionSummary(locationData.locationId, {
+          const result = await addCommissionSummary(locationData.locationId, {
             startDate: locationData.startDate.toISOString(),
             endDate: locationData.endDate.toISOString(),
             totalRevenue: locationData.totalRevenue,
@@ -209,12 +211,13 @@ export function CommissionSummaryGenerator() {
             machineCount: locationData.machineCount,
             notes: locationData.notes,
           })
+          savedToLocation = !!result
         }
         
         // Automatically log the commission as an expense in Revenue Tracker
         // Works whether location is selected or manually entered
         if (user && locationData.commissionAmount > 0 && locationData.startDate && locationData.endDate) {
-          addRevenueExpense(
+          await addRevenueExpense(
             user.id,
             locationData.locationId || "manual",
             locationData.commissionAmount,
@@ -226,7 +229,9 @@ export function CommissionSummaryGenerator() {
         
         toast({
           title: "Commission Summary Generated",
-          description: `PDF created for ${locationData.name} - commission logged as expense`,
+          description: savedToLocation 
+            ? `PDF created for ${locationData.name} - saved to location and logged as expense`
+            : `PDF created for ${locationData.name} - logged as expense`,
         })
       })
       .catch((error) => {
