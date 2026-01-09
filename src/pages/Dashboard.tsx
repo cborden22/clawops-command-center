@@ -1,5 +1,6 @@
 import { useLocations } from "@/hooks/useLocationsDB";
 import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
+import { useInventory } from "@/hooks/useInventoryDB";
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,16 +26,6 @@ import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { cn } from "@/lib/utils";
 
-interface InventoryItem {
-  id: string;
-  name: string;
-  category: string;
-  quantity: number;
-  minStock: number;
-  location: string;
-  lastUpdated: string;
-}
-
 type WidgetId = 'primaryStats' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions';
 
 interface WidgetConfig {
@@ -52,31 +43,45 @@ const DEFAULT_WIDGET_ORDER: WidgetConfig[] = [
   { id: 'quickActions', label: 'Quick Actions', visible: true },
 ];
 
-const INVENTORY_STORAGE_KEY = "clawops-inventory";
 const DASHBOARD_LAYOUT_KEY = "clawops-dashboard-layout";
 
 export default function Dashboard() {
   const { locations, activeLocations, isLoaded: locationsLoaded } = useLocations();
   const { entries, isLoaded: entriesLoaded } = useRevenueEntries();
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
-  const [inventoryLoaded, setInventoryLoaded] = useState(false);
+  const { items: inventoryItems, isLoaded: inventoryLoaded } = useInventory();
   const [widgets, setWidgets] = useState<WidgetConfig[]>(DEFAULT_WIDGET_ORDER);
   const [layoutLoaded, setLayoutLoaded] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [draggedWidget, setDraggedWidget] = useState<WidgetId | null>(null);
   const [dragOverWidget, setDragOverWidget] = useState<WidgetId | null>(null);
 
-  // Load inventory
+  // Load layout
   useEffect(() => {
-    const saved = localStorage.getItem(INVENTORY_STORAGE_KEY);
+    const saved = localStorage.getItem(DASHBOARD_LAYOUT_KEY);
     if (saved) {
       try {
-        setInventoryItems(JSON.parse(saved));
+        const savedWidgets = JSON.parse(saved);
+        // Merge with defaults to handle new widgets
+        const mergedWidgets = DEFAULT_WIDGET_ORDER.map(defaultWidget => {
+          const savedWidget = savedWidgets.find((w: WidgetConfig) => w.id === defaultWidget.id);
+          return savedWidget || defaultWidget;
+        });
+        // Preserve order from saved
+        const orderedWidgets = savedWidgets
+          .filter((w: WidgetConfig) => DEFAULT_WIDGET_ORDER.some(d => d.id === w.id))
+          .map((w: WidgetConfig) => mergedWidgets.find(m => m.id === w.id)!);
+        // Add any new widgets at the end
+        DEFAULT_WIDGET_ORDER.forEach(d => {
+          if (!orderedWidgets.find((o: WidgetConfig) => o.id === d.id)) {
+            orderedWidgets.push(d);
+          }
+        });
+        setWidgets(orderedWidgets);
       } catch (e) {
-        console.error("Failed to load inventory:", e);
+        console.error("Failed to load dashboard layout:", e);
       }
     }
-    setInventoryLoaded(true);
+    setLayoutLoaded(true);
   }, []);
 
   // Load layout
