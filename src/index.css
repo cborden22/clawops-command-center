@@ -68,6 +68,62 @@ All colors MUST be HSL.
     --sidebar-border: 214 32% 91%;
     --sidebar-ring: 221 83% 53%;
   }
+
+  /* Dark mode variables */
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 13%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 13%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 50%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 217 91% 60%;
+
+    /* Dark mode blue tokens */
+    --blue-50: 217 33% 17%;
+    --blue-100: 217 33% 20%;
+    --blue-500: 217 91% 60%;
+    --blue-600: 217 91% 55%;
+    --blue-700: 217 91% 50%;
+    --blue-900: 217 91% 40%;
+    
+    --gradient-card: linear-gradient(145deg, hsl(222 47% 13%), hsl(222 47% 11%));
+    --gradient-header: linear-gradient(90deg, hsl(222 47% 13%), hsl(222 47% 11%));
+    --gradient-accent: linear-gradient(135deg, hsl(217 91% 60% / 0.1), hsl(217 91% 55% / 0.05));
+    
+    --shadow-card: 0 4px 16px hsl(0 0% 0% / 0.3), 0 2px 8px hsl(0 0% 0% / 0.2);
+    --shadow-hover: 0 8px 32px hsl(0 0% 0% / 0.4), 0 4px 16px hsl(0 0% 0% / 0.3);
+    --shadow-glow: 0 0 20px hsl(217 91% 60% / 0.3);
+
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 222 47% 11%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 20%;
+    --sidebar-ring: 217 91% 60%;
+  }
 }
 
 @layer base {
@@ -77,20 +133,82 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground font-inter;
-    background: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 98%));
     min-height: 100vh;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  :root body {
+    background: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 98%));
+  }
+
+  .dark body {
+    background: linear-gradient(135deg, hsl(222 47% 11%), hsl(222 47% 9%));
+  }
+
+  /* Compact view mode - use CSS custom properties instead of @apply to avoid circular dependencies */
+  .compact {
+    --radius: 0.5rem;
+    --spacing-unit: 0.75;
+  }
+
+  .compact h1 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+
+  .compact h2 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+
+  .compact h3 {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+
+  /* Reduce padding and gaps in compact mode */
+  .compact [class*="p-6"] {
+    padding: 1rem;
+  }
+
+  .compact [class*="gap-6"] {
+    gap: 1rem;
+  }
+
+  .compact [class*="gap-4"] {
+    gap: 0.5rem;
+  }
+
+  .compact [class*="space-y-6"] > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1rem;
+  }
+
+  .compact [class*="space-y-4"] > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.5rem;
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-card backdrop-blur-sm border border-blue-100;
-    background: linear-gradient(145deg, hsl(0 0% 100% / 0.95), hsl(210 40% 98% / 0.8));
+    @apply bg-card backdrop-blur-sm border;
+    border-color: hsl(var(--blue-100));
+    background: var(--gradient-card);
     box-shadow: var(--shadow-card);
+  }
+
+  .dark .glass-card {
+    border-color: hsl(var(--border));
+    background: var(--gradient-card);
   }
   
   .glass-header {
-    @apply bg-card/95 backdrop-blur-sm border-b border-blue-100;
+    @apply bg-card/95 backdrop-blur-sm border-b;
+    border-color: hsl(var(--blue-100));
+    background: var(--gradient-header);
+  }
+
+  .dark .glass-header {
+    border-color: hsl(var(--border));
     background: var(--gradient-header);
   }
   
