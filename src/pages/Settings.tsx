@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAppSettings } from "@/contexts/AppSettingsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,27 +31,8 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
-const APP_SETTINGS_KEY = "clawops-app-settings";
 const INTEGRATIONS_KEY = "clawops-integrations";
 const NOTIFICATIONS_KEY = "clawops-notifications";
-
-interface AppSettings {
-  businessName: string;
-  warehouseAddress: string;
-  warehouseCity: string;
-  warehouseState: string;
-  warehouseZip: string;
-  businessPhone: string;
-  businessEmail: string;
-  currency: string;
-  timezone: string;
-  defaultCommissionRate: number;
-  lowStockThreshold: number;
-  dateFormat: string;
-  darkMode: boolean;
-  compactView: boolean;
-  autoBackup: boolean;
-}
 
 interface IntegrationSettings {
   nayax: {
@@ -71,24 +53,6 @@ interface NotificationSettings {
   dailyReports: boolean;
 }
 
-const DEFAULT_SETTINGS: AppSettings = {
-  businessName: "",
-  warehouseAddress: "",
-  warehouseCity: "",
-  warehouseState: "",
-  warehouseZip: "",
-  businessPhone: "",
-  businessEmail: "",
-  currency: "USD",
-  timezone: "America/New_York",
-  defaultCommissionRate: 25,
-  lowStockThreshold: 5,
-  dateFormat: "MM/dd/yyyy",
-  darkMode: true,
-  compactView: false,
-  autoBackup: true,
-};
-
 const DEFAULT_INTEGRATIONS: IntegrationSettings = {
   nayax: { apiKey: "", operatorId: "", connected: false },
   cantaloupe: { apiKey: "", clientId: "", connected: false },
@@ -102,13 +66,13 @@ const DEFAULT_NOTIFICATIONS: NotificationSettings = {
 
 export default function Settings() {
   const { user } = useAuth();
+  const { settings: appSettings, updateSetting, saveSettings, isLoaded } = useAppSettings();
   
   // Profile state
   const [fullName, setFullName] = useState("");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   
-  // App Settings state
-  const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  // App Settings saving state
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   
   // Integration state
@@ -132,17 +96,8 @@ export default function Settings() {
     }
   }, [user]);
 
-  // Load app settings from localStorage
+  // Load integrations and notifications from localStorage
   useEffect(() => {
-    const savedSettings = localStorage.getItem(APP_SETTINGS_KEY);
-    if (savedSettings) {
-      try {
-        setAppSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) });
-      } catch (e) {
-        console.error("Failed to load app settings:", e);
-      }
-    }
-
     const savedIntegrations = localStorage.getItem(INTEGRATIONS_KEY);
     if (savedIntegrations) {
       try {
@@ -162,14 +117,10 @@ export default function Settings() {
     }
   }, []);
 
-  const updateAppSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
-    setAppSettings(prev => ({ ...prev, [key]: value }));
-  };
-
   const handleSaveAppSettings = async () => {
     setIsSavingSettings(true);
     try {
-      localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(appSettings));
+      saveSettings();
       toast({
         title: "Settings Saved",
         description: "Your app settings have been saved successfully.",
@@ -183,6 +134,32 @@ export default function Settings() {
     } finally {
       setIsSavingSettings(false);
     }
+  };
+
+  const handleToggleDarkMode = (checked: boolean) => {
+    updateSetting("darkMode", checked);
+    toast({
+      title: checked ? "Dark Mode Enabled" : "Light Mode Enabled",
+      description: `The interface is now in ${checked ? "dark" : "light"} mode.`,
+    });
+  };
+
+  const handleToggleCompactView = (checked: boolean) => {
+    updateSetting("compactView", checked);
+    toast({
+      title: checked ? "Compact View Enabled" : "Standard View Enabled",
+      description: `The interface is now in ${checked ? "compact" : "standard"} mode.`,
+    });
+  };
+
+  const handleToggleAutoBackup = (checked: boolean) => {
+    updateSetting("autoBackup", checked);
+    toast({
+      title: checked ? "Auto Backup Enabled" : "Auto Backup Disabled",
+      description: checked 
+        ? "Your data will be automatically backed up." 
+        : "Automatic backups have been disabled.",
+    });
   };
 
   const handleSaveProfile = async () => {
@@ -425,7 +402,7 @@ export default function Settings() {
                 <Input
                   id="businessName"
                   value={appSettings.businessName}
-                  onChange={(e) => updateAppSetting("businessName", e.target.value)}
+                  onChange={(e) => updateSetting("businessName", e.target.value)}
                   placeholder="e.g., Acme Claw Machines LLC"
                   maxLength={100}
                 />
@@ -437,7 +414,7 @@ export default function Settings() {
                   <Input
                     id="businessPhone"
                     value={appSettings.businessPhone}
-                    onChange={(e) => updateAppSetting("businessPhone", e.target.value)}
+                    onChange={(e) => updateSetting("businessPhone", e.target.value)}
                     placeholder="(555) 123-4567"
                     maxLength={20}
                   />
@@ -448,7 +425,7 @@ export default function Settings() {
                     id="businessEmail"
                     type="email"
                     value={appSettings.businessEmail}
-                    onChange={(e) => updateAppSetting("businessEmail", e.target.value)}
+                    onChange={(e) => updateSetting("businessEmail", e.target.value)}
                     placeholder="contact@business.com"
                     maxLength={100}
                   />
@@ -474,7 +451,7 @@ export default function Settings() {
                 <Input
                   id="warehouseAddress"
                   value={appSettings.warehouseAddress}
-                  onChange={(e) => updateAppSetting("warehouseAddress", e.target.value)}
+                  onChange={(e) => updateSetting("warehouseAddress", e.target.value)}
                   placeholder="123 Main Street"
                   maxLength={200}
                 />
@@ -486,7 +463,7 @@ export default function Settings() {
                   <Input
                     id="warehouseCity"
                     value={appSettings.warehouseCity}
-                    onChange={(e) => updateAppSetting("warehouseCity", e.target.value)}
+                    onChange={(e) => updateSetting("warehouseCity", e.target.value)}
                     placeholder="City"
                     maxLength={100}
                   />
@@ -496,7 +473,7 @@ export default function Settings() {
                   <Input
                     id="warehouseState"
                     value={appSettings.warehouseState}
-                    onChange={(e) => updateAppSetting("warehouseState", e.target.value)}
+                    onChange={(e) => updateSetting("warehouseState", e.target.value)}
                     placeholder="State"
                     maxLength={50}
                   />
@@ -506,7 +483,7 @@ export default function Settings() {
                   <Input
                     id="warehouseZip"
                     value={appSettings.warehouseZip}
-                    onChange={(e) => updateAppSetting("warehouseZip", e.target.value)}
+                    onChange={(e) => updateSetting("warehouseZip", e.target.value)}
                     placeholder="12345"
                     maxLength={10}
                   />
@@ -536,7 +513,7 @@ export default function Settings() {
                     min="0"
                     max="100"
                     value={appSettings.defaultCommissionRate}
-                    onChange={(e) => updateAppSetting("defaultCommissionRate", Number(e.target.value))}
+                    onChange={(e) => updateSetting("defaultCommissionRate", Number(e.target.value))}
                   />
                   <p className="text-xs text-muted-foreground">
                     Applied to new locations by default
@@ -549,7 +526,7 @@ export default function Settings() {
                     type="number"
                     min="0"
                     value={appSettings.lowStockThreshold}
-                    onChange={(e) => updateAppSetting("lowStockThreshold", Number(e.target.value))}
+                    onChange={(e) => updateSetting("lowStockThreshold", Number(e.target.value))}
                   />
                   <p className="text-xs text-muted-foreground">
                     Items below this count trigger low stock alerts
@@ -562,7 +539,7 @@ export default function Settings() {
                   <Label htmlFor="currency">Currency</Label>
                   <Select 
                     value={appSettings.currency} 
-                    onValueChange={(v) => updateAppSetting("currency", v)}
+                    onValueChange={(v) => updateSetting("currency", v)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -580,7 +557,7 @@ export default function Settings() {
                   <Label htmlFor="dateFormat">Date Format</Label>
                   <Select 
                     value={appSettings.dateFormat} 
-                    onValueChange={(v) => updateAppSetting("dateFormat", v)}
+                    onValueChange={(v) => updateSetting("dateFormat", v)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -618,7 +595,7 @@ export default function Settings() {
                 <Switch
                   id="darkMode"
                   checked={appSettings.darkMode}
-                  onCheckedChange={(v) => updateAppSetting("darkMode", v)}
+                  onCheckedChange={handleToggleDarkMode}
                 />
               </div>
 
@@ -634,7 +611,7 @@ export default function Settings() {
                 <Switch
                   id="compactView"
                   checked={appSettings.compactView}
-                  onCheckedChange={(v) => updateAppSetting("compactView", v)}
+                  onCheckedChange={handleToggleCompactView}
                 />
               </div>
 
@@ -650,7 +627,7 @@ export default function Settings() {
                 <Switch
                   id="autoBackup"
                   checked={appSettings.autoBackup}
-                  onCheckedChange={(v) => updateAppSetting("autoBackup", v)}
+                  onCheckedChange={handleToggleAutoBackup}
                 />
               </div>
             </CardContent>
