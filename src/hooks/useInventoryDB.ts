@@ -11,6 +11,8 @@ export interface InventoryItem {
   minStock: number;
   location: string;
   lastUpdated: string;
+  packageType: string;
+  packageQuantity: number;
 }
 
 export function useInventory() {
@@ -42,6 +44,8 @@ export function useInventory() {
         minStock: item.min_stock || 5,
         location: item.location || "",
         lastUpdated: new Date(item.last_updated).toLocaleDateString(),
+        packageType: item.package_type || "Case",
+        packageQuantity: item.package_quantity || 24,
       }));
 
       setItems(mappedItems);
@@ -79,6 +83,8 @@ export function useInventory() {
           quantity: item.quantity,
           min_stock: item.minStock,
           location: item.location,
+          package_type: item.packageType,
+          package_quantity: item.packageQuantity,
         })
         .select()
         .single();
@@ -93,6 +99,8 @@ export function useInventory() {
         minStock: data.min_stock || 5,
         location: data.location || "",
         lastUpdated: new Date(data.last_updated).toLocaleDateString(),
+        packageType: data.package_type || "Case",
+        packageQuantity: data.package_quantity || 24,
       };
 
       setItems(prev => [newItem, ...prev]);
@@ -118,6 +126,8 @@ export function useInventory() {
       if (updates.quantity !== undefined) updateData.quantity = updates.quantity;
       if (updates.minStock !== undefined) updateData.min_stock = updates.minStock;
       if (updates.location !== undefined) updateData.location = updates.location;
+      if (updates.packageType !== undefined) updateData.package_type = updates.packageType;
+      if (updates.packageQuantity !== undefined) updateData.package_quantity = updates.packageQuantity;
 
       const { error } = await supabase
         .from("inventory_items")

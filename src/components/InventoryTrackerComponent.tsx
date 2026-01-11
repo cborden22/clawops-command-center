@@ -3,10 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check } from "lucide-react";
+import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check, Edit2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useInventory } from "@/hooks/useInventoryDB";
+import { useInventory, InventoryItem } from "@/hooks/useInventoryDB";
 import {
   Sheet,
   SheetContent,
@@ -15,6 +15,20 @@ import {
   SheetDescription,
   SheetFooter,
 } from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface CartItem {
   id: string;
@@ -24,15 +38,26 @@ interface CartItem {
 }
 
 export function InventoryTrackerComponent() {
-  const { items, isLoaded, addItem, deleteItem, updateQuantity, bulkDeductQuantities } = useInventory();
+  const { items, isLoaded, addItem, updateItem, deleteItem, updateQuantity, bulkDeductQuantities } = useInventory();
   const [searchQuery, setSearchQuery] = useState("");
   const [newItemName, setNewItemName] = useState("");
   const [newItemQty, setNewItemQty] = useState(10);
+  const [newItemPackageType, setNewItemPackageType] = useState("Case");
+  const [newItemPackageQty, setNewItemPackageQty] = useState(24);
   
   // Stock Run state
   const [isStockRunMode, setIsStockRunMode] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showConfirmSheet, setShowConfirmSheet] = useState(false);
+  
+  // Custom quantity input state
+  const [customQtyItemId, setCustomQtyItemId] = useState<string | null>(null);
+  const [customQtyValue, setCustomQtyValue] = useState("");
+  
+  // Edit item dialog state
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [editPackageType, setEditPackageType] = useState("");
+  const [editPackageQty, setEditPackageQty] = useState(24);
 
   const handleQuickAdd = async () => {
     if (!newItemName.trim()) {
@@ -50,15 +75,47 @@ export function InventoryTrackerComponent() {
       quantity: newItemQty,
       minStock: 5,
       location: "",
+      packageType: newItemPackageType,
+      packageQuantity: newItemPackageQty,
     });
 
     if (item) {
       setNewItemName("");
       setNewItemQty(10);
+      setNewItemPackageType("Case");
+      setNewItemPackageQty(24);
       toast({
         title: "Added!",
         description: `${item.name} added to inventory.`,
       });
+    }
+  };
+
+  const handleEditItem = (item: InventoryItem) => {
+    setEditingItem(item);
+    setEditPackageType(item.packageType);
+    setEditPackageQty(item.packageQuantity);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingItem) return;
+    await updateItem(editingItem.id, {
+      packageType: editPackageType,
+      packageQuantity: editPackageQty,
+    });
+    setEditingItem(null);
+    toast({
+      title: "Updated!",
+      description: `${editingItem.name} packaging updated.`,
+    });
+  };
+
+  const handleCustomQtyAdd = (itemId: string) => {
+    const qty = parseInt(customQtyValue);
+    if (qty > 0) {
+      addToCart(itemId, qty);
+      setCustomQtyItemId(null);
+      setCustomQtyValue("");
     }
   };
 
@@ -217,7 +274,7 @@ export function InventoryTrackerComponent() {
 
       {/* Quick Add - Only show when not in stock run mode */}
       {!isStockRunMode && (
-        <Card className="p-4">
+        <Card className="p-4 space-y-3">
           <div className="flex gap-2">
             <Input
               placeholder="Item name..."
@@ -237,6 +294,29 @@ export function InventoryTrackerComponent() {
               <Plus className="h-4 w-4 mr-1" />
               Add
             </Button>
+          </div>
+          {/* Packaging Configuration */}
+          <div className="flex gap-2 items-center">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Packaging:</span>
+            <Select value={newItemPackageType} onValueChange={setNewItemPackageType}>
+              <SelectTrigger className="w-24 h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Case">Case</SelectItem>
+                <SelectItem value="Bag">Bag</SelectItem>
+                <SelectItem value="Box">Box</SelectItem>
+                <SelectItem value="Pack">Pack</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-xs text-muted-foreground">of</span>
+            <Input
+              type="number"
+              min="1"
+              value={newItemPackageQty}
+              onChange={(e) => setNewItemPackageQty(parseInt(e.target.value) || 1)}
+              className="w-16 h-8 text-center text-sm"
+            />
           </div>
         </Card>
       )}
@@ -296,10 +376,24 @@ export function InventoryTrackerComponent() {
                           {cartQty} in cart
                         </Badge>
                       )}
+                      {!isStockRunMode && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-primary"
+                          onClick={() => handleEditItem(item)}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
-                    {isStockRunMode && (
+                    {isStockRunMode ? (
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {item.quantity} available
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {item.packageType} of {item.packageQuantity}
                       </p>
                     )}
                   </div>
@@ -307,51 +401,92 @@ export function InventoryTrackerComponent() {
                   {/* Stock Run Mode Controls */}
                   {isStockRunMode ? (
                     <div className="flex items-center gap-1 flex-wrap justify-end">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-2"
-                        onClick={() => addToCart(item.id, 1)}
-                        disabled={item.quantity === 0}
-                      >
-                        +1
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-2"
-                        onClick={() => addToCart(item.id, 5)}
-                        disabled={item.quantity === 0}
-                      >
-                        +5
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-2"
-                        onClick={() => addToCart(item.id, 10)}
-                        disabled={item.quantity === 0}
-                      >
-                        +10
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 px-2"
-                        onClick={() => addToCart(item.id, 24)}
-                        disabled={item.quantity === 0}
-                      >
-                        +24
-                      </Button>
-                      {isInCart && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => removeFromCart(item.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                      {customQtyItemId === item.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            min="1"
+                            value={customQtyValue}
+                            onChange={(e) => setCustomQtyValue(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleCustomQtyAdd(item.id)}
+                            className="w-16 h-8 text-center"
+                            autoFocus
+                          />
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={() => handleCustomQtyAdd(item.id)}
+                          >
+                            <Check className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={() => { setCustomQtyItemId(null); setCustomQtyValue(""); }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={() => addToCart(item.id, 5)}
+                            disabled={item.quantity === 0}
+                          >
+                            +5
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={() => addToCart(item.id, 10)}
+                            disabled={item.quantity === 0}
+                          >
+                            +10
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={() => addToCart(item.id, 20)}
+                            disabled={item.quantity === 0}
+                          >
+                            +20
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2 text-xs"
+                            onClick={() => addToCart(item.id, item.packageQuantity)}
+                            disabled={item.quantity === 0}
+                          >
+                            +{item.packageQuantity} {item.packageType}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={() => setCustomQtyItemId(item.id)}
+                            disabled={item.quantity === 0}
+                          >
+                            Cust
+                          </Button>
+                          {isInCart && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => removeFromCart(item.id)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </>
                       )}
                     </div>
                   ) : (
@@ -524,6 +659,51 @@ export function InventoryTrackerComponent() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {/* Edit Item Dialog */}
+      <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Edit {editingItem?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Package Type</label>
+              <Select value={editPackageType} onValueChange={setEditPackageType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Case">Case</SelectItem>
+                  <SelectItem value="Bag">Bag</SelectItem>
+                  <SelectItem value="Box">Box</SelectItem>
+                  <SelectItem value="Pack">Pack</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Package Quantity</label>
+              <Input
+                type="number"
+                min="1"
+                value={editPackageQty}
+                onChange={(e) => setEditPackageQty(parseInt(e.target.value) || 1)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Items per {editPackageType.toLowerCase()}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingItem(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
