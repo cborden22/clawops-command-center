@@ -14,16 +14,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   User, 
   Settings as SettingsIcon, 
-  Key, 
+  Key,
   Bell, 
   Shield, 
-  Zap,
-  CheckCircle2,
-  XCircle,
-  ExternalLink,
   Save,
-  Eye,
-  EyeOff,
   Building2,
   Warehouse,
   DollarSign,
@@ -31,32 +25,13 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
-const INTEGRATIONS_KEY = "clawops-integrations";
 const NOTIFICATIONS_KEY = "clawops-notifications";
-
-interface IntegrationSettings {
-  nayax: {
-    apiKey: string;
-    operatorId: string;
-    connected: boolean;
-  };
-  cantaloupe: {
-    apiKey: string;
-    clientId: string;
-    connected: boolean;
-  };
-}
 
 interface NotificationSettings {
   emailNotifications: boolean;
   lowStockAlerts: boolean;
   dailyReports: boolean;
 }
-
-const DEFAULT_INTEGRATIONS: IntegrationSettings = {
-  nayax: { apiKey: "", operatorId: "", connected: false },
-  cantaloupe: { apiKey: "", clientId: "", connected: false },
-};
 
 const DEFAULT_NOTIFICATIONS: NotificationSettings = {
   emailNotifications: true,
@@ -75,11 +50,6 @@ export default function Settings() {
   // App Settings saving state
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   
-  // Integration state
-  const [integrations, setIntegrations] = useState<IntegrationSettings>(DEFAULT_INTEGRATIONS);
-  const [showNayaxKey, setShowNayaxKey] = useState(false);
-  const [showCantaloupeKey, setShowCantaloupeKey] = useState(false);
-  
   // Notification state
   const [notifications, setNotifications] = useState<NotificationSettings>(DEFAULT_NOTIFICATIONS);
   
@@ -96,17 +66,8 @@ export default function Settings() {
     }
   }, [user]);
 
-  // Load integrations and notifications from localStorage
+  // Load notifications from localStorage
   useEffect(() => {
-    const savedIntegrations = localStorage.getItem(INTEGRATIONS_KEY);
-    if (savedIntegrations) {
-      try {
-        setIntegrations({ ...DEFAULT_INTEGRATIONS, ...JSON.parse(savedIntegrations) });
-      } catch (e) {
-        console.error("Failed to load integrations:", e);
-      }
-    }
-
     const savedNotifications = localStorage.getItem(NOTIFICATIONS_KEY);
     if (savedNotifications) {
       try {
@@ -201,77 +162,6 @@ export default function Settings() {
     }
   };
 
-  const saveIntegrations = (newIntegrations: IntegrationSettings) => {
-    setIntegrations(newIntegrations);
-    localStorage.setItem(INTEGRATIONS_KEY, JSON.stringify(newIntegrations));
-  };
-
-  const handleConnectNayax = async () => {
-    if (!integrations.nayax.apiKey || !integrations.nayax.operatorId) {
-      toast({
-        title: "Missing Information",
-        description: "Please enter both API Key and Operator ID.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const updated = {
-      ...integrations,
-      nayax: { ...integrations.nayax, connected: true }
-    };
-    saveIntegrations(updated);
-    toast({
-      title: "Nayax Connected",
-      description: "Your Nayax account has been connected successfully.",
-    });
-  };
-
-  const handleConnectCantaloupe = async () => {
-    if (!integrations.cantaloupe.apiKey || !integrations.cantaloupe.clientId) {
-      toast({
-        title: "Missing Information",
-        description: "Please enter both API Key and Client ID.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const updated = {
-      ...integrations,
-      cantaloupe: { ...integrations.cantaloupe, connected: true }
-    };
-    saveIntegrations(updated);
-    toast({
-      title: "Cantaloupe Connected",
-      description: "Your Cantaloupe account has been connected successfully.",
-    });
-  };
-
-  const handleDisconnectNayax = () => {
-    const updated = {
-      ...integrations,
-      nayax: { apiKey: "", operatorId: "", connected: false }
-    };
-    saveIntegrations(updated);
-    toast({
-      title: "Nayax Disconnected",
-      description: "Your Nayax integration has been removed.",
-    });
-  };
-
-  const handleDisconnectCantaloupe = () => {
-    const updated = {
-      ...integrations,
-      cantaloupe: { apiKey: "", clientId: "", connected: false }
-    };
-    saveIntegrations(updated);
-    toast({
-      title: "Cantaloupe Disconnected",
-      description: "Your Cantaloupe integration has been removed.",
-    });
-  };
-
   const updateNotification = <K extends keyof NotificationSettings>(key: K, value: boolean) => {
     const updated = { ...notifications, [key]: value };
     setNotifications(updated);
@@ -360,7 +250,7 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="app" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="app" className="gap-2">
             <SettingsIcon className="h-4 w-4" />
             <span className="hidden sm:inline">App</span>
@@ -368,10 +258,6 @@ export default function Settings() {
           <TabsTrigger value="profile" className="gap-2">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">Profile</span>
-          </TabsTrigger>
-          <TabsTrigger value="integrations" className="gap-2">
-            <Zap className="h-4 w-4" />
-            <span className="hidden sm:inline">Integrations</span>
           </TabsTrigger>
           <TabsTrigger value="notifications" className="gap-2">
             <Bell className="h-4 w-4" />
@@ -689,229 +575,6 @@ export default function Settings() {
                 <Save className="h-4 w-4" />
                 {isUpdatingProfile ? "Saving..." : "Save Changes"}
               </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Integrations Tab */}
-        <TabsContent value="integrations" className="space-y-6">
-          {/* Nayax Integration */}
-          <Card className="glass-card">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">N</span>
-                  </div>
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      Nayax Integration
-                      {integrations.nayax.connected ? (
-                        <Badge className="bg-green-500/10 text-green-500 border-green-500/20">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Connected
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">
-                          <XCircle className="h-3 w-3 mr-1" />
-                          Not Connected
-                        </Badge>
-                      )}
-                    </CardTitle>
-                    <CardDescription>
-                      Connect your Nayax account to sync machine data and transactions
-                    </CardDescription>
-                  </div>
-                </div>
-                <Button variant="ghost" size="icon" asChild>
-                  <a href="https://my.nayax.com" target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!integrations.nayax.connected ? (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="nayaxOperatorId">Operator ID</Label>
-                    <Input
-                      id="nayaxOperatorId"
-                      value={integrations.nayax.operatorId}
-                      onChange={(e) => setIntegrations(prev => ({
-                        ...prev,
-                        nayax: { ...prev.nayax, operatorId: e.target.value }
-                      }))}
-                      placeholder="Enter your Nayax Operator ID"
-                      maxLength={100}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="nayaxApiKey">API Key</Label>
-                    <div className="relative">
-                      <Input
-                        id="nayaxApiKey"
-                        type={showNayaxKey ? "text" : "password"}
-                        value={integrations.nayax.apiKey}
-                        onChange={(e) => setIntegrations(prev => ({
-                          ...prev,
-                          nayax: { ...prev.nayax, apiKey: e.target.value }
-                        }))}
-                        placeholder="Enter your Nayax API Key"
-                        className="pr-10"
-                        maxLength={200}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full px-3"
-                        onClick={() => setShowNayaxKey(!showNayaxKey)}
-                      >
-                        {showNayaxKey ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Find your API key in the Nayax Management Suite under Settings → API
-                    </p>
-                  </div>
-
-                  <Button onClick={handleConnectNayax} className="gap-2">
-                    <Zap className="h-4 w-4" />
-                    Connect Nayax
-                  </Button>
-                </>
-              ) : (
-                <div className="flex items-center justify-between p-4 rounded-lg bg-green-500/5 border border-green-500/20">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    <div>
-                      <p className="font-medium">Nayax is connected</p>
-                      <p className="text-sm text-muted-foreground">
-                        Operator ID: {integrations.nayax.operatorId}
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="destructive" size="sm" onClick={handleDisconnectNayax}>
-                    Disconnect
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Cantaloupe Integration */}
-          <Card className="glass-card">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">C</span>
-                  </div>
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      Cantaloupe Integration
-                      {integrations.cantaloupe.connected ? (
-                        <Badge className="bg-green-500/10 text-green-500 border-green-500/20">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Connected
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">
-                          <XCircle className="h-3 w-3 mr-1" />
-                          Not Connected
-                        </Badge>
-                      )}
-                    </CardTitle>
-                    <CardDescription>
-                      Connect your Cantaloupe account to sync vending data
-                    </CardDescription>
-                  </div>
-                </div>
-                <Button variant="ghost" size="icon" asChild>
-                  <a href="https://www.cantaloupe.com" target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!integrations.cantaloupe.connected ? (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="cantaloupeClientId">Client ID</Label>
-                    <Input
-                      id="cantaloupeClientId"
-                      value={integrations.cantaloupe.clientId}
-                      onChange={(e) => setIntegrations(prev => ({
-                        ...prev,
-                        cantaloupe: { ...prev.cantaloupe, clientId: e.target.value }
-                      }))}
-                      placeholder="Enter your Cantaloupe Client ID"
-                      maxLength={100}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cantaloupeApiKey">API Key</Label>
-                    <div className="relative">
-                      <Input
-                        id="cantaloupeApiKey"
-                        type={showCantaloupeKey ? "text" : "password"}
-                        value={integrations.cantaloupe.apiKey}
-                        onChange={(e) => setIntegrations(prev => ({
-                          ...prev,
-                          cantaloupe: { ...prev.cantaloupe, apiKey: e.target.value }
-                        }))}
-                        placeholder="Enter your Cantaloupe API Key"
-                        className="pr-10"
-                        maxLength={200}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full px-3"
-                        onClick={() => setShowCantaloupeKey(!showCantaloupeKey)}
-                      >
-                        {showCantaloupeKey ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Find your API credentials in Cantaloupe Spotlight under Developer Settings
-                    </p>
-                  </div>
-
-                  <Button onClick={handleConnectCantaloupe} className="gap-2">
-                    <Zap className="h-4 w-4" />
-                    Connect Cantaloupe
-                  </Button>
-                </>
-              ) : (
-                <div className="flex items-center justify-between p-4 rounded-lg bg-green-500/5 border border-green-500/20">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    <div>
-                      <p className="font-medium">Cantaloupe is connected</p>
-                      <p className="text-sm text-muted-foreground">
-                        Client ID: {integrations.cantaloupe.clientId}
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="destructive" size="sm" onClick={handleDisconnectCantaloupe}>
-                    Disconnect
-                  </Button>
-                </div>
-              )}
             </CardContent>
           </Card>
         </TabsContent>
