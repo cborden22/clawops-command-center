@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -292,8 +293,7 @@ export function MachinesManager() {
 
                 <div className="space-y-2">
                   <Label>Count</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
                     min="1"
                     value={formData.count}
                     onChange={(e) =>

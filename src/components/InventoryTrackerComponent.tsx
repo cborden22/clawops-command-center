@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check, Edit2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -283,8 +284,7 @@ export function InventoryTrackerComponent() {
               onKeyDown={(e) => e.key === "Enter" && handleQuickAdd()}
               className="flex-1"
             />
-            <Input
-              type="number"
+            <NumberInput
               min="1"
               value={newItemQty}
               onChange={(e) => setNewItemQty(parseInt(e.target.value) || 1)}
@@ -310,8 +310,7 @@ export function InventoryTrackerComponent() {
               </SelectContent>
             </Select>
             <span className="text-xs text-muted-foreground">of</span>
-            <Input
-              type="number"
+            <NumberInput
               min="1"
               value={newItemPackageQty}
               onChange={(e) => setNewItemPackageQty(parseInt(e.target.value) || 1)}
@@ -403,8 +402,7 @@ export function InventoryTrackerComponent() {
                     <div className="flex items-center gap-1 flex-wrap justify-end">
                       {customQtyItemId === item.id ? (
                         <div className="flex items-center gap-1">
-                          <Input
-                            type="number"
+                          <NumberInput
                             min="1"
                             value={customQtyValue}
                             onChange={(e) => setCustomQtyValue(e.target.value)}
