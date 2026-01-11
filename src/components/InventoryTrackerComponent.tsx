@@ -1,18 +1,38 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Package, AlertTriangle, Minus, Search } from "lucide-react";
+import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useInventory } from "@/hooks/useInventoryDB";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from "@/components/ui/sheet";
+
+interface CartItem {
+  id: string;
+  name: string;
+  quantity: number;
+  available: number;
+}
 
 export function InventoryTrackerComponent() {
-  const { items, isLoaded, addItem, deleteItem, updateQuantity } = useInventory();
+  const { items, isLoaded, addItem, deleteItem, updateQuantity, bulkDeductQuantities } = useInventory();
   const [searchQuery, setSearchQuery] = useState("");
   const [newItemName, setNewItemName] = useState("");
   const [newItemQty, setNewItemQty] = useState(10);
+  
+  // Stock Run state
+  const [isStockRunMode, setIsStockRunMode] = useState(false);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [showConfirmSheet, setShowConfirmSheet] = useState(false);
 
   const handleQuickAdd = async () => {
     if (!newItemName.trim()) {
@@ -63,6 +83,65 @@ export function InventoryTrackerComponent() {
     });
   };
 
+  // Stock Run functions
+  const addToCart = (itemId: string, qty: number) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+
+    setCart(prev => {
+      const existing = prev.find(c => c.id === itemId);
+      if (existing) {
+        const newQty = Math.min(existing.quantity + qty, item.quantity);
+        return prev.map(c => c.id === itemId ? { ...c, quantity: newQty } : c);
+      }
+      return [...prev, { id: itemId, name: item.name, quantity: Math.min(qty, item.quantity), available: item.quantity }];
+    });
+  };
+
+  const removeFromCart = (itemId: string) => {
+    setCart(prev => prev.filter(c => c.id !== itemId));
+  };
+
+  const updateCartQuantity = (itemId: string, newQty: number) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+    
+    if (newQty <= 0) {
+      removeFromCart(itemId);
+    } else {
+      setCart(prev => prev.map(c => 
+        c.id === itemId ? { ...c, quantity: Math.min(newQty, item.quantity) } : c
+      ));
+    }
+  };
+
+  const getCartQuantity = (itemId: string) => {
+    return cart.find(c => c.id === itemId)?.quantity || 0;
+  };
+
+  const totalCartItems = cart.reduce((sum, c) => sum + c.quantity, 0);
+
+  const handleConfirmStockRun = async () => {
+    if (cart.length === 0) return;
+
+    const success = await bulkDeductQuantities(cart.map(c => ({ id: c.id, quantity: c.quantity })));
+    
+    if (success) {
+      toast({
+        title: "Stock Run Complete!",
+        description: `${totalCartItems} items deducted from ${cart.length} products.`,
+      });
+      setCart([]);
+      setShowConfirmSheet(false);
+      setIsStockRunMode(false);
+    }
+  };
+
+  const cancelStockRun = () => {
+    setCart([]);
+    setIsStockRunMode(false);
+  };
+
   const filteredItems = items.filter(item =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -75,7 +154,31 @@ export function InventoryTrackerComponent() {
   }
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-4 animate-fade-in pb-24">
+      {/* Stock Run Toggle */}
+      <div className="flex gap-2">
+        {!isStockRunMode ? (
+          <Button 
+            onClick={() => setIsStockRunMode(true)} 
+            className="flex-1"
+            size="lg"
+          >
+            <ShoppingCart className="h-5 w-5 mr-2" />
+            Start Stock Run
+          </Button>
+        ) : (
+          <Button 
+            onClick={cancelStockRun} 
+            variant="outline"
+            className="flex-1"
+            size="lg"
+          >
+            <X className="h-5 w-5 mr-2" />
+            Cancel Stock Run
+          </Button>
+        )}
+      </div>
+
       {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-3">
         <Card className="p-4">
@@ -112,29 +215,31 @@ export function InventoryTrackerComponent() {
         </Card>
       </div>
 
-      {/* Quick Add */}
-      <Card className="p-4">
-        <div className="flex gap-2">
-          <Input
-            placeholder="Item name..."
-            value={newItemName}
-            onChange={(e) => setNewItemName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleQuickAdd()}
-            className="flex-1"
-          />
-          <Input
-            type="number"
-            min="1"
-            value={newItemQty}
-            onChange={(e) => setNewItemQty(parseInt(e.target.value) || 1)}
-            className="w-20 text-center"
-          />
-          <Button onClick={handleQuickAdd}>
-            <Plus className="h-4 w-4 mr-1" />
-            Add
-          </Button>
-        </div>
-      </Card>
+      {/* Quick Add - Only show when not in stock run mode */}
+      {!isStockRunMode && (
+        <Card className="p-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Item name..."
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleQuickAdd()}
+              className="flex-1"
+            />
+            <Input
+              type="number"
+              min="1"
+              value={newItemQty}
+              onChange={(e) => setNewItemQty(parseInt(e.target.value) || 1)}
+              className="w-20 text-center"
+            />
+            <Button onClick={handleQuickAdd}>
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* Search */}
       {items.length > 0 && (
@@ -163,76 +268,146 @@ export function InventoryTrackerComponent() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {filteredItems.map((item) => (
-            <Card
-              key={item.id}
-              className={cn(
-                "p-3 transition-colors",
-                item.quantity <= item.minStock && "border-destructive/30 bg-destructive/5"
-              )}
-            >
-              <div className="flex items-center gap-3">
-                {/* Name & Status */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium truncate">{item.name}</span>
-                    {item.quantity <= item.minStock && (
-                      <Badge variant="destructive" className="text-xs shrink-0">
-                        Low
-                      </Badge>
+          {filteredItems.map((item) => {
+            const cartQty = getCartQuantity(item.id);
+            const isInCart = cartQty > 0;
+            
+            return (
+              <Card
+                key={item.id}
+                className={cn(
+                  "p-3 transition-colors",
+                  item.quantity <= item.minStock && "border-destructive/30 bg-destructive/5",
+                  isStockRunMode && isInCart && "border-primary bg-primary/5"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  {/* Name & Status */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium truncate">{item.name}</span>
+                      {item.quantity <= item.minStock && (
+                        <Badge variant="destructive" className="text-xs shrink-0">
+                          Low
+                        </Badge>
+                      )}
+                      {isStockRunMode && isInCart && (
+                        <Badge className="text-xs shrink-0">
+                          {cartQty} in cart
+                        </Badge>
+                      )}
+                    </div>
+                    {isStockRunMode && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {item.quantity} available
+                      </p>
                     )}
                   </div>
-                </div>
 
-                {/* Quantity Controls */}
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 shrink-0"
-                    onClick={() => handleUpdateQuantity(item.id, -1)}
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  
-                  <Input
-                    type="number"
-                    min="0"
-                    value={item.quantity}
-                    onChange={(e) => handleSetQuantity(item.id, parseInt(e.target.value) || 0)}
-                    className={cn(
-                      "w-16 h-8 text-center font-bold",
-                      item.quantity <= item.minStock && "text-destructive"
-                    )}
-                  />
-                  
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 shrink-0"
-                    onClick={() => handleUpdateQuantity(item.id, 1)}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
+                  {/* Stock Run Mode Controls */}
+                  {isStockRunMode ? (
+                    <div className="flex items-center gap-1 flex-wrap justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-2"
+                        onClick={() => addToCart(item.id, 1)}
+                        disabled={item.quantity === 0}
+                      >
+                        +1
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-2"
+                        onClick={() => addToCart(item.id, 5)}
+                        disabled={item.quantity === 0}
+                      >
+                        +5
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-2"
+                        onClick={() => addToCart(item.id, 10)}
+                        disabled={item.quantity === 0}
+                      >
+                        +10
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-2"
+                        onClick={() => addToCart(item.id, 24)}
+                        disabled={item.quantity === 0}
+                      >
+                        +24
+                      </Button>
+                      {isInCart && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => removeFromCart(item.id)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      {/* Normal Mode Controls */}
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={() => handleUpdateQuantity(item.id, -1)}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        
+                        <Input
+                          type="number"
+                          min="0"
+                          value={item.quantity}
+                          onChange={(e) => handleSetQuantity(item.id, parseInt(e.target.value) || 0)}
+                          className={cn(
+                            "w-16 h-8 text-center font-bold",
+                            item.quantity <= item.minStock && "text-destructive"
+                          )}
+                        />
+                        
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={() => handleUpdateQuantity(item.id, 1)}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
 
-                {/* Delete */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDeleteItem(item.id)}
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </Card>
-          ))}
+                      {/* Delete */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      {/* Low Stock Summary */}
-      {lowStockItems.length > 0 && (
+      {/* Low Stock Summary - Only show when not in stock run mode */}
+      {!isStockRunMode && lowStockItems.length > 0 && (
         <Card className="p-4 border-destructive/20 bg-destructive/5">
           <div className="flex items-center gap-2 mb-3">
             <AlertTriangle className="h-4 w-4 text-destructive" />
@@ -247,6 +422,108 @@ export function InventoryTrackerComponent() {
           </div>
         </Card>
       )}
+
+      {/* Floating Cart Summary */}
+      {isStockRunMode && cart.length > 0 && (
+        <div className="fixed bottom-4 left-4 right-4 z-50">
+          <Card className="p-4 bg-primary text-primary-foreground shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <ShoppingCart className="h-5 w-5" />
+                <div>
+                  <p className="font-semibold">{cart.length} items</p>
+                  <p className="text-sm opacity-90">{totalCartItems} pieces total</p>
+                </div>
+              </div>
+              <Button 
+                variant="secondary" 
+                onClick={() => setShowConfirmSheet(true)}
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Review
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Confirmation Sheet */}
+      <Sheet open={showConfirmSheet} onOpenChange={setShowConfirmSheet}>
+        <SheetContent side="bottom" className="h-[80vh]">
+          <SheetHeader>
+            <SheetTitle>Confirm Stock Run</SheetTitle>
+            <SheetDescription>
+              Review items to deduct from inventory
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="py-4 space-y-3 overflow-y-auto max-h-[calc(80vh-180px)]">
+            {cart.map((cartItem) => (
+              <Card key={cartItem.id} className="p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{cartItem.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {cartItem.available} in stock
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => updateCartQuantity(cartItem.id, cartItem.quantity - 1)}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <Input
+                      type="number"
+                      min="1"
+                      max={cartItem.available}
+                      value={cartItem.quantity}
+                      onChange={(e) => updateCartQuantity(cartItem.id, parseInt(e.target.value) || 0)}
+                      className="w-16 h-8 text-center font-bold"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => updateCartQuantity(cartItem.id, cartItem.quantity + 1)}
+                      disabled={cartItem.quantity >= cartItem.available}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive"
+                      onClick={() => removeFromCart(cartItem.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <SheetFooter className="flex-col gap-2 sm:flex-col">
+            <div className="text-center py-2">
+              <p className="text-lg font-bold">{totalCartItems} total pieces</p>
+              <p className="text-sm text-muted-foreground">from {cart.length} products</p>
+            </div>
+            <Button 
+              onClick={handleConfirmStockRun} 
+              className="w-full" 
+              size="lg"
+              disabled={cart.length === 0}
+            >
+              <Check className="h-5 w-5 mr-2" />
+              Confirm Stock Run
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
