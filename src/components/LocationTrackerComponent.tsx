@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -417,8 +418,7 @@ export function LocationTrackerComponent() {
                                 ))}
                               </SelectContent>
                             </Select>
-                            <Input
-                              type="number"
+                            <NumberInput
                               min="1"
                               value={machine.count}
                               onChange={(e) =>
@@ -470,9 +470,8 @@ export function LocationTrackerComponent() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="commissionRate">Commission Rate (%)</Label>
-                      <Input
+                      <NumberInput
                         id="commissionRate"
-                        type="number"
                         min="0"
                         max="100"
                         step="0.1"

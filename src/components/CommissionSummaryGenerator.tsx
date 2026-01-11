@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { NumberInput } from "@/components/ui/number-input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
@@ -338,9 +339,8 @@ export function CommissionSummaryGenerator() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="machineCount">Number of Machines</Label>
-            <Input
+            <NumberInput
               id="machineCount"
-              type="number"
               min="1"
               className="md:w-1/4"
               value={locationData.machineCount}
@@ -440,9 +440,8 @@ export function CommissionSummaryGenerator() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="totalRevenue">Total Revenue ($)</Label>
-              <Input
+              <NumberInput
                 id="totalRevenue"
-                type="number"
                 step="0.01"
                 placeholder="0.00"
                 value={locationData.totalRevenue || ""}
@@ -452,9 +451,8 @@ export function CommissionSummaryGenerator() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="commissionPercentage">Commission Rate (%)</Label>
-              <Input
+              <NumberInput
                 id="commissionPercentage"
-                type="number"
                 step="0.1"
                 min="0"
                 max="100"

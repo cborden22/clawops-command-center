@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -226,8 +227,7 @@ export const DataManagement: React.FC<DataManagementProps> = ({ onDataUpdate }) 
               </div>
               <div>
                 <label className="text-sm font-medium">Prize Cap ($)</label>
-                <Input
-                  type="number"
+                <NumberInput
                   value={newStateData.prize_caps?.per_prize_usd}
                   onChange={(e) => setNewStateData({
                     ...newStateData, 
