@@ -34,13 +34,14 @@ export interface LocationAgreementRecord {
 }
 
 export interface MachineType {
-  type: "claw" | "bulk" | "clip" | "sticker" | "other";
+  type: "claw" | "mini_claw" | "bulk" | "clip" | "sticker" | "other";
   label: string;
   count: number;
 }
 
 export const MACHINE_TYPE_OPTIONS: { value: MachineType["type"]; label: string }[] = [
   { value: "claw", label: "Claw Machine" },
+  { value: "mini_claw", label: "Mini Claw Machine" },
   { value: "bulk", label: "Bulk Machine" },
   { value: "clip", label: "Clip Machine" },
   { value: "sticker", label: "Sticker Machine" },
