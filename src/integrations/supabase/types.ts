@@ -69,6 +69,8 @@ export type Database = {
           location: string | null
           min_stock: number | null
           name: string
+          package_quantity: number | null
+          package_type: string | null
           quantity: number | null
           user_id: string
         }
@@ -79,6 +81,8 @@ export type Database = {
           location?: string | null
           min_stock?: number | null
           name: string
+          package_quantity?: number | null
+          package_type?: string | null
           quantity?: number | null
           user_id: string
         }
@@ -89,6 +93,8 @@ export type Database = {
           location?: string | null
           min_stock?: number | null
           name?: string
+          package_quantity?: number | null
+          package_type?: string | null
           quantity?: number | null
           user_id?: string
         }
