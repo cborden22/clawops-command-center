@@ -110,16 +110,16 @@ export function LocationDetailDialog({
     const options = {
       margin: 0.5,
       filename: filename,
-      image: { type: 'jpeg', quality: 0.98 },
+      image: { type: 'jpeg' as const, quality: 0.98 },
       html2canvas: { 
         scale: 2,
         useCORS: true,
         letterRendering: true
       },
       jsPDF: { 
-        unit: 'in', 
-        format: 'letter', 
-        orientation: 'portrait' 
+        unit: 'in' as const, 
+        format: 'letter' as const, 
+        orientation: 'portrait' as const
       }
     };
     
@@ -419,15 +419,15 @@ export function LocationDetailDialog({
     const options = {
       margin: 15,
       filename: filename,
-      image: { type: 'jpeg', quality: 0.98 },
+      image: { type: 'jpeg' as const, quality: 0.98 },
       html2canvas: { 
         scale: 2,
         useCORS: true
       },
       jsPDF: { 
-        unit: 'mm', 
-        format: 'a4', 
-        orientation: 'portrait'
+        unit: 'mm' as const, 
+        format: 'a4' as const, 
+        orientation: 'portrait' as const
       }
     };
 
