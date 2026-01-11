@@ -128,30 +128,39 @@ export function LocationTrackerComponent() {
   };
 
   const handleAddMachineType = () => {
+    const newMachines = [...formData.machines, { type: "claw" as const, label: "Claw Machine", count: 1 }];
+    const newTotal = newMachines.reduce((sum, m) => sum + m.count, 0);
     setFormData((prev) => ({
       ...prev,
-      machines: [...prev.machines, { type: "claw", label: "Claw Machine", count: 1 }],
+      machines: newMachines,
+      machineCount: newTotal,
     }));
   };
 
   const handleRemoveMachineType = (index: number) => {
+    const newMachines = formData.machines.filter((_, i) => i !== index);
+    const newTotal = newMachines.reduce((sum, m) => sum + m.count, 0);
     setFormData((prev) => ({
       ...prev,
-      machines: prev.machines.filter((_, i) => i !== index),
+      machines: newMachines,
+      machineCount: Math.max(newTotal, 0),
     }));
   };
 
   const handleMachineTypeChange = (index: number, field: keyof MachineType, value: string | number) => {
+    const newMachines = formData.machines.map((m, i) => {
+      if (i !== index) return m;
+      if (field === "type") {
+        const option = MACHINE_TYPE_OPTIONS.find((o) => o.value === value);
+        return { ...m, type: value as MachineType["type"], label: option?.label || "Other" };
+      }
+      return { ...m, [field]: value };
+    });
+    const newTotal = newMachines.reduce((sum, m) => sum + m.count, 0);
     setFormData((prev) => ({
       ...prev,
-      machines: prev.machines.map((m, i) => {
-        if (i !== index) return m;
-        if (field === "type") {
-          const option = MACHINE_TYPE_OPTIONS.find((o) => o.value === value);
-          return { ...m, type: value as MachineType["type"], label: option?.label || "Other" };
-        }
-        return { ...m, [field]: value };
-      }),
+      machines: newMachines,
+      machineCount: newTotal,
     }));
   };
 
@@ -442,20 +451,21 @@ export function LocationTrackerComponent() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="machineCount">Total Machine Count</Label>
-                      <Input
-                        id="machineCount"
-                        type="number"
-                        min="1"
-                        value={formData.machineCount}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            machineCount: parseInt(e.target.value) || 1,
-                          }))
-                        }
-                      />
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="machineCount"
+                          type="number"
+                          min="0"
+                          value={formData.machineCount}
+                          readOnly
+                          className="bg-muted/50"
+                        />
+                        <Badge variant="secondary" className="whitespace-nowrap">
+                          Auto-calculated
+                        </Badge>
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        Override if different from types total
+                        Automatically calculated from machine types above
                       </p>
                     </div>
                     <div className="space-y-2">
