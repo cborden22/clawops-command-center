@@ -15,6 +15,57 @@ export interface InventoryItem {
   packageQuantity: number;
 }
 
+export interface StockRunHistoryItem {
+  id: string;
+  name: string;
+  quantity: number;
+}
+
+export async function saveStockRunHistory(
+  userId: string,
+  items: StockRunHistoryItem[]
+): Promise<string | null> {
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalProducts = items.length;
+
+  try {
+    const { data, error } = await supabase
+      .from("stock_run_history")
+      .insert([{
+        user_id: userId,
+        total_items: totalItems,
+        total_products: totalProducts,
+        items: JSON.parse(JSON.stringify(items)),
+      }])
+      .select("id")
+      .single();
+
+    if (error) throw error;
+    return data.id;
+  } catch (error) {
+    console.error("Error saving stock run history:", error);
+    return null;
+  }
+}
+
+export async function updateStockRunReturns(
+  historyId: string,
+  returnedItems: StockRunHistoryItem[]
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("stock_run_history")
+      .update({ returned_items: JSON.parse(JSON.stringify(returnedItems)) })
+      .eq("id", historyId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error updating stock run returns:", error);
+    return false;
+  }
+}
+
 export function useInventory() {
   const { user } = useAuth();
   const [items, setItems] = useState<InventoryItem[]>([]);

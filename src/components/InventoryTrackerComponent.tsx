@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check, Edit2, RotateCcw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useInventory, InventoryItem } from "@/hooks/useInventoryDB";
+import { useInventory, InventoryItem, saveStockRunHistory, updateStockRunReturns } from "@/hooks/useInventoryDB";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Sheet,
   SheetContent,
@@ -30,7 +31,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-
+import { StockRunHistory } from "@/components/inventory/StockRunHistory";
 interface CartItem {
   id: string;
   name: string;
@@ -41,11 +42,13 @@ interface CartItem {
 interface LastStockRun {
   items: { id: string; name: string; quantity: number }[];
   timestamp: number;
+  historyId: string | null;
 }
 
 const LAST_STOCK_RUN_KEY = "clawops_last_stock_run";
 
 export function InventoryTrackerComponent() {
+  const { user } = useAuth();
   const { items, isLoaded, addItem, updateItem, deleteItem, updateQuantity, bulkDeductQuantities, bulkAddQuantities } = useInventory();
   const [searchQuery, setSearchQuery] = useState("");
   const [newItemName, setNewItemName] = useState("");
@@ -72,6 +75,9 @@ export function InventoryTrackerComponent() {
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [editPackageType, setEditPackageType] = useState("");
   const [editPackageQty, setEditPackageQty] = useState(24);
+
+  // History refresh trigger
+  const [historyRefresh, setHistoryRefresh] = useState(0);
 
   // Load last stock run from localStorage
   useEffect(() => {
@@ -211,18 +217,26 @@ export function InventoryTrackerComponent() {
   const totalCartItems = cart.reduce((sum, c) => sum + c.quantity, 0);
 
   const handleConfirmStockRun = async () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || !user) return;
 
     const success = await bulkDeductQuantities(cart.map(c => ({ id: c.id, quantity: c.quantity })));
     
     if (success) {
-      // Save this stock run for potential returns
+      // Save to database history
+      const historyItems = cart.map(c => ({ id: c.id, name: c.name, quantity: c.quantity }));
+      const historyId = await saveStockRunHistory(user.id, historyItems);
+      
+      // Save this stock run for potential returns (localStorage for quick access)
       const stockRunData: LastStockRun = {
-        items: cart.map(c => ({ id: c.id, name: c.name, quantity: c.quantity })),
+        items: historyItems,
         timestamp: Date.now(),
+        historyId: historyId,
       };
       localStorage.setItem(LAST_STOCK_RUN_KEY, JSON.stringify(stockRunData));
       setLastStockRun(stockRunData);
+      
+      // Trigger history refresh
+      setHistoryRefresh(prev => prev + 1);
 
       toast({
         title: "Stock Run Complete!",
@@ -279,6 +293,13 @@ export function InventoryTrackerComponent() {
     const success = await bulkAddQuantities(returnCart.map(c => ({ id: c.id, quantity: c.quantity })));
     
     if (success) {
+      // Update history with returned items if we have a history ID
+      if (lastStockRun?.historyId) {
+        const returnItems = returnCart.map(c => ({ id: c.id, name: c.name, quantity: c.quantity }));
+        await updateStockRunReturns(lastStockRun.historyId, returnItems);
+        setHistoryRefresh(prev => prev + 1);
+      }
+      
       toast({
         title: "Stock Returned!",
         description: `${totalReturnItems} items added back to ${returnCart.length} products.`,
@@ -786,6 +807,11 @@ export function InventoryTrackerComponent() {
             ))}
           </div>
         </Card>
+      )}
+
+      {/* Stock Run History - Only show when not in any mode */}
+      {!isStockRunMode && !isReturnMode && (
+        <StockRunHistory refreshTrigger={historyRefresh} />
       )}
 
       {/* Floating Cart Summary - Stock Run */}
