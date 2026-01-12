@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   CalendarIcon, Plus, Trash2, TrendingUp, TrendingDown, DollarSign, 
-  MapPin, Sparkles, AlertCircle, ArrowUpCircle, ArrowDownCircle, Wallet 
+  MapPin, Sparkles, AlertCircle, ArrowUpCircle, ArrowDownCircle, Wallet,
+  Download, Building2
 } from "lucide-react";
 import { 
   format, subDays, startOfMonth, endOfMonth, isWithinInterval, 
@@ -39,13 +40,27 @@ type FilterPeriod =
   | "custom" 
   | "all";
 
-const EXPENSE_CATEGORIES = [
+// Location-specific expense categories
+const LOCATION_EXPENSE_CATEGORIES = [
   "Prize Restock",
   "Maintenance",
   "Commission Payout",
   "Supplies",
   "Transportation",
   "Other",
+];
+
+// Business-wide expense categories (not tied to a location)
+const BUSINESS_EXPENSE_CATEGORIES = [
+  "Software/Subscriptions",
+  "Insurance",
+  "Vehicle Costs",
+  "Office Supplies",
+  "Equipment Purchase",
+  "Business License/Fees",
+  "Marketing",
+  "Professional Services",
+  "Other Business Expense",
 ];
 
 export function RevenueTrackerComponent() {
@@ -55,6 +70,7 @@ export function RevenueTrackerComponent() {
   // Form state
   const [entryType, setEntryType] = useState<EntryType>("income");
   const [selectedLocation, setSelectedLocation] = useState<string>("");
+  const [isBusinessExpense, setIsBusinessExpense] = useState(false);
   const [selectedMachine, setSelectedMachine] = useState<string>("all");
   const [entryDate, setEntryDate] = useState<Date>(new Date());
   const [amount, setAmount] = useState("");
@@ -64,19 +80,28 @@ export function RevenueTrackerComponent() {
   // Filter state
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("thisMonth");
   const [filterLocation, setFilterLocation] = useState<string>("all");
-  const [filterType, setFilterType] = useState<"all" | EntryType>("all");
+  const [filterType, setFilterType] = useState<"all" | EntryType | "business">("all");
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
+
+  // Get expense categories based on whether it's a business expense or location expense
+  const expenseCategories = isBusinessExpense ? BUSINESS_EXPENSE_CATEGORIES : LOCATION_EXPENSE_CATEGORIES;
 
   // Get machines for selected location
   const selectedLocationData = selectedLocation ? getLocationById(selectedLocation) : null;
   const locationMachines = selectedLocationData?.machines || [];
 
   const handleAddEntry = async () => {
-    if (!selectedLocation || !amount) return;
+    // For income, require location; for expense, allow business-level (no location)
+    if (entryType === "income" && !selectedLocation) return;
+    if (!amount) return;
+    if (entryType === "expense" && !category) return;
+
+    const locationId = isBusinessExpense ? "" : selectedLocation;
+    
     await addEntry({
       type: entryType,
-      locationId: selectedLocation,
+      locationId,
       machineType: selectedMachine !== "all" ? selectedMachine : undefined,
       date: entryDate,
       amount: parseFloat(amount),
@@ -87,16 +112,59 @@ export function RevenueTrackerComponent() {
     setNotes("");
     setCategory("");
     setSelectedMachine("all");
-    const loc = getLocationById(selectedLocation);
+    
+    const loc = locationId ? getLocationById(locationId) : null;
     toast({ 
       title: entryType === "income" ? "Income Logged" : "Expense Logged",
-      description: `$${parseFloat(amount).toFixed(2)} ${entryType} recorded for ${loc?.name || "location"}` 
+      description: `$${parseFloat(amount).toFixed(2)} ${entryType} recorded${loc ? ` for ${loc.name}` : " as business expense"}` 
     });
   };
 
   const handleDeleteEntry = async (id: string) => {
     await deleteEntry(id);
     toast({ title: "Entry Removed" });
+  };
+
+  // Export filtered entries to CSV
+  const handleExport = () => {
+    const dataToExport = filteredEntries;
+    if (dataToExport.length === 0) {
+      toast({ title: "No Data", description: "No entries to export for the selected filters.", variant: "destructive" });
+      return;
+    }
+
+    const headers = ["Date", "Type", "Location", "Machine Type", "Amount", "Category", "Notes"];
+    const csvRows = [headers.join(",")];
+
+    dataToExport.forEach(entry => {
+      const locationName = entry.locationId ? getLocationName(entry.locationId) : "Business Expense";
+      const machineType = entry.machineType ? getMachineLabel(entry.machineType) : "";
+      const row = [
+        format(entry.date, "yyyy-MM-dd"),
+        entry.type,
+        `"${locationName.replace(/"/g, '""')}"`,
+        `"${machineType.replace(/"/g, '""')}"`,
+        entry.amount.toFixed(2),
+        entry.category || "",
+        `"${(entry.notes || "").replace(/"/g, '""')}"`
+      ];
+      csvRows.push(row.join(","));
+    });
+
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    
+    const range = getDateRange(filterPeriod);
+    const startStr = range ? format(range.start, "yyyy-MM-dd") : "all";
+    const endStr = range ? format(range.end, "yyyy-MM-dd") : "time";
+    link.href = url;
+    link.download = `revenue-export-${startStr}-to-${endStr}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    toast({ title: "Export Complete", description: `Exported ${dataToExport.length} entries to CSV.` });
   };
 
   const getDateRange = (period: FilterPeriod): { start: Date; end: Date } | null => {
@@ -139,11 +207,17 @@ export function RevenueTrackerComponent() {
   const getFilteredEntries = () => {
     let filtered = [...entries];
     
-    if (filterLocation !== "all") {
+    if (filterLocation === "business") {
+      // Show only business expenses (no location)
+      filtered = filtered.filter(e => !e.locationId);
+    } else if (filterLocation !== "all") {
       filtered = filtered.filter(e => e.locationId === filterLocation);
     }
     
-    if (filterType !== "all") {
+    if (filterType === "business") {
+      // Filter for business expenses only
+      filtered = filtered.filter(e => e.type === "expense" && !e.locationId);
+    } else if (filterType !== "all") {
       filtered = filtered.filter(e => e.type === filterType);
     }
     
@@ -185,11 +259,17 @@ export function RevenueTrackerComponent() {
     const locEntries = filteredEntries.filter(e => e.locationId === loc.id);
     const income = locEntries.filter(e => e.type === "income").reduce((sum, e) => sum + e.amount, 0);
     const expenses = locEntries.filter(e => e.type === "expense").reduce((sum, e) => sum + e.amount, 0);
-    return { name: loc.name, income, expenses, net: income - expenses };
-  }).sort((a, b) => b.net - a.net);
+    // Truncate long names for chart display
+    const truncatedName = loc.name.length > 15 ? loc.name.substring(0, 12) + "..." : loc.name;
+    return { name: truncatedName, fullName: loc.name, income, expenses, net: income - expenses };
+  }).sort((a, b) => b.net - a.net).slice(0, 8); // Limit to top 8 locations
 
   const getLocationName = (id: string) => getLocationById(id)?.name || "Unknown";
   const getMachineLabel = (type: string) => MACHINE_TYPE_OPTIONS.find(m => m.value === type)?.label || type;
+  
+  // Calculate business expenses total
+  const businessExpenses = filteredEntries.filter(e => e.type === "expense" && !e.locationId);
+  const totalBusinessExpenses = businessExpenses.reduce((sum, e) => sum + e.amount, 0);
 
   if (!isLoaded || !entriesLoaded) {
     return <div className="flex items-center justify-center py-12">Loading...</div>;
@@ -306,27 +386,55 @@ export function RevenueTrackerComponent() {
                     </TabsList>
                   </Tabs>
 
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Location</Label>
-                    <Select value={selectedLocation} onValueChange={(v) => { setSelectedLocation(v); setSelectedMachine("all"); }}>
-                      <SelectTrigger className="h-11 bg-background/50 hover:bg-background transition-colors">
-                        <SelectValue placeholder="Select location" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {activeLocations.map(loc => (
-                          <SelectItem key={loc.id} value={loc.id}>
-                            <span className="flex items-center gap-2">
-                              <MapPin className="h-3 w-3 text-muted-foreground" />
-                              {loc.name}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Business Expense Toggle - Only for expenses */}
+                  {entryType === "expense" && (
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Business Expense</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant={isBusinessExpense ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setIsBusinessExpense(!isBusinessExpense);
+                          setCategory(""); // Reset category when toggling
+                          if (!isBusinessExpense) {
+                            setSelectedLocation("");
+                            setSelectedMachine("all");
+                          }
+                        }}
+                      >
+                        {isBusinessExpense ? "Yes" : "No"}
+                      </Button>
+                    </div>
+                  )}
 
-                  {/* Machine Type (optional) */}
-                  {locationMachines.length > 0 && (
+                  {/* Location Select - Hide for business expenses */}
+                  {(!isBusinessExpense || entryType === "income") && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Location</Label>
+                      <Select value={selectedLocation} onValueChange={(v) => { setSelectedLocation(v); setSelectedMachine("all"); }}>
+                        <SelectTrigger className="h-11 bg-background/50 hover:bg-background transition-colors">
+                          <SelectValue placeholder="Select location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {activeLocations.map(loc => (
+                            <SelectItem key={loc.id} value={loc.id}>
+                              <span className="flex items-center gap-2">
+                                <MapPin className="h-3 w-3 text-muted-foreground" />
+                                {loc.name}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Machine Type (optional) - Hide for business expenses */}
+                  {locationMachines.length > 0 && !isBusinessExpense && (
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-muted-foreground">Machine (optional)</Label>
                       <Select value={selectedMachine} onValueChange={setSelectedMachine}>
@@ -366,7 +474,7 @@ export function RevenueTrackerComponent() {
                     </Popover>
                   </div>
 
-                  {/* Expense Category */}
+                  {/* Expense Category - Dynamic based on business expense toggle */}
                   {entryType === "expense" && (
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">Category</Label>
@@ -375,7 +483,7 @@ export function RevenueTrackerComponent() {
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
-                          {EXPENSE_CATEGORIES.map(cat => (
+                          {expenseCategories.map(cat => (
                             <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                           ))}
                         </SelectContent>
@@ -416,10 +524,15 @@ export function RevenueTrackerComponent() {
                         ? "bg-green-600 hover:bg-green-700 text-white" 
                         : "bg-red-600 hover:bg-red-700 text-white"
                     )}
-                    disabled={!selectedLocation || !amount || (entryType === "expense" && !category)}
+                    disabled={
+                      !amount || 
+                      (entryType === "income" && !selectedLocation) ||
+                      (entryType === "expense" && !category) ||
+                      (entryType === "expense" && !isBusinessExpense && !selectedLocation)
+                    }
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Add {entryType === "income" ? "Income" : "Expense"}
+                    Add {entryType === "income" ? "Income" : isBusinessExpense ? "Business Expense" : "Expense"}
                   </Button>
                 </>
               )}
@@ -431,7 +544,14 @@ export function RevenueTrackerComponent() {
         <div className="lg:col-span-2 space-y-6">
           {/* Filters */}
           <Card className="glass-card">
-            <CardContent className="pt-6">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Filters</CardTitle>
+              <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
+                <Download className="h-4 w-4" />
+                Export CSV
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-2">
               <div className="flex flex-wrap gap-4">
                 <div className="flex-1 min-w-[140px]">
                   <Label className="text-xs font-medium text-muted-foreground mb-2 block">Time Period</Label>
@@ -462,6 +582,7 @@ export function RevenueTrackerComponent() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Locations</SelectItem>
+                      <SelectItem value="business">Business Expenses Only</SelectItem>
                       {activeLocations.map(loc => (
                         <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
                       ))}
@@ -470,7 +591,7 @@ export function RevenueTrackerComponent() {
                 </div>
                 <div className="flex-1 min-w-[120px]">
                   <Label className="text-xs font-medium text-muted-foreground mb-2 block">Type</Label>
-                  <Select value={filterType} onValueChange={(v: "all" | EntryType) => setFilterType(v)}>
+                  <Select value={filterType} onValueChange={(v: "all" | EntryType | "business") => setFilterType(v)}>
                     <SelectTrigger className="h-10 bg-background/50">
                       <SelectValue />
                     </SelectTrigger>
@@ -478,6 +599,7 @@ export function RevenueTrackerComponent() {
                       <SelectItem value="all">All Types</SelectItem>
                       <SelectItem value="income">Income Only</SelectItem>
                       <SelectItem value="expense">Expenses Only</SelectItem>
+                      <SelectItem value="business">Business Expenses</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -543,12 +665,25 @@ export function RevenueTrackerComponent() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="h-[250px]">
+                <div className="h-[280px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
+                    <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: chartData.length > 7 ? 50 : 20 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-                      <XAxis dataKey="date" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                      <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `$${v}`} />
+                      <XAxis 
+                        dataKey="date" 
+                        className="text-xs" 
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                        interval={0}
+                        angle={chartData.length > 7 ? -45 : 0}
+                        textAnchor={chartData.length > 7 ? "end" : "middle"}
+                        height={chartData.length > 7 ? 60 : 30}
+                      />
+                      <YAxis 
+                        className="text-xs" 
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} 
+                        tickFormatter={(v) => v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`}
+                        width={50}
+                      />
                       <Tooltip 
                         contentStyle={{ 
                           backgroundColor: 'hsl(var(--card))', 
@@ -562,7 +697,7 @@ export function RevenueTrackerComponent() {
                         dataKey="income" 
                         stroke="hsl(142, 76%, 36%)"
                         strokeWidth={2}
-                        dot={{ fill: 'hsl(142, 76%, 36%)', strokeWidth: 2 }}
+                        dot={{ fill: 'hsl(142, 76%, 36%)', strokeWidth: 2, r: chartData.length > 10 ? 2 : 4 }}
                         activeDot={{ r: 6 }}
                       />
                       <Line 
@@ -570,7 +705,7 @@ export function RevenueTrackerComponent() {
                         dataKey="expenses" 
                         stroke="hsl(0, 84%, 60%)"
                         strokeWidth={2}
-                        dot={{ fill: 'hsl(0, 84%, 60%)', strokeWidth: 2 }}
+                        dot={{ fill: 'hsl(0, 84%, 60%)', strokeWidth: 2, r: chartData.length > 10 ? 2 : 4 }}
                         activeDot={{ r: 6 }}
                       />
                     </LineChart>
@@ -602,12 +737,25 @@ export function RevenueTrackerComponent() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="h-[200px]">
+                <div className="h-[220px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={locationPerformance.filter(l => l.income > 0 || l.expenses > 0)} layout="vertical">
+                    <BarChart 
+                      data={locationPerformance.filter(l => l.income > 0 || l.expenses > 0)} 
+                      layout="vertical"
+                      margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted/30" />
-                      <XAxis type="number" tick={{ fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `$${v}`} />
-                      <YAxis type="category" dataKey="name" width={120} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                      <XAxis 
+                        type="number" 
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} 
+                        tickFormatter={(v) => v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`}
+                      />
+                      <YAxis 
+                        type="category" 
+                        dataKey="name" 
+                        width={100} 
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                      />
                       <Tooltip 
                         contentStyle={{ 
                           backgroundColor: 'hsl(var(--card))', 
@@ -615,6 +763,10 @@ export function RevenueTrackerComponent() {
                           borderRadius: '8px'
                         }}
                         formatter={(value: number, name: string) => [`$${value.toFixed(2)}`, name === 'income' ? 'Income' : 'Expenses']}
+                        labelFormatter={(label) => {
+                          const loc = locationPerformance.find(l => l.name === label);
+                          return loc?.fullName || label;
+                        }}
                       />
                       <Bar dataKey="income" fill="hsl(142, 76%, 36%)" radius={[0, 4, 4, 0]} />
                       <Bar dataKey="expenses" fill="hsl(0, 84%, 60%)" radius={[0, 4, 4, 0]} />
@@ -666,10 +818,19 @@ export function RevenueTrackerComponent() {
                             </Badge>
                           </TableCell>
                           <TableCell className="font-medium">
-                            {getLocationName(entry.locationId)}
-                            {entry.machineType && (
-                              <span className="text-xs text-muted-foreground ml-1">
-                                ({getMachineLabel(entry.machineType)})
+                            {entry.locationId ? (
+                              <>
+                                {getLocationName(entry.locationId)}
+                                {entry.machineType && (
+                                  <span className="text-xs text-muted-foreground ml-1">
+                                    ({getMachineLabel(entry.machineType)})
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="flex items-center gap-1 text-muted-foreground">
+                                <Building2 className="h-3 w-3" />
+                                Business
                               </span>
                             )}
                           </TableCell>
