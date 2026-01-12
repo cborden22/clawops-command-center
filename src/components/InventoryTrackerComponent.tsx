@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check, Edit2 } from "lucide-react";
+import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check, Edit2, RotateCcw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useInventory, InventoryItem } from "@/hooks/useInventoryDB";
@@ -38,8 +38,15 @@ interface CartItem {
   available: number;
 }
 
+interface LastStockRun {
+  items: { id: string; name: string; quantity: number }[];
+  timestamp: number;
+}
+
+const LAST_STOCK_RUN_KEY = "clawops_last_stock_run";
+
 export function InventoryTrackerComponent() {
-  const { items, isLoaded, addItem, updateItem, deleteItem, updateQuantity, bulkDeductQuantities } = useInventory();
+  const { items, isLoaded, addItem, updateItem, deleteItem, updateQuantity, bulkDeductQuantities, bulkAddQuantities } = useInventory();
   const [searchQuery, setSearchQuery] = useState("");
   const [newItemName, setNewItemName] = useState("");
   const [newItemQty, setNewItemQty] = useState(10);
@@ -51,6 +58,12 @@ export function InventoryTrackerComponent() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showConfirmSheet, setShowConfirmSheet] = useState(false);
   
+  // Return Stock state
+  const [isReturnMode, setIsReturnMode] = useState(false);
+  const [returnCart, setReturnCart] = useState<CartItem[]>([]);
+  const [showReturnSheet, setShowReturnSheet] = useState(false);
+  const [lastStockRun, setLastStockRun] = useState<LastStockRun | null>(null);
+  
   // Custom quantity input state
   const [customQtyItemId, setCustomQtyItemId] = useState<string | null>(null);
   const [customQtyValue, setCustomQtyValue] = useState("");
@@ -59,6 +72,24 @@ export function InventoryTrackerComponent() {
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [editPackageType, setEditPackageType] = useState("");
   const [editPackageQty, setEditPackageQty] = useState(24);
+
+  // Load last stock run from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem(LAST_STOCK_RUN_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as LastStockRun;
+        // Only use if less than 24 hours old
+        if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+          setLastStockRun(parsed);
+        } else {
+          localStorage.removeItem(LAST_STOCK_RUN_KEY);
+        }
+      } catch {
+        localStorage.removeItem(LAST_STOCK_RUN_KEY);
+      }
+    }
+  }, []);
 
   const handleQuickAdd = async () => {
     if (!newItemName.trim()) {
@@ -185,6 +216,14 @@ export function InventoryTrackerComponent() {
     const success = await bulkDeductQuantities(cart.map(c => ({ id: c.id, quantity: c.quantity })));
     
     if (success) {
+      // Save this stock run for potential returns
+      const stockRunData: LastStockRun = {
+        items: cart.map(c => ({ id: c.id, name: c.name, quantity: c.quantity })),
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(LAST_STOCK_RUN_KEY, JSON.stringify(stockRunData));
+      setLastStockRun(stockRunData);
+
       toast({
         title: "Stock Run Complete!",
         description: `${totalCartItems} items deducted from ${cart.length} products.`,
@@ -200,6 +239,70 @@ export function InventoryTrackerComponent() {
     setIsStockRunMode(false);
   };
 
+  // Return Stock functions
+  const addToReturnCart = (itemId: string, qty: number) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+
+    setReturnCart(prev => {
+      const existing = prev.find(c => c.id === itemId);
+      if (existing) {
+        return prev.map(c => c.id === itemId ? { ...c, quantity: existing.quantity + qty } : c);
+      }
+      return [...prev, { id: itemId, name: item.name, quantity: qty, available: item.quantity }];
+    });
+  };
+
+  const removeFromReturnCart = (itemId: string) => {
+    setReturnCart(prev => prev.filter(c => c.id !== itemId));
+  };
+
+  const updateReturnCartQuantity = (itemId: string, newQty: number) => {
+    if (newQty <= 0) {
+      removeFromReturnCart(itemId);
+    } else {
+      setReturnCart(prev => prev.map(c => 
+        c.id === itemId ? { ...c, quantity: newQty } : c
+      ));
+    }
+  };
+
+  const getReturnCartQuantity = (itemId: string) => {
+    return returnCart.find(c => c.id === itemId)?.quantity || 0;
+  };
+
+  const totalReturnItems = returnCart.reduce((sum, c) => sum + c.quantity, 0);
+
+  const handleConfirmReturn = async () => {
+    if (returnCart.length === 0) return;
+
+    const success = await bulkAddQuantities(returnCart.map(c => ({ id: c.id, quantity: c.quantity })));
+    
+    if (success) {
+      toast({
+        title: "Stock Returned!",
+        description: `${totalReturnItems} items added back to ${returnCart.length} products.`,
+      });
+      setReturnCart([]);
+      setShowReturnSheet(false);
+      setIsReturnMode(false);
+    }
+  };
+
+  const cancelReturnMode = () => {
+    setReturnCart([]);
+    setIsReturnMode(false);
+  };
+
+  const handleCustomReturnQtyAdd = (itemId: string) => {
+    const qty = parseInt(customQtyValue);
+    if (qty > 0) {
+      addToReturnCart(itemId, qty);
+      setCustomQtyItemId(null);
+      setCustomQtyValue("");
+    }
+  };
+
   const filteredItems = items.filter(item =>
     item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -213,18 +316,29 @@ export function InventoryTrackerComponent() {
 
   return (
     <div className="space-y-4 animate-fade-in pb-24">
-      {/* Stock Run Toggle */}
+      {/* Mode Buttons */}
       <div className="flex gap-2">
-        {!isStockRunMode ? (
-          <Button 
-            onClick={() => setIsStockRunMode(true)} 
-            className="flex-1"
-            size="lg"
-          >
-            <ShoppingCart className="h-5 w-5 mr-2" />
-            Start Stock Run
-          </Button>
-        ) : (
+        {!isStockRunMode && !isReturnMode ? (
+          <>
+            <Button 
+              onClick={() => setIsStockRunMode(true)} 
+              className="flex-1"
+              size="lg"
+            >
+              <ShoppingCart className="h-5 w-5 mr-2" />
+              Start Stock Run
+            </Button>
+            <Button 
+              onClick={() => setIsReturnMode(true)} 
+              variant="outline"
+              className="flex-1 border-emerald-500 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+              size="lg"
+            >
+              <RotateCcw className="h-5 w-5 mr-2" />
+              Return Stock
+            </Button>
+          </>
+        ) : isStockRunMode ? (
           <Button 
             onClick={cancelStockRun} 
             variant="outline"
@@ -234,8 +348,27 @@ export function InventoryTrackerComponent() {
             <X className="h-5 w-5 mr-2" />
             Cancel Stock Run
           </Button>
+        ) : (
+          <Button 
+            onClick={cancelReturnMode} 
+            variant="outline"
+            className="flex-1 border-emerald-500 text-emerald-600 hover:bg-emerald-50"
+            size="lg"
+          >
+            <X className="h-5 w-5 mr-2" />
+            Cancel Return
+          </Button>
         )}
       </div>
+
+      {/* Return Mode Banner */}
+      {isReturnMode && lastStockRun && (
+        <Card className="p-3 border-emerald-200 bg-emerald-50">
+          <p className="text-sm text-emerald-700">
+            <span className="font-medium">Last stock run:</span> {lastStockRun.items.length} items, {lastStockRun.items.reduce((sum, i) => sum + i.quantity, 0)} pieces total
+          </p>
+        </Card>
+      )}
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-3">
@@ -273,8 +406,8 @@ export function InventoryTrackerComponent() {
         </Card>
       </div>
 
-      {/* Quick Add - Only show when not in stock run mode */}
-      {!isStockRunMode && (
+      {/* Quick Add - Only show when not in stock run or return mode */}
+      {!isStockRunMode && !isReturnMode && (
         <Card className="p-4 space-y-3">
           <div className="flex gap-2">
             <Input
@@ -350,14 +483,19 @@ export function InventoryTrackerComponent() {
           {filteredItems.map((item) => {
             const cartQty = getCartQuantity(item.id);
             const isInCart = cartQty > 0;
+            const returnQty = getReturnCartQuantity(item.id);
+            const isInReturnCart = returnQty > 0;
+            const wasInLastRun = lastStockRun?.items.some(i => i.id === item.id);
             
             return (
               <Card
                 key={item.id}
                 className={cn(
                   "p-3 transition-colors",
-                  item.quantity <= item.minStock && "border-destructive/30 bg-destructive/5",
-                  isStockRunMode && isInCart && "border-primary bg-primary/5"
+                  item.quantity <= item.minStock && !isReturnMode && "border-destructive/30 bg-destructive/5",
+                  isStockRunMode && isInCart && "border-primary bg-primary/5",
+                  isReturnMode && isInReturnCart && "border-emerald-500 bg-emerald-50",
+                  isReturnMode && wasInLastRun && !isInReturnCart && "border-emerald-200"
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -365,7 +503,7 @@ export function InventoryTrackerComponent() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium truncate">{item.name}</span>
-                      {item.quantity <= item.minStock && (
+                      {item.quantity <= item.minStock && !isReturnMode && (
                         <Badge variant="destructive" className="text-xs shrink-0">
                           Low
                         </Badge>
@@ -375,7 +513,17 @@ export function InventoryTrackerComponent() {
                           {cartQty} in cart
                         </Badge>
                       )}
-                      {!isStockRunMode && (
+                      {isReturnMode && isInReturnCart && (
+                        <Badge className="text-xs shrink-0 bg-emerald-500">
+                          +{returnQty} returning
+                        </Badge>
+                      )}
+                      {isReturnMode && wasInLastRun && !isInReturnCart && (
+                        <Badge variant="outline" className="text-xs shrink-0 border-emerald-300 text-emerald-600">
+                          From last run
+                        </Badge>
+                      )}
+                      {!isStockRunMode && !isReturnMode && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -386,9 +534,9 @@ export function InventoryTrackerComponent() {
                         </Button>
                       )}
                     </div>
-                    {isStockRunMode ? (
+                    {isStockRunMode || isReturnMode ? (
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {item.quantity} available
+                        {item.quantity} in inventory
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground mt-0.5">
@@ -487,6 +635,90 @@ export function InventoryTrackerComponent() {
                         </>
                       )}
                     </div>
+                  ) : isReturnMode ? (
+                    /* Return Mode Controls */
+                    <div className="flex items-center gap-1 flex-wrap justify-end">
+                      {customQtyItemId === item.id ? (
+                        <div className="flex items-center gap-1">
+                          <NumberInput
+                            min="1"
+                            value={customQtyValue}
+                            onChange={(e) => setCustomQtyValue(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleCustomReturnQtyAdd(item.id)}
+                            className="w-16 h-8 text-center border-emerald-300"
+                            autoFocus
+                          />
+                          <Button
+                            size="sm"
+                            className="h-8 px-2 bg-emerald-500 hover:bg-emerald-600"
+                            onClick={() => handleCustomReturnQtyAdd(item.id)}
+                          >
+                            <Check className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={() => { setCustomQtyItemId(null); setCustomQtyValue(""); }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2 border-emerald-300 text-emerald-600 hover:bg-emerald-50"
+                            onClick={() => addToReturnCart(item.id, 5)}
+                          >
+                            +5
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2 border-emerald-300 text-emerald-600 hover:bg-emerald-50"
+                            onClick={() => addToReturnCart(item.id, 10)}
+                          >
+                            +10
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2 border-emerald-300 text-emerald-600 hover:bg-emerald-50"
+                            onClick={() => addToReturnCart(item.id, 20)}
+                          >
+                            +20
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2 text-xs border-emerald-300 text-emerald-600 hover:bg-emerald-50"
+                            onClick={() => addToReturnCart(item.id, item.packageQuantity)}
+                          >
+                            +{item.packageQuantity} {item.packageType}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-2 border-emerald-300 text-emerald-600 hover:bg-emerald-50"
+                            onClick={() => setCustomQtyItemId(item.id)}
+                          >
+                            Cust
+                          </Button>
+                          {isInReturnCart && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => removeFromReturnCart(item.id)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
                   ) : (
                     <>
                       {/* Normal Mode Controls */}
@@ -539,8 +771,8 @@ export function InventoryTrackerComponent() {
         </div>
       )}
 
-      {/* Low Stock Summary - Only show when not in stock run mode */}
-      {!isStockRunMode && lowStockItems.length > 0 && (
+      {/* Low Stock Summary - Only show when not in any mode */}
+      {!isStockRunMode && !isReturnMode && lowStockItems.length > 0 && (
         <Card className="p-4 border-destructive/20 bg-destructive/5">
           <div className="flex items-center gap-2 mb-3">
             <AlertTriangle className="h-4 w-4 text-destructive" />
@@ -556,7 +788,7 @@ export function InventoryTrackerComponent() {
         </Card>
       )}
 
-      {/* Floating Cart Summary */}
+      {/* Floating Cart Summary - Stock Run */}
       {isStockRunMode && cart.length > 0 && (
         <div className="fixed bottom-4 left-4 right-4 z-50">
           <Card className="p-4 bg-primary text-primary-foreground shadow-lg">
@@ -580,7 +812,31 @@ export function InventoryTrackerComponent() {
         </div>
       )}
 
-      {/* Confirmation Sheet */}
+      {/* Floating Cart Summary - Return Stock */}
+      {isReturnMode && returnCart.length > 0 && (
+        <div className="fixed bottom-4 left-4 right-4 z-50">
+          <Card className="p-4 bg-emerald-500 text-white shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <RotateCcw className="h-5 w-5" />
+                <div>
+                  <p className="font-semibold">{returnCart.length} items</p>
+                  <p className="text-sm opacity-90">{totalReturnItems} pieces to return</p>
+                </div>
+              </div>
+              <Button 
+                variant="secondary" 
+                onClick={() => setShowReturnSheet(true)}
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Review
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Stock Run Confirmation Sheet */}
       <Sheet open={showConfirmSheet} onOpenChange={setShowConfirmSheet}>
         <SheetContent side="bottom" className="h-[80vh]">
           <SheetHeader>
@@ -653,6 +909,82 @@ export function InventoryTrackerComponent() {
             >
               <Check className="h-5 w-5 mr-2" />
               Confirm Stock Run
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* Return Stock Confirmation Sheet */}
+      <Sheet open={showReturnSheet} onOpenChange={setShowReturnSheet}>
+        <SheetContent side="bottom" className="h-[80vh]">
+          <SheetHeader>
+            <SheetTitle className="text-emerald-600">Confirm Stock Return</SheetTitle>
+            <SheetDescription>
+              Review items to add back to inventory
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="py-4 space-y-3 overflow-y-auto max-h-[calc(80vh-180px)]">
+            {returnCart.map((returnItem) => (
+              <Card key={returnItem.id} className="p-3 border-emerald-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{returnItem.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Currently {returnItem.available} in stock
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 border-emerald-300"
+                      onClick={() => updateReturnCartQuantity(returnItem.id, returnItem.quantity - 1)}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={returnItem.quantity}
+                      onChange={(e) => updateReturnCartQuantity(returnItem.id, parseInt(e.target.value) || 0)}
+                      className="w-16 h-8 text-center font-bold border-emerald-300"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 border-emerald-300"
+                      onClick={() => updateReturnCartQuantity(returnItem.id, returnItem.quantity + 1)}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive"
+                      onClick={() => removeFromReturnCart(returnItem.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <SheetFooter className="flex-col gap-2 sm:flex-col">
+            <div className="text-center py-2">
+              <p className="text-lg font-bold text-emerald-600">+{totalReturnItems} total pieces</p>
+              <p className="text-sm text-muted-foreground">returning to {returnCart.length} products</p>
+            </div>
+            <Button 
+              onClick={handleConfirmReturn} 
+              className="w-full bg-emerald-500 hover:bg-emerald-600" 
+              size="lg"
+              disabled={returnCart.length === 0}
+            >
+              <Check className="h-5 w-5 mr-2" />
+              Confirm Return
             </Button>
           </SheetFooter>
         </SheetContent>
