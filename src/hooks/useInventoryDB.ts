@@ -230,6 +230,53 @@ export function useInventory() {
     }
   };
 
+  const bulkAddQuantities = async (additions: { id: string; quantity: number }[]) => {
+    if (!user) return false;
+
+    try {
+      // Update each item in parallel
+      await Promise.all(
+        additions.map(async ({ id, quantity }) => {
+          const item = items.find(i => i.id === id);
+          if (!item) return;
+
+          const newQuantity = item.quantity + quantity;
+          const { error } = await supabase
+            .from("inventory_items")
+            .update({ quantity: newQuantity, last_updated: new Date().toISOString() })
+            .eq("id", id);
+
+          if (error) throw error;
+        })
+      );
+
+      // Update local state
+      setItems(prev =>
+        prev.map(item => {
+          const addition = additions.find(a => a.id === item.id);
+          if (addition) {
+            return {
+              ...item,
+              quantity: item.quantity + addition.quantity,
+              lastUpdated: new Date().toLocaleDateString(),
+            };
+          }
+          return item;
+        })
+      );
+
+      return true;
+    } catch (error: any) {
+      console.error("Error bulk adding inventory:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update inventory.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   return {
     items,
     isLoaded,
@@ -238,6 +285,7 @@ export function useInventory() {
     deleteItem,
     updateQuantity,
     bulkDeductQuantities,
+    bulkAddQuantities,
     refetch: fetchItems,
   };
 }
