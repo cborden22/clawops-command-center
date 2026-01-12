@@ -307,6 +307,39 @@ export type Database = {
           },
         ]
       }
+      stock_run_history: {
+        Row: {
+          created_at: string
+          id: string
+          items: Json
+          returned_items: Json | null
+          run_date: string
+          total_items: number
+          total_products: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          items?: Json
+          returned_items?: Json | null
+          run_date?: string
+          total_items?: number
+          total_products?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          items?: Json
+          returned_items?: Json | null
+          run_date?: string
+          total_items?: number
+          total_products?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           created_at: string | null
