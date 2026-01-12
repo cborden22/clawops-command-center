@@ -15,7 +15,6 @@ import {
   User, 
   Settings as SettingsIcon, 
   Key,
-  Bell, 
   Shield, 
   Save,
   Building2,
@@ -25,19 +24,6 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
-const NOTIFICATIONS_KEY = "clawops-notifications";
-
-interface NotificationSettings {
-  emailNotifications: boolean;
-  lowStockAlerts: boolean;
-  dailyReports: boolean;
-}
-
-const DEFAULT_NOTIFICATIONS: NotificationSettings = {
-  emailNotifications: true,
-  lowStockAlerts: true,
-  dailyReports: false,
-};
 
 export default function Settings() {
   const { user } = useAuth();
@@ -50,8 +36,6 @@ export default function Settings() {
   // App Settings saving state
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   
-  // Notification state
-  const [notifications, setNotifications] = useState<NotificationSettings>(DEFAULT_NOTIFICATIONS);
   
   // Security state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -66,17 +50,6 @@ export default function Settings() {
     }
   }, [user]);
 
-  // Load notifications from localStorage
-  useEffect(() => {
-    const savedNotifications = localStorage.getItem(NOTIFICATIONS_KEY);
-    if (savedNotifications) {
-      try {
-        setNotifications({ ...DEFAULT_NOTIFICATIONS, ...JSON.parse(savedNotifications) });
-      } catch (e) {
-        console.error("Failed to load notifications:", e);
-      }
-    }
-  }, []);
 
   const handleSaveAppSettings = async () => {
     setIsSavingSettings(true);
@@ -162,15 +135,6 @@ export default function Settings() {
     }
   };
 
-  const updateNotification = <K extends keyof NotificationSettings>(key: K, value: boolean) => {
-    const updated = { ...notifications, [key]: value };
-    setNotifications(updated);
-    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(updated));
-    toast({
-      title: "Preferences Updated",
-      description: "Your notification preferences have been saved.",
-    });
-  };
 
   const handleUpdatePassword = async () => {
     if (!newPassword || !confirmPassword) {
@@ -250,7 +214,7 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="app" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
           <TabsTrigger value="app" className="gap-2">
             <SettingsIcon className="h-4 w-4" />
             <span className="hidden sm:inline">App</span>
@@ -258,10 +222,6 @@ export default function Settings() {
           <TabsTrigger value="profile" className="gap-2">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">Profile</span>
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-2">
-            <Bell className="h-4 w-4" />
-            <span className="hidden sm:inline">Notifications</span>
           </TabsTrigger>
           <TabsTrigger value="security" className="gap-2">
             <Shield className="h-4 w-4" />
@@ -579,67 +539,6 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
-        {/* Notifications Tab */}
-        <TabsContent value="notifications" className="space-y-6">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-primary" />
-                Notification Preferences
-              </CardTitle>
-              <CardDescription>
-                Choose how you want to be notified
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="emailNotifications">Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive important updates via email
-                  </p>
-                </div>
-                <Switch
-                  id="emailNotifications"
-                  checked={notifications.emailNotifications}
-                  onCheckedChange={(v) => updateNotification("emailNotifications", v)}
-                />
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="lowStockAlerts">Low Stock Alerts</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Get notified when inventory is running low
-                  </p>
-                </div>
-                <Switch
-                  id="lowStockAlerts"
-                  checked={notifications.lowStockAlerts}
-                  onCheckedChange={(v) => updateNotification("lowStockAlerts", v)}
-                />
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="dailyReports">Daily Reports</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive a daily summary of your operations
-                  </p>
-                </div>
-                <Switch
-                  id="dailyReports"
-                  checked={notifications.dailyReports}
-                  onCheckedChange={(v) => updateNotification("dailyReports", v)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* Security Tab */}
         <TabsContent value="security" className="space-y-6">
