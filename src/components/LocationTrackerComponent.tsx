@@ -129,7 +129,7 @@ export function LocationTrackerComponent() {
   };
 
   const handleAddMachineType = () => {
-    const newMachines = [...formData.machines, { type: "claw" as const, label: "Claw Machine", count: 1 }];
+    const newMachines = [...formData.machines, { type: "claw" as const, label: "Claw Machine", count: 1, customLabel: "" }];
     const newTotal = newMachines.reduce((sum, m) => sum + m.count, 0);
     setFormData((prev) => ({
       ...prev,
@@ -153,7 +153,24 @@ export function LocationTrackerComponent() {
       if (i !== index) return m;
       if (field === "type") {
         const option = MACHINE_TYPE_OPTIONS.find((o) => o.value === value);
-        return { ...m, type: value as MachineType["type"], label: option?.label || "Other" };
+        const defaultLabel = option?.label || "Other";
+        // Only update label if no custom label exists
+        return { 
+          ...m, 
+          type: value as MachineType["type"], 
+          label: m.customLabel || defaultLabel,
+          customLabel: m.customLabel || ""
+        };
+      }
+      if (field === "customLabel") {
+        const option = MACHINE_TYPE_OPTIONS.find((o) => o.value === m.type);
+        const defaultLabel = option?.label || "Other";
+        const customLabel = String(value).trim();
+        return { 
+          ...m, 
+          customLabel,
+          label: customLabel || defaultLabel
+        };
       }
       return { ...m, [field]: value };
     });
@@ -399,46 +416,56 @@ export function LocationTrackerComponent() {
                         {formData.machines.map((machine, index) => (
                           <div
                             key={index}
-                            className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/50"
+                            className="flex flex-col gap-2 p-3 rounded-lg bg-muted/30 border border-border/50"
                           >
-                            <Select
-                              value={machine.type}
-                              onValueChange={(value) =>
-                                handleMachineTypeChange(index, "type", value)
-                              }
-                            >
-                              <SelectTrigger className="flex-1 bg-background">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="bg-background z-50">
-                                {MACHINE_TYPE_OPTIONS.map((option) => (
-                                  <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <NumberInput
-                              min="1"
-                              value={machine.count}
+                            <div className="flex items-center gap-2">
+                              <Select
+                                value={machine.type}
+                                onValueChange={(value) =>
+                                  handleMachineTypeChange(index, "type", value)
+                                }
+                              >
+                                <SelectTrigger className="flex-1 bg-background">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-background z-50">
+                                  {MACHINE_TYPE_OPTIONS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <NumberInput
+                                min="1"
+                                value={machine.count}
+                                onChange={(e) =>
+                                  handleMachineTypeChange(
+                                    index,
+                                    "count",
+                                    parseInt(e.target.value) || 1
+                                  )
+                                }
+                                className="w-20 bg-background"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRemoveMachineType(index)}
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <Input
+                              placeholder="Custom name (optional, e.g., Mini Claw)"
+                              value={machine.customLabel || ""}
                               onChange={(e) =>
-                                handleMachineTypeChange(
-                                  index,
-                                  "count",
-                                  parseInt(e.target.value) || 1
-                                )
+                                handleMachineTypeChange(index, "customLabel", e.target.value)
                               }
-                              className="w-20 bg-background"
+                              className="bg-background text-sm"
                             />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRemoveMachineType(index)}
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
                           </div>
                         ))}
                         <p className="text-xs text-muted-foreground">
