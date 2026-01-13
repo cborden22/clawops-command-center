@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check, Edit2, RotateCcw } from "lucide-react";
+import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check, Edit2, RotateCcw, ExternalLink, ChevronDown, ChevronUp, DollarSign } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useInventory, InventoryItem, saveStockRunHistory, updateStockRunReturns } from "@/hooks/useInventoryDB";
@@ -32,6 +32,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { StockRunHistory } from "@/components/inventory/StockRunHistory";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+
 interface CartItem {
   id: string;
   name: string;
@@ -55,6 +58,8 @@ export function InventoryTrackerComponent() {
   const [newItemQty, setNewItemQty] = useState(10);
   const [newItemPackageType, setNewItemPackageType] = useState("Case");
   const [newItemPackageQty, setNewItemPackageQty] = useState(24);
+  const [newItemMinStock, setNewItemMinStock] = useState(10);
+  const [newItemLastPrice, setNewItemLastPrice] = useState<string>("");
   
   // Stock Run state
   const [isStockRunMode, setIsStockRunMode] = useState(false);
@@ -75,6 +80,14 @@ export function InventoryTrackerComponent() {
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [editPackageType, setEditPackageType] = useState("");
   const [editPackageQty, setEditPackageQty] = useState(24);
+  const [editMinStock, setEditMinStock] = useState(10);
+  const [editLastPrice, setEditLastPrice] = useState<string>("");
+  const [editSupplierName, setEditSupplierName] = useState("");
+  const [editSupplierUrl, setEditSupplierUrl] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+
+  // Expanded item state
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
   // History refresh trigger
   const [historyRefresh, setHistoryRefresh] = useState(0);
@@ -107,14 +120,21 @@ export function InventoryTrackerComponent() {
       return;
     }
 
+    const lastPrice = newItemLastPrice ? parseFloat(newItemLastPrice) : null;
+    
     const item = await addItem({
       name: newItemName.trim(),
       category: "General",
       quantity: newItemQty,
-      minStock: 5,
+      minStock: newItemMinStock,
       location: "",
       packageType: newItemPackageType,
       packageQuantity: newItemPackageQty,
+      supplierUrl: null,
+      supplierName: null,
+      lastPrice: lastPrice,
+      pricePerItem: lastPrice && newItemPackageQty ? lastPrice / newItemPackageQty : null,
+      notes: null,
     });
 
     if (item) {
@@ -122,6 +142,8 @@ export function InventoryTrackerComponent() {
       setNewItemQty(10);
       setNewItemPackageType("Case");
       setNewItemPackageQty(24);
+      setNewItemMinStock(10);
+      setNewItemLastPrice("");
       toast({
         title: "Added!",
         description: `${item.name} added to inventory.`,
@@ -133,18 +155,32 @@ export function InventoryTrackerComponent() {
     setEditingItem(item);
     setEditPackageType(item.packageType);
     setEditPackageQty(item.packageQuantity);
+    setEditMinStock(item.minStock);
+    setEditLastPrice(item.lastPrice?.toString() || "");
+    setEditSupplierName(item.supplierName || "");
+    setEditSupplierUrl(item.supplierUrl || "");
+    setEditNotes(item.notes || "");
   };
 
   const handleSaveEdit = async () => {
     if (!editingItem) return;
+    const lastPrice = editLastPrice ? parseFloat(editLastPrice) : null;
+    const pricePerItem = lastPrice && editPackageQty ? lastPrice / editPackageQty : null;
+    
     await updateItem(editingItem.id, {
       packageType: editPackageType,
       packageQuantity: editPackageQty,
+      minStock: editMinStock,
+      lastPrice: lastPrice,
+      pricePerItem: pricePerItem,
+      supplierName: editSupplierName || null,
+      supplierUrl: editSupplierUrl || null,
+      notes: editNotes || null,
     });
     setEditingItem(null);
     toast({
       title: "Updated!",
-      description: `${editingItem.name} packaging updated.`,
+      description: `${editingItem.name} updated.`,
     });
   };
 
@@ -450,7 +486,7 @@ export function InventoryTrackerComponent() {
             </Button>
           </div>
           {/* Packaging Configuration */}
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center flex-wrap">
             <span className="text-xs text-muted-foreground whitespace-nowrap">Packaging:</span>
             <Select value={newItemPackageType} onValueChange={setNewItemPackageType}>
               <SelectTrigger className="w-24 h-8 text-sm">
@@ -468,6 +504,29 @@ export function InventoryTrackerComponent() {
               min="1"
               value={newItemPackageQty}
               onChange={(e) => setNewItemPackageQty(parseInt(e.target.value) || 1)}
+              className="w-16 h-8 text-center text-sm"
+            />
+          </div>
+          {/* Price & Low Stock Config */}
+          <div className="flex gap-2 items-center flex-wrap">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Last price:</span>
+            <div className="relative w-24">
+              <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={newItemLastPrice}
+                onChange={(e) => setNewItemLastPrice(e.target.value)}
+                className="h-8 text-sm pl-6"
+              />
+            </div>
+            <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">Alert at:</span>
+            <NumberInput
+              min="0"
+              value={newItemMinStock}
+              onChange={(e) => setNewItemMinStock(parseInt(e.target.value) || 0)}
               className="w-16 h-8 text-center text-sm"
             />
           </div>
@@ -545,14 +604,28 @@ export function InventoryTrackerComponent() {
                         </Badge>
                       )}
                       {!isStockRunMode && !isReturnMode && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:text-primary"
-                          onClick={() => handleEditItem(item)}
-                        >
-                          <Edit2 className="h-3 w-3" />
-                        </Button>
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-muted-foreground hover:text-primary"
+                            onClick={() => handleEditItem(item)}
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-muted-foreground"
+                            onClick={() => setExpandedItemId(expandedItemId === item.id ? null : item.id)}
+                          >
+                            {expandedItemId === item.id ? (
+                              <ChevronUp className="h-3 w-3" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </>
                       )}
                     </div>
                     {isStockRunMode || isReturnMode ? (
@@ -562,6 +635,11 @@ export function InventoryTrackerComponent() {
                     ) : (
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {item.packageType} of {item.packageQuantity}
+                        {item.lastPrice && (
+                          <span className="ml-2">
+                            • ${item.lastPrice.toFixed(2)} (${item.pricePerItem?.toFixed(2)}/ea)
+                          </span>
+                        )}
                       </p>
                     )}
                   </div>
@@ -786,6 +864,53 @@ export function InventoryTrackerComponent() {
                     </>
                   )}
                 </div>
+                
+                {/* Expanded Details Section */}
+                {!isStockRunMode && !isReturnMode && expandedItemId === item.id && (
+                  <div className="mt-3 pt-3 border-t border-border/50 space-y-2">
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Alert at:</span>
+                        <span className="ml-1 font-medium">{item.minStock} items</span>
+                      </div>
+                      {item.lastPrice && (
+                        <div>
+                          <span className="text-muted-foreground">Last price:</span>
+                          <span className="ml-1 font-medium">${item.lastPrice.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {item.pricePerItem && (
+                        <div>
+                          <span className="text-muted-foreground">Per item:</span>
+                          <span className="ml-1 font-medium">${item.pricePerItem.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
+                    {item.supplierName && (
+                      <div className="text-xs">
+                        <span className="text-muted-foreground">Supplier:</span>
+                        <span className="ml-1 font-medium">{item.supplierName}</span>
+                        {item.supplierUrl && (
+                          <a 
+                            href={item.supplierUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="ml-2 text-primary hover:underline inline-flex items-center gap-0.5"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            View
+                          </a>
+                        )}
+                      </div>
+                    )}
+                    {item.notes && (
+                      <div className="text-xs">
+                        <span className="text-muted-foreground">Notes:</span>
+                        <p className="mt-0.5 text-muted-foreground/80 italic">{item.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </Card>
             );
           })}
@@ -1018,36 +1143,119 @@ export function InventoryTrackerComponent() {
 
       {/* Edit Item Dialog */}
       <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[450px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit {editingItem?.name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Package Type</label>
-              <Select value={editPackageType} onValueChange={setEditPackageType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Case">Case</SelectItem>
-                  <SelectItem value="Bag">Bag</SelectItem>
-                  <SelectItem value="Box">Box</SelectItem>
-                  <SelectItem value="Pack">Pack</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Packaging Section */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground">Packaging</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Type</Label>
+                  <Select value={editPackageType} onValueChange={setEditPackageType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Case">Case</SelectItem>
+                      <SelectItem value="Bag">Bag</SelectItem>
+                      <SelectItem value="Box">Box</SelectItem>
+                      <SelectItem value="Pack">Pack</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Qty per {editPackageType}</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={editPackageQty}
+                    onChange={(e) => setEditPackageQty(parseInt(e.target.value) || 1)}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Package Quantity</label>
-              <Input
-                type="number"
-                min="1"
-                value={editPackageQty}
-                onChange={(e) => setEditPackageQty(parseInt(e.target.value) || 1)}
+
+            {/* Pricing Section */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground">Pricing</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Last Price Paid</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={editLastPrice}
+                      onChange={(e) => setEditLastPrice(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Price Per Item</Label>
+                  <div className="h-9 px-3 flex items-center bg-muted rounded-md text-sm">
+                    {editLastPrice && editPackageQty 
+                      ? `$${(parseFloat(editLastPrice) / editPackageQty).toFixed(2)}` 
+                      : "—"
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stock Alert Section */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground">Stock Alert</h4>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Alert when stock falls below</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={editMinStock}
+                  onChange={(e) => setEditMinStock(parseInt(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+
+            {/* Supplier Section */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground">Supplier</h4>
+              <div className="space-y-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Supplier Name</Label>
+                  <Input
+                    placeholder="e.g., Oriental Trading"
+                    value={editSupplierName}
+                    onChange={(e) => setEditSupplierName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Purchase Link</Label>
+                  <Input
+                    type="url"
+                    placeholder="https://..."
+                    value={editSupplierUrl}
+                    onChange={(e) => setEditSupplierUrl(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Notes Section */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground">Notes</h4>
+              <Textarea
+                placeholder="Add notes about this item..."
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                rows={3}
               />
-              <p className="text-xs text-muted-foreground">
-                Items per {editPackageType.toLowerCase()}
-              </p>
             </div>
           </div>
           <DialogFooter>

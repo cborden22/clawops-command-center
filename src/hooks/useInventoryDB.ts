@@ -13,6 +13,12 @@ export interface InventoryItem {
   lastUpdated: string;
   packageType: string;
   packageQuantity: number;
+  // Enhanced fields
+  supplierUrl: string | null;
+  supplierName: string | null;
+  lastPrice: number | null;
+  pricePerItem: number | null;
+  notes: string | null;
 }
 
 export interface StockRunHistoryItem {
@@ -97,6 +103,11 @@ export function useInventory() {
         lastUpdated: new Date(item.last_updated).toLocaleDateString(),
         packageType: item.package_type || "Case",
         packageQuantity: item.package_quantity || 24,
+        supplierUrl: item.supplier_url || null,
+        supplierName: item.supplier_name || null,
+        lastPrice: item.last_price ? Number(item.last_price) : null,
+        pricePerItem: item.price_per_item ? Number(item.price_per_item) : null,
+        notes: item.notes || null,
       }));
 
       setItems(mappedItems);
@@ -125,6 +136,11 @@ export function useInventory() {
     if (!user) return null;
 
     try {
+      // Calculate price per item if lastPrice and packageQuantity are provided
+      const pricePerItem = item.lastPrice && item.packageQuantity 
+        ? item.lastPrice / item.packageQuantity 
+        : null;
+
       const { data, error } = await supabase
         .from("inventory_items")
         .insert({
@@ -136,6 +152,11 @@ export function useInventory() {
           location: item.location,
           package_type: item.packageType,
           package_quantity: item.packageQuantity,
+          supplier_url: item.supplierUrl,
+          supplier_name: item.supplierName,
+          last_price: item.lastPrice,
+          price_per_item: pricePerItem,
+          notes: item.notes,
         })
         .select()
         .single();
@@ -152,6 +173,11 @@ export function useInventory() {
         lastUpdated: new Date(data.last_updated).toLocaleDateString(),
         packageType: data.package_type || "Case",
         packageQuantity: data.package_quantity || 24,
+        supplierUrl: data.supplier_url || null,
+        supplierName: data.supplier_name || null,
+        lastPrice: data.last_price ? Number(data.last_price) : null,
+        pricePerItem: data.price_per_item ? Number(data.price_per_item) : null,
+        notes: data.notes || null,
       };
 
       setItems(prev => [newItem, ...prev]);
@@ -179,6 +205,20 @@ export function useInventory() {
       if (updates.location !== undefined) updateData.location = updates.location;
       if (updates.packageType !== undefined) updateData.package_type = updates.packageType;
       if (updates.packageQuantity !== undefined) updateData.package_quantity = updates.packageQuantity;
+      if (updates.supplierUrl !== undefined) updateData.supplier_url = updates.supplierUrl;
+      if (updates.supplierName !== undefined) updateData.supplier_name = updates.supplierName;
+      if (updates.lastPrice !== undefined) updateData.last_price = updates.lastPrice;
+      if (updates.notes !== undefined) updateData.notes = updates.notes;
+      
+      // Auto-calculate price per item when lastPrice or packageQuantity changes
+      if (updates.lastPrice !== undefined || updates.packageQuantity !== undefined) {
+        const item = items.find(i => i.id === id);
+        const newLastPrice = updates.lastPrice !== undefined ? updates.lastPrice : item?.lastPrice;
+        const newPackageQty = updates.packageQuantity !== undefined ? updates.packageQuantity : item?.packageQuantity;
+        if (newLastPrice && newPackageQty) {
+          updateData.price_per_item = newLastPrice / newPackageQty;
+        }
+      }
 
       const { error } = await supabase
         .from("inventory_items")

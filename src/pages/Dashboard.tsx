@@ -20,7 +20,8 @@ import {
   GripVertical,
   X,
   Check,
-  RotateCcw
+  RotateCcw,
+  ExternalLink
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
@@ -430,20 +431,54 @@ export default function Dashboard() {
             ✓ All inventory items are well-stocked
           </div>
         ) : (
-          lowStockItems.slice(0, 4).map(item => (
-            <div 
-              key={item.id} 
-              className="flex items-center justify-between p-3 rounded-lg bg-amber-500/5 border border-amber-500/20"
-            >
-              <div>
-                <p className="font-medium text-sm">{item.name}</p>
-                <p className="text-xs text-muted-foreground">{item.category}</p>
+          lowStockItems.slice(0, 4).map(item => {
+            const restockNeeded = item.minStock - item.quantity;
+            const restockCost = restockNeeded > 0 && item.pricePerItem 
+              ? restockNeeded * item.pricePerItem 
+              : null;
+            
+            return (
+              <div 
+                key={item.id} 
+                className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-sm">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.quantity} remaining (threshold: {item.minStock})
+                    </p>
+                  </div>
+                  <Badge variant="destructive" className="text-xs">
+                    {item.quantity} left
+                  </Badge>
+                </div>
+                {(restockCost || item.supplierUrl) && (
+                  <div className="flex items-center justify-between text-xs">
+                    {restockCost ? (
+                      <span className="text-muted-foreground">
+                        Est. restock: {restockNeeded} × ${item.pricePerItem?.toFixed(2)} = 
+                        <span className="font-medium text-foreground ml-1">${restockCost.toFixed(2)}</span>
+                      </span>
+                    ) : (
+                      <span />
+                    )}
+                    {item.supplierUrl && (
+                      <a 
+                        href={item.supplierUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        {item.supplierName || "View Supplier"}
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
-              <Badge variant="destructive" className="text-xs">
-                {item.quantity} left
-              </Badge>
-            </div>
-          ))
+            );
+          })
         )}
         {lowStockItems.length > 4 && (
           <p className="text-xs text-center text-muted-foreground">
