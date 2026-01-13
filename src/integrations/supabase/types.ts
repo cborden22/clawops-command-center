@@ -162,18 +162,21 @@ export type Database = {
       location_machines: {
         Row: {
           count: number | null
+          custom_label: string | null
           id: string
           location_id: string
           machine_type: string
         }
         Insert: {
           count?: number | null
+          custom_label?: string | null
           id?: string
           location_id: string
           machine_type: string
         }
         Update: {
           count?: number | null
+          custom_label?: string | null
           id?: string
           location_id?: string
           machine_type?: string

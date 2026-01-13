@@ -37,6 +37,7 @@ export interface MachineType {
   type: "claw" | "mini_claw" | "bulk" | "clip" | "sticker" | "other";
   label: string;
   count: number;
+  customLabel?: string;
 }
 
 export const MACHINE_TYPE_OPTIONS: { value: MachineType["type"]; label: string }[] = [
@@ -129,11 +130,16 @@ export function useLocations() {
       const mappedLocations: Location[] = (locationsData || []).map(loc => {
         const machines = machinesData
           .filter(m => m.location_id === loc.id)
-          .map(m => ({
-            type: m.machine_type as MachineType["type"],
-            label: MACHINE_TYPE_OPTIONS.find(opt => opt.value === m.machine_type)?.label || m.machine_type,
-            count: m.count,
-          }));
+          .map(m => {
+            const defaultLabel = MACHINE_TYPE_OPTIONS.find(opt => opt.value === m.machine_type)?.label || m.machine_type;
+            const customLabel = m.custom_label || "";
+            return {
+              type: m.machine_type as MachineType["type"],
+              label: customLabel || defaultLabel,
+              count: m.count,
+              customLabel,
+            };
+          });
 
         const commissionSummaries = summariesData
           .filter(s => s.location_id === loc.id)
@@ -233,11 +239,16 @@ export function useLocations() {
 
       // Add machines if any
       if (locationData.machines && locationData.machines.length > 0) {
-        const machinesInsert = locationData.machines.map(m => ({
-          location_id: newLoc.id,
-          machine_type: m.type,
-          count: m.count,
-        }));
+        const machinesInsert = locationData.machines.map(m => {
+          const defaultLabel = MACHINE_TYPE_OPTIONS.find(opt => opt.value === m.type)?.label || "";
+          const customLabel = m.customLabel || (m.label !== defaultLabel ? m.label : "");
+          return {
+            location_id: newLoc.id,
+            machine_type: m.type,
+            count: m.count,
+            custom_label: customLabel || null,
+          };
+        });
 
         const { error: machinesError } = await supabase
           .from("location_machines")
@@ -289,11 +300,16 @@ export function useLocations() {
 
         // Add new machines
         if (updates.machines.length > 0) {
-          const machinesInsert = updates.machines.map(m => ({
-            location_id: id,
-            machine_type: m.type,
-            count: m.count,
-          }));
+          const machinesInsert = updates.machines.map(m => {
+            const defaultLabel = MACHINE_TYPE_OPTIONS.find(opt => opt.value === m.type)?.label || "";
+            const customLabel = m.customLabel || (m.label !== defaultLabel ? m.label : "");
+            return {
+              location_id: id,
+              machine_type: m.type,
+              count: m.count,
+              custom_label: customLabel || null,
+            };
+          });
 
           const { error: machinesError } = await supabase
             .from("location_machines")
