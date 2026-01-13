@@ -65,37 +65,52 @@ export type Database = {
         Row: {
           category: string | null
           id: string
+          last_price: number | null
           last_updated: string | null
           location: string | null
           min_stock: number | null
           name: string
+          notes: string | null
           package_quantity: number | null
           package_type: string | null
+          price_per_item: number | null
           quantity: number | null
+          supplier_name: string | null
+          supplier_url: string | null
           user_id: string
         }
         Insert: {
           category?: string | null
           id?: string
+          last_price?: number | null
           last_updated?: string | null
           location?: string | null
           min_stock?: number | null
           name: string
+          notes?: string | null
           package_quantity?: number | null
           package_type?: string | null
+          price_per_item?: number | null
           quantity?: number | null
+          supplier_name?: string | null
+          supplier_url?: string | null
           user_id: string
         }
         Update: {
           category?: string | null
           id?: string
+          last_price?: number | null
           last_updated?: string | null
           location?: string | null
           min_stock?: number | null
           name?: string
+          notes?: string | null
           package_quantity?: number | null
           package_type?: string | null
+          price_per_item?: number | null
           quantity?: number | null
+          supplier_name?: string | null
+          supplier_url?: string | null
           user_id?: string
         }
         Relationships: []
