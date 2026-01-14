@@ -34,10 +34,12 @@ export interface LocationAgreementRecord {
 }
 
 export interface MachineType {
+  id?: string; // Database ID for the machine entry
   type: "claw" | "mini_claw" | "bulk" | "clip" | "sticker" | "other";
   label: string;
   count: number;
   customLabel?: string;
+  winProbability?: number; // Stored as "1 in X" (e.g., 15 means 1 in 15 odds)
 }
 
 export const MACHINE_TYPE_OPTIONS: { value: MachineType["type"]; label: string }[] = [
@@ -134,10 +136,12 @@ export function useLocations() {
             const defaultLabel = MACHINE_TYPE_OPTIONS.find(opt => opt.value === m.machine_type)?.label || m.machine_type;
             const customLabel = m.custom_label || "";
             return {
+              id: m.id, // Include the database ID
               type: m.machine_type as MachineType["type"],
               label: customLabel || defaultLabel,
               count: m.count,
               customLabel,
+              winProbability: m.win_probability ? Number(m.win_probability) : undefined,
             };
           });
 
@@ -247,6 +251,7 @@ export function useLocations() {
             machine_type: m.type,
             count: m.count,
             custom_label: customLabel || null,
+            win_probability: m.winProbability || null,
           };
         });
 
@@ -308,6 +313,7 @@ export function useLocations() {
               machine_type: m.type,
               count: m.count,
               custom_label: customLabel || null,
+              win_probability: m.winProbability || null,
             };
           });
 

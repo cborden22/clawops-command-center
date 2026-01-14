@@ -55,6 +55,7 @@ export function MachinesManager() {
     type: "claw" as MachineType["type"],
     count: 1,
     customLabel: "",
+    winProbability: undefined as number | undefined,
   });
 
   // Flatten all machines from all locations
@@ -104,6 +105,7 @@ export function MachinesManager() {
         type: formData.type,
         label,
         count: formData.count,
+        winProbability: formData.winProbability,
       };
 
       await updateLocation(location.id, { machines: updatedMachines });
@@ -115,7 +117,7 @@ export function MachinesManager() {
       // Add new machine
       const updatedMachines = [
         ...(location.machines || []),
-        { type: formData.type, label, count: formData.count },
+        { type: formData.type, label, count: formData.count, winProbability: formData.winProbability },
       ];
 
       await updateLocation(location.id, { machines: updatedMachines });
@@ -139,6 +141,7 @@ export function MachinesManager() {
         machine.machineType.label
           ? ""
           : machine.machineType.label,
+      winProbability: machine.machineType.winProbability,
     });
     setShowAddDialog(true);
   };
@@ -160,6 +163,7 @@ export function MachinesManager() {
       type: "claw",
       count: 1,
       customLabel: "",
+      winProbability: undefined,
     });
   };
 
@@ -303,6 +307,28 @@ export function MachinesManager() {
                       }))
                     }
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Win Probability (optional)</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">1 in</span>
+                    <NumberInput
+                      min="1"
+                      placeholder="15"
+                      value={formData.winProbability || ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          winProbability: parseInt(e.target.value) || undefined,
+                        }))
+                      }
+                      className="flex-1"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Set the expected win rate (e.g., 15 = 1 in 15 plays wins)
+                  </p>
                 </div>
 
                 <div className="flex gap-2 pt-4">

@@ -181,6 +181,7 @@ export type Database = {
           id: string
           location_id: string
           machine_type: string
+          win_probability: number | null
         }
         Insert: {
           count?: number | null
@@ -188,6 +189,7 @@ export type Database = {
           id?: string
           location_id: string
           machine_type: string
+          win_probability?: number | null
         }
         Update: {
           count?: number | null
@@ -195,6 +197,7 @@ export type Database = {
           id?: string
           location_id?: string
           machine_type?: string
+          win_probability?: number | null
         }
         Relationships: [
           {
@@ -250,6 +253,73 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      machine_collections: {
+        Row: {
+          coins_inserted: number
+          collection_date: string
+          created_at: string | null
+          id: string
+          location_id: string
+          machine_id: string
+          meter_reading_end: number | null
+          meter_reading_start: number | null
+          notes: string | null
+          prizes_won: number
+          revenue_entry_id: string | null
+          user_id: string
+        }
+        Insert: {
+          coins_inserted?: number
+          collection_date?: string
+          created_at?: string | null
+          id?: string
+          location_id: string
+          machine_id: string
+          meter_reading_end?: number | null
+          meter_reading_start?: number | null
+          notes?: string | null
+          prizes_won?: number
+          revenue_entry_id?: string | null
+          user_id: string
+        }
+        Update: {
+          coins_inserted?: number
+          collection_date?: string
+          created_at?: string | null
+          id?: string
+          location_id?: string
+          machine_id?: string
+          meter_reading_end?: number | null
+          meter_reading_start?: number | null
+          notes?: string | null
+          prizes_won?: number
+          revenue_entry_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "machine_collections_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "machine_collections_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "location_machines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "machine_collections_revenue_entry_id_fkey"
+            columns: ["revenue_entry_id"]
+            isOneToOne: false
+            referencedRelation: "revenue_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mileage_entries: {
         Row: {
