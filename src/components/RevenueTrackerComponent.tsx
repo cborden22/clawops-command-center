@@ -590,7 +590,7 @@ export function RevenueTrackerComponent() {
                         </div>
                       )}
                     </div>
-                  )
+                  )}
 
                   {/* Machine Type (optional) - Hide for business expenses */}
                   {locationMachines.length > 0 && !isBusinessExpense && (
