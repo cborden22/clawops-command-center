@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
 import { useLocations } from "@/hooks/useLocationsDB";
+import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, TrendingUp, TrendingDown, Camera, ImageIcon, X } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Camera, ImageIcon, X, Target } from "lucide-react";
 
 interface QuickRevenueFormProps {
   onSuccess: () => void;
@@ -32,6 +33,7 @@ const expenseCategories = [
 export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const { addIncome, addExpense } = useRevenueEntries();
   const { locations } = useLocations();
+  const { addCollection, calculateCollectionWinRate, formatWinRate, formatOdds, compareToExpected } = useMachineCollections();
   const { user } = useAuth();
   const [type, setType] = useState<"income" | "expense">("income");
   const [amount, setAmount] = useState("");
@@ -44,7 +46,28 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
+  // Collection metrics state
+  const [machineId, setMachineId] = useState("");
+  const [coinsInserted, setCoinsInserted] = useState("");
+  const [prizesWon, setPrizesWon] = useState("");
+
   const activeLocations = locations.filter((loc) => loc.isActive);
+
+  // Get machines for selected location
+  const selectedLocationData = locationId && locationId !== "business-expense"
+    ? locations.find(loc => loc.id === locationId)
+    : null;
+  const locationMachines = selectedLocationData?.machines || [];
+
+  // Get selected machine data
+  const selectedMachineData = machineId
+    ? locationMachines.find(m => m.id === machineId)
+    : null;
+
+  // Calculate current collection win rate
+  const currentStats = (coinsInserted && prizesWon)
+    ? calculateCollectionWinRate(parseInt(coinsInserted) || 0, parseInt(prizesWon) || 0)
+    : null;
 
   const uploadReceipt = async (file: File): Promise<string | null> => {
     if (!user) {
@@ -90,6 +113,18 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
 
       if (type === "income") {
         await addIncome(locationId || "", parsedAmount, notes || "", date);
+        
+        // Add collection metrics if machine is selected
+        if (machineId && selectedMachineData && (coinsInserted || prizesWon)) {
+          await addCollection({
+            locationId: locationId,
+            machineId: machineId,
+            collectionDate: date,
+            coinsInserted: parseInt(coinsInserted) || 0,
+            prizesWon: parseInt(prizesWon) || 0,
+          });
+        }
+        
         toast({ title: "Income added!", description: `$${amount} recorded.` });
       } else {
         // Upload receipt if present
@@ -108,6 +143,17 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
         await addExpense(finalLocationId, parsedAmount, category || "Other", notes || "", date, receiptUrl);
         toast({ title: "Expense added!", description: `$${amount} recorded.` });
       }
+      
+      // Reset form
+      setAmount("");
+      setLocationId("");
+      setCategory("");
+      setNotes("");
+      setReceiptFile(null);
+      setMachineId("");
+      setCoinsInserted("");
+      setPrizesWon("");
+      
       onSuccess();
     } catch (error) {
       toast({ title: "Error", description: "Failed to add entry.", variant: "destructive" });
@@ -153,7 +199,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
       {/* Location */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">Location {type === "expense" && "(Optional)"}</Label>
-        <Select value={locationId} onValueChange={setLocationId}>
+        <Select value={locationId} onValueChange={(v) => { setLocationId(v); setMachineId(""); }}>
           <SelectTrigger className="h-12">
             <SelectValue placeholder={type === "expense" ? "Business Expense" : "Select location"} />
           </SelectTrigger>
@@ -167,6 +213,75 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Machine Selector (income only, when location has machines) */}
+      {type === "income" && locationMachines.length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Machine (Optional)</Label>
+          <Select value={machineId} onValueChange={setMachineId}>
+            <SelectTrigger className="h-12">
+              <SelectValue placeholder="Select machine for metrics" />
+            </SelectTrigger>
+            <SelectContent>
+              {locationMachines.map((m) => (
+                <SelectItem key={m.id} value={m.id || ""}>
+                  {m.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Collection Metrics Section (when machine is selected) */}
+      {type === "income" && machineId && selectedMachineData && (
+        <div className="space-y-3 p-3 rounded-lg bg-muted/30 border">
+          <Label className="text-sm font-medium flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Collection Metrics
+          </Label>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Coins Inserted</Label>
+              <Input
+                type="number"
+                inputMode="numeric"
+                placeholder="0"
+                value={coinsInserted}
+                onChange={(e) => setCoinsInserted(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                className="h-11"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Prizes Won</Label>
+              <Input
+                type="number"
+                inputMode="numeric"
+                placeholder="0"
+                value={prizesWon}
+                onChange={(e) => setPrizesWon(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                className="h-11"
+              />
+            </div>
+          </div>
+          
+          {/* Live Win Rate Display */}
+          {currentStats && currentStats.winRate > 0 && (
+            <div className="text-sm bg-background/50 p-2 rounded">
+              <span className="font-medium">
+                Win Rate: {formatWinRate(currentStats.winRate)} ({formatOdds(currentStats.odds)})
+              </span>
+              {selectedMachineData.winProbability && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Expected: 1 in {selectedMachineData.winProbability} — {compareToExpected(currentStats.winRate, selectedMachineData.winProbability).message}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Category (expense only) */}
       {type === "expense" && (
