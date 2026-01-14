@@ -26,6 +26,8 @@ import {
 import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type WidgetId = 'primaryStats' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions';
 
@@ -47,14 +49,32 @@ const DEFAULT_WIDGET_ORDER: WidgetConfig[] = [
 const DASHBOARD_LAYOUT_KEY = "clawops-dashboard-layout";
 
 export default function Dashboard() {
-  const { locations, activeLocations, isLoaded: locationsLoaded } = useLocations();
-  const { entries, isLoaded: entriesLoaded } = useRevenueEntries();
-  const { items: inventoryItems, isLoaded: inventoryLoaded } = useInventory();
+  const { locations, activeLocations, isLoaded: locationsLoaded, refetch: refetchLocations } = useLocations();
+  const { entries, isLoaded: entriesLoaded, refetch: refetchEntries } = useRevenueEntries();
+  const { items: inventoryItems, isLoaded: inventoryLoaded, refetch: refetchInventory } = useInventory();
   const [widgets, setWidgets] = useState<WidgetConfig[]>(DEFAULT_WIDGET_ORDER);
   const [layoutLoaded, setLayoutLoaded] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [draggedWidget, setDraggedWidget] = useState<WidgetId | null>(null);
   const [dragOverWidget, setDragOverWidget] = useState<WidgetId | null>(null);
+  
+  const isMobile = useIsMobile();
+  const { registerRefresh, unregisterRefresh } = useMobileRefresh();
+
+  // Register mobile refresh callback
+  useEffect(() => {
+    if (isMobile) {
+      const refreshAll = async () => {
+        await Promise.all([
+          refetchLocations(),
+          refetchEntries(),
+          refetchInventory(),
+        ]);
+      };
+      registerRefresh("dashboard", refreshAll);
+      return () => unregisterRefresh("dashboard");
+    }
+  }, [isMobile, registerRefresh, unregisterRefresh, refetchLocations, refetchEntries, refetchInventory]);
 
   // Load layout
   useEffect(() => {

@@ -1,6 +1,22 @@
+import { useEffect } from "react";
 import { InventoryTrackerComponent } from "@/components/InventoryTrackerComponent";
+import { useInventory } from "@/hooks/useInventoryDB";
+import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const InventoryTracker = () => {
+  const { refetch } = useInventory();
+  const isMobile = useIsMobile();
+  const { registerRefresh, unregisterRefresh } = useMobileRefresh();
+
+  // Register mobile refresh callback
+  useEffect(() => {
+    if (isMobile) {
+      registerRefresh("inventory", refetch);
+      return () => unregisterRefresh("inventory");
+    }
+  }, [isMobile, registerRefresh, unregisterRefresh, refetch]);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-8 px-4">
