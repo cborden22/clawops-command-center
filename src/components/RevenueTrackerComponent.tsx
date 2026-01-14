@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   CalendarIcon, Plus, Trash2, TrendingUp, TrendingDown, DollarSign, 
   MapPin, Sparkles, AlertCircle, ArrowUpCircle, ArrowDownCircle, Wallet,
-  Download, Building2, Paperclip, FileImage, X, ExternalLink
+  Download, Building2, Paperclip, FileImage, X, ExternalLink, Receipt, Eye, Loader2
 } from "lucide-react";
 import { 
   format, subDays, startOfMonth, endOfMonth, isWithinInterval, 
@@ -28,6 +28,9 @@ import { useRevenueEntries, EntryType } from "@/hooks/useRevenueEntriesDB";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useReceiptViewer } from "@/hooks/useReceiptViewer";
+import { ReceiptModal } from "@/components/shared/ReceiptModal";
 
 type FilterPeriod = 
   | "past7days" 
@@ -81,7 +84,15 @@ export function RevenueTrackerComponent() {
   const [notes, setNotes] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
-  const [loadingReceiptId, setLoadingReceiptId] = useState<string | null>(null);
+  const [receiptsDialogOpen, setReceiptsDialogOpen] = useState(false);
+  const [selectedReceiptModal, setSelectedReceiptModal] = useState<{
+    path: string;
+    entryId: string;
+    details: { date: string; amount: number; category?: string; location?: string };
+  } | null>(null);
+  
+  // Use shared receipt viewer hook
+  const { viewReceipt, downloadReceipt, loadingReceiptId } = useReceiptViewer();
   
   // Filter state
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("thisMonth");
@@ -118,32 +129,25 @@ export function RevenueTrackerComponent() {
 
   // Generate a signed URL for viewing a receipt (handles both old full URLs and new paths)
   const handleViewReceipt = async (entryId: string, receiptPath: string) => {
-    setLoadingReceiptId(entryId);
-    try {
-      // Extract just the path if it's a full URL (for backwards compatibility)
-      let filePath = receiptPath;
-      if (receiptPath.includes('/receipts/')) {
-        filePath = receiptPath.split('/receipts/').pop() || receiptPath;
-      }
-      
-      const { data, error } = await supabase.storage
-        .from('receipts')
-        .createSignedUrl(filePath, 3600); // 1 hour expiry
-      
-      if (error) {
-        console.error("Error creating signed URL:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load receipt. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      window.open(data.signedUrl, '_blank');
-    } finally {
-      setLoadingReceiptId(null);
-    }
+    viewReceipt(entryId, receiptPath);
+  };
+  
+  // Get entries with receipts for the gallery
+  const entriesWithReceipts = entries.filter(e => e.receiptUrl);
+  
+  // Open receipt in modal with details
+  const openReceiptModal = (entry: typeof entries[0]) => {
+    if (!entry.receiptUrl) return;
+    setSelectedReceiptModal({
+      path: entry.receiptUrl,
+      entryId: entry.id,
+      details: {
+        date: format(entry.date, "MMM d, yyyy"),
+        amount: entry.amount,
+        category: entry.category,
+        location: entry.locationId ? getLocationById(entry.locationId)?.name : "Business Expense",
+      },
+    });
   };
 
   const handleAddEntry = async () => {
@@ -663,10 +667,58 @@ export function RevenueTrackerComponent() {
           <Card className="glass-card">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium text-muted-foreground">Filters</CardTitle>
-              <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
-                <Download className="h-4 w-4" />
-                Export CSV
-              </Button>
+              <div className="flex items-center gap-2">
+                {entriesWithReceipts.length > 0 && (
+                  <Dialog open={receiptsDialogOpen} onOpenChange={setReceiptsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Receipt className="h-4 w-4" />
+                        Receipts ({entriesWithReceipts.length})
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <Receipt className="h-5 w-5" />
+                          All Receipts
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="flex-1 overflow-y-auto -mx-6 px-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-4">
+                          {entriesWithReceipts.map(entry => (
+                            <div 
+                              key={entry.id} 
+                              className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+                              onClick={() => {
+                                setReceiptsDialogOpen(false);
+                                openReceiptModal(entry);
+                              }}
+                            >
+                              <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                                <Paperclip className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm">${entry.amount.toFixed(2)}</p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {entry.locationId ? getLocationById(entry.locationId)?.name : "Business Expense"}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {format(entry.date, "MMM d, yyyy")}
+                                </p>
+                              </div>
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+                <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Export CSV
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="pt-2">
               <div className="flex flex-wrap gap-4">
@@ -997,6 +1049,15 @@ export function RevenueTrackerComponent() {
           </Card>
         </div>
       </div>
+      
+      {/* Receipt Modal */}
+      <ReceiptModal
+        open={!!selectedReceiptModal}
+        onOpenChange={(open) => !open && setSelectedReceiptModal(null)}
+        receiptPath={selectedReceiptModal?.path || null}
+        entryId={selectedReceiptModal?.entryId || ""}
+        entryDetails={selectedReceiptModal?.details}
+      />
     </div>
   );
 }
