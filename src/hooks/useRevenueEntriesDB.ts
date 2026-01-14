@@ -14,6 +14,7 @@ export interface RevenueEntry {
   amount: number;
   category?: string;
   notes: string;
+  receiptUrl?: string;
 }
 
 export function useRevenueEntries() {
@@ -46,6 +47,7 @@ export function useRevenueEntries() {
         amount: Number(e.amount) || 0,
         category: e.category || undefined,
         notes: e.notes || "",
+        receiptUrl: e.receipt_url || undefined,
       }));
 
       setEntries(mappedEntries);
@@ -85,6 +87,7 @@ export function useRevenueEntries() {
           amount: entry.amount,
           category: entry.category || null,
           notes: entry.notes,
+          receipt_url: entry.receiptUrl || null,
         })
         .select()
         .single();
@@ -100,6 +103,7 @@ export function useRevenueEntries() {
         amount: Number(data.amount) || 0,
         category: data.category || undefined,
         notes: data.notes || "",
+        receiptUrl: data.receipt_url || undefined,
       };
 
       setEntries(prev => [newEntry, ...prev]);
@@ -142,7 +146,8 @@ export function useRevenueEntries() {
     amount: number,
     category: string,
     notes: string,
-    date: Date = new Date()
+    date: Date = new Date(),
+    receiptUrl?: string
   ) => {
     return addEntry({
       type: "expense",
@@ -151,6 +156,7 @@ export function useRevenueEntries() {
       category,
       notes,
       date,
+      receiptUrl,
     });
   };
 

@@ -12,6 +12,7 @@ import Documents from "./pages/Documents";
 import CommissionSummary from "./pages/CommissionSummary";
 import InventoryTracker from "./pages/InventoryTracker";
 import RevenueTracker from "./pages/RevenueTracker";
+import MileageTracker from "./pages/MileageTracker";
 import Locations from "./pages/Locations";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
@@ -129,6 +130,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <AppLayout>
               <RevenueTracker />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mileage"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <MileageTracker />
             </AppLayout>
           </ProtectedRoute>
         }

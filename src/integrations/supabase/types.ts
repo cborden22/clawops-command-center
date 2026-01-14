@@ -251,6 +251,56 @@ export type Database = {
         }
         Relationships: []
       }
+      mileage_entries: {
+        Row: {
+          created_at: string
+          date: string
+          end_location: string
+          id: string
+          is_round_trip: boolean
+          location_id: string | null
+          miles: number
+          notes: string | null
+          purpose: string | null
+          start_location: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          end_location: string
+          id?: string
+          is_round_trip?: boolean
+          location_id?: string | null
+          miles: number
+          notes?: string | null
+          purpose?: string | null
+          start_location: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          end_location?: string
+          id?: string
+          is_round_trip?: boolean
+          location_id?: string | null
+          miles?: number
+          notes?: string | null
+          purpose?: string | null
+          start_location?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mileage_entries_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -288,6 +338,7 @@ export type Database = {
           location_id: string | null
           machine_type: string | null
           notes: string | null
+          receipt_url: string | null
           type: string
           user_id: string
         }
@@ -300,6 +351,7 @@ export type Database = {
           location_id?: string | null
           machine_type?: string | null
           notes?: string | null
+          receipt_url?: string | null
           type: string
           user_id: string
         }
@@ -312,6 +364,7 @@ export type Database = {
           location_id?: string | null
           machine_type?: string | null
           notes?: string | null
+          receipt_url?: string | null
           type?: string
           user_id?: string
         }
