@@ -129,7 +129,7 @@ export function LocationTrackerComponent() {
   };
 
   const handleAddMachineType = () => {
-    const newMachines = [...formData.machines, { type: "claw" as const, label: "Claw Machine", count: 1, customLabel: "" }];
+    const newMachines = [...formData.machines, { type: "claw" as const, label: "Claw Machine", count: 1, customLabel: "", winProbability: undefined }];
     const newTotal = newMachines.reduce((sum, m) => sum + m.count, 0);
     setFormData((prev) => ({
       ...prev,
@@ -171,6 +171,9 @@ export function LocationTrackerComponent() {
           customLabel,
           label: customLabel || defaultLabel
         };
+      }
+      if (field === "winProbability") {
+        return { ...m, winProbability: value ? Number(value) : undefined };
       }
       return { ...m, [field]: value };
     });
@@ -466,6 +469,25 @@ export function LocationTrackerComponent() {
                               }
                               className="bg-background text-sm"
                             />
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs text-muted-foreground whitespace-nowrap">Win Probability:</Label>
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-muted-foreground">1 in</span>
+                                <NumberInput
+                                  min="1"
+                                  placeholder="15"
+                                  value={machine.winProbability || ""}
+                                  onChange={(e) =>
+                                    handleMachineTypeChange(
+                                      index,
+                                      "winProbability",
+                                      parseInt(e.target.value) || 0
+                                    )
+                                  }
+                                  className="w-20 h-8 bg-background text-sm"
+                                />
+                              </div>
+                            </div>
                           </div>
                         ))}
                         <p className="text-xs text-muted-foreground">

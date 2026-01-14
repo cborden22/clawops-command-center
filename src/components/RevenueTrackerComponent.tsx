@@ -25,6 +25,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { toast } from "@/hooks/use-toast";
 import { useLocations, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocationsDB";
 import { useRevenueEntries, EntryType } from "@/hooks/useRevenueEntriesDB";
+import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -72,6 +73,7 @@ export function RevenueTrackerComponent() {
   const { user } = useAuth();
   const { activeLocations, getLocationById, isLoaded } = useLocations();
   const { entries, addEntry, deleteEntry, isLoaded: entriesLoaded } = useRevenueEntries();
+  const { addCollection, calculateCollectionWinRate, formatWinRate, formatOdds, compareToExpected } = useMachineCollections();
   
   // Form state
   const [entryType, setEntryType] = useState<EntryType>("income");
@@ -85,6 +87,11 @@ export function RevenueTrackerComponent() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   const [receiptsDialogOpen, setReceiptsDialogOpen] = useState(false);
+  
+  // Collection metrics state (for income entries)
+  const [coinsInserted, setCoinsInserted] = useState("");
+  const [prizesWon, setPrizesWon] = useState("");
+  
   const [selectedReceiptModal, setSelectedReceiptModal] = useState<{
     path: string;
     entryId: string;
@@ -107,6 +114,16 @@ export function RevenueTrackerComponent() {
   // Get machines for selected location
   const selectedLocationData = selectedLocation ? getLocationById(selectedLocation) : null;
   const locationMachines = selectedLocationData?.machines || [];
+  
+  // Get selected machine data for win rate comparison
+  const selectedMachineData = selectedMachine !== "all" 
+    ? locationMachines.find(m => m.type === selectedMachine) 
+    : null;
+  
+  // Calculate win rate for current collection input
+  const currentCollectionStats = coinsInserted && prizesWon 
+    ? calculateCollectionWinRate(parseInt(coinsInserted) || 0, parseInt(prizesWon) || 0)
+    : null;
 
   const uploadReceipt = async (file: File): Promise<string | null> => {
     if (!user) return null;
@@ -175,7 +192,7 @@ export function RevenueTrackerComponent() {
       setIsUploadingReceipt(false);
     }
     
-    await addEntry({
+    const newEntry = await addEntry({
       type: entryType,
       locationId,
       machineType: selectedMachine !== "all" ? selectedMachine : undefined,
@@ -185,11 +202,26 @@ export function RevenueTrackerComponent() {
       notes: notes.trim(),
       receiptUrl,
     });
+    
+    // Save collection metrics if income entry with machine and metrics provided
+    if (entryType === "income" && selectedMachine !== "all" && selectedMachineData?.id && (coinsInserted || prizesWon)) {
+      await addCollection({
+        locationId: selectedLocation,
+        machineId: selectedMachineData.id,
+        revenueEntryId: newEntry?.id,
+        collectionDate: entryDate,
+        coinsInserted: parseInt(coinsInserted) || 0,
+        prizesWon: parseInt(prizesWon) || 0,
+      });
+    }
+    
     setAmount("");
     setNotes("");
     setCategory("");
     setSelectedMachine("all");
     setReceiptFile(null);
+    setCoinsInserted("");
+    setPrizesWon("");
     
     const loc = locationId ? getLocationById(locationId) : null;
     toast({ 
@@ -510,6 +542,55 @@ export function RevenueTrackerComponent() {
                       </Select>
                     </div>
                   )}
+
+                  {/* Collection Metrics - Only show for income when a specific machine is selected */}
+                  {entryType === "income" && selectedMachine !== "all" && selectedMachineData && (
+                    <div className="space-y-3 p-3 rounded-lg bg-muted/30 border border-border/50">
+                      <Label className="text-sm font-medium flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4" />
+                        Collection Metrics (Optional)
+                      </Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Coins Inserted</Label>
+                          <NumberInput
+                            min="0"
+                            value={coinsInserted}
+                            onChange={(e) => setCoinsInserted(e.target.value)}
+                            placeholder="0"
+                            className="h-10 bg-background/50"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Prizes Won</Label>
+                          <NumberInput
+                            min="0"
+                            value={prizesWon}
+                            onChange={(e) => setPrizesWon(e.target.value)}
+                            placeholder="0"
+                            className="h-10 bg-background/50"
+                          />
+                        </div>
+                      </div>
+                      {currentCollectionStats && currentCollectionStats.winRate > 0 && (
+                        <div className="text-xs space-y-1 pt-1">
+                          <p className="text-muted-foreground">
+                            This Collection: <span className="font-medium text-foreground">{formatOdds(currentCollectionStats.odds)} ({formatWinRate(currentCollectionStats.winRate)})</span>
+                          </p>
+                          {selectedMachineData.winProbability && (
+                            <p className={cn(
+                              "font-medium",
+                              compareToExpected(currentCollectionStats.winRate, selectedMachineData.winProbability).status === "over" ? "text-orange-500" :
+                              compareToExpected(currentCollectionStats.winRate, selectedMachineData.winProbability).status === "under" ? "text-green-500" :
+                              "text-muted-foreground"
+                            )}>
+                              Expected: 1 in {selectedMachineData.winProbability} • {compareToExpected(currentCollectionStats.winRate, selectedMachineData.winProbability).message}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
 
                   {/* Machine Type (optional) - Hide for business expenses */}
                   {locationMachines.length > 0 && !isBusinessExpense && (
