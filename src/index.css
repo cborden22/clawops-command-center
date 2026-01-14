@@ -247,6 +247,15 @@ All colors MUST be HSL.
   .animate-glow {
     animation: glow 2s ease-in-out infinite alternate;
   }
+
+  /* Mobile-specific utilities */
+  .mobile-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .mobile-safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
   
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
