@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useRef } from "react";
+import { triggerHaptic, hapticPatterns } from "@/utils/haptics";
 
 interface MobileRefreshContextType {
   isRefreshing: boolean;
@@ -28,6 +29,8 @@ export function MobileRefreshProvider({ children }: { children: ReactNode }) {
     try {
       const callbacks = Array.from(refreshCallbacks.current.values());
       await Promise.all(callbacks.map(fn => fn()));
+      // Success haptic when refresh completes
+      triggerHaptic(hapticPatterns.success);
     } catch (error) {
       console.error("Refresh error:", error);
     } finally {
