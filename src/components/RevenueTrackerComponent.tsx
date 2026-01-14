@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   CalendarIcon, Plus, Trash2, TrendingUp, TrendingDown, DollarSign, 
   MapPin, Sparkles, AlertCircle, ArrowUpCircle, ArrowDownCircle, Wallet,
-  Download, Building2
+  Download, Building2, Paperclip, FileImage, X, ExternalLink
 } from "lucide-react";
 import { 
   format, subDays, startOfMonth, endOfMonth, isWithinInterval, 
@@ -26,6 +26,8 @@ import { toast } from "@/hooks/use-toast";
 import { useLocations, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocationsDB";
 import { useRevenueEntries, EntryType } from "@/hooks/useRevenueEntriesDB";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 type FilterPeriod = 
   | "past7days" 
@@ -64,6 +66,7 @@ const BUSINESS_EXPENSE_CATEGORIES = [
 ];
 
 export function RevenueTrackerComponent() {
+  const { user } = useAuth();
   const { activeLocations, getLocationById, isLoaded } = useLocations();
   const { entries, addEntry, deleteEntry, isLoaded: entriesLoaded } = useRevenueEntries();
   
@@ -76,6 +79,8 @@ export function RevenueTrackerComponent() {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [notes, setNotes] = useState("");
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   
   // Filter state
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("thisMonth");
@@ -91,6 +96,28 @@ export function RevenueTrackerComponent() {
   const selectedLocationData = selectedLocation ? getLocationById(selectedLocation) : null;
   const locationMachines = selectedLocationData?.machines || [];
 
+  const uploadReceipt = async (file: File): Promise<string | null> => {
+    if (!user) return null;
+    
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('receipts')
+      .upload(fileName, file);
+    
+    if (uploadError) {
+      console.error("Receipt upload error:", uploadError);
+      throw uploadError;
+    }
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from('receipts')
+      .getPublicUrl(fileName);
+    
+    return publicUrl;
+  };
+
   const handleAddEntry = async () => {
     // For income, require location; for expense, allow business-level (no location)
     if (entryType === "income" && !selectedLocation) return;
@@ -98,6 +125,23 @@ export function RevenueTrackerComponent() {
     if (entryType === "expense" && !category) return;
 
     const locationId = isBusinessExpense ? "" : selectedLocation;
+    
+    let receiptUrl: string | undefined;
+    
+    // Upload receipt if present (only for expenses)
+    if (receiptFile && entryType === "expense") {
+      setIsUploadingReceipt(true);
+      try {
+        receiptUrl = (await uploadReceipt(receiptFile)) || undefined;
+      } catch (error) {
+        toast({ 
+          title: "Receipt Upload Failed", 
+          description: "Entry will be saved without receipt.",
+          variant: "destructive" 
+        });
+      }
+      setIsUploadingReceipt(false);
+    }
     
     await addEntry({
       type: entryType,
@@ -107,11 +151,13 @@ export function RevenueTrackerComponent() {
       amount: parseFloat(amount),
       category: entryType === "expense" ? category : undefined,
       notes: notes.trim(),
+      receiptUrl,
     });
     setAmount("");
     setNotes("");
     setCategory("");
     setSelectedMachine("all");
+    setReceiptFile(null);
     
     const loc = locationId ? getLocationById(locationId) : null;
     toast({ 
@@ -515,6 +561,42 @@ export function RevenueTrackerComponent() {
                       className="h-11 bg-background/50 hover:bg-background transition-colors"
                     />
                   </div>
+
+                  {/* Receipt Upload - Only for expenses */}
+                  {entryType === "expense" && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Receipt (optional)</Label>
+                      {receiptFile ? (
+                        <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/50">
+                          <FileImage className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm truncate flex-1">{receiptFile.name}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => setReceiptFile(null)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <label className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-dashed border-border hover:bg-muted/50 transition-colors cursor-pointer">
+                          <Paperclip className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">Attach receipt image or PDF</span>
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) setReceiptFile(file);
+                            }}
+                          />
+                        </label>
+                      )}
+                    </div>
+                  )}
                   
                   <Button 
                     onClick={handleAddEntry}
@@ -525,14 +607,21 @@ export function RevenueTrackerComponent() {
                         : "bg-red-600 hover:bg-red-700 text-white"
                     )}
                     disabled={
+                      isUploadingReceipt ||
                       !amount || 
                       (entryType === "income" && !selectedLocation) ||
                       (entryType === "expense" && !category) ||
                       (entryType === "expense" && !isBusinessExpense && !selectedLocation)
                     }
                   >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add {entryType === "income" ? "Income" : isBusinessExpense ? "Business Expense" : "Expense"}
+                    {isUploadingReceipt ? (
+                      <>Uploading...</>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add {entryType === "income" ? "Income" : isBusinessExpense ? "Business Expense" : "Expense"}
+                      </>
+                    )}
                   </Button>
                 </>
               )}
@@ -840,9 +929,22 @@ export function RevenueTrackerComponent() {
                           )}>
                             {entry.type === "expense" ? "-" : ""}${entry.amount.toFixed(2)}
                           </TableCell>
-                          <TableCell className="text-muted-foreground text-sm truncate max-w-[200px]">
-                            {entry.category ? <Badge variant="outline" className="mr-2">{entry.category}</Badge> : null}
-                            {entry.notes || "—"}
+                          <TableCell className="text-muted-foreground text-sm max-w-[200px]">
+                            <div className="flex items-center gap-2">
+                              {entry.category ? <Badge variant="outline">{entry.category}</Badge> : null}
+                              {entry.receiptUrl && (
+                                <a 
+                                  href={entry.receiptUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:text-primary/80"
+                                  title="View receipt"
+                                >
+                                  <Paperclip className="h-4 w-4" />
+                                </a>
+                              )}
+                              <span className="truncate">{entry.notes || "—"}</span>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Button
