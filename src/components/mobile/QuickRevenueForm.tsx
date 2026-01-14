@@ -56,7 +56,9 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
         toast({ title: "Income added!", description: `$${amount} recorded.` });
       } else {
         // addExpense(locationId, amount, category, notes, date, receiptUrl?)
-        await addExpense(locationId || "", parsedAmount, category || "Other", notes || "", date);
+        // Convert sentinel value back to empty string for API
+        const finalLocationId = locationId === "business-expense" ? "" : locationId;
+        await addExpense(finalLocationId, parsedAmount, category || "Other", notes || "", date);
         toast({ title: "Expense added!", description: `$${amount} recorded.` });
       }
       onSuccess();
@@ -108,7 +110,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
             <SelectValue placeholder={type === "expense" ? "Business Expense" : "Select location"} />
           </SelectTrigger>
           <SelectContent>
-            {type === "expense" && <SelectItem value="">Business Expense</SelectItem>}
+            {type === "expense" && <SelectItem value="business-expense">Business Expense</SelectItem>}
             {activeLocations.map((loc) => (
               <SelectItem key={loc.id} value={loc.id}>
                 {loc.name}
