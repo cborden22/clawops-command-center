@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { DocumentsSheet } from "@/components/mobile/DocumentsSheet";
 
 interface MobileBottomNavProps {
   onQuickAddOpen: () => void;
@@ -15,6 +16,7 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
   const location = useLocation();
   const { signOut } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [documentsOpen, setDocumentsOpen] = useState(false);
 
   const mainTabs = [
     { path: "/", icon: LayoutDashboard, label: "Home" },
@@ -27,7 +29,7 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
   const moreTabs = [
     { path: "/locations", icon: MapPin, label: "Locations" },
     { path: "/mileage", icon: Car, label: "Mileage" },
-    { path: "/documents", icon: FileText, label: "Documents" },
+    { path: "documents-picker", icon: FileText, label: "Documents", isDocuments: true },
     { path: "/settings", icon: Settings, label: "Settings" },
   ];
 
@@ -39,9 +41,14 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
     }
   };
 
-  const handleMoreItemClick = (path: string) => {
-    navigate(path);
-    setMoreOpen(false);
+  const handleMoreItemClick = (moreTab: typeof moreTabs[0]) => {
+    if (moreTab.isDocuments) {
+      setMoreOpen(false);
+      setDocumentsOpen(true);
+    } else {
+      navigate(moreTab.path);
+      setMoreOpen(false);
+    }
   };
 
   const handleSignOut = async () => {
@@ -72,16 +79,16 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
                   </button>
                 </SheetTrigger>
                 <SheetContent side="bottom" className="rounded-t-2xl">
-                  <div className="grid grid-cols-2 gap-3 py-4">
+                <div className="grid grid-cols-2 gap-3 py-4">
                     {moreTabs.map((moreTab) => {
                       const MoreIcon = moreTab.icon;
-                      const isMoreActive = location.pathname === moreTab.path;
+                      const isMoreActive = !moreTab.isDocuments && location.pathname === moreTab.path;
                       return (
                         <Button
                           key={moreTab.path}
                           variant={isMoreActive ? "default" : "outline"}
                           className="h-16 flex-col gap-1"
-                          onClick={() => handleMoreItemClick(moreTab.path)}
+                          onClick={() => handleMoreItemClick(moreTab)}
                         >
                           <MoreIcon className="h-5 w-5" />
                           <span className="text-xs">{moreTab.label}</span>
@@ -146,6 +153,7 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
           );
         })}
       </div>
+      <DocumentsSheet open={documentsOpen} onOpenChange={setDocumentsOpen} />
     </nav>
   );
 }
