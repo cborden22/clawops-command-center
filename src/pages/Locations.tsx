@@ -1,11 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LocationTrackerComponent } from "@/components/LocationTrackerComponent";
 import { MachinesManager } from "@/components/MachinesManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapPin, Sparkles } from "lucide-react";
+import { useLocations } from "@/hooks/useLocationsDB";
+import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Locations = () => {
   const [activeTab, setActiveTab] = useState("locations");
+  const { refetch } = useLocations();
+  const isMobile = useIsMobile();
+  const { registerRefresh, unregisterRefresh } = useMobileRefresh();
+
+  // Register mobile refresh callback
+  useEffect(() => {
+    if (isMobile) {
+      registerRefresh("locations", refetch);
+      return () => unregisterRefresh("locations");
+    }
+  }, [isMobile, registerRefresh, unregisterRefresh, refetch]);
 
   return (
     <div className="min-h-screen bg-background">

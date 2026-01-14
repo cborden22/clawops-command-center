@@ -1,6 +1,22 @@
+import { useEffect } from "react";
 import { RevenueTrackerComponent } from "@/components/RevenueTrackerComponent";
+import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
+import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const RevenueTracker = () => {
+  const { refetch } = useRevenueEntries();
+  const isMobile = useIsMobile();
+  const { registerRefresh, unregisterRefresh } = useMobileRefresh();
+
+  // Register mobile refresh callback
+  useEffect(() => {
+    if (isMobile) {
+      registerRefresh("revenue", refetch);
+      return () => unregisterRefresh("revenue");
+    }
+  }, [isMobile, registerRefresh, unregisterRefresh, refetch]);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-8 px-4">
