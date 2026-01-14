@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
 import { useLocations } from "@/hooks/useLocationsDB";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, TrendingUp, TrendingDown, Camera, ImageIcon, X } from "lucide-react";
@@ -31,6 +32,7 @@ const expenseCategories = [
 export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const { addIncome, addExpense } = useRevenueEntries();
   const { locations } = useLocations();
+  const { user } = useAuth();
   const [type, setType] = useState<"income" | "expense">("income");
   const [amount, setAmount] = useState("");
   const [locationId, setLocationId] = useState("");
@@ -45,10 +47,14 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const activeLocations = locations.filter((loc) => loc.isActive);
 
   const uploadReceipt = async (file: File): Promise<string | null> => {
+    if (!user) {
+      console.error("User not authenticated for receipt upload");
+      return null;
+    }
+    
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `receipts/${fileName}`;
+      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
 
       const { error } = await supabase.storage
         .from("receipts")
