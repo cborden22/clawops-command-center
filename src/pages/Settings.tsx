@@ -127,7 +127,7 @@ export default function Settings() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to update profile.",
+        description: "Failed to update profile. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -136,7 +136,27 @@ export default function Settings() {
   };
 
 
+  const getSafeErrorMessage = (error: Error | any): string => {
+    const message = error?.message?.toLowerCase() || "";
+    if (message.includes("invalid login") || message.includes("invalid credentials")) {
+      return "Invalid current password. Please try again.";
+    }
+    if (message.includes("password")) {
+      return "Password update failed. Please try again.";
+    }
+    return "An error occurred. Please try again.";
+  };
+
   const handleUpdatePassword = async () => {
+    if (!currentPassword) {
+      toast({
+        title: "Current Password Required",
+        description: "Please enter your current password to verify your identity.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!newPassword || !confirmPassword) {
       toast({
         title: "Missing Information",
@@ -166,6 +186,22 @@ export default function Settings() {
 
     setIsUpdatingPassword(true);
     try {
+      // First verify the current password
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user?.email || "",
+        password: currentPassword,
+      });
+
+      if (verifyError) {
+        toast({
+          title: "Verification Failed",
+          description: "Invalid current password. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Current password verified, now update to new password
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -183,7 +219,7 @@ export default function Settings() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to update password.",
+        description: getSafeErrorMessage(error),
         variant: "destructive",
       });
     } finally {

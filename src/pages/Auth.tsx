@@ -50,9 +50,7 @@ export default function Auth() {
     if (error) {
       toast({
         title: "Login Failed",
-        description: error.message === "Invalid login credentials" 
-          ? "Invalid email or password. Please try again."
-          : error.message,
+        description: "Invalid email or password. Please try again.",
         variant: "destructive",
       });
     } else {
@@ -95,7 +93,8 @@ export default function Auth() {
     setIsLoading(false);
 
     if (error) {
-      if (error.message.includes("already registered")) {
+      const message = error.message?.toLowerCase() || "";
+      if (message.includes("already registered") || message.includes("already exists")) {
         toast({
           title: "Account Exists",
           description: "An account with this email already exists. Please log in instead.",
@@ -104,7 +103,7 @@ export default function Auth() {
       } else {
         toast({
           title: "Signup Failed",
-          description: error.message,
+          description: "Unable to create account. Please try again.",
           variant: "destructive",
         });
       }
