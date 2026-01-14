@@ -81,6 +81,7 @@ export function RevenueTrackerComponent() {
   const [notes, setNotes] = useState("");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+  const [loadingReceiptId, setLoadingReceiptId] = useState<string | null>(null);
   
   // Filter state
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("thisMonth");
@@ -100,22 +101,49 @@ export function RevenueTrackerComponent() {
     if (!user) return null;
     
     const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+    const filePath = `${user.id}/${Date.now()}.${fileExt}`;
     
     const { error: uploadError } = await supabase.storage
       .from('receipts')
-      .upload(fileName, file);
+      .upload(filePath, file);
     
     if (uploadError) {
       console.error("Receipt upload error:", uploadError);
       throw uploadError;
     }
     
-    const { data: { publicUrl } } = supabase.storage
-      .from('receipts')
-      .getPublicUrl(fileName);
-    
-    return publicUrl;
+    // Return just the file path, not a public URL (bucket is private)
+    return filePath;
+  };
+
+  // Generate a signed URL for viewing a receipt (handles both old full URLs and new paths)
+  const handleViewReceipt = async (entryId: string, receiptPath: string) => {
+    setLoadingReceiptId(entryId);
+    try {
+      // Extract just the path if it's a full URL (for backwards compatibility)
+      let filePath = receiptPath;
+      if (receiptPath.includes('/receipts/')) {
+        filePath = receiptPath.split('/receipts/').pop() || receiptPath;
+      }
+      
+      const { data, error } = await supabase.storage
+        .from('receipts')
+        .createSignedUrl(filePath, 3600); // 1 hour expiry
+      
+      if (error) {
+        console.error("Error creating signed URL:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load receipt. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      window.open(data.signedUrl, '_blank');
+    } finally {
+      setLoadingReceiptId(null);
+    }
   };
 
   const handleAddEntry = async () => {
@@ -933,15 +961,18 @@ export function RevenueTrackerComponent() {
                             <div className="flex items-center gap-2">
                               {entry.category ? <Badge variant="outline">{entry.category}</Badge> : null}
                               {entry.receiptUrl && (
-                                <a 
-                                  href={entry.receiptUrl} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:text-primary/80"
+                                <button 
+                                  onClick={() => handleViewReceipt(entry.id, entry.receiptUrl!)}
+                                  disabled={loadingReceiptId === entry.id}
+                                  className="text-primary hover:text-primary/80 disabled:opacity-50"
                                   title="View receipt"
                                 >
-                                  <Paperclip className="h-4 w-4" />
-                                </a>
+                                  {loadingReceiptId === entry.id ? (
+                                    <span className="animate-spin inline-block h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                                  ) : (
+                                    <Paperclip className="h-4 w-4" />
+                                  )}
+                                </button>
                               )}
                               <span className="truncate">{entry.notes || "—"}</span>
                             </div>
