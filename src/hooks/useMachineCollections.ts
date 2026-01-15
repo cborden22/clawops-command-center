@@ -231,13 +231,69 @@ export function useMachineCollections() {
     }
   };
 
+  // Calculate location-wide stats
+  const calculateLocationStats = (locationId: string) => {
+    const locationCollections = getCollectionsForLocation(locationId);
+    const totalCoins = locationCollections.reduce((sum, c) => sum + c.coinsInserted, 0);
+    const totalPrizes = locationCollections.reduce((sum, c) => sum + c.prizesWon, 0);
+    const winRate = totalCoins > 0 ? totalPrizes / totalCoins : 0;
+    return {
+      collectionCount: locationCollections.length,
+      totalCoins,
+      totalPrizes,
+      winRate,
+      odds: winRate > 0 ? 1 / winRate : 0,
+    };
+  };
+
+  // Group collections by date for mobile view
+  const getCollectionsGroupedByDate = () => {
+    const grouped: Record<string, MachineCollection[]> = {};
+    collections.forEach((c) => {
+      const dateKey = c.collectionDate.toISOString().split("T")[0];
+      if (!grouped[dateKey]) grouped[dateKey] = [];
+      grouped[dateKey].push(c);
+    });
+    return grouped;
+  };
+
+  // Delete a collection
+  const deleteCollection = async (collectionId: string): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from("machine_collections")
+        .delete()
+        .eq("id", collectionId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      await fetchCollections();
+      toast({ title: "Collection deleted" });
+      return true;
+    } catch (error: any) {
+      console.error("Error deleting collection:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete collection.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   return {
     collections,
     isLoaded,
     addCollection,
+    deleteCollection,
     getCollectionsForMachine,
     getCollectionsForLocation,
     calculateMachineStats,
+    calculateLocationStats,
+    getCollectionsGroupedByDate,
     calculateCollectionWinRate,
     formatWinRate,
     formatOdds,

@@ -11,6 +11,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   MapPin,
   User,
   Phone,
@@ -22,8 +28,14 @@ import {
   Building2,
   Box,
   Printer,
+  Target,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Trash2,
 } from "lucide-react";
 import { Location, MACHINE_TYPE_OPTIONS, CommissionSummaryRecord, LocationAgreementRecord } from "@/hooks/useLocationsDB";
+import { useMachineCollections } from "@/hooks/useMachineCollections";
 import html2pdf from "html2pdf.js";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,11 +51,24 @@ export function LocationDetailDialog({
   onOpenChange,
 }: LocationDetailDialogProps) {
   const { toast } = useToast();
+  const {
+    getCollectionsForLocation,
+    calculateMachineStats,
+    calculateLocationStats,
+    calculateCollectionWinRate,
+    formatWinRate,
+    formatOdds,
+    compareToExpected,
+    deleteCollection,
+  } = useMachineCollections();
   
   if (!location) return null;
 
   const agreementCount = location.agreements?.length || 0;
   const commissionCount = location.commissionSummaries?.length || 0;
+  const locationCollections = getCollectionsForLocation(location.id);
+  const collectionCount = locationCollections.length;
+  const locationStats = calculateLocationStats(location.id);
 
   const printCommissionSummary = (summary: CommissionSummaryRecord) => {
     const currentDate = new Date().toLocaleDateString();
@@ -472,25 +497,34 @@ export function LocationDetailDialog({
         </DialogHeader>
 
         <Tabs defaultValue="details" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="details" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Details
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="details" className="flex items-center gap-1 text-xs px-2">
+              <Building2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Details</span>
             </TabsTrigger>
-            <TabsTrigger value="agreements" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Agreements
+            <TabsTrigger value="collections" className="flex items-center gap-1 text-xs px-2">
+              <Target className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Collections</span>
+              {collectionCount > 0 && (
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                  {collectionCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="agreements" className="flex items-center gap-1 text-xs px-2">
+              <FileText className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Agreements</span>
               {agreementCount > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
                   {agreementCount}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="commissions" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Commissions
+            <TabsTrigger value="commissions" className="flex items-center gap-1 text-xs px-2">
+              <DollarSign className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Commissions</span>
               {commissionCount > 0 && (
-                <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
                   {commissionCount}
                 </Badge>
               )}
@@ -579,6 +613,145 @@ export function LocationDetailDialog({
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Collections Tab */}
+            <TabsContent value="collections" className="mt-0 space-y-4">
+              {collectionCount === 0 ? (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                    <Target className="h-8 w-8 text-muted-foreground/50" />
+                  </div>
+                  <p className="text-muted-foreground font-medium">No collections yet</p>
+                  <p className="text-sm text-muted-foreground/70 mt-1">
+                    Add collection metrics when logging revenue
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Location Summary */}
+                  <Card className="bg-muted/30">
+                    <CardContent className="pt-4">
+                      <div className="grid grid-cols-4 gap-4 text-center">
+                        <div>
+                          <p className="text-2xl font-bold">{locationStats.collectionCount}</p>
+                          <p className="text-xs text-muted-foreground">Collections</p>
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold">{locationStats.totalCoins.toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">Total Coins</p>
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold">{locationStats.totalPrizes.toLocaleString()}</p>
+                          <p className="text-xs text-muted-foreground">Total Prizes</p>
+                        </div>
+                        <div>
+                          <p className="text-2xl font-bold">{formatWinRate(locationStats.winRate)}</p>
+                          <p className="text-xs text-muted-foreground">Avg Win Rate</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Per-Machine Breakdown */}
+                  {location.machines && location.machines.length > 0 && (
+                    <Accordion type="single" collapsible className="space-y-2">
+                      {location.machines.map((machine) => {
+                        const machineId = machine.id;
+                        if (!machineId) return null;
+                        
+                        const stats = calculateMachineStats(machineId);
+                        const comparison = machine.winProbability
+                          ? compareToExpected(stats.actualWinRate, machine.winProbability)
+                          : { status: "unknown" as const, variance: 0, message: "" };
+                        const machineCollections = locationCollections
+                          .filter((c) => c.machineId === machineId)
+                          .sort((a, b) => b.collectionDate.getTime() - a.collectionDate.getTime());
+
+                        if (machineCollections.length === 0) return null;
+
+                        return (
+                          <AccordionItem
+                            key={machineId}
+                            value={machineId}
+                            className="border rounded-lg px-4"
+                          >
+                            <AccordionTrigger className="hover:no-underline py-3">
+                              <div className="flex items-center justify-between w-full pr-2">
+                                <div className="flex flex-col items-start">
+                                  <span className="font-medium">{machine.label}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {machine.winProbability
+                                      ? `Expected: 1 in ${machine.winProbability}`
+                                      : "No probability set"}
+                                    {stats.collectionCount > 0 && (
+                                      <> | Actual: {formatOdds(stats.actualOdds)}</>
+                                    )}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {comparison.status === "on-target" && (
+                                    <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200">
+                                      <Minus className="h-3 w-3 mr-1" />
+                                      On Target
+                                    </Badge>
+                                  )}
+                                  {comparison.status === "over" && (
+                                    <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200">
+                                      <TrendingUp className="h-3 w-3 mr-1" />
+                                      +{comparison.variance.toFixed(0)}%
+                                    </Badge>
+                                  )}
+                                  {comparison.status === "under" && (
+                                    <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-200">
+                                      <TrendingDown className="h-3 w-3 mr-1" />
+                                      -{comparison.variance.toFixed(0)}%
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <div className="space-y-2 pt-2">
+                                {machineCollections.map((collection) => {
+                                  const collStats = calculateCollectionWinRate(
+                                    collection.coinsInserted,
+                                    collection.prizesWon
+                                  );
+                                  return (
+                                    <div
+                                      key={collection.id}
+                                      className="flex items-center justify-between py-2 px-3 bg-muted/30 rounded-lg text-sm"
+                                    >
+                                      <div>
+                                        <p className="font-medium">
+                                          {format(collection.collectionDate, "MMM d, yyyy")}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {collection.coinsInserted} coins → {collection.prizesWon} prizes (
+                                          {formatWinRate(collStats.winRate)})
+                                        </p>
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                                        onClick={() => deleteCollection(collection.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        );
+                      })}
+                    </Accordion>
+                  )}
+                </>
+              )}
             </TabsContent>
 
             {/* Agreements Tab */}
