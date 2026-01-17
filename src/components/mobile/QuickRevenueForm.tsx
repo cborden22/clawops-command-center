@@ -66,12 +66,12 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
     ? locationMachines.find(m => m.id === machineId)
     : null;
 
-  // Get cost per play from selected machine (default to 0.50)
-  const costPerPlay = selectedMachineData?.costPerPlay ?? 0.50;
+  // Fixed quarter value for dollar calculation
+  const QUARTER_VALUE = 0.25;
   
-  // Calculate amount from coins (always when machine selected)
+  // Calculate dollar amount from quarters (coins = quarters)
   const calculatedAmount = coinsInserted 
-    ? (parseInt(coinsInserted) || 0) * costPerPlay 
+    ? (parseInt(coinsInserted) || 0) * QUARTER_VALUE 
     : null;
 
   // Calculate current collection win rate
@@ -213,7 +213,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
             {calculatedAmount !== null && calculatedAmount > 0 && (
               <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Cost per play: ${costPerPlay.toFixed(2)}</span>
+                  <span className="text-sm text-muted-foreground">{coinsInserted} × $0.25</span>
                   <span className="text-lg font-bold text-primary">${calculatedAmount.toFixed(2)}</span>
                 </div>
               </div>
