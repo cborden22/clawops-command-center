@@ -40,6 +40,7 @@ export interface MachineType {
   count: number;
   customLabel?: string;
   winProbability?: number; // Stored as "1 in X" (e.g., 15 means 1 in 15 odds)
+  costPerPlay?: number; // Dollar value per play (e.g., 0.50, 1.00, 2.00)
 }
 
 export const MACHINE_TYPE_OPTIONS: { value: MachineType["type"]; label: string }[] = [
@@ -142,6 +143,7 @@ export function useLocations() {
               count: m.count,
               customLabel,
               winProbability: m.win_probability ? Number(m.win_probability) : undefined,
+              costPerPlay: m.cost_per_play ? Number(m.cost_per_play) : 0.50,
             };
           });
 
@@ -252,6 +254,7 @@ export function useLocations() {
             count: m.count,
             custom_label: customLabel || null,
             win_probability: m.winProbability || null,
+            cost_per_play: m.costPerPlay ?? 0.50,
           };
         });
 
@@ -314,6 +317,7 @@ export function useLocations() {
               count: m.count,
               custom_label: customLabel || null,
               win_probability: m.winProbability || null,
+              cost_per_play: m.costPerPlay ?? 0.50,
             };
           });
 
