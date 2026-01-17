@@ -91,7 +91,6 @@ export function RevenueTrackerComponent() {
   // Collection metrics state (for income entries)
   const [coinsInserted, setCoinsInserted] = useState("");
   const [prizesWon, setPrizesWon] = useState("");
-  const [inputMode, setInputMode] = useState<"coins" | "dollars">("dollars");
   
   const [selectedReceiptModal, setSelectedReceiptModal] = useState<{
     path: string;
@@ -124,8 +123,8 @@ export function RevenueTrackerComponent() {
   // Get cost per play from selected machine (default to 0.50)
   const costPerPlay = selectedMachineData?.costPerPlay ?? 0.50;
   
-  // Calculate amount from coins when in coins mode
-  const calculatedAmount = inputMode === "coins" && coinsInserted 
+  // Calculate amount from coins (always when machine selected)
+  const calculatedAmount = coinsInserted 
     ? (parseInt(coinsInserted) || 0) * costPerPlay 
     : null;
   
@@ -177,14 +176,14 @@ export function RevenueTrackerComponent() {
   };
 
   const handleAddEntry = async () => {
-    // For coins mode, use calculated amount; for dollars mode, use entered amount
-    const finalAmount = entryType === "income" && inputMode === "coins" && calculatedAmount !== null
+    // When machine is selected, use calculated amount from coins; otherwise use entered amount
+    const finalAmount = entryType === "income" && selectedMachine !== "all" && calculatedAmount !== null
       ? calculatedAmount
       : parseFloat(amount);
       
     // For income, require location; for expense, allow business-level (no location)
     if (entryType === "income" && !selectedLocation) return;
-    if (entryType === "income" && inputMode === "coins" ? !coinsInserted : !amount) return;
+    if (entryType === "income" && selectedMachine !== "all" ? !coinsInserted : !amount) return;
     if (entryType === "expense" && !category) return;
 
     const locationId = isBusinessExpense ? "" : selectedLocation;
@@ -236,7 +235,6 @@ export function RevenueTrackerComponent() {
     setReceiptFile(null);
     setCoinsInserted("");
     setPrizesWon("");
-    setInputMode("dollars");
     
     const loc = locationId ? getLocationById(locationId) : null;
     toast({ 
@@ -558,136 +556,59 @@ export function RevenueTrackerComponent() {
                     </div>
                   )}
 
-                  {/* Input Mode Toggle & Amount Entry - Show coins option when machine is selected */}
+                  {/* Coins Entry - Show when machine is selected */}
                   {entryType === "income" && selectedMachine !== "all" && selectedMachineData ? (
                     <div className="space-y-3">
-                      {/* Input Mode Toggle */}
-                      <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as "coins" | "dollars")} className="w-full">
-                        <TabsList className="grid grid-cols-2 w-full h-9">
-                          <TabsTrigger value="coins" className="h-7 text-sm gap-1.5">
-                            <Coins className="h-3.5 w-3.5" />
-                            Enter Coins
-                          </TabsTrigger>
-                          <TabsTrigger value="dollars" className="h-7 text-sm gap-1.5">
-                            <DollarSign className="h-3.5 w-3.5" />
-                            Enter Dollars
-                          </TabsTrigger>
-                        </TabsList>
-                      </Tabs>
-                      
-                      {inputMode === "coins" ? (
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">Coins Inserted</Label>
-                          <NumberInput
-                            min="0"
-                            value={coinsInserted}
-                            onChange={(e) => setCoinsInserted(e.target.value)}
-                            placeholder="0"
-                            className="h-11 text-lg font-semibold text-center bg-background/50"
-                          />
-                          {calculatedAmount !== null && calculatedAmount > 0 && (
-                            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">Cost per play: ${costPerPlay.toFixed(2)}</span>
-                                <span className="text-lg font-bold text-primary">${calculatedAmount.toFixed(2)}</span>
-                              </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium flex items-center gap-2">
+                          <Coins className="h-4 w-4" />
+                          Coins Inserted
+                        </Label>
+                        <NumberInput
+                          min="0"
+                          value={coinsInserted}
+                          onChange={(e) => setCoinsInserted(e.target.value)}
+                          placeholder="0"
+                          className="h-11 text-lg font-semibold text-center bg-background/50"
+                        />
+                        {calculatedAmount !== null && calculatedAmount > 0 && (
+                          <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Cost per play: ${costPerPlay.toFixed(2)}</span>
+                              <span className="text-lg font-bold text-primary">${calculatedAmount.toFixed(2)}</span>
                             </div>
-                          )}
-                          
-                          {/* Prizes Won in coins mode */}
-                          <div className="space-y-1 pt-2">
-                            <Label className="text-xs text-muted-foreground">Prizes Won (optional)</Label>
-                            <NumberInput
-                              min="0"
-                              value={prizesWon}
-                              onChange={(e) => setPrizesWon(e.target.value)}
-                              placeholder="0"
-                              className="h-10 bg-background/50"
-                            />
                           </div>
-                          
-                          {currentCollectionStats && currentCollectionStats.winRate > 0 && (
-                            <div className="text-xs space-y-1 pt-1">
-                              <p className="text-muted-foreground">
-                                Win Rate: <span className="font-medium text-foreground">{formatOdds(currentCollectionStats.odds)} ({formatWinRate(currentCollectionStats.winRate)})</span>
-                              </p>
-                              {selectedMachineData.winProbability && (
-                                <p className={cn(
-                                  "font-medium",
-                                  compareToExpected(currentCollectionStats.winRate, selectedMachineData.winProbability).status === "over" ? "text-orange-500" :
-                                  compareToExpected(currentCollectionStats.winRate, selectedMachineData.winProbability).status === "under" ? "text-green-500" :
-                                  "text-muted-foreground"
-                                )}>
-                                  Expected: 1 in {selectedMachineData.winProbability} • {compareToExpected(currentCollectionStats.winRate, selectedMachineData.winProbability).message}
-                                </p>
-                              )}
-                            </div>
+                        )}
+                      </div>
+                      
+                      {/* Prizes Won */}
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Prizes Won (optional)</Label>
+                        <NumberInput
+                          min="0"
+                          value={prizesWon}
+                          onChange={(e) => setPrizesWon(e.target.value)}
+                          placeholder="0"
+                          className="h-10 bg-background/50"
+                        />
+                      </div>
+                      
+                      {currentCollectionStats && currentCollectionStats.winRate > 0 && (
+                        <div className="text-xs space-y-1 pt-1">
+                          <p className="text-muted-foreground">
+                            Win Rate: <span className="font-medium text-foreground">{formatOdds(currentCollectionStats.odds)} ({formatWinRate(currentCollectionStats.winRate)})</span>
+                          </p>
+                          {selectedMachineData.winProbability && (
+                            <p className={cn(
+                              "font-medium",
+                              compareToExpected(currentCollectionStats.winRate, selectedMachineData.winProbability).status === "over" ? "text-orange-500" :
+                              compareToExpected(currentCollectionStats.winRate, selectedMachineData.winProbability).status === "under" ? "text-green-500" :
+                              "text-muted-foreground"
+                            )}>
+                              Expected: 1 in {selectedMachineData.winProbability} • {compareToExpected(currentCollectionStats.winRate, selectedMachineData.winProbability).message}
+                            </p>
                           )}
                         </div>
-                      ) : (
-                        <>
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">Amount</Label>
-                            <div className="relative">
-                              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                              <NumberInput
-                                step="0.01"
-                                min="0"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                placeholder="0.00"
-                                className="pl-9 h-11 bg-background/50 hover:bg-background transition-colors"
-                              />
-                            </div>
-                          </div>
-                          
-                          {/* Collection Metrics in dollars mode */}
-                          <div className="space-y-3 p-3 rounded-lg bg-muted/30 border border-border/50">
-                            <Label className="text-sm font-medium flex items-center gap-2">
-                              <TrendingUp className="h-4 w-4" />
-                              Collection Metrics (Optional)
-                            </Label>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Coins Inserted</Label>
-                                <NumberInput
-                                  min="0"
-                                  value={coinsInserted}
-                                  onChange={(e) => setCoinsInserted(e.target.value)}
-                                  placeholder="0"
-                                  className="h-10 bg-background/50"
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Prizes Won</Label>
-                                <NumberInput
-                                  min="0"
-                                  value={prizesWon}
-                                  onChange={(e) => setPrizesWon(e.target.value)}
-                                  placeholder="0"
-                                  className="h-10 bg-background/50"
-                                />
-                              </div>
-                            </div>
-                            {currentCollectionStats && currentCollectionStats.winRate > 0 && (
-                              <div className="text-xs space-y-1 pt-1">
-                                <p className="text-muted-foreground">
-                                  This Collection: <span className="font-medium text-foreground">{formatOdds(currentCollectionStats.odds)} ({formatWinRate(currentCollectionStats.winRate)})</span>
-                                </p>
-                                {selectedMachineData.winProbability && (
-                                  <p className={cn(
-                                    "font-medium",
-                                    compareToExpected(currentCollectionStats.winRate, selectedMachineData.winProbability).status === "over" ? "text-orange-500" :
-                                    compareToExpected(currentCollectionStats.winRate, selectedMachineData.winProbability).status === "under" ? "text-green-500" :
-                                    "text-muted-foreground"
-                                  )}>
-                                    Expected: 1 in {selectedMachineData.winProbability} • {compareToExpected(currentCollectionStats.winRate, selectedMachineData.winProbability).message}
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </>
                       )}
                     </div>
                   ) : null}
@@ -823,7 +744,7 @@ export function RevenueTrackerComponent() {
                     )}
                     disabled={
                       isUploadingReceipt ||
-                      (entryType === "income" && inputMode === "coins" ? !coinsInserted : !amount) || 
+                      (entryType === "income" && selectedMachine !== "all" ? !coinsInserted : !amount) || 
                       (entryType === "income" && !selectedLocation) ||
                       (entryType === "expense" && !category) ||
                       (entryType === "expense" && !isBusinessExpense && !selectedLocation)

@@ -11,7 +11,7 @@ import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, TrendingUp, TrendingDown, Camera, ImageIcon, X, Target, Coins, DollarSign } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Camera, ImageIcon, X, Coins } from "lucide-react";
 
 interface QuickRevenueFormProps {
   onSuccess: () => void;
@@ -51,8 +51,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const [coinsInserted, setCoinsInserted] = useState("");
   const [prizesWon, setPrizesWon] = useState("");
   
-  // Input mode for income: "coins" or "dollars"
-  const [inputMode, setInputMode] = useState<"coins" | "dollars">("dollars");
+  // No longer need inputMode - coins is always primary when machine selected
 
   const activeLocations = locations.filter((loc) => loc.isActive);
 
@@ -70,8 +69,8 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   // Get cost per play from selected machine (default to 0.50)
   const costPerPlay = selectedMachineData?.costPerPlay ?? 0.50;
   
-  // Calculate amount from coins when in coins mode
-  const calculatedAmount = inputMode === "coins" && coinsInserted 
+  // Calculate amount from coins (always when machine selected)
+  const calculatedAmount = coinsInserted 
     ? (parseInt(coinsInserted) || 0) * costPerPlay 
     : null;
 
@@ -112,13 +111,13 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   };
 
   const handleSubmit = async () => {
-    // For coins mode, use calculated amount; for dollars mode, use entered amount
-    const finalAmount = type === "income" && inputMode === "coins" && calculatedAmount !== null
+    // When machine is selected, use calculated amount from coins; otherwise use entered amount
+    const finalAmount = type === "income" && machineId && calculatedAmount !== null
       ? calculatedAmount
       : parseFloat(amount);
       
     if (!finalAmount || finalAmount <= 0) {
-      toast({ title: "Enter amount", description: inputMode === "coins" ? "Please enter coins inserted." : "Please enter a valid amount.", variant: "destructive" });
+      toast({ title: "Enter amount", description: type === "income" && machineId ? "Please enter coins inserted." : "Please enter a valid amount.", variant: "destructive" });
       return;
     }
 
@@ -168,8 +167,6 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
       setMachineId("");
       setCoinsInserted("");
       setPrizesWon("");
-      setInputMode("dollars");
-      setPrizesWon("");
       
       onSuccess();
     } catch (error) {
@@ -196,59 +193,58 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
         </TabsList>
       </Tabs>
 
-      {/* Amount Entry - Different modes for income with machine selected */}
+      {/* Amount Entry - Coins when machine selected, dollars otherwise */}
       {type === "income" && machineId && selectedMachineData ? (
         <div className="space-y-3">
-          {/* Input Mode Toggle */}
-          <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as "coins" | "dollars")} className="w-full">
-            <TabsList className="grid grid-cols-2 w-full h-10">
-              <TabsTrigger value="coins" className="h-8 text-sm gap-1.5">
-                <Coins className="h-3.5 w-3.5" />
-                Enter Coins
-              </TabsTrigger>
-              <TabsTrigger value="dollars" className="h-8 text-sm gap-1.5">
-                <DollarSign className="h-3.5 w-3.5" />
-                Enter Dollars
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          
-          {inputMode === "coins" ? (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Coins Inserted</Label>
-              <Input
-                type="number"
-                inputMode="numeric"
-                placeholder="0"
-                value={coinsInserted}
-                onChange={(e) => setCoinsInserted(e.target.value)}
-                className="h-14 text-2xl font-semibold text-center"
-                onFocus={(e) => e.target.select()}
-              />
-              {calculatedAmount !== null && calculatedAmount > 0 && (
-                <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Cost per play: ${costPerPlay.toFixed(2)}</span>
-                    <span className="text-lg font-bold text-primary">${calculatedAmount.toFixed(2)}</span>
-                  </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Coins className="h-4 w-4" />
+              Coins Inserted
+            </Label>
+            <Input
+              type="number"
+              inputMode="numeric"
+              placeholder="0"
+              value={coinsInserted}
+              onChange={(e) => setCoinsInserted(e.target.value)}
+              className="h-14 text-2xl font-semibold text-center"
+              onFocus={(e) => e.target.select()}
+            />
+            {calculatedAmount !== null && calculatedAmount > 0 && (
+              <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Cost per play: ${costPerPlay.toFixed(2)}</span>
+                  <span className="text-lg font-bold text-primary">${calculatedAmount.toFixed(2)}</span>
                 </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Amount</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-lg">$</span>
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="pl-8 h-14 text-2xl font-semibold"
-                  onFocus={(e) => e.target.select()}
-                />
               </div>
+            )}
+          </div>
+          
+          {/* Prizes Won */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Prizes Won (Optional)</Label>
+            <Input
+              type="number"
+              inputMode="numeric"
+              placeholder="0"
+              value={prizesWon}
+              onChange={(e) => setPrizesWon(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              className="h-12"
+            />
+          </div>
+          
+          {/* Live Win Rate Display */}
+          {currentStats && currentStats.winRate > 0 && (
+            <div className="text-sm bg-muted/30 p-2 rounded border">
+              <span className="font-medium">
+                Win Rate: {formatWinRate(currentStats.winRate)} ({formatOdds(currentStats.odds)})
+              </span>
+              {selectedMachineData.winProbability && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Expected: 1 in {selectedMachineData.winProbability} — {compareToExpected(currentStats.winRate, selectedMachineData.winProbability).message}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -307,85 +303,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
         </div>
       )}
 
-      {/* Collection Metrics Section (when machine is selected and in dollars mode) */}
-      {type === "income" && machineId && selectedMachineData && inputMode === "dollars" && (
-        <div className="space-y-3 p-3 rounded-lg bg-muted/30 border">
-          <Label className="text-sm font-medium flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Collection Metrics (Optional)
-          </Label>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs text-muted-foreground">Coins Inserted</Label>
-              <Input
-                type="number"
-                inputMode="numeric"
-                placeholder="0"
-                value={coinsInserted}
-                onChange={(e) => setCoinsInserted(e.target.value)}
-                onFocus={(e) => e.target.select()}
-                className="h-11"
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Prizes Won</Label>
-              <Input
-                type="number"
-                inputMode="numeric"
-                placeholder="0"
-                value={prizesWon}
-                onChange={(e) => setPrizesWon(e.target.value)}
-                onFocus={(e) => e.target.select()}
-                className="h-11"
-              />
-            </div>
-          </div>
-          
-          {/* Live Win Rate Display */}
-          {currentStats && currentStats.winRate > 0 && (
-            <div className="text-sm bg-background/50 p-2 rounded">
-              <span className="font-medium">
-                Win Rate: {formatWinRate(currentStats.winRate)} ({formatOdds(currentStats.odds)})
-              </span>
-              {selectedMachineData.winProbability && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Expected: 1 in {selectedMachineData.winProbability} — {compareToExpected(currentStats.winRate, selectedMachineData.winProbability).message}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-      
-      {/* Prizes Won (only in coins mode) */}
-      {type === "income" && machineId && selectedMachineData && inputMode === "coins" && (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Prizes Won (Optional)</Label>
-          <Input
-            type="number"
-            inputMode="numeric"
-            placeholder="0"
-            value={prizesWon}
-            onChange={(e) => setPrizesWon(e.target.value)}
-            onFocus={(e) => e.target.select()}
-            className="h-12"
-          />
-          
-          {/* Live Win Rate Display */}
-          {currentStats && currentStats.winRate > 0 && (
-            <div className="text-sm bg-muted/30 p-2 rounded border">
-              <span className="font-medium">
-                Win Rate: {formatWinRate(currentStats.winRate)} ({formatOdds(currentStats.odds)})
-              </span>
-              {selectedMachineData.winProbability && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Expected: 1 in {selectedMachineData.winProbability} — {compareToExpected(currentStats.winRate, selectedMachineData.winProbability).message}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Collection Metrics removed - coins entry is now integrated above when machine selected */}
 
       {/* Category (expense only) */}
       {type === "expense" && (
@@ -482,7 +400,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
       {/* Submit Button */}
       <Button
         onClick={handleSubmit}
-        disabled={isSubmitting || (type === "income" && inputMode === "coins" ? !coinsInserted : !amount)}
+        disabled={isSubmitting || (type === "income" && machineId ? !coinsInserted : !amount)}
         className="w-full h-14 text-lg font-semibold"
         size="lg"
       >
