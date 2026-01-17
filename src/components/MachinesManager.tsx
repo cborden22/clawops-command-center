@@ -56,6 +56,7 @@ export function MachinesManager() {
     count: 1,
     customLabel: "",
     winProbability: undefined as number | undefined,
+    costPerPlay: 0.50,
   });
 
   // Flatten all machines from all locations
@@ -106,6 +107,7 @@ export function MachinesManager() {
         label,
         count: formData.count,
         winProbability: formData.winProbability,
+        costPerPlay: formData.costPerPlay,
       };
 
       await updateLocation(location.id, { machines: updatedMachines });
@@ -117,7 +119,7 @@ export function MachinesManager() {
       // Add new machine
       const updatedMachines = [
         ...(location.machines || []),
-        { type: formData.type, label, count: formData.count, winProbability: formData.winProbability },
+        { type: formData.type, label, count: formData.count, winProbability: formData.winProbability, costPerPlay: formData.costPerPlay },
       ];
 
       await updateLocation(location.id, { machines: updatedMachines });
@@ -142,6 +144,7 @@ export function MachinesManager() {
           ? ""
           : machine.machineType.label,
       winProbability: machine.machineType.winProbability,
+      costPerPlay: machine.machineType.costPerPlay ?? 0.50,
     });
     setShowAddDialog(true);
   };
@@ -164,6 +167,7 @@ export function MachinesManager() {
       count: 1,
       customLabel: "",
       winProbability: undefined,
+      costPerPlay: 0.50,
     });
   };
 
@@ -329,6 +333,40 @@ export function MachinesManager() {
                   <p className="text-xs text-muted-foreground">
                     Set the expected win rate (e.g., 15 = 1 in 15 plays wins)
                   </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Cost Per Play</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">$</span>
+                    <NumberInput
+                      min="0.01"
+                      step="0.25"
+                      placeholder="0.50"
+                      value={formData.costPerPlay}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          costPerPlay: parseFloat(e.target.value) || 0.50,
+                        }))
+                      }
+                      className="flex-1"
+                    />
+                  </div>
+                  <div className="flex gap-1 flex-wrap">
+                    {[0.25, 0.50, 1.00, 2.00].map((preset) => (
+                      <Button
+                        key={preset}
+                        type="button"
+                        variant={formData.costPerPlay === preset ? "default" : "outline"}
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setFormData((prev) => ({ ...prev, costPerPlay: preset }))}
+                      >
+                        ${preset.toFixed(2)}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="flex gap-2 pt-4">
