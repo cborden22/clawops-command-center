@@ -335,6 +335,7 @@ export type Database = {
           miles: number
           notes: string | null
           purpose: string | null
+          route_id: string | null
           start_location: string
           user_id: string
         }
@@ -348,6 +349,7 @@ export type Database = {
           miles: number
           notes?: string | null
           purpose?: string | null
+          route_id?: string | null
           start_location: string
           user_id: string
         }
@@ -361,6 +363,7 @@ export type Database = {
           miles?: number
           notes?: string | null
           purpose?: string | null
+          route_id?: string | null
           start_location?: string
           user_id?: string
         }
@@ -372,7 +375,95 @@ export type Database = {
             referencedRelation: "locations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "mileage_entries_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "mileage_routes"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      mileage_route_stops: {
+        Row: {
+          created_at: string
+          custom_location_name: string | null
+          id: string
+          location_id: string | null
+          miles_from_previous: number | null
+          notes: string | null
+          route_id: string
+          stop_order: number
+        }
+        Insert: {
+          created_at?: string
+          custom_location_name?: string | null
+          id?: string
+          location_id?: string | null
+          miles_from_previous?: number | null
+          notes?: string | null
+          route_id: string
+          stop_order?: number
+        }
+        Update: {
+          created_at?: string
+          custom_location_name?: string | null
+          id?: string
+          location_id?: string | null
+          miles_from_previous?: number | null
+          notes?: string | null
+          route_id?: string
+          stop_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mileage_route_stops_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mileage_route_stops_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "mileage_routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mileage_routes: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_round_trip: boolean | null
+          name: string
+          total_miles: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_round_trip?: boolean | null
+          name: string
+          total_miles?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_round_trip?: boolean | null
+          name?: string
+          total_miles?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

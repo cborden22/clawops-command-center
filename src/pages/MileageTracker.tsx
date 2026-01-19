@@ -11,9 +11,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   CalendarIcon, Plus, Trash2, Car, MapPin, Route, DollarSign,
-  Download, Sparkles, TrendingUp
+  Download, Sparkles, TrendingUp, X
 } from "lucide-react";
 import { 
   format, subDays, startOfMonth, endOfMonth, isWithinInterval, 
@@ -24,6 +25,9 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { useLocations } from "@/hooks/useLocationsDB";
 import { useMileage, IRS_MILEAGE_RATE } from "@/hooks/useMileageDB";
+import { useRoutes, MileageRoute } from "@/hooks/useRoutesDB";
+import { RouteManager } from "@/components/mileage/RouteManager";
+import { RoutePreview } from "@/components/mileage/RoutePreview";
 
 type FilterPeriod = 
   | "past7days" 
@@ -41,6 +45,7 @@ type FilterPeriod =
 const MileageTracker = () => {
   const { activeLocations, getLocationById, isLoaded: locationsLoaded } = useLocations();
   const { entries, addEntry, deleteEntry, calculateTotals, isLoaded: mileageLoaded } = useMileage();
+  const { routes, addRoute, updateRoute, deleteRoute, getRouteById, isLoaded: routesLoaded } = useRoutes();
   
   // Form state
   const [tripDate, setTripDate] = useState<Date>(new Date());
@@ -51,11 +56,15 @@ const MileageTracker = () => {
   const [purpose, setPurpose] = useState("");
   const [notes, setNotes] = useState("");
   const [isRoundTrip, setIsRoundTrip] = useState(false);
+  const [selectedRouteId, setSelectedRouteId] = useState<string>("");
   
   // Filter state
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("thisMonth");
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState("log");
 
   const handleQuickSelectLocation = (locationId: string) => {
     const loc = getLocationById(locationId);
@@ -63,6 +72,64 @@ const MileageTracker = () => {
       setEndLocation(loc.name + (loc.address ? ` - ${loc.address}` : ""));
       setSelectedLocationId(locationId);
     }
+  };
+
+  const handleRouteSelect = (routeId: string) => {
+    if (!routeId) {
+      handleClearRoute();
+      return;
+    }
+
+    const route = getRouteById(routeId);
+    if (!route || route.stops.length < 2) return;
+
+    const firstStop = route.stops[0];
+    const lastStop = route.stops[route.stops.length - 1];
+
+    // Get start location name
+    let startName = "";
+    if (firstStop.locationId) {
+      const loc = getLocationById(firstStop.locationId);
+      startName = loc?.name || "Unknown";
+    } else {
+      startName = firstStop.customLocationName || "Unknown";
+    }
+
+    // Get end location name
+    let endName = "";
+    if (lastStop.locationId) {
+      const loc = getLocationById(lastStop.locationId);
+      endName = loc?.name || "Unknown";
+      setSelectedLocationId(lastStop.locationId);
+    } else {
+      endName = lastStop.customLocationName || "Unknown";
+      setSelectedLocationId("");
+    }
+
+    // Calculate one-way miles
+    const oneWayMiles = route.stops.reduce((sum, s) => sum + s.milesFromPrevious, 0);
+
+    setSelectedRouteId(routeId);
+    setStartLocation(startName);
+    setEndLocation(endName);
+    setMiles(oneWayMiles.toString());
+    setIsRoundTrip(route.isRoundTrip);
+    setPurpose(route.name);
+  };
+
+  const handleClearRoute = () => {
+    setSelectedRouteId("");
+    setStartLocation("");
+    setEndLocation("");
+    setSelectedLocationId("");
+    setMiles("");
+    setPurpose("");
+    setIsRoundTrip(false);
+  };
+
+  const handleUseRoute = (route: MileageRoute) => {
+    setActiveTab("log");
+    handleRouteSelect(route.id);
   };
 
   const handleAddEntry = async () => {
@@ -106,6 +173,8 @@ const MileageTracker = () => {
     setEndLocation("");
     setSelectedLocationId("");
     setIsRoundTrip(false);
+    setSelectedRouteId("");
+    setStartLocation("");
 
     toast({ 
       title: "Trip Logged", 
@@ -212,7 +281,9 @@ const MileageTracker = () => {
     toast({ title: "Export Complete", description: `Exported ${filteredEntries.length} trips to CSV.` });
   };
 
-  if (!locationsLoaded || !mileageLoaded) {
+  const selectedRoute = selectedRouteId ? getRouteById(selectedRouteId) : undefined;
+
+  if (!locationsLoaded || !mileageLoaded || !routesLoaded) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto py-8 px-4">
@@ -281,139 +352,256 @@ const MileageTracker = () => {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Entry Form */}
-            <div className="space-y-6">
-              <Card className="glass-card overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b border-border/50">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Sparkles className="h-4 w-4 text-primary" />
+          {/* Main Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full max-w-md grid-cols-3">
+              <TabsTrigger value="log" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Log Trip
+              </TabsTrigger>
+              <TabsTrigger value="routes" className="gap-2">
+                <Route className="h-4 w-4" />
+                Routes
+              </TabsTrigger>
+              <TabsTrigger value="history" className="gap-2">
+                <TrendingUp className="h-4 w-4" />
+                History
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Log Trip Tab */}
+            <TabsContent value="log" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="glass-card overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b border-border/50">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                      </div>
+                      Log Trip
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-6">
+                    {/* Route Quick Select */}
+                    {routes.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Quick Select Route</Label>
+                        <div className="flex gap-2">
+                          <Select value={selectedRouteId} onValueChange={handleRouteSelect}>
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Select a saved route..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {routes.map(route => (
+                                <SelectItem key={route.id} value={route.id}>
+                                  <div className="flex items-center gap-2">
+                                    <Route className="h-3 w-3" />
+                                    {route.name} ({route.totalMiles.toFixed(1)} mi)
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {selectedRouteId && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={handleClearRoute}
+                              className="flex-shrink-0"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        {selectedRoute && (
+                          <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                            <RoutePreview route={selectedRoute} compact />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Date */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="w-full justify-start text-left font-normal">
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {format(tripDate, "PPP")}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={tripDate}
+                            onSelect={(date) => date && setTripDate(date)}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
-                    Log Trip
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 pt-6">
-                  {/* Date */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-left font-normal">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {format(tripDate, "PPP")}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={tripDate}
-                          onSelect={(date) => date && setTripDate(date)}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
 
-                  {/* Round Trip Toggle */}
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
-                    <div className="flex items-center gap-2">
-                      <Route className="h-4 w-4 text-muted-foreground" />
-                      <Label className="text-sm font-medium cursor-pointer">Round Trip</Label>
+                    {/* Round Trip Toggle */}
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+                      <div className="flex items-center gap-2">
+                        <Route className="h-4 w-4 text-muted-foreground" />
+                        <Label className="text-sm font-medium cursor-pointer">Round Trip</Label>
+                      </div>
+                      <Switch checked={isRoundTrip} onCheckedChange={setIsRoundTrip} />
                     </div>
-                    <Switch checked={isRoundTrip} onCheckedChange={setIsRoundTrip} />
-                  </div>
 
-                  {/* Start Location */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">From</Label>
-                    <Input
-                      placeholder="e.g., Home, Warehouse"
-                      value={startLocation}
-                      onChange={(e) => setStartLocation(e.target.value)}
-                    />
-                  </div>
+                    {/* Start Location */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">From</Label>
+                      <Input
+                        placeholder="e.g., Home, Warehouse"
+                        value={startLocation}
+                        onChange={(e) => setStartLocation(e.target.value)}
+                      />
+                    </div>
 
-                  {/* End Location */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">To</Label>
-                    <Input
-                      placeholder="Destination"
-                      value={endLocation}
-                      onChange={(e) => {
-                        setEndLocation(e.target.value);
-                        setSelectedLocationId("");
-                      }}
-                    />
-                    {activeLocations.length > 0 && (
-                      <Select value={selectedLocationId} onValueChange={handleQuickSelectLocation}>
-                        <SelectTrigger className="text-xs">
-                          <SelectValue placeholder="Or select saved location..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {activeLocations.map(loc => (
-                            <SelectItem key={loc.id} value={loc.id}>
+                    {/* End Location */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">To</Label>
+                      <Input
+                        placeholder="Destination"
+                        value={endLocation}
+                        onChange={(e) => {
+                          setEndLocation(e.target.value);
+                          setSelectedLocationId("");
+                        }}
+                      />
+                      {activeLocations.length > 0 && (
+                        <Select value={selectedLocationId} onValueChange={handleQuickSelectLocation}>
+                          <SelectTrigger className="text-xs">
+                            <SelectValue placeholder="Or select saved location..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {activeLocations.map(loc => (
+                              <SelectItem key={loc.id} value={loc.id}>
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-3 w-3" />
+                                  {loc.name}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+
+                    {/* Miles */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">
+                        Miles {isRoundTrip && <span className="text-muted-foreground">(one way - will be doubled)</span>}
+                      </Label>
+                      <NumberInput
+                        placeholder="Distance"
+                        value={miles}
+                        onChange={(e) => setMiles(e.target.value)}
+                        step="0.1"
+                        min="0"
+                      />
+                      {isRoundTrip && miles && (
+                        <p className="text-xs text-muted-foreground">
+                          Total recorded: {(parseFloat(miles) * 2).toFixed(1)} miles
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Purpose */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Purpose</Label>
+                      <Input
+                        placeholder="e.g., Stock run, Service call"
+                        value={purpose}
+                        onChange={(e) => setPurpose(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Notes */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Notes (optional)</Label>
+                      <Textarea
+                        placeholder="Additional details..."
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        rows={2}
+                      />
+                    </div>
+
+                    <Button onClick={handleAddEntry} className="w-full gap-2">
+                      <Plus className="h-4 w-4" />
+                      Log Trip
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Recent Trips Preview */}
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                      Recent Trips
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {entries.slice(0, 5).length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Car className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                        <p className="text-sm">No trips logged yet</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {entries.slice(0, 5).map(entry => (
+                          <div 
+                            key={entry.id} 
+                            className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50"
+                          >
+                            <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <MapPin className="h-3 w-3" />
-                                {loc.name}
+                                <span className="text-sm font-medium">{format(entry.date, "MM/dd")}</span>
+                                <span className="text-sm text-muted-foreground truncate">
+                                  {entry.startLocation} → {entry.endLocation}
+                                </span>
                               </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary">{entry.miles.toFixed(1)} mi</Badge>
+                              {entry.isRoundTrip && (
+                                <Badge variant="outline" className="text-xs">RT</Badge>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                        <Button
+                          variant="ghost"
+                          className="w-full"
+                          onClick={() => setActiveTab("history")}
+                        >
+                          View All History
+                        </Button>
+                      </div>
                     )}
-                  </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
 
-                  {/* Miles */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">
-                      Miles {isRoundTrip && <span className="text-muted-foreground">(one way - will be doubled)</span>}
-                    </Label>
-                    <NumberInput
-                      placeholder="Distance"
-                      value={miles}
-                      onChange={(e) => setMiles(e.target.value)}
-                      step="0.1"
-                      min="0"
-                    />
-                    {isRoundTrip && miles && (
-                      <p className="text-xs text-muted-foreground">
-                        Total recorded: {(parseFloat(miles) * 2).toFixed(1)} miles
-                      </p>
-                    )}
-                  </div>
+            {/* Routes Tab */}
+            <TabsContent value="routes">
+              <RouteManager
+                routes={routes}
+                onAddRoute={addRoute}
+                onUpdateRoute={updateRoute}
+                onDeleteRoute={deleteRoute}
+                onUseRoute={handleUseRoute}
+              />
+            </TabsContent>
 
-                  {/* Purpose */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Purpose</Label>
-                    <Input
-                      placeholder="e.g., Stock run, Service call"
-                      value={purpose}
-                      onChange={(e) => setPurpose(e.target.value)}
-                    />
-                  </div>
-
-                  {/* Notes */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Notes (optional)</Label>
-                    <Textarea
-                      placeholder="Additional details..."
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      rows={2}
-                    />
-                  </div>
-
-                  <Button onClick={handleAddEntry} className="w-full gap-2">
-                    <Plus className="h-4 w-4" />
-                    Log Trip
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Right Column - History */}
-            <div className="lg:col-span-2 space-y-6">
+            {/* History Tab */}
+            <TabsContent value="history">
               <Card className="glass-card">
                 <CardHeader className="flex flex-row items-center justify-between gap-4 flex-wrap">
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -504,8 +692,8 @@ const MileageTracker = () => {
                   )}
                 </CardContent>
               </Card>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
