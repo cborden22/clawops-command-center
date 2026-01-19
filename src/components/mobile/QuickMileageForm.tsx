@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useMileage } from "@/hooks/useMileageDB";
 import { useLocations } from "@/hooks/useLocationsDB";
+import { useRoutes, MileageRoute } from "@/hooks/useRoutesDB";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, RotateCcw, MapPin } from "lucide-react";
+import { Loader2, RotateCcw, MapPin, Route, X } from "lucide-react";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
 
 interface QuickMileageFormProps {
@@ -27,8 +28,11 @@ const tripPurposes = [
 
 export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
   const { addEntry } = useMileage();
-  const { locations } = useLocations();
+  const { locations, getLocationById } = useLocations();
+  const { routes, getRouteById } = useRoutes();
   const { settings } = useAppSettings();
+  
+  const [selectedRouteId, setSelectedRouteId] = useState("");
   const [startLocation, setStartLocation] = useState(settings.warehouseAddress || "");
   const [endLocation, setEndLocation] = useState("");
   const [miles, setMiles] = useState("");
@@ -38,6 +42,56 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const activeLocations = locations.filter((loc) => loc.isActive);
+
+  const handleRouteSelect = (routeId: string) => {
+    if (!routeId || routeId === "none") {
+      handleClearRoute();
+      return;
+    }
+
+    const route = getRouteById(routeId);
+    if (!route || route.stops.length < 2) return;
+
+    const firstStop = route.stops[0];
+    const lastStop = route.stops[route.stops.length - 1];
+
+    // Get start location name
+    let startName = "";
+    if (firstStop.locationId) {
+      const loc = getLocationById(firstStop.locationId);
+      startName = loc?.name || "Unknown";
+    } else {
+      startName = firstStop.customLocationName || "Unknown";
+    }
+
+    // Get end location name
+    let endName = "";
+    if (lastStop.locationId) {
+      const loc = getLocationById(lastStop.locationId);
+      endName = loc?.name || "Unknown";
+    } else {
+      endName = lastStop.customLocationName || "Unknown";
+    }
+
+    // Calculate one-way miles
+    const oneWayMiles = route.stops.reduce((sum, s) => sum + s.milesFromPrevious, 0);
+
+    setSelectedRouteId(routeId);
+    setStartLocation(startName);
+    setEndLocation(endName);
+    setMiles(oneWayMiles.toString());
+    setIsRoundTrip(route.isRoundTrip);
+    setPurpose(route.name);
+  };
+
+  const handleClearRoute = () => {
+    setSelectedRouteId("");
+    setStartLocation(settings.warehouseAddress || "");
+    setEndLocation("");
+    setMiles("");
+    setPurpose("");
+    setIsRoundTrip(true);
+  };
 
   const handleLocationSelect = (locationId: string) => {
     const location = locations.find((l) => l.id === locationId);
@@ -79,8 +133,57 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
     }
   };
 
+  const selectedRoute = selectedRouteId ? getRouteById(selectedRouteId) : undefined;
+
   return (
     <div className="space-y-4">
+      {/* Route Quick Select */}
+      {routes.length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Select a Saved Route</Label>
+          <div className="flex gap-2">
+            <Select value={selectedRouteId || "none"} onValueChange={handleRouteSelect}>
+              <SelectTrigger className="flex-1 h-12">
+                <SelectValue placeholder="Quick select a route..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">
+                  <span className="text-muted-foreground">No route (manual entry)</span>
+                </SelectItem>
+                {routes.map((route) => (
+                  <SelectItem key={route.id} value={route.id}>
+                    <div className="flex items-center gap-2">
+                      <Route className="h-3 w-3" />
+                      <span>{route.name}</span>
+                      <span className="text-muted-foreground">({route.totalMiles.toFixed(1)} mi)</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedRouteId && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleClearRoute}
+                className="flex-shrink-0 h-12 w-12"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          {selectedRoute && (
+            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+              <p className="text-xs text-muted-foreground mb-1">Route: {selectedRoute.name}</p>
+              <p className="text-sm">
+                {selectedRoute.stops.length} stops • {selectedRoute.totalMiles.toFixed(1)} mi total
+                {selectedRoute.isRoundTrip && " (round trip)"}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Start Location */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">Start Location</Label>
@@ -90,7 +193,7 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
           onChange={(e) => setStartLocation(e.target.value)}
           className="h-12"
         />
-        {settings.warehouseAddress && startLocation !== settings.warehouseAddress && (
+        {settings.warehouseAddress && startLocation !== settings.warehouseAddress && !selectedRouteId && (
           <Button
             type="button"
             variant="ghost"
@@ -113,7 +216,7 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
           onChange={(e) => setEndLocation(e.target.value)}
           className="h-12"
         />
-        {activeLocations.length > 0 && (
+        {activeLocations.length > 0 && !selectedRouteId && (
           <Select onValueChange={handleLocationSelect}>
             <SelectTrigger className="h-10 text-xs">
               <SelectValue placeholder="Quick select from saved locations" />
