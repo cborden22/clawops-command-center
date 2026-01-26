@@ -29,20 +29,34 @@ export interface StockRunHistoryItem {
 
 export async function saveStockRunHistory(
   userId: string,
-  items: StockRunHistoryItem[]
+  items: StockRunHistoryItem[],
+  runDate?: Date
 ): Promise<string | null> {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalProducts = items.length;
 
   try {
+    const insertData: {
+      user_id: string;
+      total_items: number;
+      total_products: number;
+      items: object[];
+      run_date?: string;
+    } = {
+      user_id: userId,
+      total_items: totalItems,
+      total_products: totalProducts,
+      items: items.map(item => ({ id: item.id, name: item.name, quantity: item.quantity })),
+    };
+
+    // Use provided runDate or let database use default now()
+    if (runDate) {
+      insertData.run_date = runDate.toISOString();
+    }
+
     const { data, error } = await supabase
       .from("stock_run_history")
-      .insert([{
-        user_id: userId,
-        total_items: totalItems,
-        total_products: totalProducts,
-        items: JSON.parse(JSON.stringify(items)),
-      }])
+      .insert([insertData as any])
       .select("id")
       .single();
 
