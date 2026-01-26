@@ -141,6 +141,54 @@ export function useRevenueEntries() {
     }
   };
 
+  const updateEntry = async (id: string, updates: Partial<Omit<RevenueEntry, "id">>) => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from("revenue_entries")
+        .update({
+          type: updates.type,
+          location_id: updates.locationId !== undefined ? (updates.locationId || null) : undefined,
+          machine_type: updates.machineType !== undefined ? (updates.machineType || null) : undefined,
+          date: updates.date ? updates.date.toISOString() : undefined,
+          amount: updates.amount,
+          category: updates.category !== undefined ? (updates.category || null) : undefined,
+          notes: updates.notes !== undefined ? updates.notes : undefined,
+          receipt_url: updates.receiptUrl !== undefined ? (updates.receiptUrl || null) : undefined,
+        })
+        .eq("id", id)
+        .eq("user_id", user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const updatedEntry: RevenueEntry = {
+        id: data.id,
+        type: data.type as EntryType,
+        locationId: data.location_id || "",
+        machineType: data.machine_type || undefined,
+        date: new Date(data.date),
+        amount: Number(data.amount) || 0,
+        category: data.category || undefined,
+        notes: data.notes || "",
+        receiptUrl: data.receipt_url || undefined,
+      };
+
+      setEntries(prev => prev.map(e => e.id === id ? updatedEntry : e));
+      return updatedEntry;
+    } catch (error: any) {
+      console.error("Error updating entry:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update entry.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
   const addExpense = async (
     locationId: string,
     amount: number,
@@ -159,7 +207,6 @@ export function useRevenueEntries() {
       receiptUrl,
     });
   };
-
   const addIncome = async (
     locationId: string,
     amount: number,
@@ -181,6 +228,7 @@ export function useRevenueEntries() {
     entries,
     isLoaded,
     addEntry,
+    updateEntry,
     deleteEntry,
     addExpense,
     addIncome,
