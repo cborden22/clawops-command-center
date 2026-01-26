@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check, Edit2, RotateCcw, ExternalLink, ChevronDown, ChevronUp, DollarSign } from "lucide-react";
+import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check, Edit2, RotateCcw, ExternalLink, ChevronDown, ChevronUp, DollarSign, CalendarIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useInventory, InventoryItem, saveStockRunHistory, updateStockRunReturns } from "@/hooks/useInventoryDB";
@@ -34,6 +34,9 @@ import {
 import { StockRunHistory } from "@/components/inventory/StockRunHistory";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
 
 interface CartItem {
   id: string;
@@ -45,6 +48,7 @@ interface CartItem {
 interface LastStockRun {
   items: { id: string; name: string; quantity: number }[];
   timestamp: number;
+  runDate: string;
   historyId: string | null;
 }
 
@@ -65,6 +69,7 @@ export function InventoryTrackerComponent() {
   const [isStockRunMode, setIsStockRunMode] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showConfirmSheet, setShowConfirmSheet] = useState(false);
+  const [stockRunDate, setStockRunDate] = useState<Date>(new Date());
   
   // Return Stock state
   const [isReturnMode, setIsReturnMode] = useState(false);
@@ -258,14 +263,15 @@ export function InventoryTrackerComponent() {
     const success = await bulkDeductQuantities(cart.map(c => ({ id: c.id, quantity: c.quantity })));
     
     if (success) {
-      // Save to database history
+      // Save to database history with selected date
       const historyItems = cart.map(c => ({ id: c.id, name: c.name, quantity: c.quantity }));
-      const historyId = await saveStockRunHistory(user.id, historyItems);
+      const historyId = await saveStockRunHistory(user.id, historyItems, stockRunDate);
       
       // Save this stock run for potential returns (localStorage for quick access)
       const stockRunData: LastStockRun = {
         items: historyItems,
         timestamp: Date.now(),
+        runDate: stockRunDate.toISOString(),
         historyId: historyId,
       };
       localStorage.setItem(LAST_STOCK_RUN_KEY, JSON.stringify(stockRunData));
@@ -281,12 +287,14 @@ export function InventoryTrackerComponent() {
       setCart([]);
       setShowConfirmSheet(false);
       setIsStockRunMode(false);
+      setStockRunDate(new Date()); // Reset date for next run
     }
   };
 
   const cancelStockRun = () => {
     setCart([]);
     setIsStockRunMode(false);
+    setStockRunDate(new Date()); // Reset date when canceling
   };
 
   // Return Stock functions
@@ -997,7 +1005,36 @@ export function InventoryTrackerComponent() {
             </SheetDescription>
           </SheetHeader>
           
-          <div className="py-4 space-y-3 overflow-y-auto max-h-[calc(80vh-180px)]">
+          {/* Date Picker */}
+          <div className="py-4 border-b">
+            <Label className="text-sm font-medium mb-2 block">Stock Run Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !stockRunDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {stockRunDate ? format(stockRunDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={stockRunDate}
+                  onSelect={(date) => date && setStockRunDate(date)}
+                  disabled={(date) => date > new Date()}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          
+          <div className="py-4 space-y-3 overflow-y-auto max-h-[calc(80vh-260px)]">
             {cart.map((cartItem) => (
               <Card key={cartItem.id} className="p-3">
                 <div className="flex items-center justify-between">
