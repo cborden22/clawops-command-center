@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   CalendarIcon, Plus, Trash2, TrendingUp, TrendingDown, DollarSign, 
   MapPin, Sparkles, AlertCircle, ArrowUpCircle, ArrowDownCircle, Wallet,
-  Download, Building2, Paperclip, FileImage, X, ExternalLink, Receipt, Eye, Loader2, Coins
+  Download, Building2, Paperclip, FileImage, X, ExternalLink, Receipt, Eye, Loader2, Coins, Pencil
 } from "lucide-react";
 import { 
   format, subDays, startOfMonth, endOfMonth, isWithinInterval, 
@@ -24,12 +24,13 @@ import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { toast } from "@/hooks/use-toast";
 import { useLocations, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocationsDB";
-import { useRevenueEntries, EntryType } from "@/hooks/useRevenueEntriesDB";
+import { useRevenueEntries, EntryType, RevenueEntry } from "@/hooks/useRevenueEntriesDB";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useReceiptViewer } from "@/hooks/useReceiptViewer";
 import { ReceiptModal } from "@/components/shared/ReceiptModal";
 
@@ -72,7 +73,7 @@ const BUSINESS_EXPENSE_CATEGORIES = [
 export function RevenueTrackerComponent() {
   const { user } = useAuth();
   const { activeLocations, getLocationById, isLoaded } = useLocations();
-  const { entries, addEntry, deleteEntry, isLoaded: entriesLoaded } = useRevenueEntries();
+  const { entries, addEntry, updateEntry, deleteEntry, isLoaded: entriesLoaded } = useRevenueEntries();
   const { addCollection, calculateCollectionWinRate, formatWinRate, formatOdds, compareToExpected } = useMachineCollections();
   
   // Form state
@@ -100,6 +101,17 @@ export function RevenueTrackerComponent() {
   
   // Use shared receipt viewer hook
   const { viewReceipt, downloadReceipt, loadingReceiptId } = useReceiptViewer();
+  
+  // Edit dialog state
+  const [editingEntry, setEditingEntry] = useState<RevenueEntry | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editDate, setEditDate] = useState<Date>(new Date());
+  const [editAmount, setEditAmount] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editMachineType, setEditMachineType] = useState("all");
+  const [editNotes, setEditNotes] = useState("");
+  const [isEditSaving, setIsEditSaving] = useState(false);
   
   // Filter state
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("thisMonth");
@@ -246,6 +258,58 @@ export function RevenueTrackerComponent() {
   const handleDeleteEntry = async (id: string) => {
     await deleteEntry(id);
     toast({ title: "Entry Removed" });
+  };
+
+  // Open edit dialog with entry data
+  const handleOpenEditDialog = (entry: RevenueEntry) => {
+    setEditingEntry(entry);
+    setEditDate(entry.date);
+    setEditAmount(entry.amount.toString());
+    setEditLocation(entry.locationId || "business-expense");
+    setEditCategory(entry.category || "");
+    setEditMachineType(entry.machineType || "all");
+    setEditNotes(entry.notes || "");
+    setIsEditDialogOpen(true);
+  };
+
+  // Handle edit submission
+  const handleEditEntry = async () => {
+    if (!editingEntry) return;
+    
+    // Validate based on entry type
+    if (editingEntry.type === "income" && editLocation === "business-expense") {
+      toast({ title: "Error", description: "Income entries require a location.", variant: "destructive" });
+      return;
+    }
+    if (editingEntry.type === "expense" && !editCategory) {
+      toast({ title: "Error", description: "Expense entries require a category.", variant: "destructive" });
+      return;
+    }
+    if (!editAmount || parseFloat(editAmount) <= 0) {
+      toast({ title: "Error", description: "Please enter a valid amount.", variant: "destructive" });
+      return;
+    }
+    
+    setIsEditSaving(true);
+    
+    const updates: Partial<Omit<RevenueEntry, "id">> = {
+      date: editDate,
+      amount: parseFloat(editAmount),
+      locationId: editLocation === "business-expense" ? "" : editLocation,
+      category: editingEntry.type === "expense" ? editCategory : undefined,
+      machineType: editingEntry.type === "income" && editMachineType !== "all" ? editMachineType : undefined,
+      notes: editNotes,
+    };
+    
+    const result = await updateEntry(editingEntry.id, updates);
+    
+    setIsEditSaving(false);
+    
+    if (result) {
+      setIsEditDialogOpen(false);
+      setEditingEntry(null);
+      toast({ title: "Entry Updated", description: "Your changes have been saved." });
+    }
   };
 
   // Export filtered entries to CSV
@@ -1134,14 +1198,26 @@ export function RevenueTrackerComponent() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
-                              onClick={() => handleDeleteEntry(entry.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+                                onClick={() => handleOpenEditDialog(entry)}
+                                title="Edit entry"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
+                                onClick={() => handleDeleteEntry(entry.id)}
+                                title="Delete entry"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -1162,6 +1238,173 @@ export function RevenueTrackerComponent() {
         entryId={selectedReceiptModal?.entryId || ""}
         entryDetails={selectedReceiptModal?.details}
       />
+      
+      {/* Edit Entry Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+        setIsEditDialogOpen(open);
+        if (!open) setEditingEntry(null);
+      }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {editingEntry?.type === "income" ? (
+                <>
+                  <ArrowUpCircle className="h-5 w-5 text-green-600" />
+                  Edit Income Entry
+                </>
+              ) : (
+                <>
+                  <ArrowDownCircle className="h-5 w-5 text-red-500" />
+                  Edit Expense Entry
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Date Picker */}
+            <div className="space-y-2">
+              <Label>Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(editDate, "PPP")}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={editDate}
+                    onSelect={(date) => date && setEditDate(date)}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            {/* Amount */}
+            <div className="space-y-2">
+              <Label>Amount</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={editAmount}
+                  onChange={(e) => setEditAmount(e.target.value)}
+                  className="pl-7"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+            
+            {/* Location */}
+            <div className="space-y-2">
+              <Label>Location</Label>
+              <Select 
+                value={editLocation} 
+                onValueChange={setEditLocation}
+                disabled={editingEntry?.type === "income"}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select location" />
+                </SelectTrigger>
+                <SelectContent className="bg-background">
+                  {editingEntry?.type === "expense" && (
+                    <SelectItem value="business-expense">
+                      <span className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        Business Expense
+                      </span>
+                    </SelectItem>
+                  )}
+                  {activeLocations.map((loc) => (
+                    <SelectItem key={loc.id} value={loc.id}>
+                      {loc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {editingEntry?.type === "income" && (
+                <p className="text-xs text-muted-foreground">Location cannot be changed for income entries</p>
+              )}
+            </div>
+            
+            {/* Machine Type - only for income */}
+            {editingEntry?.type === "income" && (
+              <div className="space-y-2">
+                <Label>Machine Type</Label>
+                <Select value={editMachineType} onValueChange={setEditMachineType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All machines" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background">
+                    <SelectItem value="all">All Machines</SelectItem>
+                    {MACHINE_TYPE_OPTIONS.map((machine) => (
+                      <SelectItem key={machine.value} value={machine.value}>
+                        {machine.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
+            {/* Category - only for expenses */}
+            {editingEntry?.type === "expense" && (
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={editCategory} onValueChange={setEditCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background">
+                    {(editLocation === "business-expense" ? BUSINESS_EXPENSE_CATEGORIES : LOCATION_EXPENSE_CATEGORIES).map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder="Add notes..."
+                className="resize-none"
+                rows={3}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={isEditSaving}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditEntry} disabled={isEditSaving}>
+              {isEditSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
