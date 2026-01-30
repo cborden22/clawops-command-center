@@ -58,6 +58,7 @@ export function LocationDetailDialog({
     calculateCollectionWinRate,
     formatWinRate,
     formatOdds,
+    formatPlays,
     compareToExpected,
     deleteCollection,
   } = useMachineCollections();
@@ -660,9 +661,9 @@ export function LocationDetailDialog({
                         const machineId = machine.id;
                         if (!machineId) return null;
                         
-                        const stats = calculateMachineStats(machineId);
+                        const stats = calculateMachineStats(machineId, machine.costPerPlay);
                         const comparison = machine.winProbability
-                          ? compareToExpected(stats.actualWinRate, machine.winProbability)
+                          ? compareToExpected(stats.trueWinRate, machine.winProbability)
                           : { status: "unknown" as const, variance: 0, message: "" };
                         const machineCollections = locationCollections
                           .filter((c) => c.machineId === machineId)
@@ -685,7 +686,7 @@ export function LocationDetailDialog({
                                       ? `Expected: 1 in ${machine.winProbability}`
                                       : "No probability set"}
                                     {stats.collectionCount > 0 && (
-                                      <> | Actual: {formatOdds(stats.actualOdds)}</>
+                                      <> | Actual: {formatOdds(stats.trueOdds)}</>
                                     )}
                                   </span>
                                 </div>
@@ -716,7 +717,8 @@ export function LocationDetailDialog({
                                 {machineCollections.map((collection) => {
                                   const collStats = calculateCollectionWinRate(
                                     collection.coinsInserted,
-                                    collection.prizesWon
+                                    collection.prizesWon,
+                                    machine.costPerPlay
                                   );
                                   return (
                                     <div
@@ -728,8 +730,11 @@ export function LocationDetailDialog({
                                           {format(collection.collectionDate, "MMM d, yyyy")}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                          {collection.coinsInserted} coins → {collection.prizesWon} prizes (
-                                          {formatWinRate(collStats.winRate)})
+                                          {formatPlays(collStats.totalPlays)} plays → {collection.prizesWon} prizes (
+                                          {formatWinRate(collStats.trueWinRate)})
+                                        </p>
+                                        <p className="text-xs text-muted-foreground/70">
+                                          {collection.coinsInserted} coins = ${collStats.totalDollars.toFixed(2)}
                                         </p>
                                       </div>
                                       <Button

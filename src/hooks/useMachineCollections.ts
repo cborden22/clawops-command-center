@@ -35,8 +35,36 @@ export interface MachineStats {
   totalCoinsInserted: number;
   totalPrizesWon: number;
   collectionCount: number;
-  actualWinRate: number; // as decimal (e.g., 0.0667 = 6.67%)
-  actualOdds: number; // "1 in X" format (e.g., 15)
+  totalDollars: number;
+  totalPlays: number;
+  trueWinRate: number; // as decimal (e.g., 0.10 = 10%)
+  trueOdds: number; // "1 in X" format (e.g., 10)
+  // Legacy compatibility
+  actualWinRate: number;
+  actualOdds: number;
+}
+
+export interface TrueWinRateStats {
+  coinsInserted: number;
+  prizesWon: number;
+  totalDollars: number;
+  totalPlays: number;
+  trueWinRate: number; // decimal (e.g., 0.125 = 12.5%)
+  trueOdds: number; // "1 in X" format (e.g., 8)
+}
+
+// Constants for win rate calculation
+const QUARTER_VALUE = 0.25;
+const DEFAULT_COST_PER_PLAY = 0.50;
+
+// Performance benchmark thresholds
+export type WinRateBenchmark = "generous" | "optimal" | "tight" | "unknown";
+
+export function getWinRateBenchmark(trueOdds: number): { benchmark: WinRateBenchmark; label: string; color: string } {
+  if (trueOdds <= 0) return { benchmark: "unknown", label: "N/A", color: "gray" };
+  if (trueOdds >= 1 && trueOdds < 8) return { benchmark: "generous", label: "Very Generous", color: "green" };
+  if (trueOdds >= 8 && trueOdds < 10) return { benchmark: "optimal", label: "Optimal", color: "blue" };
+  return { benchmark: "tight", label: "Tight", color: "amber" };
 }
 
 export function useMachineCollections() {
@@ -155,49 +183,75 @@ export function useMachineCollections() {
     return collections.filter((c) => c.locationId === locationId);
   };
 
-  const calculateMachineStats = (machineId: string): MachineStats => {
+  const calculateMachineStats = (machineId: string, costPerPlay?: number): MachineStats => {
     const machineCollections = getCollectionsForMachine(machineId);
 
     const totalCoinsInserted = machineCollections.reduce((sum, c) => sum + c.coinsInserted, 0);
     const totalPrizesWon = machineCollections.reduce((sum, c) => sum + c.prizesWon, 0);
     const collectionCount = machineCollections.length;
 
-    // Calculate actual win rate
-    const actualWinRate = totalCoinsInserted > 0 ? totalPrizesWon / totalCoinsInserted : 0;
-    const actualOdds = actualWinRate > 0 ? 1 / actualWinRate : 0;
+    // Calculate TRUE win rate based on plays, not coins
+    const effectiveCostPerPlay = costPerPlay && costPerPlay > 0 ? costPerPlay : DEFAULT_COST_PER_PLAY;
+    const totalDollars = totalCoinsInserted * QUARTER_VALUE;
+    const totalPlays = totalDollars / effectiveCostPerPlay;
+    
+    const trueWinRate = totalPlays > 0 ? totalPrizesWon / totalPlays : 0;
+    const trueOdds = trueWinRate > 0 ? 1 / trueWinRate : 0;
 
     return {
       machineId,
       totalCoinsInserted,
       totalPrizesWon,
       collectionCount,
-      actualWinRate,
-      actualOdds,
+      totalDollars,
+      totalPlays,
+      trueWinRate,
+      trueOdds,
+      // Legacy compatibility (same as true win rate now)
+      actualWinRate: trueWinRate,
+      actualOdds: trueOdds,
     };
   };
 
-  // Calculate win rate for a single collection
-  const calculateCollectionWinRate = (coinsInserted: number, prizesWon: number) => {
-    if (coinsInserted <= 0) return { winRate: 0, odds: 0 };
-    const winRate = prizesWon / coinsInserted;
-    const odds = winRate > 0 ? 1 / winRate : 0;
-    return { winRate, odds };
+  // Calculate TRUE win rate for a single collection
+  const calculateCollectionWinRate = (coinsInserted: number, prizesWon: number, costPerPlay?: number): TrueWinRateStats => {
+    const effectiveCostPerPlay = costPerPlay && costPerPlay > 0 ? costPerPlay : DEFAULT_COST_PER_PLAY;
+    const totalDollars = coinsInserted * QUARTER_VALUE;
+    const totalPlays = totalDollars / effectiveCostPerPlay;
+    
+    const trueWinRate = totalPlays > 0 ? prizesWon / totalPlays : 0;
+    const trueOdds = trueWinRate > 0 ? 1 / trueWinRate : 0;
+    
+    return {
+      coinsInserted,
+      prizesWon,
+      totalDollars,
+      totalPlays,
+      trueWinRate,
+      trueOdds,
+    };
   };
 
-  // Format win rate for display
+  // Format TRUE win rate for display
   const formatWinRate = (winRate: number): string => {
     if (winRate <= 0) return "N/A";
     return `${(winRate * 100).toFixed(1)}%`;
   };
 
-  // Format odds for display (e.g., "1 in 15")
+  // Format odds for display (e.g., "1 in 10")
   const formatOdds = (odds: number): string => {
     if (odds <= 0) return "N/A";
     return `1 in ${Math.round(odds)}`;
   };
+  
+  // Format plays for display
+  const formatPlays = (plays: number): string => {
+    if (plays <= 0) return "0";
+    return plays % 1 === 0 ? plays.toString() : plays.toFixed(1);
+  };
 
-  // Compare actual vs expected and get status
-  const compareToExpected = (actualWinRate: number, expectedProbability: number): {
+  // Compare actual TRUE win rate vs expected and get status
+  const compareToExpected = (trueWinRate: number, expectedProbability: number): {
     status: "over" | "under" | "on-target" | "unknown";
     variance: number;
     message: string;
@@ -208,7 +262,7 @@ export function useMachineCollections() {
 
     // expectedProbability is stored as "1 in X", so expected win rate is 1/X
     const expectedWinRate = 1 / expectedProbability;
-    const variance = actualWinRate - expectedWinRate;
+    const variance = trueWinRate - expectedWinRate;
     const variancePercent = Math.abs(variance / expectedWinRate) * 100;
 
     // Within 10% is considered on-target
@@ -297,7 +351,11 @@ export function useMachineCollections() {
     calculateCollectionWinRate,
     formatWinRate,
     formatOdds,
+    formatPlays,
     compareToExpected,
     refetch: fetchCollections,
+    // Export constants for use in components
+    QUARTER_VALUE,
+    DEFAULT_COST_PER_PLAY,
   };
 }

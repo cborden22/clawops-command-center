@@ -33,6 +33,7 @@ export function CollectionReportsSheet({ open, onOpenChange }: CollectionReports
     calculateCollectionWinRate,
     formatWinRate,
     formatOdds,
+    formatPlays,
     compareToExpected,
     deleteCollection,
   } = useMachineCollections();
@@ -76,6 +77,7 @@ export function CollectionReportsSheet({ open, onOpenChange }: CollectionReports
     return {
       name: machine?.label || machine?.type || "Unknown Machine",
       winProbability: machine?.winProbability,
+      costPerPlay: machine?.costPerPlay || 0.50,
     };
   };
 
@@ -169,9 +171,9 @@ export function CollectionReportsSheet({ open, onOpenChange }: CollectionReports
                     <div className="space-y-2">
                       {groupedByDate[dateKey].map((collection) => {
                         const machineInfo = getMachineInfo(collection.locationId, collection.machineId);
-                        const stats = calculateCollectionWinRate(collection.coinsInserted, collection.prizesWon);
+                        const stats = calculateCollectionWinRate(collection.coinsInserted, collection.prizesWon, machineInfo.costPerPlay);
                         const comparison = machineInfo.winProbability
-                          ? compareToExpected(stats.winRate, machineInfo.winProbability)
+                          ? compareToExpected(stats.trueWinRate, machineInfo.winProbability)
                           : { status: "unknown" as const, variance: 0, message: "" };
                         const isExpanded = expandedId === collection.id;
 
@@ -205,18 +207,22 @@ export function CollectionReportsSheet({ open, onOpenChange }: CollectionReports
 
                                 <div className="mt-2 flex items-center justify-between">
                                   <div className="text-sm">
-                                    <span className="font-medium">{collection.coinsInserted}</span>
-                                    <span className="text-muted-foreground"> coins → </span>
+                                    <span className="font-medium">{formatPlays(stats.totalPlays)}</span>
+                                    <span className="text-muted-foreground"> plays → </span>
                                     <span className="font-medium">{collection.prizesWon}</span>
                                     <span className="text-muted-foreground"> prizes</span>
                                   </div>
                                 </div>
 
+                                <div className="mt-1 text-xs text-muted-foreground">
+                                  ({collection.coinsInserted} coins = ${stats.totalDollars.toFixed(2)})
+                                </div>
+
                                 <div className="mt-2 flex items-center justify-between">
                                   <div className="text-sm">
-                                    <span className="text-muted-foreground">Win Rate: </span>
+                                    <span className="text-muted-foreground">True Win Rate: </span>
                                     <span className="font-medium">
-                                      {formatWinRate(stats.winRate)} ({formatOdds(stats.odds)})
+                                      {formatWinRate(stats.trueWinRate)} ({formatOdds(stats.trueOdds)})
                                     </span>
                                   </div>
                                   {getStatusBadge(comparison.status)}
