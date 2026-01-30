@@ -74,7 +74,7 @@ export function RevenueTrackerComponent() {
   const { user } = useAuth();
   const { activeLocations, getLocationById, isLoaded } = useLocations();
   const { entries, addEntry, updateEntry, deleteEntry, isLoaded: entriesLoaded } = useRevenueEntries();
-  const { addCollection, calculateCollectionWinRate, formatWinRate, formatOdds, compareToExpected } = useMachineCollections();
+  const { addCollection, calculateCollectionWinRate, formatWinRate, formatOdds, formatPlays, compareToExpected, QUARTER_VALUE } = useMachineCollections();
   
   // Form state
   const [entryType, setEntryType] = useState<EntryType>("income");
@@ -127,22 +127,27 @@ export function RevenueTrackerComponent() {
   const selectedLocationData = selectedLocation ? getLocationById(selectedLocation) : null;
   const locationMachines = selectedLocationData?.machines || [];
   
-  // Get selected machine data for win rate comparison
+  // Get selected machine data for win rate comparison (includes costPerPlay)
   const selectedMachineData = selectedMachine !== "all" 
     ? locationMachines.find(m => m.type === selectedMachine) 
     : null;
   
-  // Fixed quarter value for dollar calculation
-  const QUARTER_VALUE = 0.25;
+  // Get cost per play from selected machine (defaults to $0.50)
+  const costPerPlay = selectedMachineData?.costPerPlay || 0.50;
   
   // Calculate dollar amount from quarters (coins = quarters)
   const calculatedAmount = coinsInserted 
     ? (parseInt(coinsInserted) || 0) * QUARTER_VALUE 
     : null;
+    
+  // Calculate total plays based on cost per play
+  const totalPlays = calculatedAmount !== null && costPerPlay > 0
+    ? calculatedAmount / costPerPlay
+    : 0;
   
-  // Calculate win rate for current collection input
-  const currentCollectionStats = coinsInserted && prizesWon 
-    ? calculateCollectionWinRate(parseInt(coinsInserted) || 0, parseInt(prizesWon) || 0)
+  // Calculate TRUE win rate for current collection input (using costPerPlay)
+  const currentCollectionStats = coinsInserted && prizesWon && selectedMachineData
+    ? calculateCollectionWinRate(parseInt(coinsInserted) || 0, parseInt(prizesWon) || 0, costPerPlay)
     : null;
 
   const uploadReceipt = async (file: File): Promise<string | null> => {
@@ -657,19 +662,22 @@ export function RevenueTrackerComponent() {
                         />
                       </div>
                       
-                      {currentCollectionStats && currentCollectionStats.winRate > 0 && (
+                      {currentCollectionStats && currentCollectionStats.trueWinRate > 0 && (
                         <div className="text-xs space-y-1 pt-1">
                           <p className="text-muted-foreground">
-                            Win Rate: <span className="font-medium text-foreground">{formatOdds(currentCollectionStats.odds)} ({formatWinRate(currentCollectionStats.winRate)})</span>
+                            True Win Rate: <span className="font-medium text-foreground">{formatOdds(currentCollectionStats.trueOdds)} ({formatWinRate(currentCollectionStats.trueWinRate)})</span>
+                          </p>
+                          <p className="text-muted-foreground">
+                            {formatPlays(currentCollectionStats.totalPlays)} plays → {prizesWon} prizes
                           </p>
                           {selectedMachineData.winProbability && (
                             <p className={cn(
                               "font-medium",
-                              compareToExpected(currentCollectionStats.winRate, selectedMachineData.winProbability).status === "over" ? "text-orange-500" :
-                              compareToExpected(currentCollectionStats.winRate, selectedMachineData.winProbability).status === "under" ? "text-green-500" :
+                              compareToExpected(currentCollectionStats.trueWinRate, selectedMachineData.winProbability).status === "over" ? "text-orange-500" :
+                              compareToExpected(currentCollectionStats.trueWinRate, selectedMachineData.winProbability).status === "under" ? "text-green-500" :
                               "text-muted-foreground"
                             )}>
-                              Expected: 1 in {selectedMachineData.winProbability} • {compareToExpected(currentCollectionStats.winRate, selectedMachineData.winProbability).message}
+                              Expected: 1 in {selectedMachineData.winProbability} • {compareToExpected(currentCollectionStats.trueWinRate, selectedMachineData.winProbability).message}
                             </p>
                           )}
                         </div>

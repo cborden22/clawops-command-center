@@ -33,7 +33,7 @@ const expenseCategories = [
 export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const { addIncome, addExpense } = useRevenueEntries();
   const { locations } = useLocations();
-  const { addCollection, calculateCollectionWinRate, formatWinRate, formatOdds, compareToExpected } = useMachineCollections();
+  const { addCollection, calculateCollectionWinRate, formatWinRate, formatOdds, formatPlays, compareToExpected, QUARTER_VALUE } = useMachineCollections();
   const { user } = useAuth();
   const [type, setType] = useState<"income" | "expense">("income");
   const [amount, setAmount] = useState("");
@@ -61,22 +61,27 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
     : null;
   const locationMachines = selectedLocationData?.machines || [];
 
-  // Get selected machine data
+  // Get selected machine data (includes costPerPlay)
   const selectedMachineData = machineId
     ? locationMachines.find(m => m.id === machineId)
     : null;
-
-  // Fixed quarter value for dollar calculation
-  const QUARTER_VALUE = 0.25;
   
+  // Get cost per play from selected machine (defaults to $0.50)
+  const costPerPlay = selectedMachineData?.costPerPlay || 0.50;
+
   // Calculate dollar amount from quarters (coins = quarters)
   const calculatedAmount = coinsInserted 
     ? (parseInt(coinsInserted) || 0) * QUARTER_VALUE 
     : null;
+    
+  // Calculate total plays based on cost per play
+  const totalPlays = calculatedAmount !== null && costPerPlay > 0
+    ? calculatedAmount / costPerPlay
+    : 0;
 
-  // Calculate current collection win rate
-  const currentStats = (coinsInserted && prizesWon)
-    ? calculateCollectionWinRate(parseInt(coinsInserted) || 0, parseInt(prizesWon) || 0)
+  // Calculate TRUE win rate for current collection input (using costPerPlay)
+  const currentStats = (coinsInserted && prizesWon && selectedMachineData)
+    ? calculateCollectionWinRate(parseInt(coinsInserted) || 0, parseInt(prizesWon) || 0, costPerPlay)
     : null;
 
   const uploadReceipt = async (file: File): Promise<string | null> => {
@@ -213,9 +218,12 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
             {calculatedAmount !== null && calculatedAmount > 0 && (
               <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{coinsInserted} × $0.25</span>
+                  <span className="text-sm text-muted-foreground">{coinsInserted} coins = {formatPlays(totalPlays)} plays</span>
                   <span className="text-lg font-bold text-primary">${calculatedAmount.toFixed(2)}</span>
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  ${costPerPlay.toFixed(2)} per play
+                </p>
               </div>
             )}
           </div>
@@ -234,15 +242,18 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
             />
           </div>
           
-          {/* Live Win Rate Display */}
-          {currentStats && currentStats.winRate > 0 && (
+          {/* Live TRUE Win Rate Display */}
+          {currentStats && currentStats.trueWinRate > 0 && (
             <div className="text-sm bg-muted/30 p-2 rounded border">
               <span className="font-medium">
-                Win Rate: {formatWinRate(currentStats.winRate)} ({formatOdds(currentStats.odds)})
+                True Win Rate: {formatWinRate(currentStats.trueWinRate)} ({formatOdds(currentStats.trueOdds)})
               </span>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {formatPlays(currentStats.totalPlays)} plays → {prizesWon} prizes
+              </p>
               {selectedMachineData.winProbability && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Expected: 1 in {selectedMachineData.winProbability} — {compareToExpected(currentStats.winRate, selectedMachineData.winProbability).message}
+                  Expected: 1 in {selectedMachineData.winProbability} — {compareToExpected(currentStats.trueWinRate, selectedMachineData.winProbability).message}
                 </p>
               )}
             </div>
