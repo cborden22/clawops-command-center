@@ -435,3 +435,5 @@ export function useReportsData(dateRange: DateRange) {
     isLoading: !user,
   };
 }
+
+export type ReportsData = ReturnType<typeof useReportsData>;
