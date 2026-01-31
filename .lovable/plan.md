@@ -1,188 +1,235 @@
 
-
-## Odometer-Based Mileage Tracking System (Updated)
+## Routes Tracker Redesign - Odometer-Only with Smart Location Selection
 
 ### Overview
-Add an **Odometer Tracking Mode** that lets users record mileage by entering start and end odometer readings instead of manually calculating miles. This eliminates guesswork and provides verifiable mileage records for tax purposes.
+Complete redesign of the Mileage Tracker to become a streamlined **Routes** section with odometer-only tracking and smart location dropdowns. This eliminates manual mile entry, removes the confusing round-trip toggle, and provides a consistent experience for logging trips.
 
 ---
 
-### Key Change from Original Proposal
+### Key Changes Summary
 
-**Removed: Auto-prefill start odometer**
-
-Since vehicles are often used for personal trips between business trips, the last recorded business trip's ending odometer won't match the current odometer. Users must manually enter both readings each time.
-
-| Original Proposal | Updated Approach |
-|-------------------|------------------|
-| Auto-fill start odometer from last trip | User enters current odometer reading manually |
-| Pre-fill on vehicle selection | Show last recorded reading as reference only (optional) |
+| Current | New |
+|---------|-----|
+| "Mileage Tracker" | "Routes" |
+| Manual miles OR odometer mode | Odometer-only (required) |
+| Round trip toggle | Removed (odometer calculates actual miles) |
+| Free-text "From" field | Dropdown: Warehouse, Locations, or Custom |
+| Free-text "To" field | Dropdown: Locations or Custom |
+| Odometer mode is optional toggle | Odometer is the only mode |
 
 ---
 
 ### User Flow
 
 ```
-1. User goes to Mileage Tracker
-2. User toggles "Use Odometer"
-3. User selects their vehicle (or adds a new one)
-4. User enters current START odometer reading
-5. User optionally selects a route for location details
-6. User drives their route
-7. User enters END odometer reading
-8. System calculates: End - Start = Miles Driven
-9. Trip is logged with all details
+1. User navigates to "Routes"
+2. To log a trip:
+   a. Select vehicle (required)
+   b. Select FROM: Warehouse (default), Saved Location, or Custom
+   c. Select TO: Saved Location or Custom  
+   d. Enter Start Odometer reading
+   e. Enter End Odometer reading
+   f. System auto-calculates miles (End - Start)
+   g. Select purpose (optional)
+   h. Add notes (optional)
+   i. Click "Log Trip"
 ```
 
 ---
 
-### Database Changes
+### UI Design
 
-**New Table: `vehicles`**
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| user_id | uuid | Owner reference |
-| name | text | Vehicle nickname (e.g., "Work Van") |
-| year | integer | Model year (optional) |
-| make | text | Manufacturer (optional) |
-| model | text | Model name (optional) |
-| license_plate | text | License plate (optional) |
-| last_recorded_odometer | numeric | Last recorded odometer (reference only, not auto-fill) |
-| created_at | timestamp | Creation date |
-| updated_at | timestamp | Last update |
+**Location Dropdowns**
 
-**Update Table: `mileage_entries`**
-| New Column | Type | Description |
-|------------|------|-------------|
-| vehicle_id | uuid | Reference to vehicle (nullable) |
-| odometer_start | numeric | Starting odometer reading (nullable) |
-| odometer_end | numeric | Ending odometer reading (nullable) |
+Both "From" and "To" will be Select dropdowns with these options:
+
+**FROM dropdown:**
+- "Warehouse" (uses warehouse address from settings, shown first)
+- [Divider]
+- All active saved locations (from Locations page)
+- [Divider]  
+- "Enter Custom Location..." (reveals text input when selected)
+
+**TO dropdown:**
+- All active saved locations (from Locations page)
+- [Divider]
+- "Enter Custom Location..." (reveals text input when selected)
+
+When "Enter Custom Location" is selected, a text input appears below the dropdown for the user to type their custom location.
 
 ---
 
-### UI Changes
+### Navigation Updates
 
-#### 1. Settings Page (`src/pages/Settings.tsx`)
-- Add new "Vehicles" section in App Settings tab
-- Allow users to add/edit/delete vehicles
-- Fields: Name (required), Year, Make, Model, License Plate
-- Show "Last recorded odometer" as read-only info
+**Desktop Sidebar:**
+- Change "Mileage Tracker" to "Routes"
+- Keep same URL `/mileage` (or change to `/routes` - both work)
 
-#### 2. Mileage Tracker Page (`src/pages/MileageTracker.tsx`)
-- Add "Use Odometer" toggle at top of Log Trip form
-- When enabled:
-  - Show vehicle selector dropdown
-  - Show Start Odometer input (empty, user must enter)
-  - Show End Odometer input
-  - Auto-calculate and display miles as user types
-  - Hide the manual "Miles" input
-  - Keep route selector (for location/purpose auto-fill)
-  - Optionally show "Last recorded: X miles" as helper text
+**Mobile Bottom Nav:**
+- "Mileage" in More menu becomes "Routes"
 
-#### 3. Mobile Quick Mileage Form (`src/components/mobile/QuickMileageForm.tsx`)
-- Add same odometer toggle and fields
-- Large number inputs optimized for touch
-- Both odometer fields require manual entry
-
-#### 4. AppSettingsContext (`src/contexts/AppSettingsContext.tsx`)
-- Add `preferOdometerMode` boolean setting
-- Remembers user's preferred entry mode
+**Page Header:**
+- Title: "Routes"
+- Subtitle: "Log business trips for tax deductions ($0.67/mile IRS rate)"
 
 ---
 
-### New Hook: `useVehiclesDB.ts`
+### Form Simplification
 
-```typescript
-interface Vehicle {
-  id: string;
-  name: string;
-  year?: number;
-  make?: string;
-  model?: string;
-  licensePlate?: string;
-  lastRecordedOdometer?: number; // Reference only
-  createdAt: Date;
-  updatedAt: Date;
-}
+**What's Removed:**
+1. Manual "Miles" input field - gone entirely
+2. "Use Odometer" toggle - odometer is now the only mode
+3. Round Trip toggle - the odometer captures actual miles driven
+4. Route quick-select temporarily simplified (routes now just pre-fill purpose)
 
-// Functions:
-// - vehicles: Vehicle[]
-// - addVehicle(vehicle)
-// - updateVehicle(id, updates)
-// - deleteVehicle(id)
-// - getVehicleById(id)
-```
+**What Stays:**
+1. Vehicle selector (required)
+2. Date picker
+3. Purpose dropdown
+4. Notes field
+5. Odometer start/end inputs
 
 ---
 
-### Updated `useMileageDB.ts`
+### Technical Changes
 
-Add to `MileageEntry` interface:
-```typescript
-vehicleId?: string;
-odometerStart?: number;
-odometerEnd?: number;
-```
-
-Update `addEntry` to:
-- Accept odometer values
-- Update vehicle's `last_recorded_odometer` when trip is saved (for reference)
-
----
-
-### Validation
-
-1. **End > Start** - End odometer must be greater than start
-2. **Reasonable range** - Warn (not block) if jump is unusually large (>500 miles)
-3. **Both required in odometer mode** - If using odometer mode, both fields must be filled
-
----
-
-### Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/hooks/useVehiclesDB.ts` | Vehicle CRUD operations and state |
-
-### Files to Modify
+**Files to Modify:**
 
 | File | Changes |
 |------|---------|
-| `src/contexts/AppSettingsContext.tsx` | Add `preferOdometerMode` setting |
-| `src/hooks/useMileageDB.ts` | Add odometer fields to entry type |
-| `src/pages/MileageTracker.tsx` | Add odometer mode toggle, vehicle selector, odometer inputs |
-| `src/components/mobile/QuickMileageForm.tsx` | Add odometer mode for mobile |
-| `src/pages/Settings.tsx` | Add vehicle management section |
+| `src/components/layout/AppSidebar.tsx` | Rename "Mileage Tracker" to "Routes" |
+| `src/components/layout/MobileBottomNav.tsx` | Rename "Mileage" to "Routes" |
+| `src/pages/MileageTracker.tsx` | Complete redesign of Log Trip tab |
+| `src/components/mobile/QuickMileageForm.tsx` | Simplify to odometer-only with location dropdowns |
+| `src/hooks/useMileageDB.ts` | Remove round-trip logic (stored as-is from odometer) |
 
-### Database Migration
-- Create `vehicles` table with RLS policies
-- Add `vehicle_id`, `odometer_start`, `odometer_end` columns to `mileage_entries`
+**Files to Create:**
 
----
-
-### Example Use Case
-
-1. User selects "Work Van" as vehicle
-2. User looks at their dashboard: odometer shows 45,276
-3. User enters Start: 45,276
-4. User selects "Collection Run - East Side" route (auto-fills locations/purpose)
-5. User drives route
-6. User enters End: 45,322
-7. System calculates: **46 miles driven**
-8. Entry saved with verifiable odometer readings
-9. Vehicle's "last recorded" updated to 45,322 (for reference only)
+| File | Purpose |
+|------|---------|
+| `src/components/mileage/LocationSelector.tsx` | Reusable dropdown component for From/To selection |
 
 ---
 
-### Tax Benefit
+### LocationSelector Component Design
 
-IRS-compliant mileage logs should include:
-- Date of trip
-- Start and end locations
-- Business purpose
-- Miles driven
-- **Odometer readings** (recommended for verification)
+```typescript
+interface LocationSelectorProps {
+  type: "from" | "to";  // Determines if Warehouse option is shown
+  value: { type: "warehouse" | "location" | "custom"; locationId?: string; customName?: string };
+  onChange: (value) => void;
+  locations: Location[];
+  warehouseAddress?: string;
+}
+```
 
-This feature adds the odometer component that makes mileage logs audit-ready.
+The component renders:
+1. A Select dropdown with grouped options
+2. Conditionally shows a text Input below when "custom" is selected
+3. Displays the warehouse address or location name in the trigger
 
+---
+
+### Data Model Changes
+
+**Remove from form state:**
+- `miles` - no longer manually entered
+- `isRoundTrip` - removed entirely
+- `odometerMode` toggle - always odometer mode now
+
+**Keep in form state:**
+- `selectedVehicleId` (now required)
+- `odometerStart` (required)
+- `odometerEnd` (required)
+- `fromSelection` (new structured object)
+- `toSelection` (new structured object)
+- `purpose`
+- `notes`
+- `tripDate`
+
+**Database stays the same:**
+- `mileage_entries` table already has all needed columns
+- `is_round_trip` column can be deprecated (set to false)
+- Miles are stored as `odometer_end - odometer_start`
+
+---
+
+### Settings Context
+
+**Remove:**
+- `preferOdometerMode` setting - no longer needed (always odometer mode)
+
+---
+
+### Validation Rules
+
+1. **Vehicle Required** - Must select a vehicle
+2. **From Required** - Must select or enter a start location
+3. **To Required** - Must select or enter an end location
+4. **Odometer Start Required** - Must enter start reading
+5. **Odometer End Required** - Must enter end reading
+6. **End > Start** - End odometer must be greater than start
+7. **Large Jump Warning** - Show warning (not error) if miles > 500
+
+---
+
+### Route Templates Behavior
+
+The existing Routes tab (for creating saved routes) remains but simplified:
+- Routes now only pre-fill the **purpose** field (route name)
+- They no longer pre-fill miles or round-trip (since odometer captures actual)
+- They can optionally pre-fill From/To locations if defined
+
+---
+
+### Visual Layout - Log Trip Form
+
+```
+┌─────────────────────────────────────┐
+│ [Date Picker: Today]                │
+├─────────────────────────────────────┤
+│ Vehicle *                           │
+│ [Select a vehicle...          ▼]    │
+│ Last recorded: 45,230 mi            │
+├─────────────────────────────────────┤
+│ From *                              │
+│ [Warehouse                    ▼]    │
+│ 123 Main St, Anytown USA            │
+├─────────────────────────────────────┤
+│ To *                                │
+│ [Select location...           ▼]    │
+│ (if Custom selected:)               │
+│ [Enter location name...]            │
+├─────────────────────────────────────┤
+│ ┌──────────────┐ ┌────────────────┐ │
+│ │ Start        │ │ End            │ │
+│ │ [  45230  ]  │ │ [  45276  ]    │ │
+│ └──────────────┘ └────────────────┘ │
+│                                     │
+│ ┌─────────────────────────────────┐ │
+│ │ Calculated Miles:    46.0 mi    │ │
+│ └─────────────────────────────────┘ │
+├─────────────────────────────────────┤
+│ Purpose                             │
+│ [Collection Run               ▼]    │
+├─────────────────────────────────────┤
+│ Notes (optional)                    │
+│ [                               ]   │
+├─────────────────────────────────────┤
+│         [ Log Trip ]                │
+└─────────────────────────────────────┘
+```
+
+---
+
+### Migration Considerations
+
+**Existing Data:**
+- All existing mileage entries continue to work
+- Entries with `odometer_start` and `odometer_end` are already compliant
+- Entries without odometer data (manual entries) are historical and display correctly
+- `is_round_trip` field remains in DB but new entries will always be `false`
+
+**No Breaking Changes:**
+- History tab shows all entries regardless of how they were logged
+- Export includes all historical data
