@@ -23,6 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { DateRange, DateRangePreset, getDateRangeFromPreset } from "@/hooks/useReportsData";
 import { ExportType } from "@/utils/csvExport";
@@ -165,8 +166,10 @@ export function DateRangeFilter({
                 <ChevronDown className="h-4 w-4 ml-2" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-popover">
-              <DropdownMenuLabel>Locations</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-56 bg-popover p-0">
+              <ScrollArea className="h-[400px]">
+                <div className="p-1">
+                  <DropdownMenuLabel>Locations</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => onExportCSV("location_breakdown")}>
                 Location Breakdown
               </DropdownMenuItem>
@@ -224,9 +227,11 @@ export function DateRangeFilter({
               <DropdownMenuItem onClick={() => onExportCSV("win_rate_machines")}>
                 Machine Win Rates
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onExportCSV("win_rate_locations")}>
-                Location Win Rates
-              </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onExportCSV("win_rate_locations")}>
+                    Location Win Rates
+                  </DropdownMenuItem>
+                </div>
+              </ScrollArea>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
