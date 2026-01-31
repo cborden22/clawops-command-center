@@ -13,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertTriangle, CheckCircle2, Loader2, Sparkles, MapPin } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, Sparkles, MapPin, Calendar, Clock } from "lucide-react";
+import { format } from "date-fns";
 import { z } from "zod";
 import { getMachinePublicInfo, submitMaintenanceReport } from "@/hooks/useMaintenanceReports";
 
@@ -192,6 +193,17 @@ export default function ReportIssue() {
                   <MapPin className="h-3 w-3" />
                   {machineInfo.location_name}
                 </div>
+              </div>
+            </div>
+            {/* Read-only date/time display */}
+            <div className="flex items-center gap-4 mt-4 pt-4 border-t border-primary/20 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                <span>{format(new Date(), "MMMM d, yyyy")}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                <span>{format(new Date(), "h:mm a")}</span>
               </div>
             </div>
           </CardContent>

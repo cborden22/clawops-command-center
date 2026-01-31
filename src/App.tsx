@@ -177,8 +177,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      {/* Public route - no auth required */}
-      <Route path="/report/:machineId" element={<ReportIssue />} />
+      {/* Public route - short URL for QR codes */}
+      <Route path="/m/:machineId" element={<ReportIssue />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

@@ -31,7 +31,8 @@ export function QRCodeGenerator({
   const [copied, setCopied] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
 
-  const reportUrl = `${window.location.origin}/report/${machineId}`;
+  // Always use the published URL for customer-facing QR codes
+  const reportUrl = `https://clawops-command-center.lovable.app/m/${machineId}`;
 
   const handleDownload = () => {
     const svg = qrRef.current?.querySelector("svg");
@@ -90,40 +91,100 @@ export function QRCodeGenerator({
       <!DOCTYPE html>
       <html>
         <head>
-          <title>QR Code - ${machineName}</title>
+          <title>QR Sticker - ${machineName}</title>
           <style>
+            @page {
+              size: 3.5in 2in;
+              margin: 0;
+            }
+            * {
+              box-sizing: border-box;
+              margin: 0;
+              padding: 0;
+            }
             body {
+              width: 3.5in;
+              height: 2in;
+              margin: 0;
+              padding: 0.15in;
+              display: flex;
+              font-family: system-ui, -apple-system, sans-serif;
+              background: white;
+            }
+            .left-column {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              padding-right: 0.15in;
+            }
+            .right-column {
               display: flex;
               flex-direction: column;
               align-items: center;
               justify-content: center;
-              min-height: 100vh;
-              margin: 0;
-              font-family: system-ui, sans-serif;
             }
-            .container {
+            h1 {
+              font-size: 13px;
+              font-weight: 700;
+              margin-bottom: 2px;
+              color: #000;
+            }
+            .subtitle {
+              font-size: 9px;
+              color: #666;
+              margin-bottom: 10px;
+            }
+            .steps {
+              font-size: 9px;
+              line-height: 1.5;
+              color: #333;
+            }
+            .step {
+              margin-bottom: 2px;
+            }
+            .branding {
+              font-size: 8px;
+              color: #999;
+              margin-top: auto;
+              padding-top: 8px;
+            }
+            .qr-code svg {
+              width: 1.25in;
+              height: 1.25in;
+            }
+            .machine-info {
               text-align: center;
-              padding: 40px;
+              margin-top: 4px;
             }
-            h1 { font-size: 24px; margin-bottom: 8px; }
-            p { font-size: 14px; color: #666; margin-bottom: 24px; }
-            .qr-code { margin-bottom: 16px; }
-            .instructions {
-              font-size: 12px;
-              color: #888;
-              max-width: 300px;
-              margin-top: 16px;
+            .machine-name {
+              font-size: 8px;
+              font-weight: 600;
+              color: #000;
+            }
+            .location-name {
+              font-size: 7px;
+              color: #666;
             }
           </style>
         </head>
         <body>
-          <div class="container">
-            <h1>${machineName}</h1>
-            <p>${locationName}</p>
+          <div class="left-column">
+            <h1>HAVING TROUBLE?</h1>
+            <p class="subtitle">Scan to report an issue</p>
+            <div class="steps">
+              <div class="step">1. Open your camera</div>
+              <div class="step">2. Point at the QR code</div>
+              <div class="step">3. Tap the link</div>
+            </div>
+            <div class="branding">ClawOps</div>
+          </div>
+          <div class="right-column">
             <div class="qr-code">${svgData}</div>
-            <p class="instructions">
-              Scan this QR code with your phone to report an issue with this machine.
-            </p>
+            <div class="machine-info">
+              <div class="machine-name">${machineName}</div>
+              <div class="location-name">${locationName}</div>
+            </div>
           </div>
           <script>
             window.onload = function() {
