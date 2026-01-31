@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast"
 import { FileText, Download, MapPin, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
-import html2pdf from "html2pdf.js"
+import { generatePDFFromHTML } from "@/utils/pdfGenerator"
 import { useLocations } from "@/hooks/useLocationsDB"
 import { Link } from "react-router-dom"
 
@@ -341,23 +341,13 @@ export default function Documents() {
         </html>
       `
 
-      // Simplified PDF generation options
-      const opt = {
+      // Generate PDF using secure jspdf + html2canvas
+      await generatePDFFromHTML(htmlContent, {
+        filename,
         margin: 15,
-        filename: filename,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { 
-          scale: 2,
-          useCORS: true
-        },
-        jsPDF: { 
-          unit: 'mm' as const, 
-          format: 'a4' as const, 
-          orientation: 'portrait' as const
-        }
-      }
-
-      await html2pdf().from(htmlContent).set(opt).save()
+        format: 'a4',
+        orientation: 'portrait'
+      })
 
       // Save agreement to location if a location was selected
       if (selectedLocationId) {

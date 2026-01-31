@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import { Location, MACHINE_TYPE_OPTIONS, CommissionSummaryRecord, LocationAgreementRecord } from "@/hooks/useLocationsDB";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
-import html2pdf from "html2pdf.js";
+import { generatePDFFromHTML } from "@/utils/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
 
 interface LocationDetailDialogProps {
@@ -133,33 +133,19 @@ export function LocationDetailDialog({
 
     const filename = `commission-summary-${location.name.replace(/\s+/g, '-').toLowerCase()}-${format(new Date(summary.startDate), 'yyyy-MM-dd')}.pdf`;
     
-    const options = {
-      margin: 0.5,
-      filename: filename,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { 
-        scale: 2,
-        useCORS: true,
-        letterRendering: true
-      },
-      jsPDF: { 
-        unit: 'in' as const, 
-        format: 'letter' as const, 
-        orientation: 'portrait' as const
-      }
-    };
-    
-    html2pdf()
-      .set(options)
-      .from(content)
-      .save()
+    generatePDFFromHTML(content, {
+      filename,
+      margin: 12,
+      format: 'letter',
+      orientation: 'portrait'
+    })
       .then(() => {
         toast({
           title: "PDF Generated",
           description: `Commission summary for ${location.name} downloaded.`,
         });
       })
-      .catch((error: any) => {
+      .catch((error: unknown) => {
         console.error('PDF generation error:', error);
         toast({
           title: "PDF Generation Failed",
@@ -442,32 +428,19 @@ export function LocationDetailDialog({
 
     const filename = `${location.name.replace(/\s+/g, '-').toLowerCase()}-agreement-${format(new Date(agreement.agreementDate), 'yyyy-MM-dd')}.pdf`;
 
-    const options = {
+    generatePDFFromHTML(htmlContent, {
+      filename,
       margin: 15,
-      filename: filename,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { 
-        scale: 2,
-        useCORS: true
-      },
-      jsPDF: { 
-        unit: 'mm' as const, 
-        format: 'a4' as const, 
-        orientation: 'portrait' as const
-      }
-    };
-
-    html2pdf()
-      .from(htmlContent)
-      .set(options)
-      .save()
+      format: 'a4',
+      orientation: 'portrait'
+    })
       .then(() => {
         toast({
           title: "PDF Generated",
           description: `Agreement for ${location.name} downloaded.`,
         });
       })
-      .catch((error: any) => {
+      .catch((error: unknown) => {
         console.error('PDF generation error:', error);
         toast({
           title: "PDF Generation Failed",
