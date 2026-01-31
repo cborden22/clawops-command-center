@@ -80,6 +80,12 @@ export function QRCodeGenerator({
     img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
   };
 
+  // Helper to escape HTML special characters to prevent XSS
+  const escapeHtml = (str: string) => 
+    str.replace(/[&<>"']/g, (m) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m] || m));
+
   const handlePrint = () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
@@ -95,12 +101,16 @@ export function QRCodeGenerator({
     if (!svg) return;
 
     const svgData = new XMLSerializer().serializeToString(svg);
+    
+    // Escape user-provided content to prevent XSS
+    const safeMachineName = escapeHtml(machineName);
+    const safeLocationName = escapeHtml(locationName);
 
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>QR Sticker - ${machineName}</title>
+          <title>QR Sticker - ${safeMachineName}</title>
           <style>
             @page {
               size: 3.5in 2in;
@@ -191,8 +201,8 @@ export function QRCodeGenerator({
           <div class="right-column">
             <div class="qr-code">${svgData}</div>
             <div class="machine-info">
-              <div class="machine-name">${machineName}</div>
-              <div class="location-name">${locationName}</div>
+              <div class="machine-name">${safeMachineName}</div>
+              <div class="location-name">${safeLocationName}</div>
             </div>
           </div>
           <script>
