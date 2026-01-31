@@ -24,7 +24,7 @@ function MobileLayoutInner({ children }: MobileLayoutProps) {
       <MobileHeader onRefresh={triggerRefresh} isRefreshing={isRefreshing} />
       <main 
         ref={containerRef}
-        className="flex-1 overflow-y-auto pb-20"
+        className="flex-1 overflow-y-auto pb-20 overscroll-contain"
       >
         <RefreshIndicator 
           pullDistance={pullDistance} 

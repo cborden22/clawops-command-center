@@ -266,4 +266,10 @@ All colors MUST be HSL.
     from { box-shadow: 0 0 20px hsl(221 83% 53% / 0.15); }
     to { box-shadow: 0 0 30px hsl(221 83% 53% / 0.25); }
   }
+
+  /* Improve mobile scrolling performance */
+  .mobile-scroll-optimized {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
 }
