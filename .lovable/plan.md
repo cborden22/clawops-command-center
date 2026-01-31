@@ -1,241 +1,241 @@
 
 
-## Comprehensive Business Reports Tab
+## Enhanced CSV Export with Report Selection
 
 ### Overview
-Create a new **Reports** section with multiple report categories to give business owners complete visibility into their claw machine operations. This will be the central hub for analyzing performance, identifying trends, and making data-driven decisions.
+Replace the simple "Export CSV" button with a dropdown menu that allows users to select which specific report(s) they want to export. Each report tab will have multiple exportable datasets, giving users granular control over their data exports.
 
 ---
 
-### Report Categories
+### Current State
+- Single "Export CSV" button that logs to console
+- No actual CSV generation implemented
+- Cannot select which report to export
 
-We will organize reports into logical categories with tabs for easy navigation:
+---
 
-#### 1. Location Performance Reports
-| Report | Description | Data Source |
-|--------|-------------|-------------|
-| **Top Performing Locations** | Ranked by total revenue | revenue_entries |
-| **Worst Performing Locations** | Lowest revenue locations | revenue_entries |
-| **Location Profitability** | Revenue minus expenses per location | revenue_entries |
-| **Location Growth Trends** | Month-over-month revenue change | revenue_entries |
-| **Commission Analysis** | Total commissions paid per location | commission_summaries |
+### Solution
 
-#### 2. Machine Performance Reports
-| Report | Description | Data Source |
-|--------|-------------|-------------|
-| **Top Performing Machines** | Best revenue per machine | revenue_entries + location_machines |
-| **Machine Win Rate Analysis** | True win rate by machine | machine_collections |
-| **Machines Running Hot/Cold** | Over/under paying vs expected | machine_collections |
-| **Machine Type Comparison** | Claw vs Mini Claw vs Bulk performance | location_machines + revenue |
-| **Prize Efficiency** | Prizes dispensed per dollar earned | machine_collections |
+Transform the Export CSV button into a dropdown menu with organized report options. Each tab's data will be exportable with meaningful filenames and properly formatted CSV content.
 
-#### 3. Financial Reports
-| Report | Description | Data Source |
-|--------|-------------|-------------|
-| **Income vs Expense Summary** | Total income/expenses by period | revenue_entries |
-| **Profit Margins** | Net profit by location and overall | revenue_entries |
-| **Expense Breakdown** | Expenses by category (prizes, fuel, maintenance) | revenue_entries |
-| **Revenue Trends** | Weekly/monthly revenue over time | revenue_entries |
-| **Projected Earnings** | Based on historical averages | revenue_entries |
+---
 
-#### 4. Inventory Reports
-| Report | Description | Data Source |
-|--------|-------------|-------------|
-| **Most Used Products** | Items with highest consumption | stock_run_history |
-| **Low Stock Alert Summary** | All items below threshold | inventory_items |
-| **Inventory Value** | Total value of current inventory | inventory_items |
-| **Restock Cost Estimate** | Cost to bring all items to optimal level | inventory_items |
-| **Product Turnover Rate** | How fast items are being used | stock_run_history |
-| **Return Rate Analysis** | Items frequently returned from runs | stock_run_history |
+### Export Options by Tab
 
-#### 5. Mileage / Routes Reports
-| Report | Description | Data Source |
-|--------|-------------|-------------|
-| **Total Miles Driven** | By period with IRS deduction | mileage_entries |
-| **Miles by Purpose** | Collection runs vs restocks vs other | mileage_entries |
-| **Most Visited Locations** | Frequency of visits | mileage_entries |
-| **Vehicle Usage Summary** | Miles per vehicle | mileage_entries + vehicles |
-| **Route Efficiency** | Average miles per location visited | mileage_entries |
-
-#### 6. Collection Reports (Win Rate Deep Dive)
-| Report | Description | Data Source |
-|--------|-------------|-------------|
-| **Overall Win Rate** | Aggregate across all machines | machine_collections |
-| **Win Rate by Location** | Which locations run tight/loose | machine_collections |
-| **Win Rate Trends** | Is win rate improving over time? | machine_collections |
-| **Collection History** | All collections with metrics | machine_collections |
+| Tab | Exportable Reports |
+|-----|-------------------|
+| **Locations** | Location Breakdown, Top Performers, Profitability |
+| **Machines** | Machine Performance, Hot/Cold Analysis |
+| **Financial** | Income/Expense Summary, Expense by Category, Profit by Location |
+| **Inventory** | Inventory Status, Stock Usage, Low Stock Items |
+| **Routes** | Mileage Log, Miles by Purpose, Vehicle Usage |
+| **Win Rate** | Win Rate by Machine, Win Rate by Location |
 
 ---
 
 ### UI Design
 
-**Tab-Based Layout:**
+**Dropdown Menu Structure:**
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  📊 Business Reports                                                 │
-├─────────────────────────────────────────────────────────────────────┤
-│  [Locations] [Machines] [Financial] [Inventory] [Routes] [Win Rate] │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌─ Date Range ────────────────────┐  ┌─ Export ───────────────┐    │
-│  │ [This Month ▼] [01/01 - 01/31]  │  │ [Download CSV] [Print] │    │
-│  └─────────────────────────────────┘  └────────────────────────┘    │
-│                                                                      │
-│  ┌─ Report Cards ───────────────────────────────────────────────┐   │
-│  │                                                               │   │
-│  │  [Report Card 1]  [Report Card 2]  [Report Card 3]           │   │
-│  │                                                               │   │
-│  │  [Report Card 4]  [Report Card 5]  [Report Card 6]           │   │
-│  │                                                               │   │
-│  └───────────────────────────────────────────────────────────────┘   │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│ [Export CSV ▼]                      │
+├─────────────────────────────────────┤
+│ Locations                           │
+│   ├ Location Breakdown              │
+│   ├ Top Performers                  │
+│   └ Profitability Report            │
+├─────────────────────────────────────┤
+│ Machines                            │
+│   ├ Machine Performance             │
+│   └ Hot/Cold Analysis               │
+├─────────────────────────────────────┤
+│ Financial                           │
+│   ├ Income & Expenses               │
+│   └ Expense Categories              │
+├─────────────────────────────────────┤
+│ Inventory                           │
+│   ├ Inventory Status                │
+│   └ Stock Usage                     │
+├─────────────────────────────────────┤
+│ Routes                              │
+│   ├ Mileage Log                     │
+│   └ Vehicle Summary                 │
+├─────────────────────────────────────┤
+│ Win Rate                            │
+│   ├ Machine Win Rates               │
+│   └ Location Win Rates              │
+└─────────────────────────────────────┘
 ```
-
-**Each Report Card Shows:**
-- Title and icon
-- Key metric (large number)
-- Supporting data (chart or list)
-- "View Details" expansion option
 
 ---
 
 ### Technical Implementation
 
-#### Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/pages/Reports.tsx` | Main reports page with tab navigation |
-| `src/components/reports/LocationReports.tsx` | Location performance reports |
-| `src/components/reports/MachineReports.tsx` | Machine performance reports |
-| `src/components/reports/FinancialReports.tsx` | Financial analysis reports |
-| `src/components/reports/InventoryReports.tsx` | Inventory usage reports |
-| `src/components/reports/RoutesReports.tsx` | Mileage and route reports |
-| `src/components/reports/WinRateReports.tsx` | Collection/win rate analysis |
-| `src/components/reports/ReportCard.tsx` | Reusable report card component |
-| `src/components/reports/DateRangeFilter.tsx` | Date range picker for filtering |
-| `src/hooks/useReportsData.ts` | Custom hook for aggregating report data |
-
 #### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/App.tsx` | Add `/reports` route |
-| `src/components/layout/AppSidebar.tsx` | Add "Reports" nav item |
-| `src/components/layout/MobileBottomNav.tsx` | Add "Reports" to More menu |
+| `src/components/reports/DateRangeFilter.tsx` | Replace button with dropdown, add export options |
+| `src/pages/Reports.tsx` | Pass report data to filter, add export handler with report type |
+
+#### Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/utils/csvExport.ts` | Utility functions for generating and downloading CSV files |
 
 ---
 
-### Key Calculations
+### Export Data Structures
 
-**Location Profitability:**
-```typescript
-const locationProfit = locations.map(loc => {
-  const income = entries.filter(e => e.locationId === loc.id && e.type === 'income')
-    .reduce((sum, e) => sum + e.amount, 0);
-  const expenses = entries.filter(e => e.locationId === loc.id && e.type === 'expense')
-    .reduce((sum, e) => sum + e.amount, 0);
-  const commissions = loc.commissionSummaries
-    .reduce((sum, c) => sum + c.commissionAmount, 0);
-  return { ...loc, income, expenses, commissions, profit: income - expenses - commissions };
-});
+**1. Location Breakdown CSV:**
+```csv
+Location,Revenue,Expenses,Commission,Profit,Machines
+Pizza Palace,$1500.00,$200.00,$150.00,$1150.00,3
+Game Zone,$1200.00,$150.00,$120.00,$930.00,2
 ```
 
-**Machine Performance:**
-```typescript
-const machinePerformance = machines.map(machine => {
-  const collections = allCollections.filter(c => c.machineId === machine.id);
-  const totalPlays = collections.reduce((sum, c) => sum + (c.coinsInserted * 0.25 / machine.costPerPlay), 0);
-  const totalPrizes = collections.reduce((sum, c) => sum + c.prizesWon, 0);
-  const trueWinRate = totalPlays > 0 ? totalPrizes / totalPlays : 0;
-  return { ...machine, totalPlays, totalPrizes, trueWinRate };
-});
+**2. Machine Performance CSV:**
+```csv
+Machine,Location,Revenue,Plays,Prizes,True Odds,Expected Odds,Status
+Claw #1,Pizza Palace,$375.00,150,18,1 in 8.3,1 in 8,Normal
+Mini Claw #2,Game Zone,$200.00,80,12,1 in 6.7,1 in 8,Hot
 ```
 
-**Inventory Consumption:**
-```typescript
-const productUsage = stockRunHistory.reduce((acc, run) => {
-  run.items.forEach(item => {
-    if (!acc[item.id]) acc[item.id] = { name: item.name, totalUsed: 0, runCount: 0 };
-    acc[item.id].totalUsed += item.quantity;
-    acc[item.id].runCount++;
-  });
-  return acc;
-}, {});
+**3. Financial Summary CSV:**
+```csv
+Type,Category,Amount
+Income,Machine Revenue,$2700.00
+Expense,Prizes,$350.00
+Expense,Fuel,$120.00
+```
+
+**4. Inventory Status CSV:**
+```csv
+Item,Category,Quantity,Min Stock,Price,Value,Status
+Plush Bear,Plush,25,10,$2.50,$62.50,OK
+Small Prize,Capsule,3,5,$0.50,$1.50,Low
+```
+
+**5. Mileage Log CSV:**
+```csv
+Date,From,To,Miles,Purpose,Vehicle,Odometer Start,Odometer End
+2026-01-31,Warehouse,Pizza Palace,23.5,Collection Run,Work Van,45230,45253.5
+```
+
+**6. Win Rate by Machine CSV:**
+```csv
+Machine,Location,Plays,Prizes,Win Rate,True Odds,Expected Odds,Performance
+Claw #1,Pizza Palace,150,18,12.00%,1 in 8.3,1 in 8,Normal
 ```
 
 ---
 
-### Date Range Filtering
+### CSV Utility Functions
 
-All reports will support date range filtering with presets:
-- Today
-- This Week
-- This Month (default)
-- Last Month
-- This Quarter
-- This Year
-- All Time
-- Custom Range
+```typescript
+// src/utils/csvExport.ts
+
+export function generateCSV(headers: string[], rows: string[][]): string {
+  const headerRow = headers.join(",");
+  const dataRows = rows.map(row => 
+    row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+  );
+  return [headerRow, ...dataRows].join("\n");
+}
+
+export function downloadCSV(content: string, filename: string): void {
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${filename}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+```
 
 ---
 
-### Export Capabilities
+### DateRangeFilter Changes
 
-- **CSV Export**: Download filtered report data as CSV
-- **Print View**: Printable summary for record-keeping
+Replace the simple button with a DropdownMenu:
+
+```typescript
+<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="outline" size="sm">
+      <Download className="h-4 w-4 mr-2" />
+      Export CSV
+      <ChevronDown className="h-4 w-4 ml-2" />
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent align="end" className="w-56">
+    <DropdownMenuLabel>Locations</DropdownMenuLabel>
+    <DropdownMenuItem onClick={() => onExport("location_breakdown")}>
+      Location Breakdown
+    </DropdownMenuItem>
+    // ... more items
+  </DropdownMenuContent>
+</DropdownMenu>
+```
+
+---
+
+### Export Handler in Reports.tsx
+
+```typescript
+type ExportType = 
+  | "location_breakdown" | "top_locations" | "location_profit"
+  | "machine_performance" | "hot_cold_analysis"
+  | "financial_summary" | "expense_categories"
+  | "inventory_status" | "stock_usage" | "low_stock"
+  | "mileage_log" | "vehicle_summary" | "miles_by_purpose"
+  | "win_rate_machines" | "win_rate_locations";
+
+const handleExportCSV = (exportType: ExportType) => {
+  const dateStr = format(dateRange.start, "yyyy-MM-dd") + "_" + format(dateRange.end, "yyyy-MM-dd");
+  
+  switch (exportType) {
+    case "location_breakdown":
+      exportLocationBreakdown(reportData, dateStr);
+      break;
+    case "machine_performance":
+      exportMachinePerformance(reportData, dateStr);
+      break;
+    // ... etc
+  }
+};
+```
+
+---
+
+### File Naming Convention
+
+Exported files will include the date range for easy identification:
+
+```
+location_breakdown_2026-01-01_2026-01-31.csv
+machine_performance_2026-01-01_2026-01-31.csv
+mileage_log_2026-01-01_2026-01-31.csv
+```
 
 ---
 
 ### Mobile Considerations
 
-- Reports tab accessible from More menu on mobile
-- Cards stack vertically on mobile
-- Horizontal scroll for tables
-- Bottom sheet for filters on mobile
+The dropdown menu works well on mobile with:
+- Touch-friendly menu items
+- Adequate spacing for finger taps
+- Scrollable content if many options
 
 ---
 
-### Navigation Placement
+### Summary of Changes
 
-Add to sidebar between "Routes" and "Inventory Tracker":
+1. **Create `src/utils/csvExport.ts`** with CSV generation and download utilities
+2. **Update `DateRangeFilter.tsx`** to use dropdown menu with categorized export options
+3. **Update `Reports.tsx`** to handle export by type and generate appropriate CSV data
 
-```typescript
-{ title: "Reports", url: "/reports", icon: BarChart3 }
-```
-
----
-
-### Summary Stats for Each Tab
-
-**Locations Tab Header:**
-- Total Locations: X
-- Total Revenue: $X
-- Top Performer: [Name]
-
-**Machines Tab Header:**
-- Total Machines: X
-- Avg Win Rate: X%
-- Hot Machines: X | Cold Machines: X
-
-**Financial Tab Header:**
-- This Month Income: $X
-- This Month Expenses: $X
-- Net Profit: $X
-
-**Inventory Tab Header:**
-- Total Items: X
-- Low Stock: X items
-- Inventory Value: $X
-
-**Routes Tab Header:**
-- Total Miles: X
-- Tax Deduction: $X
-- Trips This Month: X
-
-**Win Rate Tab Header:**
-- Overall Win Rate: X%
-- Avg Odds: 1 in X
-- Total Collections: X
+This gives users complete control over exactly what data they export, with properly formatted CSVs that include all relevant columns and data from the selected date range.
 
