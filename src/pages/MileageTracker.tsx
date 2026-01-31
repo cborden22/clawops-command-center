@@ -10,9 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   CalendarIcon, Plus, Trash2, Car, Route, DollarSign,
-  Download, Sparkles, TrendingUp, AlertTriangle
+  Download, Sparkles, TrendingUp, AlertTriangle, Pencil, ChevronDown, ChevronRight
 } from "lucide-react";
 import { 
   format, subDays, startOfMonth, endOfMonth, isWithinInterval, 
@@ -21,7 +23,7 @@ import {
 } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import { useLocations } from "@/hooks/useLocationsDB";
-import { useMileage, IRS_MILEAGE_RATE } from "@/hooks/useMileageDB";
+import { useMileage, IRS_MILEAGE_RATE, MileageEntry } from "@/hooks/useMileageDB";
 import { useRoutes } from "@/hooks/useRoutesDB";
 import { useVehicles } from "@/hooks/useVehiclesDB";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
@@ -55,7 +57,7 @@ const tripPurposes = [
 const MileageTracker = () => {
   const navigate = useNavigate();
   const { activeLocations, isLoaded: locationsLoaded } = useLocations();
-  const { entries, addEntry, deleteEntry, calculateTotals, isLoaded: mileageLoaded } = useMileage();
+  const { entries, addEntry, updateEntry, deleteEntry, calculateTotals, isLoaded: mileageLoaded } = useMileage();
   const { routes, addRoute, updateRoute, deleteRoute, isLoaded: routesLoaded } = useRoutes();
   const { vehicles, updateVehicleOdometer, getVehicleById, isLoaded: vehiclesLoaded } = useVehicles();
   const { settings } = useAppSettings();
@@ -73,6 +75,22 @@ const MileageTracker = () => {
   // Filter state
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("thisMonth");
   const [activeTab, setActiveTab] = useState("log");
+  
+  // Edit dialog state
+  const [editingEntry, setEditingEntry] = useState<MileageEntry | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editDate, setEditDate] = useState<Date>(new Date());
+  const [editVehicleId, setEditVehicleId] = useState("");
+  const [editFromSelection, setEditFromSelection] = useState<LocationSelection>({ type: "warehouse" });
+  const [editToSelection, setEditToSelection] = useState<LocationSelection>({ type: "location" });
+  const [editOdometerStart, setEditOdometerStart] = useState("");
+  const [editOdometerEnd, setEditOdometerEnd] = useState("");
+  const [editPurpose, setEditPurpose] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [isEditSaving, setIsEditSaving] = useState(false);
+  
+  // Expandable row state
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   
   // Calculate miles from odometer
   const startNum = parseFloat(odometerStart) || 0;
@@ -177,6 +195,147 @@ const MileageTracker = () => {
   const handleDeleteEntry = async (id: string) => {
     await deleteEntry(id);
     toast({ title: "Trip Removed" });
+  };
+
+  // Toggle row expansion
+  const toggleRowExpansion = (id: string) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  // Helper to derive LocationSelection from entry for editing
+  const getLocationSelectionFromEntry = (
+    locationStr: string,
+    isFrom: boolean
+  ): LocationSelection => {
+    // Check if it matches warehouse
+    if (locationStr === warehouseAddress && warehouseAddress) {
+      return { type: "warehouse" };
+    }
+    
+    // Check if it matches a saved location
+    const matchedLocation = activeLocations.find(
+      loc => loc.name === locationStr || loc.address === locationStr
+    );
+    if (matchedLocation) {
+      return { type: "location", locationId: matchedLocation.id };
+    }
+    
+    // Otherwise it's custom
+    return { type: "custom", customName: locationStr };
+  };
+
+  // Open edit dialog with entry data
+  const handleOpenEditDialog = (entry: MileageEntry) => {
+    setEditingEntry(entry);
+    setEditDate(entry.date);
+    setEditVehicleId(entry.vehicleId || "");
+    setEditFromSelection(getLocationSelectionFromEntry(entry.startLocation, true));
+    setEditToSelection(getLocationSelectionFromEntry(entry.endLocation, false));
+    setEditOdometerStart(entry.odometerStart?.toString() || "");
+    setEditOdometerEnd(entry.odometerEnd?.toString() || "");
+    setEditPurpose(entry.purpose || "");
+    setEditNotes(entry.notes || "");
+    setIsEditDialogOpen(true);
+  };
+
+  // Edit form calculated values
+  const editStartNum = parseFloat(editOdometerStart) || 0;
+  const editEndNum = parseFloat(editOdometerEnd) || 0;
+  const editCalculatedMiles = editStartNum && editEndNum && editEndNum > editStartNum 
+    ? editEndNum - editStartNum 
+    : null;
+  const editIsEndLessThanStart = editOdometerEnd && editOdometerStart && editEndNum <= editStartNum;
+
+  // Save edited entry
+  const handleSaveEdit = async () => {
+    if (!editingEntry) return;
+    
+    // Validation
+    if (!editVehicleId) {
+      toast({ title: "Vehicle Required", description: "Please select a vehicle.", variant: "destructive" });
+      return;
+    }
+    
+    const startLocationStr = getLocationDisplayString(editFromSelection, activeLocations, warehouseAddress);
+    const endLocationStr = getLocationDisplayString(editToSelection, activeLocations, warehouseAddress);
+    
+    if (!startLocationStr) {
+      toast({ title: "From Required", description: "Please select or enter a start location.", variant: "destructive" });
+      return;
+    }
+    
+    if (!endLocationStr) {
+      toast({ title: "To Required", description: "Please select or enter a destination.", variant: "destructive" });
+      return;
+    }
+    
+    if (!editOdometerStart || !editOdometerEnd) {
+      toast({ title: "Odometer Required", description: "Please enter both odometer readings.", variant: "destructive" });
+      return;
+    }
+    
+    const startVal = parseFloat(editOdometerStart);
+    const endVal = parseFloat(editOdometerEnd);
+    
+    if (isNaN(startVal) || isNaN(endVal)) {
+      toast({ title: "Invalid Readings", description: "Please enter valid odometer numbers.", variant: "destructive" });
+      return;
+    }
+    
+    if (endVal <= startVal) {
+      toast({ title: "Invalid Range", description: "End odometer must be greater than start.", variant: "destructive" });
+      return;
+    }
+    
+    setIsEditSaving(true);
+    
+    const milesToLog = endVal - startVal;
+    const locationId = editToSelection.type === "location" ? editToSelection.locationId : undefined;
+    
+    const result = await updateEntry(editingEntry.id, {
+      date: editDate,
+      startLocation: startLocationStr,
+      endLocation: endLocationStr,
+      locationId,
+      miles: milesToLog,
+      purpose: editPurpose.trim(),
+      notes: editNotes.trim(),
+      vehicleId: editVehicleId,
+      odometerStart: startVal,
+      odometerEnd: endVal,
+    });
+    
+    // Update vehicle's last recorded odometer if it's higher
+    if (result && editVehicleId) {
+      const vehicle = getVehicleById(editVehicleId);
+      if (!vehicle?.lastRecordedOdometer || endVal > vehicle.lastRecordedOdometer) {
+        await updateVehicleOdometer(editVehicleId, endVal);
+      }
+    }
+    
+    setIsEditSaving(false);
+    setIsEditDialogOpen(false);
+    setEditingEntry(null);
+    
+    toast({ 
+      title: "Trip Updated", 
+      description: `${milesToLog.toFixed(1)} miles saved` 
+    });
+  };
+
+  // Get vehicle name for display
+  const getVehicleName = (vehicleId?: string) => {
+    if (!vehicleId) return "-";
+    const vehicle = getVehicleById(vehicleId);
+    return vehicle?.name || "-";
   };
 
   const getDateRange = (period: FilterPeriod): { start: Date; end: Date } | null => {
@@ -641,44 +800,103 @@ const MileageTracker = () => {
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-muted/30">
+                            <TableHead className="w-[40px]"></TableHead>
                             <TableHead>Date</TableHead>
+                            <TableHead className="hidden sm:table-cell">Vehicle</TableHead>
                             <TableHead>From</TableHead>
                             <TableHead>To</TableHead>
                             <TableHead className="text-right">Miles</TableHead>
-                            <TableHead>Purpose</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
+                            <TableHead className="hidden md:table-cell">Purpose</TableHead>
+                            <TableHead className="w-[80px]">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {filteredEntries.map(entry => (
-                            <TableRow key={entry.id} className="hover:bg-muted/20">
-                              <TableCell className="font-medium">
-                                {format(entry.date, "MM/dd")}
-                              </TableCell>
-                              <TableCell className="max-w-[150px] truncate">
-                                {entry.startLocation}
-                              </TableCell>
-                              <TableCell className="max-w-[150px] truncate">
-                                {entry.endLocation}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                {entry.miles.toFixed(1)}
-                              </TableCell>
-                              <TableCell className="max-w-[150px] truncate text-muted-foreground">
-                                {entry.purpose || "-"}
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive/70 hover:text-destructive"
-                                  onClick={() => handleDeleteEntry(entry.id)}
+                          {filteredEntries.map(entry => {
+                            const isExpanded = expandedRows.has(entry.id);
+                            return (
+                              <>
+                                <TableRow 
+                                  key={entry.id} 
+                                  className="hover:bg-muted/20 cursor-pointer"
+                                  onClick={() => toggleRowExpansion(entry.id)}
                                 >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                                  <TableCell className="p-2">
+                                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                                      {isExpanded ? (
+                                        <ChevronDown className="h-4 w-4" />
+                                      ) : (
+                                        <ChevronRight className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </TableCell>
+                                  <TableCell className="font-medium">
+                                    {format(entry.date, "MM/dd")}
+                                  </TableCell>
+                                  <TableCell className="hidden sm:table-cell text-muted-foreground">
+                                    {getVehicleName(entry.vehicleId)}
+                                  </TableCell>
+                                  <TableCell className="max-w-[120px] truncate">
+                                    {entry.startLocation}
+                                  </TableCell>
+                                  <TableCell className="max-w-[120px] truncate">
+                                    {entry.endLocation}
+                                  </TableCell>
+                                  <TableCell className="text-right font-medium">
+                                    {entry.miles.toFixed(1)}
+                                  </TableCell>
+                                  <TableCell className="hidden md:table-cell max-w-[100px] truncate text-muted-foreground">
+                                    {entry.purpose || "-"}
+                                  </TableCell>
+                                  <TableCell onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex items-center gap-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                        onClick={() => handleOpenEditDialog(entry)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-destructive/70 hover:text-destructive"
+                                        onClick={() => handleDeleteEntry(entry.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                                {isExpanded && (
+                                  <TableRow key={`${entry.id}-details`} className="bg-muted/10">
+                                    <TableCell colSpan={8} className="py-3">
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-2">
+                                        <div>
+                                          <p className="text-xs text-muted-foreground mb-1">Vehicle</p>
+                                          <p className="text-sm font-medium">{getVehicleName(entry.vehicleId)}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-xs text-muted-foreground mb-1">Odometer</p>
+                                          <p className="text-sm font-medium">
+                                            {entry.odometerStart?.toLocaleString() || "-"} → {entry.odometerEnd?.toLocaleString() || "-"}
+                                          </p>
+                                        </div>
+                                        <div>
+                                          <p className="text-xs text-muted-foreground mb-1">Purpose</p>
+                                          <p className="text-sm font-medium">{entry.purpose || "-"}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-xs text-muted-foreground mb-1">Notes</p>
+                                          <p className="text-sm font-medium">{entry.notes || "-"}</p>
+                                        </div>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </div>
@@ -687,6 +905,167 @@ const MileageTracker = () => {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Edit Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Pencil className="h-5 w-5" />
+                  Edit Trip Entry
+                </DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-4">
+                {/* Date */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {format(editDate, "PPP")}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 z-[100] bg-background border border-border">
+                      <Calendar
+                        mode="single"
+                        selected={editDate}
+                        onSelect={(date) => date && setEditDate(date)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Vehicle Selector */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Vehicle *</Label>
+                  <Select value={editVehicleId} onValueChange={setEditVehicleId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a vehicle..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border border-border z-[100]">
+                      {vehicles.map((vehicle) => (
+                        <SelectItem key={vehicle.id} value={vehicle.id}>
+                          {vehicle.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* From Location */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">From *</Label>
+                  <LocationSelector
+                    type="from"
+                    value={editFromSelection}
+                    onChange={setEditFromSelection}
+                    locations={activeLocations}
+                    warehouseAddress={warehouseAddress}
+                  />
+                </div>
+
+                {/* To Location */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">To *</Label>
+                  <LocationSelector
+                    type="to"
+                    value={editToSelection}
+                    onChange={setEditToSelection}
+                    locations={activeLocations}
+                    warehouseAddress={warehouseAddress}
+                  />
+                </div>
+
+                {/* Odometer Readings */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Start Odometer *</Label>
+                    <Input
+                      type="number"
+                      placeholder="e.g., 45230"
+                      value={editOdometerStart}
+                      onChange={(e) => setEditOdometerStart(e.target.value)}
+                      step="0.1"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">End Odometer *</Label>
+                    <Input
+                      type="number"
+                      placeholder="e.g., 45276"
+                      value={editOdometerEnd}
+                      onChange={(e) => setEditOdometerEnd(e.target.value)}
+                      step="0.1"
+                    />
+                  </div>
+                </div>
+
+                {/* Calculated Miles Display */}
+                {editCalculatedMiles !== null && (
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/30">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Calculated Miles:</span>
+                      <span className="text-lg font-bold text-primary">
+                        {editCalculatedMiles.toFixed(1)} mi
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {editIsEndLessThanStart && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                    <span>End odometer must be greater than start</span>
+                  </div>
+                )}
+
+                {/* Purpose */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Purpose</Label>
+                  <Select value={editPurpose} onValueChange={setEditPurpose}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select purpose..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border border-border z-[100]">
+                      {tripPurposes.map((p) => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Notes</Label>
+                  <Textarea
+                    placeholder="Additional details..."
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                    rows={2}
+                  />
+                </div>
+              </div>
+
+              <DialogFooter className="gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsEditDialogOpen(false)}
+                  disabled={isEditSaving}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSaveEdit}
+                  disabled={isEditSaving || !editVehicleId || !editOdometerStart || !editOdometerEnd || !!editIsEndLessThanStart}
+                >
+                  {isEditSaving ? "Saving..." : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

@@ -141,6 +141,62 @@ export function useMileage() {
     }
   };
 
+  const updateEntry = async (id: string, updates: Partial<Omit<MileageEntry, "id" | "createdAt">>) => {
+    if (!user) return null;
+
+    try {
+      const dbUpdates: Record<string, unknown> = {};
+      
+      if (updates.date !== undefined) dbUpdates.date = updates.date.toISOString();
+      if (updates.startLocation !== undefined) dbUpdates.start_location = updates.startLocation;
+      if (updates.endLocation !== undefined) dbUpdates.end_location = updates.endLocation;
+      if (updates.locationId !== undefined) dbUpdates.location_id = updates.locationId || null;
+      if (updates.miles !== undefined) dbUpdates.miles = updates.miles;
+      if (updates.purpose !== undefined) dbUpdates.purpose = updates.purpose;
+      if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+      if (updates.isRoundTrip !== undefined) dbUpdates.is_round_trip = updates.isRoundTrip;
+      if (updates.vehicleId !== undefined) dbUpdates.vehicle_id = updates.vehicleId || null;
+      if (updates.odometerStart !== undefined) dbUpdates.odometer_start = updates.odometerStart || null;
+      if (updates.odometerEnd !== undefined) dbUpdates.odometer_end = updates.odometerEnd || null;
+
+      const { data, error } = await supabase
+        .from("mileage_entries")
+        .update(dbUpdates)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const updatedEntry: MileageEntry = {
+        id: data.id,
+        date: new Date(data.date),
+        startLocation: data.start_location,
+        endLocation: data.end_location,
+        locationId: data.location_id || undefined,
+        miles: Number(data.miles) || 0,
+        purpose: data.purpose || "",
+        notes: data.notes || "",
+        isRoundTrip: data.is_round_trip || false,
+        vehicleId: data.vehicle_id || undefined,
+        odometerStart: data.odometer_start ? Number(data.odometer_start) : undefined,
+        odometerEnd: data.odometer_end ? Number(data.odometer_end) : undefined,
+        createdAt: new Date(data.created_at),
+      };
+
+      setEntries(prev => prev.map(e => e.id === id ? updatedEntry : e));
+      return updatedEntry;
+    } catch (error: any) {
+      console.error("Error updating mileage entry:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update mileage entry.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
   const deleteEntry = async (id: string) => {
     if (!user) return;
 
@@ -175,6 +231,7 @@ export function useMileage() {
     entries,
     isLoaded,
     addEntry,
+    updateEntry,
     deleteEntry,
     calculateTotals,
     refetch: fetchEntries,
