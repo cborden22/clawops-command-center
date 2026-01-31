@@ -35,10 +35,13 @@ export function QRCodeGenerator({
   const [copied, setCopied] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
 
+  // Build URL dynamically from current origin so it works on any domain (production, preview, custom)
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://clawops-command-center.lovable.app';
+  
   // Use pretty URL if slug and unit code are available, otherwise fall back to legacy UUID
   const reportUrl = locationSlug && unitCode
-    ? `https://clawops-command-center.lovable.app/report/${locationSlug}/${unitCode}`
-    : `https://clawops-command-center.lovable.app/m/${machineId}`;
+    ? `${baseUrl}/report/${locationSlug}/${unitCode}`
+    : `${baseUrl}/m/${machineId}`;
 
   const handleDownload = () => {
     const svg = qrRef.current?.querySelector("svg");
