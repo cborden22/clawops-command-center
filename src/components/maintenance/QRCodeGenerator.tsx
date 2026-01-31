@@ -19,6 +19,8 @@ interface QRCodeGeneratorProps {
   machineId: string;
   machineName: string;
   locationName: string;
+  locationSlug?: string;
+  unitCode?: string;
 }
 
 export function QRCodeGenerator({
@@ -27,12 +29,16 @@ export function QRCodeGenerator({
   machineId,
   machineName,
   locationName,
+  locationSlug,
+  unitCode,
 }: QRCodeGeneratorProps) {
   const [copied, setCopied] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
 
-  // Always use the published URL for customer-facing QR codes
-  const reportUrl = `https://clawops-command-center.lovable.app/m/${machineId}`;
+  // Use pretty URL if slug and unit code are available, otherwise fall back to legacy UUID
+  const reportUrl = locationSlug && unitCode
+    ? `https://clawops-command-center.lovable.app/${locationSlug}/${unitCode}`
+    : `https://clawops-command-center.lovable.app/m/${machineId}`;
 
   const handleDownload = () => {
     const svg = qrRef.current?.querySelector("svg");

@@ -173,7 +173,7 @@ export async function submitMaintenanceReport(data: {
   return true;
 }
 
-// Public function to get machine info (no auth required)
+// Public function to get machine info by UUID (legacy, no auth required)
 export async function getMachinePublicInfo(machineId: string) {
   const { data, error } = await supabase.rpc("get_machine_public_info", {
     machine_uuid: machineId,
@@ -182,4 +182,25 @@ export async function getMachinePublicInfo(machineId: string) {
   if (error) throw error;
 
   return data?.[0] || null;
+}
+
+// Public function to get machine info by slug (new pretty URLs, no auth required)
+export async function getMachineBySlug(locationSlug: string, unitCode: string) {
+  const { data, error } = await supabase.rpc("get_machine_by_slug", {
+    location_slug: locationSlug,
+    machine_unit_code: unitCode,
+  });
+
+  if (error) throw error;
+
+  const result = data?.[0];
+  if (!result) return null;
+
+  // Return in the same format as getMachinePublicInfo for compatibility
+  return {
+    machine_id: result.machine_id,
+    machine_type: result.machine_type,
+    custom_label: result.custom_label,
+    location_name: result.location_name,
+  };
 }

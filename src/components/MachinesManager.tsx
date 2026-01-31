@@ -52,7 +52,13 @@ export function MachinesManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingMachine, setEditingMachine] = useState<MachineWithLocation | null>(null);
-  const [qrMachine, setQrMachine] = useState<{ id: string; name: string; location: string } | null>(null);
+  const [qrMachine, setQrMachine] = useState<{ 
+    id: string; 
+    name: string; 
+    location: string;
+    locationSlug?: string;
+    unitCode?: string;
+  } | null>(null);
   const [formData, setFormData] = useState({
     locationId: "",
     type: "claw" as MachineType["type"],
@@ -461,6 +467,8 @@ export function MachinesManager() {
                                 id: machine.machineType.id!,
                                 name: machine.machineType.label,
                                 location: machine.location.name,
+                                locationSlug: machine.location.slug,
+                                unitCode: machine.machineType.unitCode,
                               })}
                               title="Generate QR Code"
                             >
@@ -502,6 +510,8 @@ export function MachinesManager() {
           machineId={qrMachine.id}
           machineName={qrMachine.name}
           locationName={qrMachine.location}
+          locationSlug={qrMachine.locationSlug}
+          unitCode={qrMachine.unitCode}
         />
       )}
     </div>
