@@ -195,8 +195,8 @@ const App: React.FC = () => {
             <Sonner />
             <BrowserRouter>
               <Routes>
-                {/* New pretty URL for public reporting - e.g., /downtown-pizza/claw-1 */}
-                <Route path="/:locationSlug/:unitCode" element={<ReportIssue />} />
+                {/* Public reporting route with /report prefix - e.g., /report/downtown-pizza/claw-1 */}
+                <Route path="/report/:locationSlug/:unitCode" element={<ReportIssue />} />
                 {/* Legacy UUID route for existing QR codes - e.g., /m/77ad0e7c-8304-4dbf-9506-6085d8148255 */}
                 <Route path="/m/:machineId" element={<ReportIssue />} />
                 {/* All other routes go through AuthProvider */}

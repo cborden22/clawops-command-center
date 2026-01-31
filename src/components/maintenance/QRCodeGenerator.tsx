@@ -37,7 +37,7 @@ export function QRCodeGenerator({
 
   // Use pretty URL if slug and unit code are available, otherwise fall back to legacy UUID
   const reportUrl = locationSlug && unitCode
-    ? `https://clawops-command-center.lovable.app/${locationSlug}/${unitCode}`
+    ? `https://clawops-command-center.lovable.app/report/${locationSlug}/${unitCode}`
     : `https://clawops-command-center.lovable.app/m/${machineId}`;
 
   const handleDownload = () => {
