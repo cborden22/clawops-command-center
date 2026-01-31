@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 import { FileText, Download, Calendar as CalendarIcon, Building2, User, DollarSign, Calculator, MapPin, AlertCircle } from "lucide-react"
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns"
 import { cn } from "@/lib/utils"
-import html2pdf from "html2pdf.js"
+import { generatePDFFromHTML } from "@/utils/pdfGenerator"
 import { useLocations } from "@/hooks/useLocationsDB"
 import { addRevenueExpense } from "@/hooks/useRevenueEntriesDB"
 import { useAuth } from "@/contexts/AuthContext"
@@ -109,7 +109,7 @@ export function CommissionSummaryGenerator() {
     return `${format(locationData.startDate, "MMM dd, yyyy")} - ${format(locationData.endDate, "MMM dd, yyyy")}`
   }
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     if (!locationData.name || !locationData.startDate || !locationData.endDate) {
       toast({
         title: "Missing Information",
@@ -236,71 +236,58 @@ export function CommissionSummaryGenerator() {
 
     const filename = `commission-summary-${locationData.name.replace(/\s+/g, '-').toLowerCase()}-${format(locationData.startDate, 'yyyy-MM-dd')}.pdf`
     
-    const options = {
-      margin: 0.5,
-      filename: filename,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { 
-        scale: 2,
-        useCORS: true,
-        letterRendering: true
-      },
-      jsPDF: { 
-        unit: 'in' as const, 
-        format: 'letter' as const, 
-        orientation: 'portrait' as const
+    try {
+      // Generate PDF using secure jspdf + html2canvas
+      await generatePDFFromHTML(content, {
+        filename,
+        margin: 12,
+        format: 'letter',
+        orientation: 'portrait'
+      })
+      
+      let savedToLocation = false
+      
+      // Save commission summary to location if a location was selected
+      if (locationData.locationId && locationData.startDate && locationData.endDate) {
+        const result = await addCommissionSummary(locationData.locationId, {
+          startDate: locationData.startDate.toISOString(),
+          endDate: locationData.endDate.toISOString(),
+          totalRevenue: locationData.totalRevenue,
+          commissionPercentage: locationData.commissionPercentage,
+          commissionAmount: locationData.commissionAmount,
+          machineCount: locationData.machineCount,
+          notes: locationData.notes,
+        })
+        savedToLocation = !!result
       }
+      
+      // Automatically log the commission as an expense in Revenue Tracker
+      // Works whether location is selected or manually entered
+      if (user && locationData.commissionAmount > 0 && locationData.startDate && locationData.endDate) {
+        await addRevenueExpense(
+          user.id,
+          locationData.locationId || "manual",
+          locationData.commissionAmount,
+          "Commission Payout",
+          `Commission for ${locationData.name} (${periodText})`,
+          locationData.endDate
+        )
+      }
+      
+      toast({
+        title: "Commission Summary Generated",
+        description: savedToLocation 
+          ? `PDF created for ${locationData.name} - saved to location and logged as expense`
+          : `PDF created for ${locationData.name} - logged as expense`,
+      })
+    } catch (error) {
+      console.error('PDF generation error:', error)
+      toast({
+        title: "PDF Generation Failed",
+        description: "There was an error generating the PDF. Please try again.",
+        variant: "destructive"
+      })
     }
-    
-    html2pdf()
-      .set(options)
-      .from(content)
-      .save()
-      .then(async () => {
-        let savedToLocation = false
-        
-        // Save commission summary to location if a location was selected
-        if (locationData.locationId && locationData.startDate && locationData.endDate) {
-          const result = await addCommissionSummary(locationData.locationId, {
-            startDate: locationData.startDate.toISOString(),
-            endDate: locationData.endDate.toISOString(),
-            totalRevenue: locationData.totalRevenue,
-            commissionPercentage: locationData.commissionPercentage,
-            commissionAmount: locationData.commissionAmount,
-            machineCount: locationData.machineCount,
-            notes: locationData.notes,
-          })
-          savedToLocation = !!result
-        }
-        
-        // Automatically log the commission as an expense in Revenue Tracker
-        // Works whether location is selected or manually entered
-        if (user && locationData.commissionAmount > 0 && locationData.startDate && locationData.endDate) {
-          await addRevenueExpense(
-            user.id,
-            locationData.locationId || "manual",
-            locationData.commissionAmount,
-            "Commission Payout",
-            `Commission for ${locationData.name} (${periodText})`,
-            locationData.endDate
-          )
-        }
-        
-        toast({
-          title: "Commission Summary Generated",
-          description: savedToLocation 
-            ? `PDF created for ${locationData.name} - saved to location and logged as expense`
-            : `PDF created for ${locationData.name} - logged as expense`,
-        })
-      })
-      .catch((error) => {
-        console.error('PDF generation error:', error)
-        toast({
-          title: "PDF Generation Failed",
-          description: "There was an error generating the PDF. Please try again.",
-          variant: "destructive"
-        })
-      })
   }
 
   const isFormValid = locationData.name && locationData.startDate && locationData.endDate
