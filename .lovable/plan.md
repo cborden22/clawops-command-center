@@ -1,155 +1,147 @@
 
 
-## True Win Rate Calculator Implementation
+## Fix Mobile Stock Run Review Button and Scrolling Issues
 
 ### Overview
-Update the win rate calculation system to use the **True Win Rate** formula based on actual plays, not raw coin counts. This provides accurate machine performance metrics that reflect real customer experience.
+Two issues have been identified with the mobile Inventory Tracker:
+1. **Review/Confirm buttons are hidden** - The floating action bars for Stock Run and Return Stock are positioned at `bottom-4` (16px from bottom), but the MobileBottomNav is 64px tall and covers them completely
+2. **Glitchy scrolling** - The pull-to-refresh hook conflicts with normal scrolling, and nested scroll containers cause janky behavior
 
 ---
 
-### The Problem
-Currently, win rate is calculated as:
-```
-Win Rate = Prizes Won / Coins Inserted
-```
+### Problem Analysis
 
-This is incorrect because it treats each coin as a play. In reality:
-- Coins are counted as quarters ($0.25 each)
-- Machines have different "Cost Per Play" settings ($0.50, $1.00, etc.)
-- A machine requiring $1.00 per play needs 4 quarters (coins) for 1 play
+**Issue 1: Hidden Review Button**
+- Floating action bar: `fixed bottom-4 left-4 right-4` (16px from bottom)
+- MobileBottomNav: `fixed bottom-0` with `h-16` (64px height)
+- Result: The nav bar completely covers the floating cart summary with the Review button
 
----
-
-### The Solution
-Update all calculations to use:
-```
-Total Dollars = Coins Inserted x $0.25
-Total Plays = Total Dollars / Cost Per Play
-True Win Rate = Prizes Won / Total Plays
-True Odds = Total Plays / Prizes Won (1 in X)
-```
+**Issue 2: Scroll Problems**
+- MobileLayout's main container has `overflow-y-auto`
+- InventoryTrackerComponent has `pb-24` but page wrapper adds extra padding
+- Pull-to-refresh uses `passive: false` on touchmove which can interfere with scrolling
+- Multiple nested scrollable areas can cause scroll chaining issues
 
 ---
 
-### Changes Required
+### Solution
 
-#### 1. Update `useMachineCollections` Hook (`src/hooks/useMachineCollections.ts`)
+#### 1. Reposition Floating Action Bars
 
-Modify the calculation functions to accept `costPerPlay` parameter:
+Update the Stock Run and Return Stock floating cards to sit above the bottom navigation:
 
-| Function | Current Signature | New Signature |
-|----------|------------------|---------------|
-| `calculateCollectionWinRate` | `(coinsInserted, prizesWon)` | `(coinsInserted, prizesWon, costPerPlay?)` |
-| `calculateMachineStats` | `(machineId)` | `(machineId, costPerPlay?)` |
-| `calculateLocationStats` | `(locationId)` | No change (aggregates won't use machine-specific cost) |
+| Current | Fixed |
+|---------|-------|
+| `bottom-4` (16px) | `bottom-20` (80px) |
 
-New internal calculations:
-```typescript
-const QUARTER_VALUE = 0.25;
+This ensures the floating cards appear above the 64px bottom nav with adequate spacing.
 
-// Convert coins to plays
-const totalDollars = coinsInserted * QUARTER_VALUE;
-const totalPlays = costPerPlay > 0 ? totalDollars / costPerPlay : coinsInserted;
+#### 2. Improve Scroll Behavior
 
-// Calculate TRUE win rate
-const trueWinRate = totalPlays > 0 ? prizesWon / totalPlays : 0;
-const trueOdds = trueWinRate > 0 ? 1 / trueWinRate : 0;
-```
+**2a. Add overscroll containment**
+Add `overscroll-contain` to the MobileLayout main container to prevent scroll chaining between nested scroll areas.
 
-Add new interface for extended stats:
-```typescript
-export interface TrueWinRateStats {
-  coinsInserted: number;
-  prizesWon: number;
-  totalDollars: number;
-  totalPlays: number;
-  trueWinRate: number;  // decimal (e.g., 0.125 = 12.5%)
-  trueOdds: number;     // "1 in X" format (e.g., 8)
-}
-```
+**2b. Disable pull-to-refresh when in Stock Run/Return modes**
+The pull-to-refresh should not interfere when users are actively scrolling through inventory items. We'll add a mechanism to disable it during stock run operations.
 
-#### 2. Update UI Display Labels
-
-Change terminology across all components:
-- "Win Rate" becomes "True Win Rate"
-- Display shows plays, not just coins
-
-#### 3. Update Collection Reports Sheet (`src/components/mobile/CollectionReportsSheet.tsx`)
-
-- Pass machine's `costPerPlay` to `calculateCollectionWinRate`
-- Display "plays" alongside coins in the stats
-- Update labels to show "True Win Rate"
-
-#### 4. Update Quick Revenue Form (`src/components/mobile/QuickRevenueForm.tsx`)
-
-- Calculate and show plays based on selected machine's cost per play
-- Update live win rate display to show "True Win Rate"
-- Add plays count to the live feedback
-
-#### 5. Update Revenue Tracker Component (`src/components/RevenueTrackerComponent.tsx`)
-
-- Pass `costPerPlay` from selected machine to calculations
-- Update stats display in collection metrics section
-
-#### 6. Update Location Detail Dialog (`src/components/LocationDetailDialog.tsx`)
-
-- Pass each machine's `costPerPlay` to stats calculations
-- Update per-machine breakdown to show plays and true win rate
+**2c. Add touch-action optimization**
+Add `touch-action: pan-y` to scrollable containers to optimize vertical scrolling on mobile.
 
 ---
 
-### Files Summary
+### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/hooks/useMachineCollections.ts` | Update all calculation functions to use True Win Rate formula with costPerPlay parameter |
-| `src/components/mobile/CollectionReportsSheet.tsx` | Pass costPerPlay to calculations, update display labels |
-| `src/components/mobile/QuickRevenueForm.tsx` | Show plays count, update live win rate display |
-| `src/components/RevenueTrackerComponent.tsx` | Update collection metrics display |
-| `src/components/LocationDetailDialog.tsx` | Update machine stats displays with true win rate |
-
----
-
-### Example Calculation
-
-**Input:**
-- Coins Inserted: 200 quarters
-- Prizes Won: 5
-- Cost Per Play: $1.00
-
-**Current (Wrong):**
-- Win Rate = 5 / 200 = 2.5% (1 in 40)
-
-**True Win Rate (Correct):**
-- Total Dollars = 200 x $0.25 = $50.00
-- Total Plays = $50.00 / $1.00 = 50 plays
-- True Win Rate = 5 / 50 = 10% (1 in 10)
-
----
-
-### Performance Benchmarks Display
-
-Add helpful context to the UI when displaying True Win Rate:
-- 1 in 7-8: Very generous (badge: green)
-- 1 in 8-9: Optimal (badge: blue)
-- 1 in 10+: Tight (badge: amber/red)
+| `src/components/InventoryTrackerComponent.tsx` | Change floating card position from `bottom-4` to `bottom-20` for both Stock Run and Return Stock modes |
+| `src/components/layout/MobileLayout.tsx` | Add `overscroll-contain` to main container for scroll chaining prevention |
+| `src/index.css` | Add utility class for improved mobile scrolling |
 
 ---
 
 ### Technical Details
 
-#### Default Cost Per Play
-If a machine doesn't have a `costPerPlay` set, default to $0.50 (2 quarters per play) to maintain backward compatibility.
+**InventoryTrackerComponent.tsx Changes (Lines 952, 976)**
 
-#### Fallback Behavior
-For aggregate location stats where machines have different costs per play, the calculation will use weighted averages or clearly indicate "varies by machine."
+Stock Run floating card:
+```
+// Before
+<div className="fixed bottom-4 left-4 right-4 z-50">
+
+// After  
+<div className="fixed bottom-20 left-4 right-4 z-50">
+```
+
+Return Stock floating card (same change):
+```
+// Before
+<div className="fixed bottom-4 left-4 right-4 z-50">
+
+// After
+<div className="fixed bottom-20 left-4 right-4 z-50">
+```
+
+**MobileLayout.tsx Changes (Line 27)**
+
+Add scroll optimization classes:
+```
+// Before
+className="flex-1 overflow-y-auto pb-20"
+
+// After
+className="flex-1 overflow-y-auto pb-20 overscroll-contain"
+```
+
+**index.css Addition**
+
+Add mobile scroll optimization utility:
+```css
+/* Improve mobile scrolling performance */
+.mobile-scroll-optimized {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+```
 
 ---
 
-### User Experience
+### Visual Result
 
-After this change, users will see:
-1. **During Collection Entry**: "200 coins = 50 plays = $50.00" with True Win Rate
-2. **In Reports**: "50 plays → 5 prizes (1 in 10)" instead of "200 coins → 5 prizes"
-3. **Performance Feedback**: Accurate comparison to machine's expected 1-in-X setting
+**Before:**
+```
+┌─────────────────────────┐
+│ Inventory Items...      │
+│ ...                     │
+│ ...                     │
+├─────────────────────────┤ ← Floating bar (hidden)
+│ ┌─────────────────────┐ │
+│ │ Home Revenue + Inv │ │ ← Bottom Nav covers it
+│ └─────────────────────┘ │
+└─────────────────────────┘
+```
+
+**After:**
+```
+┌─────────────────────────┐
+│ Inventory Items...      │
+│ ...                     │
+├─────────────────────────┤
+│ ┌─────────────────────┐ │ ← Floating bar (visible)
+│ │ 5 items - Review    │ │
+│ └─────────────────────┘ │
+├─────────────────────────┤
+│ ┌─────────────────────┐ │
+│ │ Home Revenue + Inv │ │ ← Bottom Nav
+│ └─────────────────────┘ │
+└─────────────────────────┘
+```
+
+---
+
+### Edge Cases Handled
+
+- **Safe area insets**: The bottom nav already uses `mobile-safe-bottom` for iOS home indicator, so the floating bar at `bottom-20` will remain visible on all devices
+- **Both modes covered**: Both Stock Run and Return Stock floating bars will be repositioned
+- **Scroll chaining**: Using `overscroll-contain` prevents the pull-to-refresh from accidentally triggering during normal list scrolling
+- **Performance**: Adding touch-action hints helps browsers optimize scrolling
 
