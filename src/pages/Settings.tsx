@@ -20,9 +20,11 @@ import {
   Building2,
   Warehouse,
   DollarSign,
-  Palette
+  Palette,
+  Car
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { VehicleManager } from "@/components/settings/VehicleManager";
 
 
 export default function Settings() {
@@ -514,6 +516,9 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Vehicles Section */}
+          <VehicleManager />
 
           <Button 
             onClick={handleSaveAppSettings} 

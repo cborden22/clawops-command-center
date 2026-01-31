@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,8 +26,12 @@ import { toast } from "@/hooks/use-toast";
 import { useLocations } from "@/hooks/useLocationsDB";
 import { useMileage, IRS_MILEAGE_RATE } from "@/hooks/useMileageDB";
 import { useRoutes, MileageRoute } from "@/hooks/useRoutesDB";
+import { useVehicles } from "@/hooks/useVehiclesDB";
+import { useAppSettings } from "@/contexts/AppSettingsContext";
 import { RouteManager } from "@/components/mileage/RouteManager";
 import { RoutePreview } from "@/components/mileage/RoutePreview";
+import { OdometerModeInputs, useOdometerCalculation } from "@/components/mileage/OdometerModeInputs";
+import { useNavigate } from "react-router-dom";
 
 type FilterPeriod = 
   | "past7days" 
@@ -43,9 +47,12 @@ type FilterPeriod =
   | "all";
 
 const MileageTracker = () => {
+  const navigate = useNavigate();
   const { activeLocations, getLocationById, isLoaded: locationsLoaded } = useLocations();
   const { entries, addEntry, deleteEntry, calculateTotals, isLoaded: mileageLoaded } = useMileage();
   const { routes, addRoute, updateRoute, deleteRoute, getRouteById, isLoaded: routesLoaded } = useRoutes();
+  const { vehicles, updateVehicleOdometer, isLoaded: vehiclesLoaded } = useVehicles();
+  const { settings, updateSetting } = useAppSettings();
   
   // Form state
   const [tripDate, setTripDate] = useState<Date>(new Date());
@@ -58,6 +65,14 @@ const MileageTracker = () => {
   const [isRoundTrip, setIsRoundTrip] = useState(false);
   const [selectedRouteId, setSelectedRouteId] = useState<string>("");
   
+  // Odometer mode state
+  const [odometerMode, setOdometerMode] = useState(settings.preferOdometerMode);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
+  const [odometerStart, setOdometerStart] = useState("");
+  const [odometerEnd, setOdometerEnd] = useState("");
+  
+  const calculatedMiles = useOdometerCalculation(odometerMode, odometerStart, odometerEnd);
+  
   // Filter state
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("thisMonth");
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
@@ -65,6 +80,13 @@ const MileageTracker = () => {
 
   // Tab state
   const [activeTab, setActiveTab] = useState("log");
+  
+  // Sync odometer mode preference
+  useEffect(() => {
+    if (odometerMode !== settings.preferOdometerMode) {
+      updateSetting("preferOdometerMode", odometerMode);
+    }
+  }, [odometerMode]);
 
   const handleQuickSelectLocation = (locationId: string) => {
     const loc = getLocationById(locationId);
@@ -126,45 +148,121 @@ const MileageTracker = () => {
     setPurpose("");
     setIsRoundTrip(false);
   };
+  
+  const handleClearOdometerForm = () => {
+    setOdometerStart("");
+    setOdometerEnd("");
+    setSelectedVehicleId("");
+  };
 
   const handleUseRoute = (route: MileageRoute) => {
     setActiveTab("log");
     handleRouteSelect(route.id);
   };
+  
+  const handleNavigateToSettings = () => {
+    navigate("/settings");
+  };
 
   const handleAddEntry = async () => {
-    if (!startLocation || !endLocation || !miles) {
+    // Determine the miles to use
+    let milesToLog: number;
+    let vehicleIdToLog: string | undefined;
+    let odometerStartVal: number | undefined;
+    let odometerEndVal: number | undefined;
+    
+    if (odometerMode) {
+      // Odometer mode validation
+      if (!odometerStart || !odometerEnd) {
+        toast({ 
+          title: "Missing Odometer Readings", 
+          description: "Please enter both start and end odometer readings.",
+          variant: "destructive" 
+        });
+        return;
+      }
+      
+      const startVal = parseFloat(odometerStart);
+      const endVal = parseFloat(odometerEnd);
+      
+      if (isNaN(startVal) || isNaN(endVal)) {
+        toast({ 
+          title: "Invalid Readings", 
+          description: "Please enter valid odometer numbers.",
+          variant: "destructive" 
+        });
+        return;
+      }
+      
+      if (endVal <= startVal) {
+        toast({ 
+          title: "Invalid Range", 
+          description: "End odometer must be greater than start.",
+          variant: "destructive" 
+        });
+        return;
+      }
+      
+      milesToLog = endVal - startVal;
+      vehicleIdToLog = selectedVehicleId || undefined;
+      odometerStartVal = startVal;
+      odometerEndVal = endVal;
+      
+      // Apply round trip if selected
+      if (isRoundTrip) {
+        milesToLog = milesToLog * 2;
+      }
+    } else {
+      // Manual miles mode validation
+      if (!miles) {
+        toast({ 
+          title: "Missing Miles", 
+          description: "Please enter the miles driven.",
+          variant: "destructive" 
+        });
+        return;
+      }
+      
+      const parsedMiles = parseFloat(miles);
+      if (isNaN(parsedMiles) || parsedMiles <= 0) {
+        toast({ 
+          title: "Invalid Miles", 
+          description: "Please enter a valid number of miles.",
+          variant: "destructive" 
+        });
+        return;
+      }
+      
+      milesToLog = isRoundTrip ? parsedMiles * 2 : parsedMiles;
+    }
+    
+    if (!startLocation || !endLocation) {
       toast({ 
-        title: "Missing Information", 
-        description: "Please fill in start, end locations, and miles.",
+        title: "Missing Locations", 
+        description: "Please fill in start and end locations.",
         variant: "destructive" 
       });
       return;
     }
 
-    const parsedMiles = parseFloat(miles);
-    if (isNaN(parsedMiles) || parsedMiles <= 0) {
-      toast({ 
-        title: "Invalid Miles", 
-        description: "Please enter a valid number of miles.",
-        variant: "destructive" 
-      });
-      return;
-    }
-
-    // If round trip, double the miles
-    const actualMiles = isRoundTrip ? parsedMiles * 2 : parsedMiles;
-
-    await addEntry({
+    const result = await addEntry({
       date: tripDate,
       startLocation,
       endLocation,
       locationId: selectedLocationId || undefined,
-      miles: actualMiles,
+      miles: milesToLog,
       purpose: purpose.trim(),
       notes: notes.trim(),
       isRoundTrip,
+      vehicleId: vehicleIdToLog,
+      odometerStart: odometerStartVal,
+      odometerEnd: odometerEndVal,
     });
+    
+    // Update vehicle's last recorded odometer if in odometer mode
+    if (result && odometerMode && vehicleIdToLog && odometerEndVal) {
+      await updateVehicleOdometer(vehicleIdToLog, odometerEndVal);
+    }
 
     // Reset form
     setMiles("");
@@ -175,10 +273,11 @@ const MileageTracker = () => {
     setIsRoundTrip(false);
     setSelectedRouteId("");
     setStartLocation("");
+    handleClearOdometerForm();
 
     toast({ 
       title: "Trip Logged", 
-      description: `${actualMiles.toFixed(1)} miles recorded${isRoundTrip ? " (round trip)" : ""}` 
+      description: `${milesToLog.toFixed(1)} miles recorded${isRoundTrip ? " (round trip)" : ""}${odometerMode ? " via odometer" : ""}` 
     });
   };
 
@@ -283,7 +382,7 @@ const MileageTracker = () => {
 
   const selectedRoute = selectedRouteId ? getRouteById(selectedRouteId) : undefined;
 
-  if (!locationsLoaded || !mileageLoaded || !routesLoaded) {
+  if (!locationsLoaded || !mileageLoaded || !routesLoaded || !vehiclesLoaded) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto py-8 px-4">
@@ -442,6 +541,20 @@ const MileageTracker = () => {
                       </Popover>
                     </div>
 
+                    {/* Odometer Mode Inputs */}
+                    <OdometerModeInputs
+                      enabled={odometerMode}
+                      onEnabledChange={setOdometerMode}
+                      selectedVehicleId={selectedVehicleId}
+                      onVehicleChange={setSelectedVehicleId}
+                      odometerStart={odometerStart}
+                      onOdometerStartChange={setOdometerStart}
+                      odometerEnd={odometerEnd}
+                      onOdometerEndChange={setOdometerEnd}
+                      calculatedMiles={calculatedMiles}
+                      onAddVehicle={handleNavigateToSettings}
+                    />
+
                     {/* Round Trip Toggle */}
                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
                       <div className="flex items-center gap-2">
@@ -450,6 +563,11 @@ const MileageTracker = () => {
                       </div>
                       <Switch checked={isRoundTrip} onCheckedChange={setIsRoundTrip} />
                     </div>
+                    {isRoundTrip && odometerMode && calculatedMiles !== null && calculatedMiles > 0 && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        Total with round trip: {(calculatedMiles * 2).toFixed(1)} miles
+                      </p>
+                    )}
 
                     {/* Start Location */}
                     <div className="space-y-2">
@@ -491,24 +609,26 @@ const MileageTracker = () => {
                       )}
                     </div>
 
-                    {/* Miles */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">
-                        Miles {isRoundTrip && <span className="text-muted-foreground">(one way - will be doubled)</span>}
-                      </Label>
-                      <NumberInput
-                        placeholder="Distance"
-                        value={miles}
-                        onChange={(e) => setMiles(e.target.value)}
-                        step="0.1"
-                        min="0"
-                      />
-                      {isRoundTrip && miles && (
-                        <p className="text-xs text-muted-foreground">
-                          Total recorded: {(parseFloat(miles) * 2).toFixed(1)} miles
-                        </p>
-                      )}
-                    </div>
+                    {/* Miles - Only show in manual mode */}
+                    {!odometerMode && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">
+                          Miles {isRoundTrip && <span className="text-muted-foreground">(one way - will be doubled)</span>}
+                        </Label>
+                        <NumberInput
+                          placeholder="Distance"
+                          value={miles}
+                          onChange={(e) => setMiles(e.target.value)}
+                          step="0.1"
+                          min="0"
+                        />
+                        {isRoundTrip && miles && (
+                          <p className="text-xs text-muted-foreground">
+                            Total recorded: {(parseFloat(miles) * 2).toFixed(1)} miles
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     {/* Purpose */}
                     <div className="space-y-2">

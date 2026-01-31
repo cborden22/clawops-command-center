@@ -334,10 +334,13 @@ export type Database = {
           location_id: string | null
           miles: number
           notes: string | null
+          odometer_end: number | null
+          odometer_start: number | null
           purpose: string | null
           route_id: string | null
           start_location: string
           user_id: string
+          vehicle_id: string | null
         }
         Insert: {
           created_at?: string
@@ -348,10 +351,13 @@ export type Database = {
           location_id?: string | null
           miles: number
           notes?: string | null
+          odometer_end?: number | null
+          odometer_start?: number | null
           purpose?: string | null
           route_id?: string | null
           start_location: string
           user_id: string
+          vehicle_id?: string | null
         }
         Update: {
           created_at?: string
@@ -362,10 +368,13 @@ export type Database = {
           location_id?: string | null
           miles?: number
           notes?: string | null
+          odometer_end?: number | null
+          odometer_start?: number | null
           purpose?: string | null
           route_id?: string | null
           start_location?: string
           user_id?: string
+          vehicle_id?: string | null
         }
         Relationships: [
           {
@@ -380,6 +389,13 @@ export type Database = {
             columns: ["route_id"]
             isOneToOne: false
             referencedRelation: "mileage_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mileage_entries_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
@@ -596,6 +612,45 @@ export type Database = {
           id?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      vehicles: {
+        Row: {
+          created_at: string
+          id: string
+          last_recorded_odometer: number | null
+          license_plate: string | null
+          make: string | null
+          model: string | null
+          name: string
+          updated_at: string
+          user_id: string
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_recorded_odometer?: number | null
+          license_plate?: string | null
+          make?: string | null
+          model?: string | null
+          name: string
+          updated_at?: string
+          user_id: string
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_recorded_odometer?: number | null
+          license_plate?: string | null
+          make?: string | null
+          model?: string | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+          year?: number | null
         }
         Relationships: []
       }

@@ -18,6 +18,7 @@ export interface AppSettings {
   darkMode: boolean;
   compactView: boolean;
   autoBackup: boolean;
+  preferOdometerMode: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -36,6 +37,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   darkMode: true,
   compactView: false,
   autoBackup: true,
+  preferOdometerMode: false,
 };
 
 interface AppSettingsContextType {
