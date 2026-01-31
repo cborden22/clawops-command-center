@@ -324,6 +324,59 @@ export type Database = {
           },
         ]
       }
+      maintenance_reports: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          issue_type: string
+          machine_id: string
+          reporter_contact: string | null
+          reporter_name: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          severity: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          issue_type?: string
+          machine_id: string
+          reporter_contact?: string | null
+          reporter_name?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          issue_type?: string
+          machine_id?: string
+          reporter_contact?: string | null
+          reporter_name?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_reports_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "location_machines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mileage_entries: {
         Row: {
           created_at: string
@@ -659,7 +712,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_machine_owner: { Args: { machine_uuid: string }; Returns: string }
+      get_machine_public_info: {
+        Args: { machine_uuid: string }
+        Returns: {
+          custom_label: string
+          location_name: string
+          machine_type: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

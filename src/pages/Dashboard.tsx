@@ -21,15 +21,17 @@ import {
   X,
   Check,
   RotateCcw,
-  ExternalLink
+  ExternalLink,
+  Wrench
 } from "lucide-react";
+import { MaintenanceWidget } from "@/components/maintenance/MaintenanceWidget";
 import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-type WidgetId = 'primaryStats' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions';
+type WidgetId = 'primaryStats' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance';
 
 interface WidgetConfig {
   id: WidgetId;
@@ -39,6 +41,7 @@ interface WidgetConfig {
 
 const DEFAULT_WIDGET_ORDER: WidgetConfig[] = [
   { id: 'primaryStats', label: 'Primary Stats', visible: true },
+  { id: 'maintenance', label: 'Maintenance', visible: true },
   { id: 'allTimeSummary', label: 'All-Time Summary', visible: true },
   { id: 'topLocations', label: 'Top Locations', visible: true },
   { id: 'lowStockAlerts', label: 'Low Stock Alerts', visible: true },
@@ -629,8 +632,11 @@ export default function Dashboard() {
     </div>
   );
 
+  const renderMaintenance = () => <MaintenanceWidget />;
+
   const widgetRenderers: Record<WidgetId, () => JSX.Element> = {
     primaryStats: renderPrimaryStats,
+    maintenance: renderMaintenance,
     allTimeSummary: renderAllTimeSummary,
     topLocations: renderTopLocations,
     lowStockAlerts: renderLowStockAlerts,

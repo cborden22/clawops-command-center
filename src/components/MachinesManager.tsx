@@ -35,7 +35,9 @@ import {
   Search,
   Sparkles,
   MapPin,
+  QrCode,
 } from "lucide-react";
+import { QRCodeGenerator } from "@/components/maintenance/QRCodeGenerator";
 import { toast } from "@/hooks/use-toast";
 import { useLocations, Location, MachineType, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocationsDB";
 
@@ -50,6 +52,7 @@ export function MachinesManager() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingMachine, setEditingMachine] = useState<MachineWithLocation | null>(null);
+  const [qrMachine, setQrMachine] = useState<{ id: string; name: string; location: string } | null>(null);
   const [formData, setFormData] = useState({
     locationId: "",
     type: "claw" as MachineType["type"],
@@ -449,6 +452,21 @@ export function MachinesManager() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {machine.machineType.id && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-primary"
+                              onClick={() => setQrMachine({
+                                id: machine.machineType.id!,
+                                name: machine.machineType.label,
+                                location: machine.location.name,
+                              })}
+                              title="Generate QR Code"
+                            >
+                              <QrCode className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -475,6 +493,17 @@ export function MachinesManager() {
           )}
         </CardContent>
       </Card>
+
+      {/* QR Code Dialog */}
+      {qrMachine && (
+        <QRCodeGenerator
+          open={!!qrMachine}
+          onOpenChange={(open) => !open && setQrMachine(null)}
+          machineId={qrMachine.id}
+          machineName={qrMachine.name}
+          locationName={qrMachine.location}
+        />
+      )}
     </div>
   );
 }

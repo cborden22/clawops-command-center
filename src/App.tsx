@@ -19,6 +19,7 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import ReportIssue from "./pages/ReportIssue";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -176,6 +177,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      {/* Public route - no auth required */}
+      <Route path="/report/:machineId" element={<ReportIssue />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
