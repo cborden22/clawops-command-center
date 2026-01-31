@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Download, Printer } from "lucide-react";
+import { CalendarIcon, ChevronDown, Download, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -15,13 +15,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { DateRange, DateRangePreset, getDateRangeFromPreset } from "@/hooks/useReportsData";
+import { ExportType } from "@/utils/csvExport";
 
 interface DateRangeFilterProps {
   dateRange: DateRange;
   onDateRangeChange: (range: DateRange) => void;
-  onExportCSV?: () => void;
+  onExportCSV?: (exportType: ExportType) => void;
   onPrint?: () => void;
 }
 
@@ -148,10 +157,78 @@ export function DateRangeFilter({
 
       <div className="flex gap-2">
         {onExportCSV && (
-          <Button variant="outline" size="sm" onClick={onExportCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+                <ChevronDown className="h-4 w-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-popover">
+              <DropdownMenuLabel>Locations</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => onExportCSV("location_breakdown")}>
+                Location Breakdown
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExportCSV("top_locations")}>
+                Top Performers
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExportCSV("location_profit")}>
+                Profitability Report
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Machines</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => onExportCSV("machine_performance")}>
+                Machine Performance
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExportCSV("hot_cold_analysis")}>
+                Hot/Cold Analysis
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Financial</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => onExportCSV("financial_summary")}>
+                Income & Expenses
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExportCSV("expense_categories")}>
+                Expense Categories
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Inventory</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => onExportCSV("inventory_status")}>
+                Inventory Status
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExportCSV("stock_usage")}>
+                Stock Usage
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExportCSV("low_stock")}>
+                Low Stock Items
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Routes</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => onExportCSV("mileage_log")}>
+                Mileage Log
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExportCSV("vehicle_summary")}>
+                Vehicle Summary
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExportCSV("miles_by_purpose")}>
+                Miles by Purpose
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Win Rate</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => onExportCSV("win_rate_machines")}>
+                Machine Win Rates
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExportCSV("win_rate_locations")}>
+                Location Win Rates
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
         {onPrint && (
           <Button variant="outline" size="sm" onClick={onPrint}>

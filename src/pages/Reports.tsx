@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { format } from "date-fns";
 import { BarChart3, MapPin, Cpu, DollarSign, Package, Car, Target } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DateRangeFilter } from "@/components/reports/DateRangeFilter";
@@ -9,6 +10,7 @@ import { InventoryReports } from "@/components/reports/InventoryReports";
 import { RoutesReports } from "@/components/reports/RoutesReports";
 import { WinRateReports } from "@/components/reports/WinRateReports";
 import { useReportsData, DateRange, getDateRangeFromPreset } from "@/hooks/useReportsData";
+import { handleExport, ExportType } from "@/utils/csvExport";
 
 export default function Reports() {
   const [dateRange, setDateRange] = useState<DateRange>(() => 
@@ -18,9 +20,9 @@ export default function Reports() {
 
   const reportData = useReportsData(dateRange);
 
-  const handleExportCSV = () => {
-    // TODO: Implement CSV export based on active tab
-    console.log("Exporting CSV for", activeTab);
+  const handleExportCSV = (exportType: ExportType) => {
+    const dateStr = format(dateRange.start, "yyyy-MM-dd") + "_" + format(dateRange.end, "yyyy-MM-dd");
+    handleExport(exportType, reportData, dateStr);
   };
 
   const handlePrint = () => {
