@@ -1,142 +1,111 @@
 
 
-## Create Dedicated Maintenance Page with Detailed Reports Management
+## Reorganize Sidebar Navigation with 2 Collapsible Groups
 
-This plan moves the maintenance functionality from being a Dashboard widget to its own full-featured page with sidebar navigation, detailed report views, and better management capabilities.
+This plan keeps Dashboard as a standalone top-level item and organizes the remaining tools into 2 collapsible groups for a cleaner interface.
+
+---
+
+## Final Structure
+
+| Section | Items | Purpose |
+|---------|-------|---------|
+| **Dashboard** (standalone) | Dashboard | Central hub - always visible at top |
+| **Operations** (collapsible) | Locations, Maintenance, Routes, Inventory Tracker | Day-to-day operational tasks |
+| **Financials & Reports** (collapsible) | Revenue Tracker, Reports, Commission Summary, Location Agreement Generator | Money tracking, analytics, and documentation |
+
+### Visual Structure
+
+```text
++----------------------------------+
+|  ClawOps                         |
+|  Professional Suite              |
++----------------------------------+
+|                                  |
+|  > Dashboard                     |
+|                                  |
+|  OPERATIONS              [v]     |
+|    > Locations                   |
+|    > Maintenance                 |
+|    > Routes                      |
+|    > Inventory Tracker           |
+|                                  |
+|  FINANCIALS & REPORTS    [v]     |
+|    > Revenue Tracker             |
+|    > Reports                     |
+|    > Commission Summary          |
+|    > Agreement Generator         |
+|                                  |
++----------------------------------+
+|  [User Profile]                  |
++----------------------------------+
+```
 
 ---
 
 ## What You'll Get
 
-1. **New "Maintenance" link in the sidebar** - Easy access from the main navigation
-2. **Dedicated Maintenance page** with tabs for:
-   - **Open Issues** - Reports that need attention
-   - **In Progress** - Reports being worked on
-   - **Resolved** - Completed reports (history)
-3. **Detailed report cards** showing:
-   - Machine info (type, label, location)
-   - Issue type and description
-   - Severity level
-   - Reporter info (name, contact)
-   - Timestamps (reported, resolved)
-   - Resolution notes
-4. **Quick actions** - Update status, add resolution notes, delete reports
-5. **Dashboard widget stays** (optional) - Can keep a compact summary on the Dashboard linking to the full page
+1. **Dashboard always visible** - One-click access to the main hub
+2. **2 collapsible groups** - Operations and Financials sections expand/collapse
+3. **Auto-expand active section** - The group containing the current page stays open
+4. **Cleaner visual hierarchy** - 9 items condensed into 3 visual sections
+5. **Chevron indicators** - Show expand/collapse state for each group
 
 ---
 
-## Implementation Steps
+## Implementation Details
 
-### 1. Create the Maintenance Page
-
-**New file: `src/pages/Maintenance.tsx`**
-
-A new page component with:
-- Page header with title and stats summary (total open, in progress, resolved counts)
-- Tabbed interface using the existing Tabs component:
-  - **Open** tab - Shows all reports with status `open`
-  - **In Progress** tab - Shows all reports with status `in_progress`
-  - **Resolved** tab - Shows all reports with status `resolved`
-- Detailed report cards with full information and actions
-- Quick status change dropdowns
-- Expandable description/notes sections
-- Resolution notes input for closing reports
-- Delete confirmation dialog
-
-### 2. Add Sidebar Navigation Link
-
-**Update: `src/components/layout/AppSidebar.tsx`**
-
-Add a new navigation item:
-- Icon: `Wrench` (from lucide-react)
-- Title: "Maintenance"
-- URL: `/maintenance`
-- Position: After "Locations" (high visibility since it's operational)
-
-### 3. Add Mobile Navigation Link
-
-**Update: `src/components/layout/MobileBottomNav.tsx`**
-
-Add "Maintenance" to the `moreTabs` array so it's accessible from the "More" menu on mobile devices.
-
-### 4. Add Route to App.tsx
-
-**Update: `src/App.tsx`**
-
-Add protected route:
-```
-/maintenance → Maintenance page (wrapped in AppLayout + ProtectedRoute)
-```
-
-### 5. Update Dashboard Widget (Optional Enhancement)
-
-**Update: `src/components/maintenance/MaintenanceWidget.tsx`**
-
-Add a "View All" button that links to `/maintenance` for users who want to see the full list.
-
----
-
-## Technical Details
-
-### Page Layout Structure
-
-```text
-+--------------------------------------------------+
-|  Maintenance Reports                              |
-|  Manage and track machine issues                  |
-+--------------------------------------------------+
-|  [Open (3)]  [In Progress (1)]  [Resolved (5)]   |
-+--------------------------------------------------+
-|                                                   |
-|  +--------------------------------------------+  |
-|  | Machine: Mini Claw #1                      |  |
-|  | Location: Pizza Palace                     |  |
-|  | ------------------------------------------ |  |
-|  | Issue: Coin Jam         Severity: [HIGH]   |  |
-|  | Description: Coins keep getting stuck...   |  |
-|  | ------------------------------------------ |  |
-|  | Reporter: John D.  |  Phone: 555-1234      |  |
-|  | Reported: Jan 30, 2:15 PM                  |  |
-|  | ------------------------------------------ |  |
-|  | Status: [Open ▼]     [Delete]              |  |
-|  +--------------------------------------------+  |
-|                                                   |
-|  +--------------------------------------------+  |
-|  | (next report card...)                      |  |
-|  +--------------------------------------------+  |
-+--------------------------------------------------+
-```
-
-### Files to Create/Modify
+### File Changes
 
 | File | Action | Purpose |
 |------|--------|---------|
-| `src/pages/Maintenance.tsx` | Create | New dedicated maintenance page |
-| `src/components/layout/AppSidebar.tsx` | Modify | Add sidebar nav link |
-| `src/components/layout/MobileBottomNav.tsx` | Modify | Add mobile nav link |
-| `src/App.tsx` | Modify | Add protected route |
-| `src/components/maintenance/MaintenanceWidget.tsx` | Modify | Add "View All" link |
+| `src/components/layout/AppSidebar.tsx` | Modify | Add 2 collapsible groups below Dashboard |
+| `src/components/layout/MobileBottomNav.tsx` | Modify | Group items in "More" menu with section headers |
 
-### Existing Hook (No Changes Needed)
+### Sidebar Implementation
 
-The `useMaintenanceReports` hook already provides everything we need:
-- `reports` - All reports
-- `openReports` - Filtered open reports
-- `inProgressReports` - Filtered in-progress reports
-- `resolvedReports` - Filtered resolved reports
-- `updateReport()` - Update status/resolution
-- `deleteReport()` - Delete a report
-- `refetch()` - Refresh data
+**Structure:**
+- Dashboard as standalone `NavLink` at the top (no group wrapper)
+- Operations group using `Collapsible` component with `ChevronDown` toggle
+- Financials & Reports group using `Collapsible` component with `ChevronDown` toggle
+
+**Behavior:**
+- Groups auto-expand when they contain the active route (using `useLocation`)
+- Clicking group header toggles open/closed state
+- Smooth animation on expand/collapse using existing `CollapsibleContent`
+- Active item styling preserved within groups
+
+**Group Items:**
+
+Operations:
+- Locations (MapPin icon)
+- Maintenance (Wrench icon)
+- Routes (Car icon)
+- Inventory Tracker (Package icon)
+
+Financials & Reports:
+- Revenue Tracker (DollarSign icon)
+- Reports (BarChart3 icon)
+- Commission Summary (Receipt icon)
+- Location Agreement Generator (FileText icon)
+
+### Mobile Navigation Update
+
+The "More" sheet will show items grouped under section headers:
+- **Operations** section with its 4 items
+- Divider
+- **Financials & Reports** section with its 4 items
+- Divider
+- Settings and Sign Out at bottom
 
 ---
 
-## Summary
+## Technical Approach
 
-This creates a proper Maintenance section in your app with:
-- Dedicated sidebar navigation
-- Full-page detailed view of all reports
-- Tabbed interface for easy filtering by status
-- Complete report details including reporter info
-- Quick status updates and resolution management
-- Mobile-friendly access through the More menu
+Uses the existing `Collapsible`, `CollapsibleTrigger`, and `CollapsibleContent` components from `@radix-ui/react-collapsible` (already in the project).
+
+State management:
+- Track which groups are open with `useState`
+- Auto-open logic based on `location.pathname` matching any item in the group
+- Persist user's manual open/close preference during session
 
