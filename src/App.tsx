@@ -15,6 +15,7 @@ import RevenueTracker from "./pages/RevenueTracker";
 import MileageTracker from "./pages/MileageTracker";
 import Locations from "./pages/Locations";
 import Receipts from "./pages/Receipts";
+import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -151,6 +152,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <AppLayout>
               <Receipts />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <Reports />
             </AppLayout>
           </ProtectedRoute>
         }
