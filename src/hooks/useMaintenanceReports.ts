@@ -137,7 +137,7 @@ export function useMaintenanceReports() {
   };
 }
 
-// Public function to submit a report (no auth required)
+// Public function to submit a report via edge function (with rate limiting, no auth required)
 export async function submitMaintenanceReport(data: {
   machine_id: string;
   reporter_name?: string;
@@ -146,29 +146,27 @@ export async function submitMaintenanceReport(data: {
   description: string;
   severity: string;
 }) {
-  // First, get the machine owner
-  const { data: ownerData, error: ownerError } = await supabase.rpc(
-    "get_machine_owner",
-    { machine_uuid: data.machine_id }
-  );
-
-  if (ownerError || !ownerData) {
-    throw new Error("Invalid machine ID or machine not found");
-  }
-
-  // Insert the report with the owner's user_id
-  const { error } = await supabase.from("maintenance_reports").insert({
-    machine_id: data.machine_id,
-    user_id: ownerData,
-    reporter_name: data.reporter_name || null,
-    reporter_contact: data.reporter_contact || null,
-    issue_type: data.issue_type,
-    description: data.description,
-    severity: data.severity,
-    status: "open",
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  
+  const response = await fetch(`${supabaseUrl}/functions/v1/submit-maintenance-report`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      machine_id: data.machine_id,
+      reporter_name: data.reporter_name || null,
+      reporter_contact: data.reporter_contact || null,
+      issue_type: data.issue_type,
+      description: data.description,
+      severity: data.severity,
+    }),
   });
 
-  if (error) throw error;
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Failed to submit report" }));
+    throw new Error(errorData.error || "Failed to submit report");
+  }
 
   return true;
 }

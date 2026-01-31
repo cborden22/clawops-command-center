@@ -1,1 +1,4 @@
 project_id = "qzvcbegrygblyrldfdyz"
+
+[functions.submit-maintenance-report]
+verify_jwt = false
