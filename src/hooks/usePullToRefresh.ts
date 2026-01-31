@@ -30,8 +30,9 @@ export function usePullToRefresh({
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (!containerRef.current || isRefreshing) return;
     
-    // Only activate if at top of scroll
-    if (containerRef.current.scrollTop <= 0) {
+    // More strict check - only activate if exactly at top
+    const scrollTop = containerRef.current.scrollTop;
+    if (scrollTop === 0) {
       startY.current = e.touches[0].clientY;
       setIsPulling(true);
       hasTriggeredHaptic.current = false;
@@ -41,28 +42,42 @@ export function usePullToRefresh({
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!isPulling || isRefreshing) return;
     
+    // Check if scroll position has changed (user scrolled down)
+    if (containerRef.current && containerRef.current.scrollTop > 0) {
+      // Cancel pull gesture if user is scrolling the content
+      setIsPulling(false);
+      setPullDistance(0);
+      return;
+    }
+    
     currentY.current = e.touches[0].clientY;
     const diff = currentY.current - startY.current;
     
-    if (diff > 0) {
-      // Apply resistance - pull distance is reduced as you pull further
-      const resistance = 0.5;
-      const newPullDistance = Math.min(diff * resistance, threshold * 1.5);
-      
-      // Trigger haptic when crossing threshold
-      if (newPullDistance >= threshold && !hasTriggeredHaptic.current) {
-        triggerHaptic(hapticPatterns.refresh);
-        hasTriggeredHaptic.current = true;
-      } else if (newPullDistance < threshold && hasTriggeredHaptic.current) {
-        hasTriggeredHaptic.current = false;
-      }
-      
-      setPullDistance(newPullDistance);
-      
-      // Prevent default scroll when pulling
-      if (containerRef.current && containerRef.current.scrollTop <= 0) {
-        e.preventDefault();
-      }
+    // Only process if pulling DOWN (positive diff)
+    // If pulling up (negative diff), cancel the gesture
+    if (diff < 0) {
+      setIsPulling(false);
+      setPullDistance(0);
+      return;
+    }
+    
+    // Apply resistance - pull distance is reduced as you pull further
+    const resistance = 0.5;
+    const newPullDistance = Math.min(diff * resistance, threshold * 1.5);
+    
+    // Trigger haptic when crossing threshold
+    if (newPullDistance >= threshold && !hasTriggeredHaptic.current) {
+      triggerHaptic(hapticPatterns.refresh);
+      hasTriggeredHaptic.current = true;
+    } else if (newPullDistance < threshold && hasTriggeredHaptic.current) {
+      hasTriggeredHaptic.current = false;
+    }
+    
+    setPullDistance(newPullDistance);
+    
+    // Prevent default scroll when pulling down at top
+    if (containerRef.current && containerRef.current.scrollTop === 0 && diff > 0) {
+      e.preventDefault();
     }
   }, [isPulling, isRefreshing, threshold]);
 
