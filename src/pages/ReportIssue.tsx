@@ -16,7 +16,7 @@ import {
 import { AlertTriangle, CheckCircle2, Loader2, Sparkles, MapPin, Calendar, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { z } from "zod";
-import { getMachinePublicInfo, submitMaintenanceReport } from "@/hooks/useMaintenanceReports";
+import { getMachinePublicInfo, getMachineBySlug, submitMaintenanceReport } from "@/hooks/useMaintenanceReports";
 
 const reportSchema = z.object({
   issue_type: z.enum(["not_working", "stuck_prize", "coin_jam", "display_issue", "other"]),
@@ -29,13 +29,19 @@ const reportSchema = z.object({
 type ReportFormData = z.infer<typeof reportSchema>;
 
 interface MachineInfo {
+  machine_id?: string;
   machine_type: string;
   custom_label: string | null;
   location_name: string;
 }
 
 export default function ReportIssue() {
-  const { machineId } = useParams<{ machineId: string }>();
+  // Support both legacy UUID format (/m/:machineId) and new pretty URL format (/:locationSlug/:unitCode)
+  const { machineId, locationSlug, unitCode } = useParams<{ 
+    machineId?: string;
+    locationSlug?: string;
+    unitCode?: string;
+  }>();
   const navigate = useNavigate();
 
   const [machineInfo, setMachineInfo] = useState<MachineInfo | null>(null);
@@ -55,14 +61,27 @@ export default function ReportIssue() {
 
   useEffect(() => {
     async function loadMachine() {
-      if (!machineId) {
+      // Check if we have either legacy UUID or new pretty URL params
+      const hasLegacyParams = !!machineId;
+      const hasPrettyParams = !!locationSlug && !!unitCode;
+      
+      if (!hasLegacyParams && !hasPrettyParams) {
         setMachineError(true);
         setIsLoadingMachine(false);
         return;
       }
 
       try {
-        const info = await getMachinePublicInfo(machineId);
+        let info: MachineInfo | null = null;
+        
+        if (hasPrettyParams) {
+          // New pretty URL format: /:locationSlug/:unitCode
+          info = await getMachineBySlug(locationSlug!, unitCode!);
+        } else if (hasLegacyParams) {
+          // Legacy UUID format: /m/:machineId
+          info = await getMachinePublicInfo(machineId!);
+        }
+        
         if (info) {
           setMachineInfo(info);
         } else {
@@ -77,7 +96,7 @@ export default function ReportIssue() {
     }
 
     loadMachine();
-  }, [machineId]);
+  }, [machineId, locationSlug, unitCode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,8 +118,15 @@ export default function ReportIssue() {
     setIsSubmitting(true);
 
     try {
+      // Use machine_id from machineInfo if available (for pretty URLs), otherwise use machineId from params
+      const resolvedMachineId = machineInfo?.machine_id || machineId;
+      
+      if (!resolvedMachineId) {
+        throw new Error("Machine ID not found");
+      }
+      
       await submitMaintenanceReport({
-        machine_id: machineId!,
+        machine_id: resolvedMachineId,
         reporter_name: formData.reporter_name || undefined,
         reporter_contact: formData.reporter_contact || undefined,
         issue_type: formData.issue_type,

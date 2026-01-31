@@ -182,6 +182,7 @@ export type Database = {
           id: string
           location_id: string
           machine_type: string
+          unit_code: string | null
           win_probability: number | null
         }
         Insert: {
@@ -191,6 +192,7 @@ export type Database = {
           id?: string
           location_id: string
           machine_type: string
+          unit_code?: string | null
           win_probability?: number | null
         }
         Update: {
@@ -200,6 +202,7 @@ export type Database = {
           id?: string
           location_id?: string
           machine_type?: string
+          unit_code?: string | null
           win_probability?: number | null
         }
         Relationships: [
@@ -224,6 +227,7 @@ export type Database = {
           is_active: boolean | null
           name: string
           notes: string | null
+          slug: string | null
           updated_at: string | null
           user_id: string
         }
@@ -238,6 +242,7 @@ export type Database = {
           is_active?: boolean | null
           name: string
           notes?: string | null
+          slug?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -252,6 +257,7 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           notes?: string | null
+          slug?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -712,6 +718,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_machine_by_slug: {
+        Args: { location_slug: string; machine_unit_code: string }
+        Returns: {
+          custom_label: string
+          location_name: string
+          machine_id: string
+          machine_type: string
+        }[]
+      }
       get_machine_owner: { Args: { machine_uuid: string }; Returns: string }
       get_machine_public_info: {
         Args: { machine_uuid: string }

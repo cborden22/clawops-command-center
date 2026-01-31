@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { slugify, generateUnitCode } from "@/utils/slugify";
 
 export interface CommissionSummaryRecord {
   id: string;
@@ -41,6 +42,7 @@ export interface MachineType {
   customLabel?: string;
   winProbability?: number; // Stored as "1 in X" (e.g., 15 means 1 in 15 odds)
   costPerPlay?: number; // Dollar value per play (e.g., 0.50, 1.00, 2.00)
+  unitCode?: string; // Auto-generated unit code for QR URLs (e.g., "claw-1")
 }
 
 export const MACHINE_TYPE_OPTIONS: { value: MachineType["type"]; label: string }[] = [
@@ -55,6 +57,7 @@ export const MACHINE_TYPE_OPTIONS: { value: MachineType["type"]; label: string }
 export interface Location {
   id: string;
   name: string;
+  slug?: string; // URL-friendly slug for pretty URLs (auto-generated)
   address: string;
   contactPerson: string;
   contactPhone: string;
@@ -144,6 +147,7 @@ export function useLocations() {
               customLabel,
               winProbability: m.win_probability ? Number(m.win_probability) : undefined,
               costPerPlay: m.cost_per_play ? Number(m.cost_per_play) : 0.50,
+              unitCode: m.unit_code || undefined, // Include unit code for QR URLs
             };
           });
 
@@ -184,6 +188,7 @@ export function useLocations() {
         return {
           id: loc.id,
           name: loc.name,
+          slug: loc.slug || "", // Include slug for pretty URLs
           address: loc.address || "",
           contactPerson: loc.contact_person || "",
           contactPhone: loc.contact_phone || "",
@@ -225,11 +230,15 @@ export function useLocations() {
     if (!user) return null;
 
     try {
+      // Auto-generate slug from location name
+      const generatedSlug = slugify(locationData.name);
+      
       const { data: newLoc, error: locError } = await supabase
         .from("locations")
         .insert({
           user_id: user.id,
           name: locationData.name,
+          slug: generatedSlug,
           address: locationData.address,
           contact_person: locationData.contactPerson,
           contact_phone: locationData.contactPhone,
@@ -243,11 +252,21 @@ export function useLocations() {
 
       if (locError) throw locError;
 
+      if (locError) throw locError;
+
       // Add machines if any
       if (locationData.machines && locationData.machines.length > 0) {
+        // Group machines by type to generate unit codes
+        const typeCounters: Record<string, number> = {};
+        
         const machinesInsert = locationData.machines.map(m => {
           const defaultLabel = MACHINE_TYPE_OPTIONS.find(opt => opt.value === m.type)?.label || "";
           const customLabel = m.customLabel || (m.label !== defaultLabel ? m.label : "");
+          
+          // Generate unit code
+          typeCounters[m.type] = (typeCounters[m.type] || 0) + 1;
+          const unitCode = generateUnitCode(m.type, typeCounters[m.type]);
+          
           return {
             location_id: newLoc.id,
             machine_type: m.type,
@@ -255,6 +274,7 @@ export function useLocations() {
             custom_label: customLabel || null,
             win_probability: m.winProbability || null,
             cost_per_play: m.costPerPlay ?? 0.50,
+            unit_code: unitCode,
           };
         });
 
@@ -283,7 +303,11 @@ export function useLocations() {
 
     try {
       const updateData: any = {};
-      if (updates.name !== undefined) updateData.name = updates.name;
+      if (updates.name !== undefined) {
+        updateData.name = updates.name;
+        // Regenerate slug if name changes
+        updateData.slug = slugify(updates.name);
+      }
       if (updates.address !== undefined) updateData.address = updates.address;
       if (updates.contactPerson !== undefined) updateData.contact_person = updates.contactPerson;
       if (updates.contactPhone !== undefined) updateData.contact_phone = updates.contactPhone;
@@ -306,11 +330,19 @@ export function useLocations() {
         // Delete existing machines
         await supabase.from("location_machines").delete().eq("location_id", id);
 
-        // Add new machines
+        // Add new machines with auto-generated unit codes
         if (updates.machines.length > 0) {
+          // Group machines by type to generate unit codes
+          const typeCounters: Record<string, number> = {};
+          
           const machinesInsert = updates.machines.map(m => {
             const defaultLabel = MACHINE_TYPE_OPTIONS.find(opt => opt.value === m.type)?.label || "";
             const customLabel = m.customLabel || (m.label !== defaultLabel ? m.label : "");
+            
+            // Generate unit code
+            typeCounters[m.type] = (typeCounters[m.type] || 0) + 1;
+            const unitCode = generateUnitCode(m.type, typeCounters[m.type]);
+            
             return {
               location_id: id,
               machine_type: m.type,
@@ -318,6 +350,7 @@ export function useLocations() {
               custom_label: customLabel || null,
               win_probability: m.winProbability || null,
               cost_per_play: m.costPerPlay ?? 0.50,
+              unit_code: unitCode,
             };
           });
 
