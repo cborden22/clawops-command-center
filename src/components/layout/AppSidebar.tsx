@@ -27,7 +27,7 @@ const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Locations", url: "/locations", icon: MapPin },
   { title: "Revenue Tracker", url: "/revenue", icon: DollarSign },
-  { title: "Mileage Tracker", url: "/mileage", icon: Car },
+  { title: "Routes", url: "/mileage", icon: Car },
   { title: "Inventory Tracker", url: "/inventory", icon: Package },
   { title: "Commission Summary", url: "/commission-summary", icon: Receipt },
   { title: "Location Agreement Generator", url: "/documents", icon: FileText },
