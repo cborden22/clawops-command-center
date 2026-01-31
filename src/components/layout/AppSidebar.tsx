@@ -1,4 +1,4 @@
-import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, Car, BarChart3 } from "lucide-react"
+import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, Car, BarChart3, Wrench } from "lucide-react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import {
@@ -26,6 +26,7 @@ import {
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Locations", url: "/locations", icon: MapPin },
+  { title: "Maintenance", url: "/maintenance", icon: Wrench },
   { title: "Revenue Tracker", url: "/revenue", icon: DollarSign },
   { title: "Routes", url: "/mileage", icon: Car },
   { title: "Reports", url: "/reports", icon: BarChart3 },

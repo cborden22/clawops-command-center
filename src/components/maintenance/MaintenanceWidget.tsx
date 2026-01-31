@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +43,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; cl
 };
 
 export function MaintenanceWidget() {
+  const navigate = useNavigate();
   const { openReports, inProgressReports, isLoaded, updateReport } = useMaintenanceReports();
 
   const handleStatusChange = async (report: MaintenanceReport, newStatus: string) => {
@@ -96,6 +98,15 @@ export function MaintenanceWidget() {
             </Badge>
           )}
         </CardTitle>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="text-muted-foreground hover:text-foreground"
+          onClick={() => navigate("/maintenance")}
+        >
+          View All
+          <ArrowRight className="h-4 w-4 ml-1" />
+        </Button>
       </CardHeader>
 
       <CardContent className="space-y-3">
