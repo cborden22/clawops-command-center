@@ -13,6 +13,9 @@ export interface MileageEntry {
   purpose: string;
   notes: string;
   isRoundTrip: boolean;
+  vehicleId?: string;
+  odometerStart?: number;
+  odometerEnd?: number;
   createdAt: Date;
 }
 
@@ -50,6 +53,9 @@ export function useMileage() {
         purpose: e.purpose || "",
         notes: e.notes || "",
         isRoundTrip: e.is_round_trip || false,
+        vehicleId: e.vehicle_id || undefined,
+        odometerStart: e.odometer_start ? Number(e.odometer_start) : undefined,
+        odometerEnd: e.odometer_end ? Number(e.odometer_end) : undefined,
         createdAt: new Date(e.created_at),
       }));
 
@@ -95,9 +101,14 @@ export function useMileage() {
           purpose: entry.purpose,
           notes: entry.notes,
           is_round_trip: entry.isRoundTrip,
+          vehicle_id: entry.vehicleId || null,
+          odometer_start: entry.odometerStart || null,
+          odometer_end: entry.odometerEnd || null,
         })
         .select()
         .single();
+
+      if (error) throw error;
 
       if (error) throw error;
 
@@ -111,6 +122,9 @@ export function useMileage() {
         purpose: data.purpose || "",
         notes: data.notes || "",
         isRoundTrip: data.is_round_trip || false,
+        vehicleId: data.vehicle_id || undefined,
+        odometerStart: data.odometer_start ? Number(data.odometer_start) : undefined,
+        odometerEnd: data.odometer_end ? Number(data.odometer_end) : undefined,
         createdAt: new Date(data.created_at),
       };
 

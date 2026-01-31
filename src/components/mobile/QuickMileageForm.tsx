@@ -5,11 +5,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useMileage } from "@/hooks/useMileageDB";
 import { useLocations } from "@/hooks/useLocationsDB";
 import { useRoutes, MileageRoute } from "@/hooks/useRoutesDB";
+import { useVehicles } from "@/hooks/useVehiclesDB";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, RotateCcw, MapPin, Route, X } from "lucide-react";
+import { Loader2, RotateCcw, MapPin, Route, X, Gauge, Car, AlertTriangle } from "lucide-react";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
 
 interface QuickMileageFormProps {
@@ -30,7 +32,8 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
   const { addEntry } = useMileage();
   const { locations, getLocationById } = useLocations();
   const { routes, getRouteById } = useRoutes();
-  const { settings } = useAppSettings();
+  const { vehicles, updateVehicleOdometer, getVehicleById } = useVehicles();
+  const { settings, updateSetting } = useAppSettings();
   
   const [selectedRouteId, setSelectedRouteId] = useState("");
   const [startLocation, setStartLocation] = useState(settings.warehouseAddress || "");
@@ -40,8 +43,32 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
   const [isRoundTrip, setIsRoundTrip] = useState(true);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Odometer mode state
+  const [odometerMode, setOdometerMode] = useState(settings.preferOdometerMode);
+  const [selectedVehicleId, setSelectedVehicleId] = useState("");
+  const [odometerStart, setOdometerStart] = useState("");
+  const [odometerEnd, setOdometerEnd] = useState("");
 
   const activeLocations = locations.filter((loc) => loc.isActive);
+  
+  // Calculate miles from odometer readings
+  const startNum = parseFloat(odometerStart) || 0;
+  const endNum = parseFloat(odometerEnd) || 0;
+  const calculatedMiles = odometerMode && startNum && endNum && endNum > startNum 
+    ? endNum - startNum 
+    : null;
+  const isEndLessThanStart = odometerEnd && odometerStart && endNum < startNum;
+  const isLargeJump = calculatedMiles !== null && calculatedMiles > 500;
+  
+  const selectedVehicle = selectedVehicleId ? getVehicleById(selectedVehicleId) : undefined;
+  
+  // Sync odometer mode preference
+  useEffect(() => {
+    if (odometerMode !== settings.preferOdometerMode) {
+      updateSetting("preferOdometerMode", odometerMode);
+    }
+  }, [odometerMode]);
 
   const handleRouteSelect = (routeId: string) => {
     if (!routeId || routeId === "none") {
@@ -92,6 +119,12 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
     setPurpose("");
     setIsRoundTrip(true);
   };
+  
+  const handleClearOdometerForm = () => {
+    setOdometerStart("");
+    setOdometerEnd("");
+    setSelectedVehicleId("");
+  };
 
   const handleLocationSelect = (locationId: string) => {
     const location = locations.find((l) => l.id === locationId);
@@ -101,30 +134,73 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
   };
 
   const handleSubmit = async () => {
+    // Determine the miles to use
+    let milesToLog: number;
+    let vehicleIdToLog: string | undefined;
+    let odometerStartVal: number | undefined;
+    let odometerEndVal: number | undefined;
+    
+    if (odometerMode) {
+      // Odometer mode validation
+      if (!odometerStart || !odometerEnd) {
+        toast({ title: "Missing Readings", description: "Enter both odometer readings.", variant: "destructive" });
+        return;
+      }
+      
+      const startVal = parseFloat(odometerStart);
+      const endVal = parseFloat(odometerEnd);
+      
+      if (isNaN(startVal) || isNaN(endVal) || endVal <= startVal) {
+        toast({ title: "Invalid Range", description: "End must be greater than start.", variant: "destructive" });
+        return;
+      }
+      
+      milesToLog = endVal - startVal;
+      vehicleIdToLog = selectedVehicleId || undefined;
+      odometerStartVal = startVal;
+      odometerEndVal = endVal;
+      
+      if (isRoundTrip) {
+        milesToLog = milesToLog * 2;
+      }
+    } else {
+      // Manual miles mode
+      if (!miles || parseFloat(miles) <= 0) {
+        toast({ title: "Enter miles", description: "Please enter a valid mileage.", variant: "destructive" });
+        return;
+      }
+      milesToLog = isRoundTrip ? parseFloat(miles) * 2 : parseFloat(miles);
+    }
+    
     if (!startLocation.trim() || !endLocation.trim()) {
       toast({ title: "Enter locations", description: "Please enter start and end locations.", variant: "destructive" });
-      return;
-    }
-    if (!miles || parseFloat(miles) <= 0) {
-      toast({ title: "Enter miles", description: "Please enter a valid mileage.", variant: "destructive" });
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // Calculate total miles (doubled if round trip)
-      const totalMiles = isRoundTrip ? parseFloat(miles) * 2 : parseFloat(miles);
-      
-      await addEntry({
+      const result = await addEntry({
         date: new Date(),
         startLocation: startLocation.trim(),
         endLocation: endLocation.trim(),
-        miles: totalMiles,
+        miles: milesToLog,
         purpose: purpose || "",
         isRoundTrip,
         notes: notes || "",
+        vehicleId: vehicleIdToLog,
+        odometerStart: odometerStartVal,
+        odometerEnd: odometerEndVal,
       });
-      toast({ title: "Mileage logged!", description: `${totalMiles} miles recorded.` });
+      
+      // Update vehicle's last recorded odometer
+      if (result && odometerMode && vehicleIdToLog && odometerEndVal) {
+        await updateVehicleOdometer(vehicleIdToLog, odometerEndVal);
+      }
+      
+      toast({ 
+        title: "Mileage logged!", 
+        description: `${milesToLog.toFixed(1)} miles recorded${odometerMode ? " via odometer" : ""}.` 
+      });
       onSuccess();
     } catch (error) {
       toast({ title: "Error", description: "Failed to log mileage.", variant: "destructive" });
@@ -184,6 +260,102 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
         </div>
       )}
 
+      {/* Odometer Mode Toggle */}
+      <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+        <div className="flex items-center gap-2">
+          <Gauge className="h-4 w-4 text-muted-foreground" />
+          <Label className="text-sm font-medium">Use Odometer</Label>
+        </div>
+        <Switch checked={odometerMode} onCheckedChange={setOdometerMode} />
+      </div>
+
+      {/* Odometer Mode Inputs */}
+      {odometerMode && (
+        <div className="space-y-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
+          {/* Vehicle Selector */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Vehicle</Label>
+            {vehicles.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No vehicles added. Add in Settings.</p>
+            ) : (
+              <Select value={selectedVehicleId} onValueChange={setSelectedVehicleId}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Select a vehicle..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {vehicles.map((vehicle) => (
+                    <SelectItem key={vehicle.id} value={vehicle.id}>
+                      <div className="flex items-center gap-2">
+                        <Car className="h-3 w-3" />
+                        <span>{vehicle.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {selectedVehicle?.lastRecordedOdometer !== undefined && (
+              <p className="text-xs text-muted-foreground">
+                Last recorded: {selectedVehicle.lastRecordedOdometer.toLocaleString()} miles
+              </p>
+            )}
+          </div>
+
+          {/* Odometer Inputs */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Start</Label>
+              <Input
+                type="number"
+                inputMode="numeric"
+                placeholder="e.g., 45276"
+                value={odometerStart}
+                onChange={(e) => setOdometerStart(e.target.value)}
+                className="h-14 text-xl font-semibold text-center"
+                onFocus={(e) => e.target.select()}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">End</Label>
+              <Input
+                type="number"
+                inputMode="numeric"
+                placeholder="e.g., 45322"
+                value={odometerEnd}
+                onChange={(e) => setOdometerEnd(e.target.value)}
+                className="h-14 text-xl font-semibold text-center"
+                onFocus={(e) => e.target.select()}
+              />
+            </div>
+          </div>
+
+          {/* Calculated Miles Display */}
+          {calculatedMiles !== null && calculatedMiles > 0 && (
+            <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
+              <span className="text-sm font-medium">Calculated Miles</span>
+              <Badge variant="secondary" className="text-lg font-bold">
+                {calculatedMiles.toFixed(1)} mi
+              </Badge>
+            </div>
+          )}
+
+          {/* Validation Warnings */}
+          {isEndLessThanStart && (
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+              <span>End must be greater than start</span>
+            </div>
+          )}
+          
+          {isLargeJump && !isEndLessThanStart && (
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-sm">
+              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+              <span>Large distance - verify readings</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Start Location */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">Start Location</Label>
@@ -232,19 +404,21 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
         )}
       </div>
 
-      {/* Miles */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Miles (one-way)</Label>
-        <Input
-          type="number"
-          inputMode="decimal"
-          placeholder="0"
-          value={miles}
-          onChange={(e) => setMiles(e.target.value)}
-          className="h-14 text-2xl font-semibold text-center"
-          onFocus={(e) => e.target.select()}
-        />
-      </div>
+      {/* Miles - Only show in manual mode */}
+      {!odometerMode && (
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Miles (one-way)</Label>
+          <Input
+            type="number"
+            inputMode="decimal"
+            placeholder="0"
+            value={miles}
+            onChange={(e) => setMiles(e.target.value)}
+            className="h-14 text-2xl font-semibold text-center"
+            onFocus={(e) => e.target.select()}
+          />
+        </div>
+      )}
 
       {/* Round Trip Toggle */}
       <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
@@ -254,9 +428,14 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
         </div>
         <Switch checked={isRoundTrip} onCheckedChange={setIsRoundTrip} />
       </div>
-      {isRoundTrip && miles && (
+      {isRoundTrip && !odometerMode && miles && (
         <p className="text-xs text-muted-foreground text-center">
           Total: {(parseFloat(miles) * 2).toFixed(1)} miles
+        </p>
+      )}
+      {isRoundTrip && odometerMode && calculatedMiles !== null && calculatedMiles > 0 && (
+        <p className="text-xs text-muted-foreground text-center">
+          Total with round trip: {(calculatedMiles * 2).toFixed(1)} miles
         </p>
       )}
 
@@ -291,7 +470,12 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       {/* Submit Button */}
       <Button
         onClick={handleSubmit}
-        disabled={isSubmitting || !miles || !startLocation || !endLocation}
+        disabled={
+          isSubmitting || 
+          !startLocation || 
+          !endLocation || 
+          (odometerMode ? (!odometerStart || !odometerEnd || isEndLessThanStart) : !miles)
+        }
         className="w-full h-14 text-lg font-semibold"
         size="lg"
       >
