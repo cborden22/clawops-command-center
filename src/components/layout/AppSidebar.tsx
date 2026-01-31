@@ -1,4 +1,4 @@
-import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, Car } from "lucide-react"
+import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, Car, BarChart3 } from "lucide-react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import {
@@ -28,6 +28,7 @@ const items = [
   { title: "Locations", url: "/locations", icon: MapPin },
   { title: "Revenue Tracker", url: "/revenue", icon: DollarSign },
   { title: "Routes", url: "/mileage", icon: Car },
+  { title: "Reports", url: "/reports", icon: BarChart3 },
   { title: "Inventory Tracker", url: "/inventory", icon: Package },
   { title: "Commission Summary", url: "/commission-summary", icon: Receipt },
   { title: "Location Agreement Generator", url: "/documents", icon: FileText },

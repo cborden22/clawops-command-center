@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, DollarSign, Package, Plus, MoreHorizontal, MapPin, Car, FileText, Settings, LogOut, Receipt } from "lucide-react";
+import { LayoutDashboard, DollarSign, Package, Plus, MoreHorizontal, MapPin, Car, FileText, Settings, LogOut, Receipt, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
   const moreTabs = [
     { path: "/locations", icon: MapPin, label: "Locations" },
     { path: "/mileage", icon: Car, label: "Routes" },
+    { path: "/reports", icon: BarChart3, label: "Reports" },
     { path: "/receipts", icon: Receipt, label: "Receipts" },
     { path: "documents-picker", icon: FileText, label: "Documents", isDocuments: true },
     { path: "/settings", icon: Settings, label: "Settings" },
