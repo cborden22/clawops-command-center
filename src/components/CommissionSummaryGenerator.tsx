@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { FileText, Download, Calendar as CalendarIcon, Building2, User, DollarSign, Calculator, MapPin, AlertCircle } from "lucide-react"
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns"
@@ -35,6 +36,7 @@ export function CommissionSummaryGenerator() {
   const { toast } = useToast()
   const { user } = useAuth()
   const { activeLocations, getLocationById, isLoaded, addCommissionSummary } = useLocations()
+  const [showRevenue, setShowRevenue] = useState(true)
   const [locationData, setLocationData] = useState<LocationData>({
     locationId: "",
     name: "",
@@ -120,7 +122,8 @@ export function CommissionSummaryGenerator() {
     const currentDate = new Date().toLocaleDateString()
     const periodText = getFormattedPeriod()
     
-    const content = `
+    // Template with revenue shown (current behavior)
+    const contentWithRevenue = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333; line-height: 1.6;">
         <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px;">
           <h1 style="font-size: 28px; margin: 0; color: #1f2937; font-weight: bold;">COMMISSION SUMMARY</h1>
@@ -175,6 +178,61 @@ export function CommissionSummaryGenerator() {
         </div>
       </div>
     `
+
+    // Template without revenue (simplified commission statement)
+    const contentWithoutRevenue = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333; line-height: 1.6;">
+        <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px;">
+          <h1 style="font-size: 28px; margin: 0; color: #1f2937; font-weight: bold;">COMMISSION STATEMENT</h1>
+          <p style="color: #6b7280; margin: 10px 0; font-size: 14px;">Generated on ${currentDate}</p>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h2 style="font-size: 18px; margin: 0 0 20px 0; color: #374151; font-weight: 600;">Location Information</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 12px 0; font-weight: 600; color: #374151; width: 40%; border-bottom: 1px solid #f3f4f6;">Business Name:</td>
+              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${locationData.name}</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Contact Person:</td>
+              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${locationData.contactPerson || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Period:</td>
+              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${periodText}</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 0; font-weight: 600; color: #374151;">Number of Machines:</td>
+              <td style="padding: 12px 0; color: #1f2937;">${locationData.machineCount}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="text-align: center; margin: 40px 0;">
+          <div style="background: #dcfce7; padding: 40px 30px; border-radius: 12px; border: 2px solid #22c55e;">
+            <p style="color: #15803d; margin: 0 0 15px 0; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">COMMISSION PAYMENT</p>
+            <p style="font-size: 48px; font-weight: bold; margin: 0 0 15px 0; color: #15803d;">$${locationData.commissionAmount.toFixed(2)}</p>
+            <p style="color: #16a34a; margin: 0; font-size: 14px;">For the period ${periodText}</p>
+          </div>
+        </div>
+
+        ${locationData.notes ? `
+        <div style="margin: 30px 0;">
+          <h3 style="font-size: 16px; color: #374151; margin: 0 0 15px 0; font-weight: 600;">Additional Notes</h3>
+          <div style="color: #4b5563; line-height: 1.6; margin: 0; padding: 20px; background: #f9fafb; border-radius: 6px; border-left: 4px solid #e5e7eb;">${locationData.notes}</div>
+        </div>
+        ` : ''}
+
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+            This commission statement was generated by ClawOps Business Dashboard
+          </p>
+        </div>
+      </div>
+    `
+
+    const content = showRevenue ? contentWithRevenue : contentWithoutRevenue
 
     const filename = `commission-summary-${locationData.name.replace(/\s+/g, '-').toLowerCase()}-${format(locationData.startDate, 'yyyy-MM-dd')}.pdf`
     
@@ -435,6 +493,21 @@ export function CommissionSummaryGenerator() {
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <DollarSign className="h-4 w-4" />
             Financial Details
+          </div>
+
+          {/* Toggle for showing revenue on PDF */}
+          <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+            <div className="space-y-0.5">
+              <Label htmlFor="showRevenue">Show total revenue on PDF</Label>
+              <p className="text-xs text-muted-foreground">
+                When disabled, only the commission amount will appear
+              </p>
+            </div>
+            <Switch
+              id="showRevenue"
+              checked={showRevenue}
+              onCheckedChange={setShowRevenue}
+            />
           </div>
           
           <div className="grid gap-4 md:grid-cols-2">
