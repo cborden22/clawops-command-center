@@ -66,121 +66,121 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function AppRoutes() {
+function ProtectedAppRoutes() {
   return (
-    <Routes>
-      <Route
-        path="/auth"
-        element={
-          <AuthRoute>
-            <Auth />
-          </AuthRoute>
-        }
-      />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <Dashboard />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/locations"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <Locations />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/documents"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <Documents />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/commission-summary"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <CommissionSummary />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/inventory"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <InventoryTracker />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/revenue"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <RevenueTracker />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/mileage"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <MileageTracker />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/receipts"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <Receipts />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/reports"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <Reports />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <AppLayout>
-              <Settings />
-            </AppLayout>
-          </ProtectedRoute>
-        }
-      />
-      {/* Public route - short URL for QR codes */}
-      <Route path="/m/:machineId" element={<ReportIssue />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <AuthProvider>
+      <Routes>
+        <Route
+          path="/auth"
+          element={
+            <AuthRoute>
+              <Auth />
+            </AuthRoute>
+          }
+        />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Dashboard />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/locations"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Locations />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/documents"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Documents />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/commission-summary"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <CommissionSummary />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inventory"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <InventoryTracker />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/revenue"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <RevenueTracker />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/mileage"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <MileageTracker />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/receipts"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Receipts />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Reports />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Settings />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </AuthProvider>
   );
 }
 
@@ -194,9 +194,12 @@ const App: React.FC = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <AuthProvider>
-                <AppRoutes />
-              </AuthProvider>
+              <Routes>
+                {/* Public route - handled BEFORE AuthProvider for QR code access */}
+                <Route path="/m/:machineId" element={<ReportIssue />} />
+                {/* All other routes go through AuthProvider */}
+                <Route path="/*" element={<ProtectedAppRoutes />} />
+              </Routes>
             </BrowserRouter>
           </TooltipProvider>
         </AppSettingsProvider>
