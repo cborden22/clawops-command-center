@@ -28,7 +28,7 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
 
   const moreTabs = [
     { path: "/locations", icon: MapPin, label: "Locations" },
-    { path: "/mileage", icon: Car, label: "Mileage" },
+    { path: "/mileage", icon: Car, label: "Routes" },
     { path: "/receipts", icon: Receipt, label: "Receipts" },
     { path: "documents-picker", icon: FileText, label: "Documents", isDocuments: true },
     { path: "/settings", icon: Settings, label: "Settings" },

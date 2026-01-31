@@ -1,18 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useMileage } from "@/hooks/useMileageDB";
 import { useLocations } from "@/hooks/useLocationsDB";
-import { useRoutes, MileageRoute } from "@/hooks/useRoutesDB";
 import { useVehicles } from "@/hooks/useVehiclesDB";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, RotateCcw, MapPin, Route, X, Gauge, Car, AlertTriangle } from "lucide-react";
+import { Loader2, Car, AlertTriangle } from "lucide-react";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
+import { LocationSelector, LocationSelection, getLocationDisplayString } from "@/components/mileage/LocationSelector";
+import { useNavigate } from "react-router-dom";
 
 interface QuickMileageFormProps {
   onSuccess: () => void;
@@ -29,414 +29,221 @@ const tripPurposes = [
 ];
 
 export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
+  const navigate = useNavigate();
   const { addEntry } = useMileage();
-  const { locations, getLocationById } = useLocations();
-  const { routes, getRouteById } = useRoutes();
+  const { activeLocations } = useLocations();
   const { vehicles, updateVehicleOdometer, getVehicleById } = useVehicles();
-  const { settings, updateSetting } = useAppSettings();
+  const { settings } = useAppSettings();
   
-  const [selectedRouteId, setSelectedRouteId] = useState("");
-  const [startLocation, setStartLocation] = useState(settings.warehouseAddress || "");
-  const [endLocation, setEndLocation] = useState("");
-  const [miles, setMiles] = useState("");
-  const [purpose, setPurpose] = useState("");
-  const [isRoundTrip, setIsRoundTrip] = useState(true);
-  const [notes, setNotes] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Odometer mode state
-  const [odometerMode, setOdometerMode] = useState(settings.preferOdometerMode);
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
+  const [fromSelection, setFromSelection] = useState<LocationSelection>({ type: "warehouse" });
+  const [toSelection, setToSelection] = useState<LocationSelection>({ type: "location" });
   const [odometerStart, setOdometerStart] = useState("");
   const [odometerEnd, setOdometerEnd] = useState("");
-
-  const activeLocations = locations.filter((loc) => loc.isActive);
+  const [purpose, setPurpose] = useState("");
+  const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Calculate miles from odometer readings
   const startNum = parseFloat(odometerStart) || 0;
   const endNum = parseFloat(odometerEnd) || 0;
-  const calculatedMiles = odometerMode && startNum && endNum && endNum > startNum 
-    ? endNum - startNum 
-    : null;
-  const isEndLessThanStart = odometerEnd && odometerStart && endNum < startNum;
+  const calculatedMiles = startNum && endNum && endNum > startNum ? endNum - startNum : null;
+  const isEndLessThanStart = odometerEnd && odometerStart && endNum <= startNum;
   const isLargeJump = calculatedMiles !== null && calculatedMiles > 500;
   
   const selectedVehicle = selectedVehicleId ? getVehicleById(selectedVehicleId) : undefined;
   
-  // Sync odometer mode preference
-  useEffect(() => {
-    if (odometerMode !== settings.preferOdometerMode) {
-      updateSetting("preferOdometerMode", odometerMode);
-    }
-  }, [odometerMode]);
+  // Build warehouse address from settings
+  const warehouseAddress = [
+    settings.warehouseAddress,
+    settings.warehouseCity,
+    settings.warehouseState,
+    settings.warehouseZip
+  ].filter(Boolean).join(", ");
 
-  const handleRouteSelect = (routeId: string) => {
-    if (!routeId || routeId === "none") {
-      handleClearRoute();
-      return;
-    }
-
-    const route = getRouteById(routeId);
-    if (!route || route.stops.length < 2) return;
-
-    const firstStop = route.stops[0];
-    const lastStop = route.stops[route.stops.length - 1];
-
-    // Get start location name
-    let startName = "";
-    if (firstStop.locationId) {
-      const loc = getLocationById(firstStop.locationId);
-      startName = loc?.name || "Unknown";
-    } else {
-      startName = firstStop.customLocationName || "Unknown";
-    }
-
-    // Get end location name
-    let endName = "";
-    if (lastStop.locationId) {
-      const loc = getLocationById(lastStop.locationId);
-      endName = loc?.name || "Unknown";
-    } else {
-      endName = lastStop.customLocationName || "Unknown";
-    }
-
-    // Calculate one-way miles
-    const oneWayMiles = route.stops.reduce((sum, s) => sum + s.milesFromPrevious, 0);
-
-    setSelectedRouteId(routeId);
-    setStartLocation(startName);
-    setEndLocation(endName);
-    setMiles(oneWayMiles.toString());
-    setIsRoundTrip(route.isRoundTrip);
-    setPurpose(route.name);
-  };
-
-  const handleClearRoute = () => {
-    setSelectedRouteId("");
-    setStartLocation(settings.warehouseAddress || "");
-    setEndLocation("");
-    setMiles("");
-    setPurpose("");
-    setIsRoundTrip(true);
-  };
-  
-  const handleClearOdometerForm = () => {
-    setOdometerStart("");
-    setOdometerEnd("");
-    setSelectedVehicleId("");
-  };
-
-  const handleLocationSelect = (locationId: string) => {
-    const location = locations.find((l) => l.id === locationId);
-    if (location?.address) {
-      setEndLocation(location.address);
-    }
+  const handleNavigateToSettings = () => {
+    navigate("/settings");
+    onSuccess(); // Close the sheet
   };
 
   const handleSubmit = async () => {
-    // Determine the miles to use
-    let milesToLog: number;
-    let vehicleIdToLog: string | undefined;
-    let odometerStartVal: number | undefined;
-    let odometerEndVal: number | undefined;
-    
-    if (odometerMode) {
-      // Odometer mode validation
-      if (!odometerStart || !odometerEnd) {
-        toast({ title: "Missing Readings", description: "Enter both odometer readings.", variant: "destructive" });
-        return;
-      }
-      
-      const startVal = parseFloat(odometerStart);
-      const endVal = parseFloat(odometerEnd);
-      
-      if (isNaN(startVal) || isNaN(endVal) || endVal <= startVal) {
-        toast({ title: "Invalid Range", description: "End must be greater than start.", variant: "destructive" });
-        return;
-      }
-      
-      milesToLog = endVal - startVal;
-      vehicleIdToLog = selectedVehicleId || undefined;
-      odometerStartVal = startVal;
-      odometerEndVal = endVal;
-      
-      if (isRoundTrip) {
-        milesToLog = milesToLog * 2;
-      }
-    } else {
-      // Manual miles mode
-      if (!miles || parseFloat(miles) <= 0) {
-        toast({ title: "Enter miles", description: "Please enter a valid mileage.", variant: "destructive" });
-        return;
-      }
-      milesToLog = isRoundTrip ? parseFloat(miles) * 2 : parseFloat(miles);
-    }
-    
-    if (!startLocation.trim() || !endLocation.trim()) {
-      toast({ title: "Enter locations", description: "Please enter start and end locations.", variant: "destructive" });
+    // Validation
+    if (!selectedVehicleId) {
+      toast({ title: "Vehicle Required", description: "Please select a vehicle.", variant: "destructive" });
       return;
     }
+    
+    const startLocationStr = getLocationDisplayString(fromSelection, activeLocations, warehouseAddress);
+    const endLocationStr = getLocationDisplayString(toSelection, activeLocations, warehouseAddress);
+    
+    if (!startLocationStr) {
+      toast({ title: "From Required", description: "Please select or enter a start location.", variant: "destructive" });
+      return;
+    }
+    
+    if (!endLocationStr) {
+      toast({ title: "To Required", description: "Please select or enter a destination.", variant: "destructive" });
+      return;
+    }
+    
+    if (!odometerStart || !odometerEnd) {
+      toast({ title: "Odometer Required", description: "Enter both odometer readings.", variant: "destructive" });
+      return;
+    }
+    
+    const startVal = parseFloat(odometerStart);
+    const endVal = parseFloat(odometerEnd);
+    
+    if (isNaN(startVal) || isNaN(endVal) || endVal <= startVal) {
+      toast({ title: "Invalid Range", description: "End must be greater than start.", variant: "destructive" });
+      return;
+    }
+    
+    const milesToLog = endVal - startVal;
+    const locationId = toSelection.type === "location" ? toSelection.locationId : undefined;
 
     setIsSubmitting(true);
     try {
       const result = await addEntry({
         date: new Date(),
-        startLocation: startLocation.trim(),
-        endLocation: endLocation.trim(),
+        startLocation: startLocationStr,
+        endLocation: endLocationStr,
+        locationId,
         miles: milesToLog,
         purpose: purpose || "",
-        isRoundTrip,
+        isRoundTrip: false,
         notes: notes || "",
-        vehicleId: vehicleIdToLog,
-        odometerStart: odometerStartVal,
-        odometerEnd: odometerEndVal,
+        vehicleId: selectedVehicleId,
+        odometerStart: startVal,
+        odometerEnd: endVal,
       });
       
       // Update vehicle's last recorded odometer
-      if (result && odometerMode && vehicleIdToLog && odometerEndVal) {
-        await updateVehicleOdometer(vehicleIdToLog, odometerEndVal);
+      if (result && selectedVehicleId) {
+        await updateVehicleOdometer(selectedVehicleId, endVal);
       }
       
       toast({ 
-        title: "Mileage logged!", 
-        description: `${milesToLog.toFixed(1)} miles recorded${odometerMode ? " via odometer" : ""}.` 
+        title: "Trip logged!", 
+        description: `${milesToLog.toFixed(1)} miles recorded.` 
       });
       onSuccess();
     } catch (error) {
-      toast({ title: "Error", description: "Failed to log mileage.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to log trip.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const selectedRoute = selectedRouteId ? getRouteById(selectedRouteId) : undefined;
+  const isFormValid = selectedVehicleId && odometerStart && odometerEnd && !isEndLessThanStart;
 
   return (
     <div className="space-y-4">
-      {/* Route Quick Select */}
-      {routes.length > 0 && (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Select a Saved Route</Label>
-          <div className="flex gap-2">
-            <Select value={selectedRouteId || "none"} onValueChange={handleRouteSelect}>
-              <SelectTrigger className="flex-1 h-12">
-                <SelectValue placeholder="Quick select a route..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">
-                  <span className="text-muted-foreground">No route (manual entry)</span>
-                </SelectItem>
-                {routes.map((route) => (
-                  <SelectItem key={route.id} value={route.id}>
-                    <div className="flex items-center gap-2">
-                      <Route className="h-3 w-3" />
-                      <span>{route.name}</span>
-                      <span className="text-muted-foreground">({route.totalMiles.toFixed(1)} mi)</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedRouteId && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleClearRoute}
-                className="flex-shrink-0 h-12 w-12"
-              >
-                <X className="h-4 w-4" />
+      {/* Vehicle Selector */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Vehicle *</Label>
+        {vehicles.length === 0 ? (
+          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+            <p className="text-sm text-amber-600 dark:text-amber-400">
+              No vehicles added.{" "}
+              <Button variant="link" className="p-0 h-auto text-amber-600 dark:text-amber-400 underline" onClick={handleNavigateToSettings}>
+                Add one in Settings
               </Button>
-            )}
+            </p>
           </div>
-          {selectedRoute && (
-            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-              <p className="text-xs text-muted-foreground mb-1">Route: {selectedRoute.name}</p>
-              <p className="text-sm">
-                {selectedRoute.stops.length} stops • {selectedRoute.totalMiles.toFixed(1)} mi total
-                {selectedRoute.isRoundTrip && " (round trip)"}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Odometer Mode Toggle */}
-      <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-        <div className="flex items-center gap-2">
-          <Gauge className="h-4 w-4 text-muted-foreground" />
-          <Label className="text-sm font-medium">Use Odometer</Label>
-        </div>
-        <Switch checked={odometerMode} onCheckedChange={setOdometerMode} />
-      </div>
-
-      {/* Odometer Mode Inputs */}
-      {odometerMode && (
-        <div className="space-y-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
-          {/* Vehicle Selector */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Vehicle</Label>
-            {vehicles.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No vehicles added. Add in Settings.</p>
-            ) : (
-              <Select value={selectedVehicleId} onValueChange={setSelectedVehicleId}>
-                <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Select a vehicle..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {vehicles.map((vehicle) => (
-                    <SelectItem key={vehicle.id} value={vehicle.id}>
-                      <div className="flex items-center gap-2">
-                        <Car className="h-3 w-3" />
-                        <span>{vehicle.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            {selectedVehicle?.lastRecordedOdometer !== undefined && (
-              <p className="text-xs text-muted-foreground">
-                Last recorded: {selectedVehicle.lastRecordedOdometer.toLocaleString()} miles
-              </p>
-            )}
-          </div>
-
-          {/* Odometer Inputs */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Start</Label>
-              <Input
-                type="number"
-                inputMode="numeric"
-                placeholder="e.g., 45276"
-                value={odometerStart}
-                onChange={(e) => setOdometerStart(e.target.value)}
-                className="h-14 text-xl font-semibold text-center"
-                onFocus={(e) => e.target.select()}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">End</Label>
-              <Input
-                type="number"
-                inputMode="numeric"
-                placeholder="e.g., 45322"
-                value={odometerEnd}
-                onChange={(e) => setOdometerEnd(e.target.value)}
-                className="h-14 text-xl font-semibold text-center"
-                onFocus={(e) => e.target.select()}
-              />
-            </div>
-          </div>
-
-          {/* Calculated Miles Display */}
-          {calculatedMiles !== null && calculatedMiles > 0 && (
-            <div className="flex items-center justify-between p-3 rounded-lg bg-background border border-border">
-              <span className="text-sm font-medium">Calculated Miles</span>
-              <Badge variant="secondary" className="text-lg font-bold">
-                {calculatedMiles.toFixed(1)} mi
-              </Badge>
-            </div>
-          )}
-
-          {/* Validation Warnings */}
-          {isEndLessThanStart && (
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-              <span>End must be greater than start</span>
-            </div>
-          )}
-          
-          {isLargeJump && !isEndLessThanStart && (
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-sm">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-              <span>Large distance - verify readings</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Start Location */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Start Location</Label>
-        <Input
-          placeholder="e.g., Home, Warehouse"
-          value={startLocation}
-          onChange={(e) => setStartLocation(e.target.value)}
-          className="h-12"
-        />
-        {settings.warehouseAddress && startLocation !== settings.warehouseAddress && !selectedRouteId && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-xs"
-            onClick={() => setStartLocation(settings.warehouseAddress)}
-          >
-            <MapPin className="h-3 w-3 mr-1" />
-            Use Warehouse
-          </Button>
-        )}
-      </div>
-
-      {/* End Location */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">End Location</Label>
-        <Input
-          placeholder="e.g., Store name, Address"
-          value={endLocation}
-          onChange={(e) => setEndLocation(e.target.value)}
-          className="h-12"
-        />
-        {activeLocations.length > 0 && !selectedRouteId && (
-          <Select onValueChange={handleLocationSelect}>
-            <SelectTrigger className="h-10 text-xs">
-              <SelectValue placeholder="Quick select from saved locations" />
+        ) : (
+          <Select value={selectedVehicleId} onValueChange={setSelectedVehicleId}>
+            <SelectTrigger className="h-12">
+              <SelectValue placeholder="Select a vehicle..." />
             </SelectTrigger>
-            <SelectContent>
-              {activeLocations.map((loc) => (
-                <SelectItem key={loc.id} value={loc.id} disabled={!loc.address}>
-                  {loc.name} {!loc.address && "(no address)"}
+            <SelectContent className="bg-background border border-border z-50">
+              {vehicles.map((vehicle) => (
+                <SelectItem key={vehicle.id} value={vehicle.id}>
+                  <div className="flex items-center gap-2">
+                    <Car className="h-4 w-4" />
+                    <span>{vehicle.name}</span>
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         )}
+        {selectedVehicle?.lastRecordedOdometer !== undefined && (
+          <p className="text-xs text-muted-foreground">
+            Last recorded: {selectedVehicle.lastRecordedOdometer.toLocaleString()} miles
+          </p>
+        )}
       </div>
 
-      {/* Miles - Only show in manual mode */}
-      {!odometerMode && (
+      {/* From Location */}
+      <LocationSelector
+        type="from"
+        value={fromSelection}
+        onChange={setFromSelection}
+        locations={activeLocations}
+        warehouseAddress={warehouseAddress}
+      />
+
+      {/* To Location */}
+      <LocationSelector
+        type="to"
+        value={toSelection}
+        onChange={setToSelection}
+        locations={activeLocations}
+        warehouseAddress={warehouseAddress}
+      />
+
+      {/* Odometer Inputs */}
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Miles (one-way)</Label>
+          <Label className="text-sm font-medium">Start Odometer *</Label>
           <Input
             type="number"
-            inputMode="decimal"
-            placeholder="0"
-            value={miles}
-            onChange={(e) => setMiles(e.target.value)}
-            className="h-14 text-2xl font-semibold text-center"
+            inputMode="numeric"
+            placeholder="e.g., 45276"
+            value={odometerStart}
+            onChange={(e) => setOdometerStart(e.target.value)}
+            className="h-14 text-xl font-semibold text-center"
             onFocus={(e) => e.target.select()}
           />
         </div>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">End Odometer *</Label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            placeholder="e.g., 45322"
+            value={odometerEnd}
+            onChange={(e) => setOdometerEnd(e.target.value)}
+            className="h-14 text-xl font-semibold text-center"
+            onFocus={(e) => e.target.select()}
+          />
+        </div>
+      </div>
+
+      {/* Calculated Miles Display */}
+      {calculatedMiles !== null && calculatedMiles > 0 && (
+        <div className="flex items-center justify-between p-4 rounded-lg bg-primary/10 border border-primary/20">
+          <span className="text-sm font-medium">Calculated Miles</span>
+          <Badge className="text-lg font-bold px-4 py-1">
+            {calculatedMiles.toFixed(1)} mi
+          </Badge>
+        </div>
       )}
 
-      {/* Round Trip Toggle */}
-      <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-        <div className="flex items-center gap-2">
-          <RotateCcw className="h-4 w-4 text-muted-foreground" />
-          <Label className="text-sm font-medium">Round Trip</Label>
+      {/* Validation Warnings */}
+      {isEndLessThanStart && (
+        <div className="flex items-center gap-2 p-2 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          <span>End must be greater than start</span>
         </div>
-        <Switch checked={isRoundTrip} onCheckedChange={setIsRoundTrip} />
-      </div>
-      {isRoundTrip && !odometerMode && miles && (
-        <p className="text-xs text-muted-foreground text-center">
-          Total: {(parseFloat(miles) * 2).toFixed(1)} miles
-        </p>
       )}
-      {isRoundTrip && odometerMode && calculatedMiles !== null && calculatedMiles > 0 && (
-        <p className="text-xs text-muted-foreground text-center">
-          Total with round trip: {(calculatedMiles * 2).toFixed(1)} miles
-        </p>
+      
+      {isLargeJump && !isEndLessThanStart && (
+        <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-sm">
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          <span>Large distance - verify readings</span>
+        </div>
       )}
 
       {/* Purpose */}
@@ -446,7 +253,7 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
           <SelectTrigger className="h-12">
             <SelectValue placeholder="Select purpose" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-background border border-border z-50">
             {tripPurposes.map((p) => (
               <SelectItem key={p} value={p}>
                 {p}
@@ -470,16 +277,17 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       {/* Submit Button */}
       <Button
         onClick={handleSubmit}
-        disabled={
-          isSubmitting || 
-          !startLocation || 
-          !endLocation || 
-          (odometerMode ? (!odometerStart || !odometerEnd || isEndLessThanStart) : !miles)
-        }
+        disabled={isSubmitting || !isFormValid}
         className="w-full h-14 text-lg font-semibold"
-        size="lg"
       >
-        {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Log Trip"}
+        {isSubmitting ? (
+          <>
+            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+            Logging...
+          </>
+        ) : (
+          "Log Trip"
+        )}
       </Button>
     </div>
   );
