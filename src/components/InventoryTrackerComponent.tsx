@@ -380,7 +380,7 @@ export function InventoryTrackerComponent() {
   }
 
   return (
-    <div className="space-y-4 animate-fade-in pb-24">
+    <div className="space-y-4 animate-fade-in pb-4">
       {/* Mode Buttons */}
       <div className="flex gap-2">
         {!isStockRunMode && !isReturnMode ? (

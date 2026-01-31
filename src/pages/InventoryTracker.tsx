@@ -18,11 +18,11 @@ const InventoryTracker = () => {
   }, [isMobile, registerRefresh, unregisterRefresh, refetch]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8 px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Inventory Tracker</h1>
-          <p className="text-muted-foreground mt-2">
+    <div className="bg-background">
+      <div className="container mx-auto py-4 sm:py-8 px-4">
+        <div className="mb-4 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Inventory Tracker</h1>
+          <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
             Track your claw machine inventory, prizes, and supplies
           </p>
         </div>
