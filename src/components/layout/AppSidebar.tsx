@@ -1,4 +1,5 @@
-import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, Car, BarChart3, Wrench } from "lucide-react"
+import { useState, useEffect } from "react"
+import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, ChevronDown, Car, BarChart3, Wrench } from "lucide-react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import {
@@ -22,23 +23,44 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
-const items = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+const operationsItems = [
   { title: "Locations", url: "/locations", icon: MapPin },
   { title: "Maintenance", url: "/maintenance", icon: Wrench },
-  { title: "Revenue Tracker", url: "/revenue", icon: DollarSign },
   { title: "Routes", url: "/mileage", icon: Car },
-  { title: "Reports", url: "/reports", icon: BarChart3 },
   { title: "Inventory Tracker", url: "/inventory", icon: Package },
+]
+
+const financialsItems = [
+  { title: "Revenue Tracker", url: "/revenue", icon: DollarSign },
+  { title: "Reports", url: "/reports", icon: BarChart3 },
   { title: "Commission Summary", url: "/commission-summary", icon: Receipt },
-  { title: "Location Agreement Generator", url: "/documents", icon: FileText },
+  { title: "Agreement Generator", url: "/documents", icon: FileText },
 ]
 
 export function AppSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, signOut } = useAuth()
+
+  // Check if current route is in a group
+  const isInOperations = operationsItems.some(item => location.pathname === item.url)
+  const isInFinancials = financialsItems.some(item => location.pathname === item.url)
+
+  // State for collapsible groups - auto-expand if contains active route
+  const [operationsOpen, setOperationsOpen] = useState(isInOperations)
+  const [financialsOpen, setFinancialsOpen] = useState(isInFinancials)
+
+  // Auto-expand when navigating to a route in a group
+  useEffect(() => {
+    if (isInOperations) setOperationsOpen(true)
+    if (isInFinancials) setFinancialsOpen(true)
+  }, [isInOperations, isInFinancials])
 
   const handleSignOut = async () => {
     await signOut()
@@ -49,6 +71,37 @@ export function AppSidebar() {
     : user?.email?.slice(0, 2).toUpperCase() || "U"
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"
+
+  const renderNavItem = (item: { title: string; url: string; icon: React.ComponentType<{ className?: string }> }) => (
+    <SidebarMenuItem key={item.title} className="p-0">
+      <NavLink
+        to={item.url}
+        className={({ isActive }) =>
+          `group flex items-center gap-3 p-3 rounded-xl transition-all duration-300 relative overflow-hidden ${
+            isActive 
+              ? "bg-gradient-to-r from-gold-500/20 to-gold-600/10 text-gold-500 font-semibold shadow-lg" 
+              : "hover:bg-white/5 hover:text-gold-400 hover:scale-105"
+          }`
+        }
+      >
+        {({ isActive }) => (
+          <>
+            <div className={`p-2 rounded-lg transition-all duration-300 ${
+              isActive 
+                ? "bg-gold-500 text-primary-foreground shadow-lg" 
+                : "bg-white/5 group-hover:bg-gold-500/20"
+            }`}>
+              <item.icon className="h-4 w-4" />
+            </div>
+            <span className="text-sm font-medium flex-1">{item.title}</span>
+            {isActive && (
+              <div className="w-2 h-8 bg-gradient-to-b from-gold-500 to-gold-600 rounded-full shadow-glow ml-2" />
+            )}
+          </>
+        )}
+      </NavLink>
+    </SidebarMenuItem>
+  )
 
   return (
     <Sidebar className="glass-card border-r border-white/10">
@@ -71,42 +124,72 @@ export function AppSidebar() {
         </SidebarHeader>
 
         <SidebarMenu className="px-4">
+          {/* Dashboard - Standalone */}
           <SidebarGroup>
-            <SidebarGroupLabel className="text-xs font-semibold text-gold-500 mb-4">
-              Main Tools
-            </SidebarGroupLabel>
-            <SidebarGroupContent className="space-y-2">
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title} className="p-0">
-                  <NavLink
-                    to={item.url}
-                    className={({ isActive }) =>
-                      `group flex items-center gap-3 p-3 rounded-xl transition-all duration-300 relative overflow-hidden ${
+            <SidebarGroupContent>
+              <SidebarMenuItem className="p-0">
+                <NavLink
+                  to="/"
+                  className={({ isActive }) =>
+                    `group flex items-center gap-3 p-3 rounded-xl transition-all duration-300 relative overflow-hidden ${
+                      isActive 
+                        ? "bg-gradient-to-r from-gold-500/20 to-gold-600/10 text-gold-500 font-semibold shadow-lg" 
+                        : "hover:bg-white/5 hover:text-gold-400 hover:scale-105"
+                    }`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <div className={`p-2 rounded-lg transition-all duration-300 ${
                         isActive 
-                          ? "bg-gradient-to-r from-gold-500/20 to-gold-600/10 text-gold-500 font-semibold shadow-lg" 
-                          : "hover:bg-white/5 hover:text-gold-400 hover:scale-105"
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <div className={`p-2 rounded-lg transition-all duration-300 ${
-                          isActive 
-                            ? "bg-gold-500 text-primary-foreground shadow-lg" 
-                            : "bg-white/5 group-hover:bg-gold-500/20"
-                        }`}>
-                          <item.icon className="h-4 w-4" />
-                        </div>
-                        <span className="text-sm font-medium flex-1">{item.title}</span>
-                        {isActive && (
-                          <div className="w-2 h-8 bg-gradient-to-b from-gold-500 to-gold-600 rounded-full shadow-glow ml-2" />
-                        )}
-                      </>
-                    )}
-                  </NavLink>
-                </SidebarMenuItem>
-              ))}
+                          ? "bg-gold-500 text-primary-foreground shadow-lg" 
+                          : "bg-white/5 group-hover:bg-gold-500/20"
+                      }`}>
+                        <LayoutDashboard className="h-4 w-4" />
+                      </div>
+                      <span className="text-sm font-medium flex-1">Dashboard</span>
+                      {isActive && (
+                        <div className="w-2 h-8 bg-gradient-to-b from-gold-500 to-gold-600 rounded-full shadow-glow ml-2" />
+                      )}
+                    </>
+                  )}
+                </NavLink>
+              </SidebarMenuItem>
             </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* Operations Group */}
+          <SidebarGroup>
+            <Collapsible open={operationsOpen} onOpenChange={setOperationsOpen}>
+              <CollapsibleTrigger asChild>
+                <button className="flex items-center justify-between w-full px-2 py-2 text-xs font-semibold text-gold-500 hover:text-gold-400 transition-colors">
+                  <span>Operations</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${operationsOpen ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-1">
+                <SidebarGroupContent className="space-y-2">
+                  {operationsItems.map(renderNavItem)}
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+
+          {/* Financials & Reports Group */}
+          <SidebarGroup>
+            <Collapsible open={financialsOpen} onOpenChange={setFinancialsOpen}>
+              <CollapsibleTrigger asChild>
+                <button className="flex items-center justify-between w-full px-2 py-2 text-xs font-semibold text-gold-500 hover:text-gold-400 transition-colors">
+                  <span>Financials & Reports</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${financialsOpen ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-1">
+                <SidebarGroupContent className="space-y-2">
+                  {financialsItems.map(renderNavItem)}
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
           </SidebarGroup>
         </SidebarMenu>
       </SidebarContent>

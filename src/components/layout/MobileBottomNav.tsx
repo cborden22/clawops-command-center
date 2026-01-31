@@ -4,12 +4,27 @@ import { LayoutDashboard, DollarSign, Package, Plus, MoreHorizontal, MapPin, Car
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { DocumentsSheet } from "@/components/mobile/DocumentsSheet";
 
 interface MobileBottomNavProps {
   onQuickAddOpen: () => void;
 }
+
+const operationsItems = [
+  { path: "/locations", icon: MapPin, label: "Locations" },
+  { path: "/maintenance", icon: Wrench, label: "Maintenance" },
+  { path: "/mileage", icon: Car, label: "Routes" },
+  { path: "/inventory", icon: Package, label: "Inventory" },
+];
+
+const financialsItems = [
+  { path: "/revenue", icon: DollarSign, label: "Revenue" },
+  { path: "/reports", icon: BarChart3, label: "Reports" },
+  { path: "/receipts", icon: Receipt, label: "Receipts" },
+  { path: "documents-picker", icon: FileText, label: "Documents", isDocuments: true },
+];
 
 export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
   const navigate = useNavigate();
@@ -26,16 +41,6 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
     { path: "more", icon: MoreHorizontal, label: "More", isMenu: true },
   ];
 
-  const moreTabs = [
-    { path: "/locations", icon: MapPin, label: "Locations" },
-    { path: "/maintenance", icon: Wrench, label: "Maintenance" },
-    { path: "/mileage", icon: Car, label: "Routes" },
-    { path: "/reports", icon: BarChart3, label: "Reports" },
-    { path: "/receipts", icon: Receipt, label: "Receipts" },
-    { path: "documents-picker", icon: FileText, label: "Documents", isDocuments: true },
-    { path: "/settings", icon: Settings, label: "Settings" },
-  ];
-
   const handleTabClick = (tab: typeof mainTabs[0]) => {
     if (tab.isAction) {
       onQuickAddOpen();
@@ -44,12 +49,12 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
     }
   };
 
-  const handleMoreItemClick = (moreTab: typeof moreTabs[0]) => {
-    if (moreTab.isDocuments) {
+  const handleMoreItemClick = (item: { path: string; isDocuments?: boolean }) => {
+    if (item.isDocuments) {
       setMoreOpen(false);
       setDocumentsOpen(true);
     } else {
-      navigate(moreTab.path);
+      navigate(item.path);
       setMoreOpen(false);
     }
   };
@@ -57,6 +62,22 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
   const handleSignOut = async () => {
     await signOut();
     setMoreOpen(false);
+  };
+
+  const renderMoreItem = (item: typeof operationsItems[0] & { isDocuments?: boolean }) => {
+    const Icon = item.icon;
+    const isActive = !item.isDocuments && location.pathname === item.path;
+    return (
+      <Button
+        key={item.path}
+        variant={isActive ? "default" : "outline"}
+        className="h-14 flex-col gap-1"
+        onClick={() => handleMoreItemClick(item)}
+      >
+        <Icon className="h-5 w-5" />
+        <span className="text-xs">{item.label}</span>
+      </Button>
+    );
   };
 
   return (
@@ -82,24 +103,43 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
                   </button>
                 </SheetTrigger>
                 <SheetContent side="bottom" className="rounded-t-2xl">
-                <div className="grid grid-cols-2 gap-3 py-4">
-                    {moreTabs.map((moreTab) => {
-                      const MoreIcon = moreTab.icon;
-                      const isMoreActive = !moreTab.isDocuments && location.pathname === moreTab.path;
-                      return (
-                        <Button
-                          key={moreTab.path}
-                          variant={isMoreActive ? "default" : "outline"}
-                          className="h-16 flex-col gap-1"
-                          onClick={() => handleMoreItemClick(moreTab)}
-                        >
-                          <MoreIcon className="h-5 w-5" />
-                          <span className="text-xs">{moreTab.label}</span>
-                        </Button>
-                      );
-                    })}
+                  {/* Operations Section */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                      Operations
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {operationsItems.map(renderMoreItem)}
+                    </div>
                   </div>
-                  <div className="pt-2 border-t">
+
+                  <Separator className="my-4" />
+
+                  {/* Financials & Reports Section */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                      Financials & Reports
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {financialsItems.map(renderMoreItem)}
+                    </div>
+                  </div>
+
+                  <Separator className="my-4" />
+
+                  {/* Settings & Sign Out */}
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/settings");
+                        setMoreOpen(false);
+                      }}
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Settings
+                    </Button>
                     <Button
                       variant="ghost"
                       className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
