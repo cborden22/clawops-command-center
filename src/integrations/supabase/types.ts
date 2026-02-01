@@ -218,6 +218,7 @@ export type Database = {
       locations: {
         Row: {
           address: string | null
+          collection_frequency_days: number | null
           commission_rate: number | null
           contact_email: string | null
           contact_person: string | null
@@ -225,6 +226,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          last_collection_date: string | null
           name: string
           notes: string | null
           slug: string | null
@@ -233,6 +235,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          collection_frequency_days?: number | null
           commission_rate?: number | null
           contact_email?: string | null
           contact_person?: string | null
@@ -240,6 +243,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          last_collection_date?: string | null
           name: string
           notes?: string | null
           slug?: string | null
@@ -248,6 +252,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          collection_frequency_days?: number | null
           commission_rate?: number | null
           contact_email?: string | null
           contact_person?: string | null
@@ -255,6 +260,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          last_collection_date?: string | null
           name?: string
           notes?: string | null
           slug?: string | null
@@ -514,6 +520,9 @@ export type Database = {
           id: string
           is_round_trip: boolean | null
           name: string
+          next_scheduled_date: string | null
+          schedule_day_of_week: number | null
+          schedule_frequency_days: number | null
           total_miles: number | null
           updated_at: string
           user_id: string
@@ -524,6 +533,9 @@ export type Database = {
           id?: string
           is_round_trip?: boolean | null
           name: string
+          next_scheduled_date?: string | null
+          schedule_day_of_week?: number | null
+          schedule_frequency_days?: number | null
           total_miles?: number | null
           updated_at?: string
           user_id: string
@@ -534,6 +546,9 @@ export type Database = {
           id?: string
           is_round_trip?: boolean | null
           name?: string
+          next_scheduled_date?: string | null
+          schedule_day_of_week?: number | null
+          schedule_frequency_days?: number | null
           total_miles?: number | null
           updated_at?: string
           user_id?: string
@@ -670,6 +685,42 @@ export type Database = {
           dashboard_layout?: Json | null
           id?: string
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_schedules: {
+        Row: {
+          created_at: string
+          day_of_week: number | null
+          frequency_days: number | null
+          id: string
+          last_completed_date: string | null
+          next_scheduled_date: string | null
+          schedule_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week?: number | null
+          frequency_days?: number | null
+          id?: string
+          last_completed_date?: string | null
+          next_scheduled_date?: string | null
+          schedule_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number | null
+          frequency_days?: number | null
+          id?: string
+          last_completed_date?: string | null
+          next_scheduled_date?: string | null
+          schedule_type?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

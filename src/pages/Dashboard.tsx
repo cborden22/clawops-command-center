@@ -1,6 +1,10 @@
 import { useLocations } from "@/hooks/useLocationsDB";
 import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
 import { useInventory } from "@/hooks/useInventoryDB";
+import { useRoutes } from "@/hooks/useRoutesDB";
+import { useUserSchedules } from "@/hooks/useUserSchedules";
+import { useSmartScheduler } from "@/hooks/useSmartScheduler";
+import { useMaintenanceReports } from "@/hooks/useMaintenanceReports";
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,16 +26,19 @@ import {
   Check,
   RotateCcw,
   ExternalLink,
-  Wrench
+  Wrench,
+  Calendar
 } from "lucide-react";
 import { MaintenanceWidget } from "@/components/maintenance/MaintenanceWidget";
+import { WeeklyCalendarWidget } from "@/components/dashboard/WeeklyCalendarWidget";
+import { CollectionDueWidget } from "@/components/dashboard/CollectionDueWidget";
 import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-type WidgetId = 'primaryStats' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance';
+type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance';
 
 interface WidgetConfig {
   id: WidgetId;
@@ -41,6 +48,8 @@ interface WidgetConfig {
 
 const DEFAULT_WIDGET_ORDER: WidgetConfig[] = [
   { id: 'primaryStats', label: 'Primary Stats', visible: true },
+  { id: 'weeklyCalendar', label: 'Weekly Calendar', visible: true },
+  { id: 'collectionDue', label: 'Collection Reminders', visible: true },
   { id: 'maintenance', label: 'Maintenance', visible: true },
   { id: 'allTimeSummary', label: 'All-Time Summary', visible: true },
   { id: 'topLocations', label: 'Top Locations', visible: true },
@@ -55,6 +64,26 @@ export default function Dashboard() {
   const { locations, activeLocations, isLoaded: locationsLoaded, refetch: refetchLocations } = useLocations();
   const { entries, isLoaded: entriesLoaded, refetch: refetchEntries } = useRevenueEntries();
   const { items: inventoryItems, isLoaded: inventoryLoaded, refetch: refetchInventory } = useInventory();
+  const { routes, isLoaded: routesLoaded, refetch: refetchRoutes } = useRoutes();
+  const { schedules, isLoaded: schedulesLoaded, refetch: refetchSchedules } = useUserSchedules();
+  const { reports: maintenanceReports } = useMaintenanceReports();
+  
+  // Smart scheduler for calendar and reminders
+  const { 
+    tasksByDate, 
+    overdueCollections, 
+    dueTodayCollections 
+  } = useSmartScheduler({
+    locations,
+    routes,
+    userSchedules: schedules,
+    maintenanceReports: maintenanceReports.map(r => ({
+      id: r.id,
+      status: r.status,
+      machineId: r.machine_id,
+      description: r.description,
+    })),
+  });
   const [widgets, setWidgets] = useState<WidgetConfig[]>(DEFAULT_WIDGET_ORDER);
   const [layoutLoaded, setLayoutLoaded] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
@@ -192,7 +221,7 @@ export default function Dashboard() {
     setDragOverWidget(null);
   };
 
-  const isLoaded = locationsLoaded && entriesLoaded && inventoryLoaded && layoutLoaded;
+  const isLoaded = locationsLoaded && entriesLoaded && inventoryLoaded && layoutLoaded && routesLoaded && schedulesLoaded;
 
   // Calculate this month's revenue data
   const now = new Date();
@@ -634,8 +663,19 @@ export default function Dashboard() {
 
   const renderMaintenance = () => <MaintenanceWidget />;
 
+  const renderWeeklyCalendar = () => <WeeklyCalendarWidget tasksByDate={tasksByDate} />;
+
+  const renderCollectionDue = () => (
+    <CollectionDueWidget 
+      overdueCollections={overdueCollections} 
+      dueTodayCollections={dueTodayCollections} 
+    />
+  );
+
   const widgetRenderers: Record<WidgetId, () => JSX.Element> = {
     primaryStats: renderPrimaryStats,
+    weeklyCalendar: renderWeeklyCalendar,
+    collectionDue: renderCollectionDue,
     maintenance: renderMaintenance,
     allTimeSummary: renderAllTimeSummary,
     topLocations: renderTopLocations,

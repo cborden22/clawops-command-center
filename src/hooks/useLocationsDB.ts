@@ -70,6 +70,9 @@ export interface Location {
   isActive: boolean;
   commissionSummaries: CommissionSummaryRecord[];
   agreements: LocationAgreementRecord[];
+  // Scheduling fields
+  collectionFrequencyDays?: number;
+  lastCollectionDate?: string;
 }
 
 export function useLocations() {
@@ -201,6 +204,9 @@ export function useLocations() {
           isActive: loc.is_active ?? true,
           commissionSummaries,
           agreements,
+          // Scheduling fields
+          collectionFrequencyDays: loc.collection_frequency_days || undefined,
+          lastCollectionDate: loc.last_collection_date || undefined,
         };
       });
 
@@ -315,6 +321,8 @@ export function useLocations() {
       if (updates.commissionRate !== undefined) updateData.commission_rate = updates.commissionRate;
       if (updates.notes !== undefined) updateData.notes = updates.notes;
       if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
+      if (updates.collectionFrequencyDays !== undefined) updateData.collection_frequency_days = updates.collectionFrequencyDays || null;
+      if (updates.lastCollectionDate !== undefined) updateData.last_collection_date = updates.lastCollectionDate || null;
 
       if (Object.keys(updateData).length > 0) {
         const { error } = await supabase
