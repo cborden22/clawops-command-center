@@ -1,76 +1,91 @@
 
+## Goal
+Fix the Route Editor layout so the “Run Schedule” section is not visually hidden/covered by the Stops section (and keep stop dropdowns rendering correctly).
 
-## Fix Route Editor Layout - Select Dropdowns Appearing Behind Schedule Section
+## What’s happening (likely cause)
+In `src/components/mileage/RouteEditor.tsx`, the Stops section is set to `flex-1` inside a modal with a fixed max height (`max-h-[90vh]`) and multiple separators/sections.
 
-The issue is that when creating/editing a route, the dropdown menus in the Stops section appear behind the "Run Schedule" section below. This is caused by CSS stacking context and overflow issues.
+Because the main dialog body is `overflow-hidden` and **only the Stops list is scrollable**, the Stops section can effectively “consume” the available vertical space, causing the “Run Schedule” section to end up below the visible area and feel like it’s “behind”/covered.
 
----
+Also, the earlier z-index tweak (`z-10` on the Stops container) can contribute to confusing stacking behavior if elements overlap.
 
-## Root Cause
+## Approach
+Make the modal’s *content area* scrollable (not just the Stops list), and make the Stops section “size-to-content” instead of “take all remaining space”.
 
-The `RouteEditor.tsx` component has these conflicting styles:
-1. `DialogContent` has `overflow-visible` (line 188)
-2. Stops container has `overflow-y-auto` (line 239)
-3. The Run Schedule section sits below the stops area
-
-When you open a Select dropdown inside the scrollable stops area, the dropdown portal renders correctly, but the visual stacking order gets confused due to the mixed overflow contexts.
-
----
-
-## Solution
-
-Make these CSS adjustments to fix the z-index stacking:
-
-### Change 1: Remove `overflow-visible` from DialogContent
-
-The `overflow-visible` on the DialogContent isn't needed and causes issues. We'll remove it and let the dialog handle overflow properly.
-
-**File: `src/components/mileage/RouteEditor.tsx`**
-
-```diff
-- <DialogContent className="max-w-xl max-h-[90vh] flex flex-col overflow-visible">
-+ <DialogContent className="max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
-```
-
-### Change 2: Ensure proper z-index on Select dropdowns
-
-The SelectContent in RouteStopItem already has `z-50`, which should be sufficient. However, we should also ensure the parent sections have proper stacking.
-
-**File: `src/components/mileage/RouteEditor.tsx`**
-
-Add `relative z-10` to the stops scrollable container to create a new stacking context, and ensure the Run Schedule section has lower stacking priority:
-
-```diff
-- <div className="max-h-[280px] overflow-y-auto pr-1 space-y-0">
-+ <div className="relative z-10 max-h-[280px] overflow-y-auto pr-1 space-y-0">
-```
-
-### Change 3: Add z-index to Run Schedule section
-
-Ensure the Run Schedule section doesn't overlap dropdown menus:
-
-```diff
-- <div className="space-y-3">
-+ <div className="relative z-0 space-y-3">
-```
+This produces the expected UX:
+- You can always reach “Run Schedule” by scrolling the modal content.
+- Stops can still have their own internal scroll if needed (for long routes).
+- Dropdowns remain visible (and we can harden z-index if necessary).
 
 ---
 
-## File Changes Summary
+## Planned code changes
 
-| File | Line | Change |
-|------|------|--------|
-| `src/components/mileage/RouteEditor.tsx` | 188 | Change `overflow-visible` to `overflow-hidden` |
-| `src/components/mileage/RouteEditor.tsx` | 239 | Add `relative z-10` to stops container |
-| `src/components/mileage/RouteEditor.tsx` | 260 | Add `relative z-0` to Run Schedule section |
+### 1) RouteEditor: make the dialog body scrollable
+**File:** `src/components/mileage/RouteEditor.tsx`
+
+Change the main content wrapper from `overflow-hidden` to `overflow-y-auto min-h-0` so the full form can scroll inside the dialog:
+
+- Current:
+  - `div` wrapper: `className="flex-1 overflow-hidden flex flex-col gap-5"`
+- Update to:
+  - `className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-5 pr-1"`
+
+Notes:
+- `min-h-0` is important in flex layouts so overflow scrolling works correctly.
+- `pr-1` helps avoid the scrollbar overlapping content.
+
+### 2) RouteEditor: stop the Stops section from “hogging” space
+Still in `RouteEditor.tsx`, update the Stops section container:
+
+- Current Stops section wrapper:
+  - `className="space-y-3 flex-1 min-h-0"`
+- Update to:
+  - `className="space-y-3"`
+
+Then manage list height at the list container level (keep a max height there if you want Stops to have its own scroll):
+- Keep `max-h-[280px] overflow-y-auto` on the list container (or adjust to something more responsive like `max-h-[40vh]`).
+
+### 3) RouteEditor: remove/adjust the z-index layering that may cause overlap
+Because the Select dropdowns are already portaled (`SelectPrimitive.Portal` in `src/components/ui/select.tsx`), we likely don’t need the Stops container to be `z-10`.
+
+- Change the stops list container from:
+  - `className="relative z-10 max-h-[280px] overflow-y-auto ..."`
+- To:
+  - `className="relative max-h-[280px] overflow-y-auto ..."`
+
+Keep the Run Schedule section as `relative` without special z-index unless we confirm it’s needed.
+
+### 4) Harden dropdown z-index (only if still needed after layout fix)
+If the dropdown still ever appears behind dialog overlay/content due to equal z-index (`DialogContent` is `z-50` and SelectContent is also `z-50`), raise the SelectContent z-index.
+
+Options:
+- In `src/components/ui/select.tsx`, change SelectContent base class from `z-50` to `z-[60]` (or `z-[100]`).
+- Or locally in `RouteStopItem.tsx`, set `className="z-[100] bg-popover"` on `SelectContent`.
+
+I’d prefer updating `src/components/ui/select.tsx` once so all dropdowns benefit consistently.
 
 ---
 
-## Why This Works
+## Verification steps (what you’ll test after implementation)
+1. Go to **Mileage → Routes → Create Route**
+2. Add enough stops to make the editor “busy”
+3. Confirm:
+   - “Run Schedule” is reachable by scrolling inside the modal (not hidden/covered)
+   - Stop “Select location…” dropdown opens fully and appears above other sections
+   - No weird overlap/jumbled layout when adding/removing stops
+4. Repeat on mobile viewport sizes (if you use the app on mobile)
 
-1. **`overflow-hidden`** on DialogContent prevents content from visually escaping the dialog bounds while still allowing portaled elements (like Select dropdowns) to render correctly
-2. **`z-10`** on the stops container ensures dropdown menus from within it stack above other content
-3. **`z-0`** on the Run Schedule section explicitly places it below the stops' dropdowns in the stacking order
+---
 
-The Select component's dropdown uses Radix UI's Portal, which renders the dropdown at the document body level. By properly managing stacking contexts in the parent elements, the dropdowns will always appear on top.
+## Files involved
+- `src/components/mileage/RouteEditor.tsx` (primary layout fix)
+- `src/components/ui/select.tsx` (optional global z-index hardening)
+- `src/components/mileage/RouteStopItem.tsx` (optional local z-index hardening)
 
+---
+
+## Edge cases handled
+- Very long routes (many stops): modal still usable via scrolling; stops list can stay capped.
+- Small screens: modal scroll prevents content from being unreachable.
+- Dropdown menus: portal + higher z-index avoids being hidden behind dialog content/overlay.
