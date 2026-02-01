@@ -185,7 +185,7 @@ export function RouteEditor({ open, onOpenChange, route, onSave }: RouteEditorPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col overflow-visible">
+      <DialogContent className="max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Route className="h-5 w-5 text-primary" />
@@ -236,7 +236,7 @@ export function RouteEditor({ open, onOpenChange, route, onSave }: RouteEditorPr
               </Button>
             </div>
             
-            <div className="max-h-[280px] overflow-y-auto pr-1 space-y-0">
+            <div className="relative z-10 max-h-[280px] overflow-y-auto pr-1 space-y-0">
               {stops.map((stop, index) => (
                 <RouteStopItem
                   key={stop.id}
@@ -257,7 +257,7 @@ export function RouteEditor({ open, onOpenChange, route, onSave }: RouteEditorPr
           <Separator />
 
           {/* Run Schedule Section */}
-          <div className="space-y-3">
+          <div className="relative z-0 space-y-3">
             <Label className="text-sm font-medium flex items-center gap-2">
               <Calendar className="h-4 w-4 text-primary" />
               Run Schedule (Optional)
