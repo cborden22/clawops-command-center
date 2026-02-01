@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { MaintenanceWidget } from "@/components/maintenance/MaintenanceWidget";
 import { WeeklyCalendarWidget } from "@/components/dashboard/WeeklyCalendarWidget";
-import { CollectionDueWidget } from "@/components/dashboard/CollectionDueWidget";
+import { RestockDueWidget } from "@/components/dashboard/RestockDueWidget";
 import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -49,7 +49,7 @@ interface WidgetConfig {
 const DEFAULT_WIDGET_ORDER: WidgetConfig[] = [
   { id: 'primaryStats', label: 'Primary Stats', visible: true },
   { id: 'weeklyCalendar', label: 'Weekly Calendar', visible: true },
-  { id: 'collectionDue', label: 'Collection Reminders', visible: true },
+  { id: 'collectionDue', label: 'Restock Reminders', visible: true },
   { id: 'maintenance', label: 'Maintenance', visible: true },
   { id: 'allTimeSummary', label: 'All-Time Summary', visible: true },
   { id: 'topLocations', label: 'Top Locations', visible: true },
@@ -71,8 +71,8 @@ export default function Dashboard() {
   // Smart scheduler for calendar and reminders
   const { 
     tasksByDate, 
-    overdueCollections, 
-    dueTodayCollections 
+    overdueRestocks, 
+    dueTodayRestocks 
   } = useSmartScheduler({
     locations,
     routes,
@@ -666,9 +666,9 @@ export default function Dashboard() {
   const renderWeeklyCalendar = () => <WeeklyCalendarWidget tasksByDate={tasksByDate} />;
 
   const renderCollectionDue = () => (
-    <CollectionDueWidget 
-      overdueCollections={overdueCollections} 
-      dueTodayCollections={dueTodayCollections} 
+    <RestockDueWidget 
+      overdueRestocks={overdueRestocks} 
+      dueTodayRestocks={dueTodayRestocks} 
     />
   );
 

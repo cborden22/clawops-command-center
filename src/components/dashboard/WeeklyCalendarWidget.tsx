@@ -12,16 +12,14 @@ interface WeeklyCalendarWidgetProps {
 }
 
 const TASK_ICONS: Record<TaskType, React.ReactNode> = {
-  collection: <MapPin className="h-3 w-3" />,
+  restock: <MapPin className="h-3 w-3" />,
   route: <Route className="h-3 w-3" />,
-  restock: <Package className="h-3 w-3" />,
   maintenance: <Wrench className="h-3 w-3" />,
 };
 
 const TASK_COLORS: Record<TaskType, string> = {
-  collection: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+  restock: "bg-blue-500/10 text-blue-600 border-blue-500/20",
   route: "bg-purple-500/10 text-purple-600 border-purple-500/20",
-  restock: "bg-amber-500/10 text-amber-600 border-amber-500/20",
   maintenance: "bg-red-500/10 text-red-600 border-red-500/20",
 };
 
@@ -52,15 +50,11 @@ export function WeeklyCalendarWidget({ tasksByDate }: WeeklyCalendarWidgetProps)
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full bg-blue-500" />
-            <span>Collection</span>
+            <span>Restock</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full bg-purple-500" />
             <span>Route</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-amber-500" />
-            <span>Restock</span>
           </div>
         </div>
       </CardHeader>
@@ -145,7 +139,7 @@ export function WeeklyCalendarWidget({ tasksByDate }: WeeklyCalendarWidgetProps)
             <Calendar className="h-8 w-8 mx-auto mb-2 opacity-30" />
             <p className="text-sm">No scheduled tasks this week</p>
             <p className="text-xs mt-1">
-              Set collection schedules on locations and route schedules to see them here
+              Set restock schedules on locations or route schedules to see them here
             </p>
           </div>
         )}

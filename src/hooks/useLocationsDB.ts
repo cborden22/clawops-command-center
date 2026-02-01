@@ -72,6 +72,7 @@ export interface Location {
   agreements: LocationAgreementRecord[];
   // Scheduling fields
   collectionFrequencyDays?: number;
+  restockDayOfWeek?: number; // 0=Sunday, 6=Saturday
   lastCollectionDate?: string;
 }
 
@@ -206,6 +207,7 @@ export function useLocations() {
           agreements,
           // Scheduling fields
           collectionFrequencyDays: loc.collection_frequency_days || undefined,
+          restockDayOfWeek: loc.restock_day_of_week ?? undefined,
           lastCollectionDate: loc.last_collection_date || undefined,
         };
       });
@@ -322,6 +324,7 @@ export function useLocations() {
       if (updates.notes !== undefined) updateData.notes = updates.notes;
       if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
       if (updates.collectionFrequencyDays !== undefined) updateData.collection_frequency_days = updates.collectionFrequencyDays || null;
+      if (updates.restockDayOfWeek !== undefined) updateData.restock_day_of_week = updates.restockDayOfWeek ?? null;
       if (updates.lastCollectionDate !== undefined) updateData.last_collection_date = updates.lastCollectionDate || null;
 
       if (Object.keys(updateData).length > 0) {

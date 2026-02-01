@@ -48,12 +48,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const COLLECTION_FREQUENCY_OPTIONS = [
+const RESTOCK_FREQUENCY_OPTIONS = [
   { value: "none", label: "No Schedule", days: null },
   { value: "7", label: "Weekly", days: 7 },
   { value: "14", label: "Every 2 Weeks", days: 14 },
   { value: "21", label: "Every 3 Weeks", days: 21 },
   { value: "30", label: "Monthly", days: 30 },
+];
+
+const DAY_OF_WEEK_OPTIONS = [
+  { value: 0, label: "Sunday" },
+  { value: 1, label: "Monday" },
+  { value: 2, label: "Tuesday" },
+  { value: 3, label: "Wednesday" },
+  { value: 4, label: "Thursday" },
+  { value: 5, label: "Friday" },
+  { value: 6, label: "Saturday" },
 ];
 
 const emptyFormData = {
@@ -68,6 +78,7 @@ const emptyFormData = {
   notes: "",
   isActive: true,
   collectionFrequencyDays: undefined as number | undefined,
+  restockDayOfWeek: undefined as number | undefined,
 };
 
 export function LocationTrackerComponent() {
@@ -135,6 +146,7 @@ export function LocationTrackerComponent() {
       notes: location.notes,
       isActive: location.isActive,
       collectionFrequencyDays: location.collectionFrequencyDays,
+      restockDayOfWeek: location.restockDayOfWeek,
     });
     setShowAddDialog(true);
   };
@@ -548,38 +560,70 @@ export function LocationTrackerComponent() {
                   </div>
                 </div>
 
-                {/* Collection Schedule */}
+                {/* Restock Schedule */}
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    Collection Schedule
+                    Restock Schedule
                   </h3>
-                  <div className="space-y-2">
-                    <Label htmlFor="collectionFrequency">Collection Frequency</Label>
-                    <Select
-                      value={formData.collectionFrequencyDays ? String(formData.collectionFrequencyDays) : "none"}
-                      onValueChange={(v) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          collectionFrequencyDays: v === "none" ? undefined : parseInt(v),
-                        }))
-                      }
-                    >
-                      <SelectTrigger className="bg-background">
-                        <SelectValue placeholder="Select frequency" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background z-50">
-                        {COLLECTION_FREQUENCY_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Get reminders when this location is due for collection
-                    </p>
+                  <p className="text-xs text-muted-foreground -mt-2">
+                    Set a schedule if this location is NOT part of a route. Locations on routes are restocked when the route runs.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="collectionFrequency">Restock Frequency</Label>
+                      <Select
+                        value={formData.collectionFrequencyDays ? String(formData.collectionFrequencyDays) : "none"}
+                        onValueChange={(v) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            collectionFrequencyDays: v === "none" ? undefined : parseInt(v),
+                            restockDayOfWeek: v === "none" ? undefined : prev.restockDayOfWeek,
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Select frequency" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50">
+                          {RESTOCK_FREQUENCY_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {formData.collectionFrequencyDays && (
+                      <div className="space-y-2">
+                        <Label htmlFor="restockDay">Preferred Day</Label>
+                        <Select
+                          value={formData.restockDayOfWeek !== undefined ? String(formData.restockDayOfWeek) : "none"}
+                          onValueChange={(v) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              restockDayOfWeek: v === "none" ? undefined : parseInt(v),
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="bg-background">
+                            <SelectValue placeholder="Any day" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background z-50">
+                            <SelectItem value="none">Any day</SelectItem>
+                            {DAY_OF_WEEK_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={String(opt.value)}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Get reminders when this location needs restocking
+                  </p>
                 </div>
 
                 {/* Notes & Status */}
