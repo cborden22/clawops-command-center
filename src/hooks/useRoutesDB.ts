@@ -22,6 +22,10 @@ export interface MileageRoute {
   stops: RouteStop[];
   createdAt: Date;
   updatedAt: Date;
+  // Scheduling fields
+  scheduleFrequencyDays?: number;
+  scheduleDayOfWeek?: number;
+  nextScheduledDate?: string;
 }
 
 export interface RouteStopInput {
@@ -88,6 +92,10 @@ export function useRoutes() {
           })),
         createdAt: new Date(route.created_at),
         updatedAt: new Date(route.updated_at),
+        // Scheduling fields
+        scheduleFrequencyDays: route.schedule_frequency_days || undefined,
+        scheduleDayOfWeek: route.schedule_day_of_week ?? undefined,
+        nextScheduledDate: route.next_scheduled_date || undefined,
       }));
 
       setRoutes(mappedRoutes);
@@ -116,13 +124,27 @@ export function useRoutes() {
     name: string,
     description: string | undefined,
     stops: RouteStopInput[],
-    isRoundTrip: boolean
+    isRoundTrip: boolean,
+    scheduleFrequencyDays?: number,
+    scheduleDayOfWeek?: number
   ): Promise<MileageRoute | null> => {
     if (!user) return null;
 
     // Calculate total miles
     const oneWayMiles = stops.reduce((sum, s) => sum + s.milesFromPrevious, 0);
     const totalMiles = isRoundTrip ? oneWayMiles * 2 : oneWayMiles;
+
+    // Calculate next scheduled date if schedule is set
+    let nextScheduledDate: string | null = null;
+    if (scheduleFrequencyDays && scheduleDayOfWeek !== undefined) {
+      const today = new Date();
+      const currentDow = today.getDay();
+      let daysUntil = scheduleDayOfWeek - currentDow;
+      if (daysUntil <= 0) daysUntil += 7;
+      const nextDate = new Date(today);
+      nextDate.setDate(today.getDate() + daysUntil);
+      nextScheduledDate = nextDate.toISOString().split("T")[0];
+    }
 
     try {
       // Insert route
@@ -134,6 +156,9 @@ export function useRoutes() {
           description: description || null,
           total_miles: totalMiles,
           is_round_trip: isRoundTrip,
+          schedule_frequency_days: scheduleFrequencyDays || null,
+          schedule_day_of_week: scheduleDayOfWeek ?? null,
+          next_scheduled_date: nextScheduledDate,
         })
         .select()
         .single();
@@ -174,6 +199,9 @@ export function useRoutes() {
         })),
         createdAt: new Date(routeData.created_at),
         updatedAt: new Date(routeData.updated_at),
+        scheduleFrequencyDays: routeData.schedule_frequency_days || undefined,
+        scheduleDayOfWeek: routeData.schedule_day_of_week ?? undefined,
+        nextScheduledDate: routeData.next_scheduled_date || undefined,
       };
 
       setRoutes(prev => [newRoute, ...prev]);
@@ -194,12 +222,26 @@ export function useRoutes() {
     name: string,
     description: string | undefined,
     stops: RouteStopInput[],
-    isRoundTrip: boolean
+    isRoundTrip: boolean,
+    scheduleFrequencyDays?: number,
+    scheduleDayOfWeek?: number
   ): Promise<boolean> => {
     if (!user) return false;
 
     const oneWayMiles = stops.reduce((sum, s) => sum + s.milesFromPrevious, 0);
     const totalMiles = isRoundTrip ? oneWayMiles * 2 : oneWayMiles;
+
+    // Calculate next scheduled date if schedule is set
+    let nextScheduledDate: string | null = null;
+    if (scheduleFrequencyDays && scheduleDayOfWeek !== undefined) {
+      const today = new Date();
+      const currentDow = today.getDay();
+      let daysUntil = scheduleDayOfWeek - currentDow;
+      if (daysUntil <= 0) daysUntil += 7;
+      const nextDate = new Date(today);
+      nextDate.setDate(today.getDate() + daysUntil);
+      nextScheduledDate = nextDate.toISOString().split("T")[0];
+    }
 
     try {
       // Update route
@@ -210,6 +252,9 @@ export function useRoutes() {
           description: description || null,
           total_miles: totalMiles,
           is_round_trip: isRoundTrip,
+          schedule_frequency_days: scheduleFrequencyDays || null,
+          schedule_day_of_week: scheduleDayOfWeek ?? null,
+          next_scheduled_date: nextScheduledDate,
         })
         .eq("id", id);
 
@@ -258,6 +303,9 @@ export function useRoutes() {
               notes: s.notes || undefined,
             })),
             updatedAt: new Date(),
+            scheduleFrequencyDays,
+            scheduleDayOfWeek,
+            nextScheduledDate: nextScheduledDate || undefined,
           };
         }
         return r;

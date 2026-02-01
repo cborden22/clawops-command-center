@@ -34,6 +34,7 @@ import {
   Sparkles,
   Search,
   Eye,
+  Calendar,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const COLLECTION_FREQUENCY_OPTIONS = [
+  { value: "none", label: "No Schedule", days: null },
+  { value: "7", label: "Weekly", days: 7 },
+  { value: "14", label: "Every 2 Weeks", days: 14 },
+  { value: "21", label: "Every 3 Weeks", days: 21 },
+  { value: "30", label: "Monthly", days: 30 },
+];
+
 const emptyFormData = {
   name: "",
   address: "",
@@ -58,6 +67,7 @@ const emptyFormData = {
   commissionRate: 0,
   notes: "",
   isActive: true,
+  collectionFrequencyDays: undefined as number | undefined,
 };
 
 export function LocationTrackerComponent() {
@@ -124,6 +134,7 @@ export function LocationTrackerComponent() {
       commissionRate: location.commissionRate,
       notes: location.notes,
       isActive: location.isActive,
+      collectionFrequencyDays: location.collectionFrequencyDays,
     });
     setShowAddDialog(true);
   };
@@ -534,6 +545,40 @@ export function LocationTrackerComponent() {
                         }
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Collection Schedule */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Collection Schedule
+                  </h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="collectionFrequency">Collection Frequency</Label>
+                    <Select
+                      value={formData.collectionFrequencyDays ? String(formData.collectionFrequencyDays) : "none"}
+                      onValueChange={(v) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          collectionFrequencyDays: v === "none" ? undefined : parseInt(v),
+                        }))
+                      }
+                    >
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Select frequency" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background z-50">
+                        {COLLECTION_FREQUENCY_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Get reminders when this location is due for collection
+                    </p>
                   </div>
                 </div>
 

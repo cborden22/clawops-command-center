@@ -5,11 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Route, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Route, Loader2, Calendar } from "lucide-react";
 import { MileageRoute, RouteStopInput } from "@/hooks/useRoutesDB";
 import { useLocations } from "@/hooks/useLocationsDB";
 import { RouteStopItem } from "./RouteStopItem";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
+import { format, addDays } from "date-fns";
 
 interface RouteEditorProps {
   open: boolean;
@@ -19,7 +21,9 @@ interface RouteEditorProps {
     name: string,
     description: string | undefined,
     stops: RouteStopInput[],
-    isRoundTrip: boolean
+    isRoundTrip: boolean,
+    scheduleFrequencyDays?: number,
+    scheduleDayOfWeek?: number
   ) => Promise<boolean>;
 }
 
@@ -38,6 +42,35 @@ export function RouteEditor({ open, onOpenChange, route, onSave }: RouteEditorPr
   const [description, setDescription] = useState("");
   const [stops, setStops] = useState<StopState[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [scheduleFrequency, setScheduleFrequency] = useState<string>("none");
+  const [scheduleDayOfWeek, setScheduleDayOfWeek] = useState<number>(1); // Monday default
+
+  const FREQUENCY_OPTIONS = [
+    { value: "none", label: "No Schedule", days: null },
+    { value: "7", label: "Weekly", days: 7 },
+    { value: "14", label: "Every 2 Weeks", days: 14 },
+    { value: "21", label: "Every 3 Weeks", days: 21 },
+    { value: "30", label: "Monthly", days: 30 },
+  ];
+
+  const DAY_OPTIONS = [
+    { value: 0, label: "Sunday" },
+    { value: 1, label: "Monday" },
+    { value: 2, label: "Tuesday" },
+    { value: 3, label: "Wednesday" },
+    { value: 4, label: "Thursday" },
+    { value: 5, label: "Friday" },
+    { value: 6, label: "Saturday" },
+  ];
+
+  const getNextScheduledDate = () => {
+    if (scheduleFrequency === "none") return null;
+    const today = new Date();
+    const currentDow = today.getDay();
+    let daysUntil = scheduleDayOfWeek - currentDow;
+    if (daysUntil <= 0) daysUntil += 7;
+    return addDays(today, daysUntil);
+  };
 
   // Initialize form when dialog opens or route changes
   useEffect(() => {
@@ -52,6 +85,14 @@ export function RouteEditor({ open, onOpenChange, route, onSave }: RouteEditorPr
           customLocationName: s.customLocationName,
           milesFromPrevious: s.milesFromPrevious,
         })));
+        // Set schedule fields
+        if (route.scheduleFrequencyDays) {
+          setScheduleFrequency(String(route.scheduleFrequencyDays));
+          setScheduleDayOfWeek(route.scheduleDayOfWeek ?? 1);
+        } else {
+          setScheduleFrequency("none");
+          setScheduleDayOfWeek(1);
+        }
       } else {
         // Creating new route - start with warehouse as first stop
         setName("");
@@ -69,6 +110,8 @@ export function RouteEditor({ open, onOpenChange, route, onSave }: RouteEditorPr
             milesFromPrevious: 0,
           },
         ]);
+        setScheduleFrequency("none");
+        setScheduleDayOfWeek(1);
       }
     }
   }, [open, route, settings.warehouseAddress]);
@@ -116,12 +159,17 @@ export function RouteEditor({ open, onOpenChange, route, onSave }: RouteEditorPr
       milesFromPrevious: s.milesFromPrevious,
     }));
 
-    // Always pass false for isRoundTrip since we removed the toggle
+    // Get schedule values
+    const freqDays = scheduleFrequency !== "none" ? parseInt(scheduleFrequency) : undefined;
+    const dayOfWeek = scheduleFrequency !== "none" ? scheduleDayOfWeek : undefined;
+
     const success = await onSave(
       name.trim(),
       description.trim() || undefined,
       stopsInput,
-      false
+      false,
+      freqDays,
+      dayOfWeek
     );
 
     setIsSaving(false);
@@ -204,6 +252,57 @@ export function RouteEditor({ open, onOpenChange, route, onSave }: RouteEditorPr
                 />
               ))}
             </div>
+          </div>
+
+          <Separator />
+
+          {/* Run Schedule Section */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-primary" />
+              Run Schedule (Optional)
+            </Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Frequency</Label>
+                <Select value={scheduleFrequency} onValueChange={setScheduleFrequency}>
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Select frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FREQUENCY_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Run On</Label>
+                <Select 
+                  value={String(scheduleDayOfWeek)} 
+                  onValueChange={(v) => setScheduleDayOfWeek(parseInt(v))}
+                  disabled={scheduleFrequency === "none"}
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Select day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DAY_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={String(opt.value)}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {scheduleFrequency !== "none" && (
+              <p className="text-xs text-muted-foreground">
+                Next run: <span className="font-medium text-foreground">{format(getNextScheduledDate()!, "EEEE, MMM d")}</span>
+              </p>
+            )}
           </div>
 
           <Separator />

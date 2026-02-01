@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Plus, Route, MapPin, Trash2, Pencil, Play, MoreVertical 
+  Plus, Route, MapPin, Trash2, Pencil, Play, MoreVertical, Calendar
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -25,6 +25,9 @@ import { MileageRoute, RouteStopInput } from "@/hooks/useRoutesDB";
 import { RouteEditor } from "./RouteEditor";
 import { RoutePreview } from "./RoutePreview";
 import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 interface RouteManagerProps {
   routes: MileageRoute[];
@@ -32,14 +35,18 @@ interface RouteManagerProps {
     name: string,
     description: string | undefined,
     stops: RouteStopInput[],
-    isRoundTrip: boolean
+    isRoundTrip: boolean,
+    scheduleFrequencyDays?: number,
+    scheduleDayOfWeek?: number
   ) => Promise<MileageRoute | null>;
   onUpdateRoute: (
     id: string,
     name: string,
     description: string | undefined,
     stops: RouteStopInput[],
-    isRoundTrip: boolean
+    isRoundTrip: boolean,
+    scheduleFrequencyDays?: number,
+    scheduleDayOfWeek?: number
   ) => Promise<boolean>;
   onDeleteRoute: (id: string) => Promise<boolean>;
   onUseRoute: (route: MileageRoute) => void;
@@ -87,16 +94,18 @@ export function RouteManager({
     name: string,
     description: string | undefined,
     stops: RouteStopInput[],
-    isRoundTrip: boolean
+    isRoundTrip: boolean,
+    scheduleFrequencyDays?: number,
+    scheduleDayOfWeek?: number
   ): Promise<boolean> => {
     if (editingRoute) {
-      const success = await onUpdateRoute(editingRoute.id, name, description, stops, isRoundTrip);
+      const success = await onUpdateRoute(editingRoute.id, name, description, stops, isRoundTrip, scheduleFrequencyDays, scheduleDayOfWeek);
       if (success) {
         toast({ title: "Route Updated", description: `"${name}" has been saved.` });
       }
       return success;
     } else {
-      const newRoute = await onAddRoute(name, description, stops, isRoundTrip);
+      const newRoute = await onAddRoute(name, description, stops, isRoundTrip, scheduleFrequencyDays, scheduleDayOfWeek);
       if (newRoute) {
         toast({ title: "Route Created", description: `"${name}" is ready to use.` });
         return true;
@@ -185,6 +194,25 @@ export function RouteManager({
                     <Badge variant="outline" className="text-xs">RT</Badge>
                   )}
                 </div>
+
+                {/* Schedule Info */}
+                {route.scheduleFrequencyDays && route.scheduleDayOfWeek !== undefined && (
+                  <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>
+                      {route.scheduleFrequencyDays === 7 ? "Weekly" : 
+                       route.scheduleFrequencyDays === 14 ? "Every 2 weeks" :
+                       route.scheduleFrequencyDays === 21 ? "Every 3 weeks" : 
+                       route.scheduleFrequencyDays === 30 ? "Monthly" : 
+                       `Every ${route.scheduleFrequencyDays} days`} on {DAY_NAMES[route.scheduleDayOfWeek]}
+                    </span>
+                    {route.nextScheduledDate && (
+                      <Badge variant="outline" className="text-[10px]">
+                        Next: {format(new Date(route.nextScheduledDate), "MMM d")}
+                      </Badge>
+                    )}
+                  </div>
+                )}
 
                 <RoutePreview route={route} compact />
 
