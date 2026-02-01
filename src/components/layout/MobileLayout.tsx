@@ -24,7 +24,11 @@ function MobileLayoutInner({ children }: MobileLayoutProps) {
       <MobileHeader onRefresh={triggerRefresh} isRefreshing={isRefreshing} />
       <main 
         ref={containerRef}
-        className="flex-1 overflow-y-auto pb-20 overscroll-contain mobile-scroll-optimized"
+        className="flex-1 overflow-y-auto overscroll-contain mobile-scroll-optimized"
+        style={{ 
+          WebkitOverflowScrolling: 'touch',
+          paddingBottom: 'max(80px, calc(64px + env(safe-area-inset-bottom)))'
+        }}
       >
         <RefreshIndicator 
           pullDistance={pullDistance} 

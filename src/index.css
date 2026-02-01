@@ -131,10 +131,22 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  /* Global mobile scroll control */
+  html, body {
+    overscroll-behavior-y: none;
+  }
+
   body {
     @apply bg-background text-foreground font-inter;
     min-height: 100vh;
     transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Prevent body scroll when modal open (iOS fix) */
+  body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
   }
 
   :root body {
@@ -271,5 +283,13 @@ All colors MUST be HSL.
   .mobile-scroll-optimized {
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
+    overscroll-behavior-y: contain;
+  }
+
+  /* Sheet/dialog scroll optimization */
+  .sheet-scroll-content {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior-y: contain;
   }
 }

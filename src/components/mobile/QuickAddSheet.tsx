@@ -20,13 +20,20 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
-        <SheetHeader className="pb-2">
+      <SheetContent 
+        side="bottom" 
+        className="h-[85vh] rounded-t-2xl flex flex-col"
+        style={{ 
+          maxHeight: 'calc(85vh - env(safe-area-inset-bottom))',
+          paddingBottom: 'env(safe-area-inset-bottom)'
+        }}
+      >
+        <SheetHeader className="pb-2 flex-shrink-0">
           <SheetTitle className="text-center">Quick Add</SheetTitle>
         </SheetHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-          <TabsList className="grid grid-cols-3 w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          <TabsList className="grid grid-cols-3 w-full flex-shrink-0">
             <TabsTrigger value="revenue" className="flex items-center gap-1.5">
               <DollarSign className="h-4 w-4" />
               <span className="hidden xs:inline">Revenue</span>
@@ -41,7 +48,10 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
             </TabsTrigger>
           </TabsList>
 
-          <div className="mt-4 overflow-y-auto max-h-[calc(85vh-140px)]">
+          <div 
+            className="mt-4 flex-1 overflow-y-auto overscroll-contain sheet-scroll-content"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <TabsContent value="revenue" className="mt-0">
               <QuickRevenueForm onSuccess={handleSuccess} />
             </TabsContent>
