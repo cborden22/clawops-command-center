@@ -193,7 +193,7 @@ export function RouteEditor({ open, onOpenChange, route, onSave }: RouteEditorPr
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col gap-5">
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-5 pr-1">
           {/* Route Details Section */}
           <div className="space-y-4">
             <div className="space-y-2">
@@ -221,7 +221,7 @@ export function RouteEditor({ open, onOpenChange, route, onSave }: RouteEditorPr
           <Separator />
 
           {/* Stops Section */}
-          <div className="space-y-3 flex-1 min-h-0">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Stops ({stops.length})</Label>
               <Button
@@ -236,7 +236,7 @@ export function RouteEditor({ open, onOpenChange, route, onSave }: RouteEditorPr
               </Button>
             </div>
             
-            <div className="relative z-10 max-h-[280px] overflow-y-auto pr-1 space-y-0">
+            <div className="max-h-[280px] overflow-y-auto pr-1 space-y-0">
               {stops.map((stop, index) => (
                 <RouteStopItem
                   key={stop.id}
@@ -257,7 +257,7 @@ export function RouteEditor({ open, onOpenChange, route, onSave }: RouteEditorPr
           <Separator />
 
           {/* Run Schedule Section */}
-          <div className="relative z-0 space-y-3">
+          <div className="space-y-3">
             <Label className="text-sm font-medium flex items-center gap-2">
               <Calendar className="h-4 w-4 text-primary" />
               Run Schedule (Optional)
