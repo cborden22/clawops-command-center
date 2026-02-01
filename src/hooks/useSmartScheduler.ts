@@ -4,7 +4,7 @@ import { MileageRoute } from "@/hooks/useRoutesDB";
 import { UserSchedule } from "@/hooks/useUserSchedules";
 import { startOfDay, addDays, isSameDay, isAfter, isBefore, differenceInDays } from "date-fns";
 
-export type TaskType = "collection" | "route" | "restock" | "maintenance";
+export type TaskType = "restock" | "route" | "maintenance";
 export type TaskStatus = "overdue" | "due_today" | "due_soon" | "upcoming";
 
 export interface ScheduledTask {
@@ -23,13 +23,14 @@ export interface ScheduledTask {
   };
 }
 
-export interface CollectionStatus {
+export interface RestockStatus {
   locationId: string;
   locationName: string;
   frequencyDays: number;
-  lastCollectionDate: Date | null;
+  dayOfWeek?: number;
+  lastRestockDate: Date | null;
   nextDueDate: Date;
-  daysSinceCollection: number | null;
+  daysSinceRestock: number | null;
   daysOverdue: number;
   status: TaskStatus | "no_schedule";
 }
@@ -41,6 +42,7 @@ export interface RouteScheduleStatus {
   dayOfWeek: number;
   nextScheduledDate: Date;
   status: TaskStatus;
+  locationNames: string[];
 }
 
 interface SmartSchedulerInput {
@@ -48,7 +50,7 @@ interface SmartSchedulerInput {
   routes: MileageRoute[];
   userSchedules: UserSchedule[];
   maintenanceReports?: Array<{ id: string; status: string; machineId: string; description: string }>;
-  lastCollectionDates?: Map<string, Date>;
+  lastRestockDates?: Map<string, Date>;
 }
 
 function calculateNextDueDate(
@@ -59,7 +61,13 @@ function calculateNextDueDate(
   const today = startOfDay(new Date());
   
   if (!lastDate) {
-    // No previous date, due today
+    // No previous date - find next occurrence of dayOfWeek if set
+    if (dayOfWeek !== undefined && dayOfWeek !== null) {
+      const currentDow = today.getDay();
+      let daysToAdd = dayOfWeek - currentDow;
+      if (daysToAdd < 0) daysToAdd += 7;
+      return addDays(today, daysToAdd);
+    }
     return today;
   }
 
@@ -70,6 +78,9 @@ function calculateNextDueDate(
     const currentDow = nextDue.getDay();
     let daysToAdd = dayOfWeek - currentDow;
     if (daysToAdd < 0) daysToAdd += 7;
+    if (daysToAdd === 0 && isBefore(nextDue, today)) {
+      daysToAdd = 7; // Next week
+    }
     return addDays(nextDue, daysToAdd);
   }
   
@@ -110,41 +121,59 @@ export function useSmartScheduler({
   routes,
   userSchedules,
   maintenanceReports = [],
-  lastCollectionDates = new Map(),
+  lastRestockDates = new Map(),
 }: SmartSchedulerInput) {
   const today = startOfDay(new Date());
   const weekEnd = addDays(today, 7);
 
-  // Calculate collection statuses
-  const collectionStatuses = useMemo((): CollectionStatus[] => {
+  // Build a Set of location IDs that are stops on any scheduled route
+  const routeBoundLocationIds = useMemo(() => {
+    const ids = new Set<string>();
+    routes.forEach((route) => {
+      const routeAny = route as any;
+      // Only include routes that have a schedule
+      if (routeAny.scheduleFrequencyDays && routeAny.scheduleDayOfWeek !== undefined && routeAny.scheduleDayOfWeek !== null) {
+        route.stops.forEach((stop) => {
+          if (stop.locationId) {
+            ids.add(stop.locationId);
+          }
+        });
+      }
+    });
+    return ids;
+  }, [routes]);
+
+  // Calculate restock statuses - only for locations NOT in any scheduled route
+  const restockStatuses = useMemo((): RestockStatus[] => {
     return locations
       .filter((loc) => loc.isActive)
+      .filter((loc) => !routeBoundLocationIds.has(loc.id)) // Skip route-bound locations
       .map((loc) => {
-        // Try to get frequency from location - we'll need to extend Location type
-        // For now, check if the location has these properties (will be added after migration)
         const locationAny = loc as any;
         const frequencyDays = locationAny.collectionFrequencyDays;
+        const dayOfWeek = locationAny.restockDayOfWeek;
         
         if (!frequencyDays) {
           return {
             locationId: loc.id,
             locationName: loc.name,
             frequencyDays: 0,
-            lastCollectionDate: null,
+            dayOfWeek: undefined,
+            lastRestockDate: null,
             nextDueDate: today,
-            daysSinceCollection: null,
+            daysSinceRestock: null,
             daysOverdue: 0,
             status: "no_schedule" as const,
           };
         }
 
-        const lastCollection = locationAny.lastCollectionDate 
+        const lastRestock = locationAny.lastCollectionDate 
           ? new Date(locationAny.lastCollectionDate)
-          : lastCollectionDates.get(loc.id) || null;
+          : lastRestockDates.get(loc.id) || null;
         
-        const nextDueDate = calculateNextDueDate(lastCollection, frequencyDays);
-        const daysSinceCollection = lastCollection 
-          ? differenceInDays(today, startOfDay(lastCollection))
+        const nextDueDate = calculateNextDueDate(lastRestock, frequencyDays, dayOfWeek);
+        const daysSinceRestock = lastRestock 
+          ? differenceInDays(today, startOfDay(lastRestock))
           : null;
         const daysOverdue = Math.max(0, differenceInDays(today, nextDueDate));
 
@@ -152,17 +181,18 @@ export function useSmartScheduler({
           locationId: loc.id,
           locationName: loc.name,
           frequencyDays,
-          lastCollectionDate: lastCollection,
+          dayOfWeek,
+          lastRestockDate: lastRestock,
           nextDueDate,
-          daysSinceCollection,
+          daysSinceRestock,
           daysOverdue,
           status: getTaskStatus(nextDueDate),
         };
       })
       .filter((s) => s.status !== "no_schedule");
-  }, [locations, lastCollectionDates, today]);
+  }, [locations, routeBoundLocationIds, lastRestockDates, today]);
 
-  // Calculate route schedule statuses
+  // Calculate route schedule statuses with location names
   const routeScheduleStatuses = useMemo((): RouteScheduleStatus[] => {
     return routes
       .map((route) => {
@@ -181,6 +211,12 @@ export function useSmartScheduler({
         if (daysUntil < 0) daysUntil += 7;
         nextDate = addDays(nextDate, daysUntil);
 
+        // Get location names for route stops
+        const locationNames = route.stops
+          .filter(s => s.locationId)
+          .map(s => locations.find(l => l.id === s.locationId)?.name)
+          .filter((name): name is string => Boolean(name));
+
         return {
           routeId: route.id,
           routeName: route.name,
@@ -188,41 +224,27 @@ export function useSmartScheduler({
           dayOfWeek,
           nextScheduledDate: nextDate,
           status: getTaskStatus(nextDate),
+          locationNames,
         };
       })
       .filter((s): s is RouteScheduleStatus => s !== null);
-  }, [routes, today]);
-
-  // Get restock schedule
-  const restockSchedule = useMemo(() => {
-    const restockSched = userSchedules.find((s) => s.scheduleType === "restock");
-    if (!restockSched || !restockSched.frequencyDays) return null;
-
-    const nextDate = restockSched.nextScheduledDate || today;
-    return {
-      frequencyDays: restockSched.frequencyDays,
-      dayOfWeek: restockSched.dayOfWeek,
-      lastCompletedDate: restockSched.lastCompletedDate,
-      nextScheduledDate: nextDate,
-      status: getTaskStatus(nextDate),
-    };
-  }, [userSchedules, today]);
+  }, [routes, locations, today]);
 
   // Generate all scheduled tasks for the week
   const weeklyTasks = useMemo((): ScheduledTask[] => {
     const tasks: ScheduledTask[] = [];
 
-    // Add collection tasks
-    collectionStatuses.forEach((status) => {
+    // Add restock tasks (only for locations NOT in routes)
+    restockStatuses.forEach((status) => {
       if (
         status.status !== "no_schedule" &&
         (isBefore(status.nextDueDate, weekEnd) || isSameDay(status.nextDueDate, weekEnd))
       ) {
         tasks.push({
-          id: `collection-${status.locationId}`,
-          type: "collection",
+          id: `restock-${status.locationId}`,
+          type: "restock",
           title: status.locationName,
-          subtitle: `${status.daysOverdue > 0 ? `${status.daysOverdue} days overdue` : "Collection due"}`,
+          subtitle: `${status.daysOverdue > 0 ? `${status.daysOverdue} days overdue` : "Restock due"}`,
           dueDate: status.nextDueDate,
           status: status.status,
           priority: getPriority(status.status),
@@ -232,40 +254,26 @@ export function useSmartScheduler({
       }
     });
 
-    // Add route tasks
+    // Add route tasks with location names
     routeScheduleStatuses.forEach((status) => {
       if (isBefore(status.nextScheduledDate, weekEnd) || isSameDay(status.nextScheduledDate, weekEnd)) {
+        const subtitle = status.locationNames.length > 0 
+          ? status.locationNames.join(", ")
+          : "Scheduled run";
+        
         tasks.push({
           id: `route-${status.routeId}`,
           type: "route",
           title: status.routeName,
-          subtitle: "Scheduled run",
+          subtitle,
           dueDate: status.nextScheduledDate,
           status: status.status,
           priority: getPriority(status.status),
-          link: "/routes",
+          link: "/mileage",
           metadata: { routeId: status.routeId },
         });
       }
     });
-
-    // Add restock task
-    if (restockSchedule) {
-      const restockDate = restockSchedule.nextScheduledDate;
-      if (isBefore(restockDate, weekEnd) || isSameDay(restockDate, weekEnd)) {
-        tasks.push({
-          id: "restock",
-          type: "restock",
-          title: "Restock Run",
-          subtitle: "Scheduled supply run",
-          dueDate: restockDate,
-          status: restockSchedule.status,
-          priority: getPriority(restockSchedule.status),
-          link: "/inventory",
-          metadata: { scheduleType: "restock" },
-        });
-      }
-    }
 
     // Add maintenance tasks (open/in-progress)
     maintenanceReports
@@ -292,7 +300,7 @@ export function useSmartScheduler({
       const priorityOrder = { high: 0, medium: 1, low: 2 };
       return priorityOrder[a.priority] - priorityOrder[b.priority];
     });
-  }, [collectionStatuses, routeScheduleStatuses, restockSchedule, maintenanceReports, today, weekEnd]);
+  }, [restockStatuses, routeScheduleStatuses, maintenanceReports, today, weekEnd]);
 
   // Group tasks by date for calendar display
   const tasksByDate = useMemo(() => {
@@ -319,24 +327,23 @@ export function useSmartScheduler({
     return weeklyTasks.filter((t) => t.status === "overdue" || t.status === "due_today");
   }, [weeklyTasks]);
 
-  // Get overdue collections specifically
-  const overdueCollections = useMemo(() => {
-    return collectionStatuses.filter((s) => s.status === "overdue");
-  }, [collectionStatuses]);
+  // Get overdue restocks specifically
+  const overdueRestocks = useMemo(() => {
+    return restockStatuses.filter((s) => s.status === "overdue");
+  }, [restockStatuses]);
 
-  // Get due today collections
-  const dueTodayCollections = useMemo(() => {
-    return collectionStatuses.filter((s) => s.status === "due_today");
-  }, [collectionStatuses]);
+  // Get due today restocks
+  const dueTodayRestocks = useMemo(() => {
+    return restockStatuses.filter((s) => s.status === "due_today");
+  }, [restockStatuses]);
 
   return {
-    collectionStatuses,
+    restockStatuses,
     routeScheduleStatuses,
-    restockSchedule,
     weeklyTasks,
     tasksByDate,
     urgentTasks,
-    overdueCollections,
-    dueTodayCollections,
+    overdueRestocks,
+    dueTodayRestocks,
   };
 }

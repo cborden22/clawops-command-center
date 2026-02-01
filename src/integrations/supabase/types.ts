@@ -229,6 +229,7 @@ export type Database = {
           last_collection_date: string | null
           name: string
           notes: string | null
+          restock_day_of_week: number | null
           slug: string | null
           updated_at: string | null
           user_id: string
@@ -246,6 +247,7 @@ export type Database = {
           last_collection_date?: string | null
           name: string
           notes?: string | null
+          restock_day_of_week?: number | null
           slug?: string | null
           updated_at?: string | null
           user_id: string
@@ -263,6 +265,7 @@ export type Database = {
           last_collection_date?: string | null
           name?: string
           notes?: string | null
+          restock_day_of_week?: number | null
           slug?: string | null
           updated_at?: string | null
           user_id?: string
