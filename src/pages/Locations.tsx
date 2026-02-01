@@ -22,16 +22,16 @@ const Locations = () => {
   }, [isMobile, registerRefresh, unregisterRefresh, refetch]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8 px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Location Tracker</h1>
-          <p className="text-muted-foreground mt-2">
+    <div className="bg-background">
+      <div className="container mx-auto py-4 sm:py-8 px-4">
+        <div className="mb-4 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Location Tracker</h1>
+          <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
             Manage all your claw machine locations and machines in one place
           </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
           <TabsList className="bg-muted/50">
             <TabsTrigger value="locations" className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
