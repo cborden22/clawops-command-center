@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Plus, Route, MapPin, Trash2, Pencil, Play, MoreVertical, Map 
+  Plus, Route, MapPin, Trash2, Pencil, Play, MoreVertical 
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,7 +24,6 @@ import {
 import { MileageRoute, RouteStopInput } from "@/hooks/useRoutesDB";
 import { RouteEditor } from "./RouteEditor";
 import { RoutePreview } from "./RoutePreview";
-import { RouteMap } from "./RouteMap";
 import { toast } from "@/hooks/use-toast";
 
 interface RouteManagerProps {
@@ -57,8 +56,6 @@ export function RouteManager({
   const [editingRoute, setEditingRoute] = useState<MileageRoute | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [routeToDelete, setRouteToDelete] = useState<MileageRoute | null>(null);
-  const [selectedRouteForMap, setSelectedRouteForMap] = useState<MileageRoute | undefined>();
-  const [showMap, setShowMap] = useState(true);
 
   const handleCreate = () => {
     setEditingRoute(undefined);
@@ -115,43 +112,11 @@ export function RouteManager({
         <p className="text-sm text-muted-foreground">
           Save your common routes for quick trip logging
         </p>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setShowMap(!showMap)}
-            className="gap-2"
-          >
-            <Map className="h-4 w-4" />
-            {showMap ? "Hide Map" : "Show Map"}
-          </Button>
-          <Button onClick={handleCreate} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create Route
-          </Button>
-        </div>
+        <Button onClick={handleCreate} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Create Route
+        </Button>
       </div>
-
-      {/* Interactive Map */}
-      {showMap && (
-        <div className="space-y-2">
-          <RouteMap selectedRoute={selectedRouteForMap} />
-          {selectedRouteForMap && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                Showing: <span className="font-medium text-foreground">{selectedRouteForMap.name}</span>
-              </span>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setSelectedRouteForMap(undefined)}
-              >
-                Show All Locations
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Routes List */}
       {routes.length === 0 ? (
@@ -170,12 +135,7 @@ export function RouteManager({
           {routes.map(route => (
             <Card 
               key={route.id} 
-              className={`glass-card hover:shadow-hover transition-all duration-300 cursor-pointer ${
-                selectedRouteForMap?.id === route.id ? "ring-2 ring-primary" : ""
-              }`}
-              onClick={() => setSelectedRouteForMap(
-                selectedRouteForMap?.id === route.id ? undefined : route
-              )}
+              className="glass-card hover:shadow-hover transition-all duration-300"
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-3">

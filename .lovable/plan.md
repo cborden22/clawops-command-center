@@ -1,134 +1,111 @@
 
 
-## Add Interactive Map to Routes Section
+## Reorganize Sidebar Navigation with 2 Collapsible Groups
 
-This plan adds an interactive map visualization that displays route stops as markers, using free OpenStreetMap tiles with no API key required.
+This plan keeps Dashboard as a standalone top-level item and organizes the remaining tools into 2 collapsible groups for a cleaner interface.
+
+---
+
+## Final Structure
+
+| Section | Items | Purpose |
+|---------|-------|---------|
+| **Dashboard** (standalone) | Dashboard | Central hub - always visible at top |
+| **Operations** (collapsible) | Locations, Maintenance, Routes, Inventory Tracker | Day-to-day operational tasks |
+| **Financials & Reports** (collapsible) | Revenue Tracker, Reports, Commission Summary, Location Agreement Generator | Money tracking, analytics, and documentation |
+
+### Visual Structure
+
+```text
++----------------------------------+
+|  ClawOps                         |
+|  Professional Suite              |
++----------------------------------+
+|                                  |
+|  > Dashboard                     |
+|                                  |
+|  OPERATIONS              [v]     |
+|    > Locations                   |
+|    > Maintenance                 |
+|    > Routes                      |
+|    > Inventory Tracker           |
+|                                  |
+|  FINANCIALS & REPORTS    [v]     |
+|    > Revenue Tracker             |
+|    > Reports                     |
+|    > Commission Summary          |
+|    > Agreement Generator         |
+|                                  |
++----------------------------------+
+|  [User Profile]                  |
++----------------------------------+
+```
 
 ---
 
 ## What You'll Get
 
-1. **Interactive Map Component** - A visual map showing all stops as markers with connecting lines
-2. **Route-Specific View** - When you select a route, the map zooms to show just those stops
-3. **All Locations View** - When no route is selected, shows all your saved locations on the map
-4. **Clickable Markers** - Tap a marker to see the location name and address
-5. **Automatic Geocoding** - Converts your addresses to map coordinates automatically
+1. **Dashboard always visible** - One-click access to the main hub
+2. **2 collapsible groups** - Operations and Financials sections expand/collapse
+3. **Auto-expand active section** - The group containing the current page stays open
+4. **Cleaner visual hierarchy** - 9 items condensed into 3 visual sections
+5. **Chevron indicators** - Show expand/collapse state for each group
 
 ---
 
-## Visual Preview
+## Implementation Details
 
-```text
-+----------------------------------------+
-|  Routes Tab                            |
-+----------------------------------------+
-|                                        |
-|  [   Interactive Map with Markers  ]   |
-|  [                                 ]   |
-|  [    📍----📍----📍----📍         ]   |
-|  [                                 ]   |
-|                                        |
-|  Route Cards Below...                  |
-|  +------------------+ +---------------+|
-|  | Monday Route     | | Tuesday Route ||
-|  | 4 stops, 23.4 mi | | 3 stops, 15 mi||
-|  +------------------+ +---------------+|
-|                                        |
-+----------------------------------------+
-```
+### File Changes
 
-When a route is selected:
-- Map centers and zooms to fit all stops
-- Markers are connected by a line showing the route path
-- Different colors: green (start), blue (middle stops), red (end)
+| File | Action | Purpose |
+|------|--------|---------|
+| `src/components/layout/AppSidebar.tsx` | Modify | Add 2 collapsible groups below Dashboard |
+| `src/components/layout/MobileBottomNav.tsx` | Modify | Group items in "More" menu with section headers |
 
----
+### Sidebar Implementation
 
-## Implementation Approach
+**Structure:**
+- Dashboard as standalone `NavLink` at the top (no group wrapper)
+- Operations group using `Collapsible` component with `ChevronDown` toggle
+- Financials & Reports group using `Collapsible` component with `ChevronDown` toggle
 
-### New Dependencies
+**Behavior:**
+- Groups auto-expand when they contain the active route (using `useLocation`)
+- Clicking group header toggles open/closed state
+- Smooth animation on expand/collapse using existing `CollapsibleContent`
+- Active item styling preserved within groups
 
-| Package | Purpose |
-|---------|---------|
-| `react-leaflet` | React wrapper for Leaflet maps |
-| `leaflet` | Core mapping library |
-| `@types/leaflet` | TypeScript types |
+**Group Items:**
 
-### New Files
+Operations:
+- Locations (MapPin icon)
+- Maintenance (Wrench icon)
+- Routes (Car icon)
+- Inventory Tracker (Package icon)
 
-| File | Purpose |
-|------|---------|
-| `src/components/mileage/RouteMap.tsx` | Main map component with markers and route lines |
-| `src/hooks/useGeocode.ts` | Hook to convert addresses to coordinates using OpenStreetMap's Nominatim API |
+Financials & Reports:
+- Revenue Tracker (DollarSign icon)
+- Reports (BarChart3 icon)
+- Commission Summary (Receipt icon)
+- Location Agreement Generator (FileText icon)
 
-### Modified Files
+### Mobile Navigation Update
 
-| File | Changes |
-|------|---------|
-| `src/components/mileage/RouteManager.tsx` | Add map display above route cards |
-| `src/index.css` | Add Leaflet CSS import |
+The "More" sheet will show items grouped under section headers:
+- **Operations** section with its 4 items
+- Divider
+- **Financials & Reports** section with its 4 items
+- Divider
+- Settings and Sign Out at bottom
 
 ---
 
-## How It Works
+## Technical Approach
 
-### Address Geocoding
+Uses the existing `Collapsible`, `CollapsibleTrigger`, and `CollapsibleContent` components from `@radix-ui/react-collapsible` (already in the project).
 
-The system will convert your addresses to map coordinates using OpenStreetMap's free Nominatim service:
-
-1. When the map loads, it fetches coordinates for each location's address
-2. Results are cached in browser memory to avoid repeated lookups
-3. If an address can't be found, that stop shows without a marker (graceful degradation)
-
-### Map Features
-
-- **Tile Source**: OpenStreetMap (free, no API key)
-- **Markers**: Custom colored markers for start/middle/end stops
-- **Route Line**: Dashed line connecting stops in order
-- **Popups**: Click a marker to see location details
-- **Fit Bounds**: Map automatically zooms to show all relevant markers
-- **Responsive**: Works on mobile and desktop
-
----
-
-## Technical Details
-
-### RouteMap Component
-
-The map component will:
-- Accept either a selected route or show all locations
-- Handle loading state while geocoding addresses
-- Cache geocoded coordinates to avoid rate limits
-- Use proper attribution for OpenStreetMap
-
-### Geocoding Strategy
-
-- Use Nominatim's free geocoding API (rate limited to 1 request/second)
-- Implement request queuing to respect rate limits
-- Cache results in component state during session
-- Show placeholder for locations without valid coordinates
-
-### Database Consideration
-
-Optionally, we could add latitude/longitude columns to the `locations` table to store coordinates permanently, avoiding repeated geocoding. This would be a future enhancement.
-
----
-
-## Limitations
-
-- **Geocoding Rate Limit**: Nominatim has a 1 request/second limit, so initial load may take a few seconds for many locations
-- **Address Accuracy**: Geocoding depends on address format - some addresses may not resolve correctly
-- **No Real Routing**: The line between stops is straight, not actual driving directions
-
----
-
-## Summary
-
-| Aspect | Details |
-|--------|---------|
-| **Cost** | Free (OpenStreetMap + Nominatim) |
-| **API Key Required** | No |
-| **New Dependencies** | 3 packages (react-leaflet, leaflet, @types/leaflet) |
-| **New Components** | 2 (RouteMap, useGeocode hook) |
-| **Mobile Friendly** | Yes |
+State management:
+- Track which groups are open with `useState`
+- Auto-open logic based on `location.pathname` matching any item in the group
+- Persist user's manual open/close preference during session
 
