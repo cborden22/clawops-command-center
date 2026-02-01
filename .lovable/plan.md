@@ -1,220 +1,76 @@
 
 
-## Fix Calendar Logic, Restock Scheduling & Route Links
+## Fix Route Editor Layout - Select Dropdowns Appearing Behind Schedule Section
 
-This plan addresses the navigation issues and implements your refined calendar logic where locations appear either:
-1. On their scheduled restock day (if they have a schedule and are NOT part of a route)
-2. As part of a route run (if they're stops on a scheduled route)
+The issue is that when creating/editing a route, the dropdown menus in the Stops section appear behind the "Run Schedule" section below. This is caused by CSS stacking context and overflow issues.
 
 ---
 
-## Summary of Changes
+## Root Cause
 
-| Issue | Fix |
-|-------|-----|
-| Route links go to 404 `/routes` | Change to `/mileage` (correct page) |
-| "Collection" terminology | Rename to "Restock" throughout |
-| Calendar shows locations incorrectly | Only show standalone restocks for locations NOT in any route |
-| Need day-of-week for restocks | Add `restock_day_of_week` field to locations |
-| Route run tasks need location context | Show which locations are included in each route run |
+The `RouteEditor.tsx` component has these conflicting styles:
+1. `DialogContent` has `overflow-visible` (line 188)
+2. Stops container has `overflow-y-auto` (line 239)
+3. The Run Schedule section sits below the stops area
 
----
-
-## Database Changes
-
-### Add Column to `locations` Table
-
-| Column | Type | Purpose |
-|--------|------|---------|
-| `restock_day_of_week` | integer (nullable) | Preferred restock day (0=Sunday, 6=Saturday) |
-
-This allows users to set "Restock every 2 weeks on Wednesday" for a location.
+When you open a Select dropdown inside the scrollable stops area, the dropdown portal renders correctly, but the visual stacking order gets confused due to the mixed overflow contexts.
 
 ---
 
-## New Calendar Logic
+## Solution
 
-```text
-For each location:
-  - Check if location is a stop on ANY route with a schedule
-  - If YES: Location is "route-bound" → Don't create standalone restock task
-  - If NO and has restock schedule: Create standalone "Restock" task on its scheduled day
+Make these CSS adjustments to fix the z-index stacking:
 
-For each route with schedule:
-  - Create "Route Run" task
-  - Include subtitle listing the locations on that route (e.g., "Pizza Palace, Mall Arcade")
+### Change 1: Remove `overflow-visible` from DialogContent
+
+The `overflow-visible` on the DialogContent isn't needed and causes issues. We'll remove it and let the dialog handle overflow properly.
+
+**File: `src/components/mileage/RouteEditor.tsx`**
+
+```diff
+- <DialogContent className="max-w-xl max-h-[90vh] flex flex-col overflow-visible">
++ <DialogContent className="max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
 ```
 
-### Visual Example
+### Change 2: Ensure proper z-index on Select dropdowns
 
-```text
-+----------------------------------------------------------+
-|  This Week                                                |
-+----------------------------------------------------------+
-|  Mon 3   |  Tue 4    |  Wed 5     |  Thu 6   |  Fri 7    |
-| -------- | --------- | ---------- | -------- | --------- |
-|          | [R] West  | [P] Gym    |          |           |
-|          |    Route  |  (Restock) |          |           |
-|          |  (Joe's,  |            |          |           |
-|          |   Mall)   |            |          |           |
-+----------------------------------------------------------+
+The SelectContent in RouteStopItem already has `z-50`, which should be sufficient. However, we should also ensure the parent sections have proper stacking.
 
-[R] = Route Run (includes locations: Joe's Pizza, Mall Arcade)
-[P] = Standalone Restock (Gym location has its own schedule, not on any route)
+**File: `src/components/mileage/RouteEditor.tsx`**
+
+Add `relative z-10` to the stops scrollable container to create a new stacking context, and ensure the Run Schedule section has lower stacking priority:
+
+```diff
+- <div className="max-h-[280px] overflow-y-auto pr-1 space-y-0">
++ <div className="relative z-10 max-h-[280px] overflow-y-auto pr-1 space-y-0">
+```
+
+### Change 3: Add z-index to Run Schedule section
+
+Ensure the Run Schedule section doesn't overlap dropdown menus:
+
+```diff
+- <div className="space-y-3">
++ <div className="relative z-0 space-y-3">
 ```
 
 ---
 
-## File Changes
+## File Changes Summary
 
-| File | Action | Purpose |
-|------|--------|---------|
-| Migration | Create | Add `restock_day_of_week` to `locations` table |
-| `src/hooks/useSmartScheduler.ts` | Modify | Fix route link, implement new logic for route-bound locations |
-| `src/hooks/useLocationsDB.ts` | Modify | Add `restockDayOfWeek` field handling |
-| `src/components/LocationTrackerComponent.tsx` | Modify | Rename to "Restock Schedule", add day picker, update form |
-| `src/components/dashboard/WeeklyCalendarWidget.tsx` | Modify | Update legend: "Collection" → "Restock" |
-| `src/components/dashboard/CollectionDueWidget.tsx` | Modify | Rename to "Restock Due" widget, update all text |
-| `src/pages/Dashboard.tsx` | Modify | Update widget names/props |
+| File | Line | Change |
+|------|------|--------|
+| `src/components/mileage/RouteEditor.tsx` | 188 | Change `overflow-visible` to `overflow-hidden` |
+| `src/components/mileage/RouteEditor.tsx` | 239 | Add `relative z-10` to stops container |
+| `src/components/mileage/RouteEditor.tsx` | 260 | Add `relative z-0` to Run Schedule section |
 
 ---
 
-## Implementation Details
+## Why This Works
 
-### 1. Update `useSmartScheduler.ts`
+1. **`overflow-hidden`** on DialogContent prevents content from visually escaping the dialog bounds while still allowing portaled elements (like Select dropdowns) to render correctly
+2. **`z-10`** on the stops container ensures dropdown menus from within it stack above other content
+3. **`z-0`** on the Run Schedule section explicitly places it below the stops' dropdowns in the stacking order
 
-**Fix Route Link:**
-```typescript
-// Line 246 - Change from:
-link: "/routes",
-// To:
-link: "/mileage",
-```
-
-**New Logic - Determine Route-Bound Locations:**
-```typescript
-// Build a Set of location IDs that are stops on any scheduled route
-const routeBoundLocationIds = useMemo(() => {
-  const ids = new Set<string>();
-  routes.forEach((route) => {
-    // Only include routes that have a schedule
-    if (route.scheduleFrequencyDays && route.scheduleDayOfWeek !== undefined) {
-      route.stops.forEach((stop) => {
-        if (stop.locationId) {
-          ids.add(stop.locationId);
-        }
-      });
-    }
-  });
-  return ids;
-}, [routes]);
-```
-
-**Filter Restock Tasks:**
-```typescript
-// Only create standalone restock tasks for locations NOT in any scheduled route
-const restockStatuses = locations
-  .filter((loc) => loc.isActive)
-  .filter((loc) => !routeBoundLocationIds.has(loc.id)) // NEW: Skip route-bound locations
-  .map((loc) => {
-    // ... existing logic to calculate restock due date
-  });
-```
-
-**Enhance Route Tasks with Location Names:**
-```typescript
-// Get location names for route stops
-const routeLocationNames = route.stops
-  .filter(s => s.locationId)
-  .map(s => locations.find(l => l.id === s.locationId)?.name)
-  .filter(Boolean)
-  .join(", ");
-
-tasks.push({
-  id: `route-${status.routeId}`,
-  type: "route",
-  title: status.routeName,
-  subtitle: routeLocationNames || "Scheduled run", // Show location names
-  // ...
-});
-```
-
-### 2. Update Location Form
-
-**Add Day-of-Week Picker (shown when frequency is selected):**
-```tsx
-const DAY_OF_WEEK_OPTIONS = [
-  { value: 0, label: "Sunday" },
-  { value: 1, label: "Monday" },
-  { value: 2, label: "Tuesday" },
-  { value: 3, label: "Wednesday" },
-  { value: 4, label: "Thursday" },
-  { value: 5, label: "Friday" },
-  { value: 6, label: "Saturday" },
-];
-
-// In the form, show day picker when frequency is selected:
-{formData.collectionFrequencyDays && (
-  <div className="space-y-2">
-    <Label>Preferred Day</Label>
-    <Select
-      value={formData.restockDayOfWeek !== undefined ? String(formData.restockDayOfWeek) : "none"}
-      onValueChange={(v) => setFormData(prev => ({
-        ...prev,
-        restockDayOfWeek: v === "none" ? undefined : parseInt(v)
-      }))}
-    >
-      {/* Day options */}
-    </Select>
-  </div>
-)}
-```
-
-**Rename Labels:**
-- "Collection Schedule" → "Restock Schedule"
-- "Collection Frequency" → "Restock Frequency"  
-- "Get reminders when this location is due for collection" → "Get reminders when this location needs restocking"
-
-### 3. Update Widget Terminology
-
-**WeeklyCalendarWidget.tsx:**
-- Change "Collection" to "Restock" in the legend
-
-**CollectionDueWidget.tsx:**
-- Rename file/component to RestockDueWidget
-- "Collection Reminders" → "Restock Reminders"
-- "All collections are up to date" → "All restocks are up to date"
-- "days overdue" → "days overdue"
-- "Collection due" → "Restock due"
-- "Last collected:" → "Last restocked:"
-
----
-
-## Updated User Experience
-
-1. **Creating a location:**
-   - Set Restock Schedule → Frequency + Preferred Day
-   - Helper text: "Leave empty if this location is part of a route"
-
-2. **Calendar View:**
-   - Route runs show the route name + which locations are included
-   - Standalone restocks only show for locations NOT on any scheduled route
-   - Clicking route → navigates to `/mileage` (fixed!)
-
-3. **Visual Distinction:**
-   - Purple = Route runs (grouped locations)
-   - Blue = Standalone restocks (locations with their own schedule, not on routes)
-
----
-
-## Terminology Changes Summary
-
-| Old Term | New Term |
-|----------|----------|
-| Collection | Restock |
-| Collection Schedule | Restock Schedule |
-| Collection Frequency | Restock Frequency |
-| Last collected | Last restocked |
-| CollectionDueWidget | RestockDueWidget |
-| collectionStatuses | restockStatuses |
+The Select component's dropdown uses Radix UI's Portal, which renders the dropdown at the document body level. By properly managing stacking contexts in the parent elements, the dropdowns will always appear on top.
 
