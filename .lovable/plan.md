@@ -1,242 +1,220 @@
 
 
-## Smart Business Assistant: Collection Reminders, Route Scheduling & Weekly Calendar
+## Fix Calendar Logic, Restock Scheduling & Route Links
 
-This plan adds intelligent scheduling features to help operators manage their business with automated reminders, route scheduling, and a visual weekly calendar on the dashboard.
+This plan addresses the navigation issues and implements your refined calendar logic where locations appear either:
+1. On their scheduled restock day (if they have a schedule and are NOT part of a route)
+2. As part of a route run (if they're stops on a scheduled route)
 
 ---
 
-## What You'll Get
+## Summary of Changes
 
-### 1. Collection Reminder System (Per Location)
-- **Per-location collection schedules** - Set how often each location needs to be collected (Weekly, Every 2 Weeks, Every 3 Weeks, Monthly, Custom days)
-- **Smart due date tracking** - Automatically calculates when each location is due based on last collection
-- **Visual status indicators** - Overdue (red), Due Today (yellow), Upcoming (green)
-- **Dashboard alerts** - Shows locations needing attention at the top
-
-### 2. Route Scheduling
-- **Schedule when to run routes** - "Run Route A every Tuesday" or "Run Route B weekly on Fridays"
-- **Frequency options**: Weekly, Every 2 Weeks, Every 3 Weeks, Monthly, Custom
-- **Day-of-week selection** - Pick which day(s) of the week to run each route
-- **Next run date display** - Shows when each route is next scheduled
-
-### 3. Restock Schedule
-- **Set a restock timeframe** - Configure how often you do supply runs
-- **Frequency presets**: Weekly, Every 2 Weeks, Every 3 Weeks, Monthly, Custom
-- **Next restock date** - Calculates and displays when your next restock is due
-- **Dashboard reminder** - Shows upcoming restock on the calendar
-
-### 4. Weekly Calendar Widget (Dashboard)
-- **Visual 7-day view** - Shows the current week with scheduled tasks
-- **Task types displayed**:
-  - Collection due dates (based on location schedules)
-  - Scheduled route runs
-  - Restock days
-  - Maintenance follow-ups (open/in-progress issues)
-- **Quick navigation** - Click any task to go to the relevant page
-- **Color-coded by type** - Easy visual distinction
+| Issue | Fix |
+|-------|-----|
+| Route links go to 404 `/routes` | Change to `/mileage` (correct page) |
+| "Collection" terminology | Rename to "Restock" throughout |
+| Calendar shows locations incorrectly | Only show standalone restocks for locations NOT in any route |
+| Need day-of-week for restocks | Add `restock_day_of_week` field to locations |
+| Route run tasks need location context | Show which locations are included in each route run |
 
 ---
 
 ## Database Changes
 
-### New Columns on `locations` Table
+### Add Column to `locations` Table
 
 | Column | Type | Purpose |
 |--------|------|---------|
-| `collection_frequency_days` | integer | Days between collections (7, 14, 21, 30, or custom) |
-| `last_collection_date` | timestamp | When this location was last collected |
+| `restock_day_of_week` | integer (nullable) | Preferred restock day (0=Sunday, 6=Saturday) |
 
-### New Columns on `mileage_routes` Table
+This allows users to set "Restock every 2 weeks on Wednesday" for a location.
 
-| Column | Type | Purpose |
-|--------|------|---------|
-| `schedule_frequency_days` | integer | Days between runs (7, 14, 21, 30, or null) |
-| `schedule_day_of_week` | integer | Day of week to run (0=Sunday, 1=Monday, etc.) |
-| `next_scheduled_date` | date | Next calculated run date |
+---
 
-### New Table: `user_schedules`
+## New Calendar Logic
 
-| Column | Type | Purpose |
-|--------|------|---------|
-| `id` | uuid | Primary key |
-| `user_id` | uuid | Owner |
-| `schedule_type` | text | Type of schedule ('restock') |
-| `frequency_days` | integer | Days between events |
-| `day_of_week` | integer | Preferred day (0-6) |
-| `last_completed_date` | timestamp | When last done |
-| `next_scheduled_date` | date | Next occurrence |
+```text
+For each location:
+  - Check if location is a stop on ANY route with a schedule
+  - If YES: Location is "route-bound" → Don't create standalone restock task
+  - If NO and has restock schedule: Create standalone "Restock" task on its scheduled day
+
+For each route with schedule:
+  - Create "Route Run" task
+  - Include subtitle listing the locations on that route (e.g., "Pizza Palace, Mall Arcade")
+```
+
+### Visual Example
+
+```text
++----------------------------------------------------------+
+|  This Week                                                |
++----------------------------------------------------------+
+|  Mon 3   |  Tue 4    |  Wed 5     |  Thu 6   |  Fri 7    |
+| -------- | --------- | ---------- | -------- | --------- |
+|          | [R] West  | [P] Gym    |          |           |
+|          |    Route  |  (Restock) |          |           |
+|          |  (Joe's,  |            |          |           |
+|          |   Mall)   |            |          |           |
++----------------------------------------------------------+
+
+[R] = Route Run (includes locations: Joe's Pizza, Mall Arcade)
+[P] = Standalone Restock (Gym location has its own schedule, not on any route)
+```
+
+---
+
+## File Changes
+
+| File | Action | Purpose |
+|------|--------|---------|
+| Migration | Create | Add `restock_day_of_week` to `locations` table |
+| `src/hooks/useSmartScheduler.ts` | Modify | Fix route link, implement new logic for route-bound locations |
+| `src/hooks/useLocationsDB.ts` | Modify | Add `restockDayOfWeek` field handling |
+| `src/components/LocationTrackerComponent.tsx` | Modify | Rename to "Restock Schedule", add day picker, update form |
+| `src/components/dashboard/WeeklyCalendarWidget.tsx` | Modify | Update legend: "Collection" → "Restock" |
+| `src/components/dashboard/CollectionDueWidget.tsx` | Modify | Rename to "Restock Due" widget, update all text |
+| `src/pages/Dashboard.tsx` | Modify | Update widget names/props |
 
 ---
 
 ## Implementation Details
 
-### File Changes Summary
+### 1. Update `useSmartScheduler.ts`
 
-| File | Action | Purpose |
-|------|--------|---------|
-| Migration | Create | Add columns to locations, mileage_routes, and create user_schedules table |
-| `src/hooks/useSmartScheduler.ts` | Create | Central hook for all smart scheduling logic |
-| `src/components/dashboard/WeeklyCalendarWidget.tsx` | Create | Visual weekly calendar widget |
-| `src/components/dashboard/CollectionDueWidget.tsx` | Create | Collection reminders alert widget |
-| `src/pages/Dashboard.tsx` | Modify | Add new widgets to widget system |
-| `src/components/LocationTrackerComponent.tsx` | Modify | Add collection frequency field to location form |
-| `src/components/LocationDetailDialog.tsx` | Modify | Show collection schedule and status |
-| `src/components/mileage/RouteManager.tsx` | Modify | Add schedule settings to routes |
-| `src/components/mileage/RouteEditor.tsx` | Modify | Add schedule frequency and day picker |
-| `src/hooks/useLocationsDB.ts` | Modify | Handle new collection schedule fields |
-| `src/hooks/useRoutesDB.ts` | Modify | Handle new route schedule fields |
-| `src/hooks/useUserSchedules.ts` | Create | Hook for managing restock schedule |
-| `src/pages/Settings.tsx` | Modify | Add restock schedule configuration |
+**Fix Route Link:**
+```typescript
+// Line 246 - Change from:
+link: "/routes",
+// To:
+link: "/mileage",
+```
+
+**New Logic - Determine Route-Bound Locations:**
+```typescript
+// Build a Set of location IDs that are stops on any scheduled route
+const routeBoundLocationIds = useMemo(() => {
+  const ids = new Set<string>();
+  routes.forEach((route) => {
+    // Only include routes that have a schedule
+    if (route.scheduleFrequencyDays && route.scheduleDayOfWeek !== undefined) {
+      route.stops.forEach((stop) => {
+        if (stop.locationId) {
+          ids.add(stop.locationId);
+        }
+      });
+    }
+  });
+  return ids;
+}, [routes]);
+```
+
+**Filter Restock Tasks:**
+```typescript
+// Only create standalone restock tasks for locations NOT in any scheduled route
+const restockStatuses = locations
+  .filter((loc) => loc.isActive)
+  .filter((loc) => !routeBoundLocationIds.has(loc.id)) // NEW: Skip route-bound locations
+  .map((loc) => {
+    // ... existing logic to calculate restock due date
+  });
+```
+
+**Enhance Route Tasks with Location Names:**
+```typescript
+// Get location names for route stops
+const routeLocationNames = route.stops
+  .filter(s => s.locationId)
+  .map(s => locations.find(l => l.id === s.locationId)?.name)
+  .filter(Boolean)
+  .join(", ");
+
+tasks.push({
+  id: `route-${status.routeId}`,
+  type: "route",
+  title: status.routeName,
+  subtitle: routeLocationNames || "Scheduled run", // Show location names
+  // ...
+});
+```
+
+### 2. Update Location Form
+
+**Add Day-of-Week Picker (shown when frequency is selected):**
+```tsx
+const DAY_OF_WEEK_OPTIONS = [
+  { value: 0, label: "Sunday" },
+  { value: 1, label: "Monday" },
+  { value: 2, label: "Tuesday" },
+  { value: 3, label: "Wednesday" },
+  { value: 4, label: "Thursday" },
+  { value: 5, label: "Friday" },
+  { value: 6, label: "Saturday" },
+];
+
+// In the form, show day picker when frequency is selected:
+{formData.collectionFrequencyDays && (
+  <div className="space-y-2">
+    <Label>Preferred Day</Label>
+    <Select
+      value={formData.restockDayOfWeek !== undefined ? String(formData.restockDayOfWeek) : "none"}
+      onValueChange={(v) => setFormData(prev => ({
+        ...prev,
+        restockDayOfWeek: v === "none" ? undefined : parseInt(v)
+      }))}
+    >
+      {/* Day options */}
+    </Select>
+  </div>
+)}
+```
+
+**Rename Labels:**
+- "Collection Schedule" → "Restock Schedule"
+- "Collection Frequency" → "Restock Frequency"  
+- "Get reminders when this location is due for collection" → "Get reminders when this location needs restocking"
+
+### 3. Update Widget Terminology
+
+**WeeklyCalendarWidget.tsx:**
+- Change "Collection" to "Restock" in the legend
+
+**CollectionDueWidget.tsx:**
+- Rename file/component to RestockDueWidget
+- "Collection Reminders" → "Restock Reminders"
+- "All collections are up to date" → "All restocks are up to date"
+- "days overdue" → "days overdue"
+- "Collection due" → "Restock due"
+- "Last collected:" → "Last restocked:"
 
 ---
 
-### Collection Schedule UI (Location Form)
+## Updated User Experience
 
-Added to the location add/edit form:
+1. **Creating a location:**
+   - Set Restock Schedule → Frequency + Preferred Day
+   - Helper text: "Leave empty if this location is part of a route"
 
-```text
-Collection Schedule
-+----------------------------------+
-| Frequency: [Weekly           v]  |
-|                                  |
-| Options:                         |
-|   - Weekly (7 days)              |
-|   - Every 2 Weeks (14 days)      |
-|   - Every 3 Weeks (21 days)      |
-|   - Monthly (30 days)            |
-|   - Custom: [___] days           |
-+----------------------------------+
-```
+2. **Calendar View:**
+   - Route runs show the route name + which locations are included
+   - Standalone restocks only show for locations NOT on any scheduled route
+   - Clicking route → navigates to `/mileage` (fixed!)
 
-### Route Schedule UI (Route Editor)
-
-Added to the route create/edit dialog:
-
-```text
-Run Schedule (Optional)
-+----------------------------------+
-| Frequency: [Weekly           v]  |
-| Run On:    [Tuesday          v]  |
-|                                  |
-| Next Run: Tuesday, Feb 4         |
-+----------------------------------+
-```
-
-### Restock Schedule (Settings Page)
-
-New section in Settings:
-
-```text
-Restock Schedule
-+----------------------------------+
-| How often do you restock?        |
-|                                  |
-| Frequency: [Every 2 Weeks    v]  |
-| Preferred Day: [Saturday     v]  |
-|                                  |
-| Next Restock: Saturday, Feb 8    |
-+----------------------------------+
-```
-
-### Weekly Calendar Widget Design
-
-```text
-+----------------------------------------------------------+
-|  This Week                                    [Calendar]  |
-+----------------------------------------------------------+
-|  Mon 3   |  Tue 4    |  Wed 5   |  Thu 6   |  Fri 7  ... |
-| -------- | --------- | -------- | -------- | ----------- |
-|          | [R] Route |          |          | [C] Pizza   |
-|          |    A Run  |          |          |    Palace   |
-|          |           |          |          |             |
-|          |           |          |          | [S] Restock |
-+----------------------------------------------------------+
-
-Legend: [C] = Collection  [R] = Route  [S] = Restock  [M] = Maintenance
-```
+3. **Visual Distinction:**
+   - Purple = Route runs (grouped locations)
+   - Blue = Standalone restocks (locations with their own schedule, not on routes)
 
 ---
 
-## Scheduling Logic
+## Terminology Changes Summary
 
-### Collection Due Status
-
-```text
-lastCollection = most recent machine_collections entry for location
-daysSinceCollection = today - lastCollection
-scheduleFrequency = location.collection_frequency_days
-
-Status:
-- If no frequency set → No schedule (skip)
-- If daysSinceCollection > scheduleFrequency → OVERDUE (red)
-- If daysSinceCollection === scheduleFrequency → DUE TODAY (yellow)
-- If daysSinceCollection === scheduleFrequency - 1 → DUE SOON (orange)
-- Otherwise → ON TRACK (green)
-
-Next Due Date = lastCollection + scheduleFrequency days
-```
-
-### Route Next Run Date
-
-```text
-If route has schedule_frequency_days and schedule_day_of_week:
-  - Find the next occurrence of schedule_day_of_week
-  - If that day is today and route was run today, add frequency_days
-  - Otherwise return that date
-
-Display on route card: "Next run: Tuesday, Feb 4"
-```
-
-### Restock Next Date
-
-```text
-If user has restock schedule configured:
-  - Start from last_completed_date (or today if never done)
-  - Add frequency_days
-  - Adjust to the preferred day_of_week if set
-  
-Display in Settings and Calendar: "Next restock: Saturday, Feb 8"
-```
-
----
-
-## User Experience Flow
-
-1. **Initial Setup**:
-   - User sets collection frequency when creating/editing locations
-   - User optionally adds run schedules to their saved routes
-   - User sets restock schedule in Settings
-
-2. **Daily View**:
-   - Dashboard shows Weekly Calendar widget with all scheduled tasks
-   - Collection Due widget highlights overdue/due-today locations
-   - Route cards show "Next run" date if scheduled
-
-3. **Taking Action**:
-   - Click calendar task to navigate to relevant page
-   - Logging a collection updates last_collection_date
-   - Completing a restock updates the schedule
-
-4. **Ongoing**:
-   - Calendar auto-updates based on schedules
-   - Overdue items become more prominent
-   - Helps users stay on top of their business
-
----
-
-## Frequency Options (Used Everywhere)
-
-| Label | Days |
-|-------|------|
-| Weekly | 7 |
-| Every 2 Weeks | 14 |
-| Every 3 Weeks | 21 |
-| Monthly | 30 |
-| Custom | User-defined |
-
-This consistent set of options is used for:
-- Location collection schedules
-- Route run schedules
-- Restock schedules
+| Old Term | New Term |
+|----------|----------|
+| Collection | Restock |
+| Collection Schedule | Restock Schedule |
+| Collection Frequency | Restock Frequency |
+| Last collected | Last restocked |
+| CollectionDueWidget | RestockDueWidget |
+| collectionStatuses | restockStatuses |
 
