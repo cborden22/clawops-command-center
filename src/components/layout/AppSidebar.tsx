@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, ChevronDown, Car, BarChart3, Wrench } from "lucide-react"
+import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, ChevronDown, Car, BarChart3, Wrench, Users } from "lucide-react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import {
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/collapsible"
 
 const operationsItems = [
+  { title: "Leads", url: "/leads", icon: Users },
   { title: "Locations", url: "/locations", icon: MapPin },
   { title: "Maintenance", url: "/maintenance", icon: Wrench },
   { title: "Routes", url: "/mileage", icon: Car },

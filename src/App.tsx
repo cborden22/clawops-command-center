@@ -14,6 +14,7 @@ import InventoryTracker from "./pages/InventoryTracker";
 import RevenueTracker from "./pages/RevenueTracker";
 import MileageTracker from "./pages/MileageTracker";
 import Locations from "./pages/Locations";
+import Leads from "./pages/Leads";
 import Maintenance from "./pages/Maintenance";
 import Receipts from "./pages/Receipts";
 import Reports from "./pages/Reports";
@@ -95,6 +96,16 @@ function ProtectedAppRoutes() {
             <ProtectedRoute>
               <AppLayout>
                 <Locations />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leads"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Leads />
               </AppLayout>
             </ProtectedRoute>
           }
