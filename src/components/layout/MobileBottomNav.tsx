@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, DollarSign, Package, Plus, MoreHorizontal, MapPin, Car, FileText, Settings, LogOut, Receipt, BarChart3, Wrench } from "lucide-react";
+import { LayoutDashboard, DollarSign, Package, Plus, MoreHorizontal, MapPin, Car, FileText, Settings, LogOut, Receipt, BarChart3, Wrench, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ interface MobileBottomNavProps {
 }
 
 const operationsItems = [
+  { path: "/leads", icon: Users, label: "Leads" },
   { path: "/locations", icon: MapPin, label: "Locations" },
   { path: "/maintenance", icon: Wrench, label: "Maintenance" },
   { path: "/mileage", icon: Car, label: "Routes" },

@@ -5,6 +5,7 @@ import { useRoutes } from "@/hooks/useRoutesDB";
 import { useUserSchedules } from "@/hooks/useUserSchedules";
 import { useSmartScheduler } from "@/hooks/useSmartScheduler";
 import { useMaintenanceReports } from "@/hooks/useMaintenanceReports";
+import { LeadsWidget } from "@/components/dashboard/LeadsWidget";
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +39,7 @@ import { cn } from "@/lib/utils";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance';
+type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance' | 'leads';
 
 interface WidgetConfig {
   id: WidgetId;
@@ -51,6 +52,7 @@ const DEFAULT_WIDGET_ORDER: WidgetConfig[] = [
   { id: 'weeklyCalendar', label: 'Weekly Calendar', visible: true },
   { id: 'collectionDue', label: 'Restock Reminders', visible: true },
   { id: 'maintenance', label: 'Maintenance', visible: true },
+  { id: 'leads', label: 'Leads Pipeline', visible: true },
   { id: 'allTimeSummary', label: 'All-Time Summary', visible: true },
   { id: 'topLocations', label: 'Top Locations', visible: true },
   { id: 'lowStockAlerts', label: 'Low Stock Alerts', visible: true },
@@ -663,6 +665,8 @@ export default function Dashboard() {
 
   const renderMaintenance = () => <MaintenanceWidget />;
 
+  const renderLeads = () => <LeadsWidget />;
+
   const renderWeeklyCalendar = () => <WeeklyCalendarWidget tasksByDate={tasksByDate} />;
 
   const renderCollectionDue = () => (
@@ -677,6 +681,7 @@ export default function Dashboard() {
     weeklyCalendar: renderWeeklyCalendar,
     collectionDue: renderCollectionDue,
     maintenance: renderMaintenance,
+    leads: renderLeads,
     allTimeSummary: renderAllTimeSummary,
     topLocations: renderTopLocations,
     lowStockAlerts: renderLowStockAlerts,
