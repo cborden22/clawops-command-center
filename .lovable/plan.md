@@ -1,221 +1,196 @@
 
 
-## Fix Mobile UI Scrolling and Flow Issues
+## State-of-the-Art CRM & Leads Management System
 
-This plan addresses the scrolling difficulties on iOS and Android by implementing comprehensive mobile scroll optimizations and fixing layout conflicts that cause poor user experience.
-
----
-
-## Problems Identified
-
-| Issue | Impact | Affected Areas |
-|-------|--------|----------------|
-| `min-h-screen` on page containers | Double/nested scrolling when inside MobileLayout | All pages |
-| Missing iOS scroll momentum | Laggy scrolling on iPhone | Sheets, dialogs, page content |
-| QuickAddSheet fixed height conflicts | Content cut off on smaller screens | Quick Add forms |
-| Body-level overscroll not controlled | Pull-to-refresh interferes with native browser behavior | Entire app |
-| Sheet content not scroll-optimized | Jerky scrolling in bottom sheets | All bottom sheets |
-| Dialog content touch handling | Dialogs hard to scroll on mobile | RouteEditor, other dialogs |
+Build a comprehensive lead tracking and customer relationship management module for ClawOps that allows users to capture, nurture, and convert leads into active machine locations.
 
 ---
 
-## Solution Overview
+## Feature Overview
 
 ```text
-+----------------------------------------------------------+
-|  BEFORE (Problems)                                        |
-+----------------------------------------------------------+
-|  - MobileLayout main: overflow-y-auto                     |
-|  - Page content: min-h-screen (conflicts!)                |
-|  - Sheets: No touch optimization                          |
-|  - Body: No overscroll control                            |
-+----------------------------------------------------------+
-
-+----------------------------------------------------------+
-|  AFTER (Fixed)                                            |
-+----------------------------------------------------------+
-|  - MobileLayout: Proper scroll containment               |
-|  - Pages: Remove min-h-screen on mobile                   |
-|  - Sheets: Full touch optimization with safe areas        |
-|  - Body: overscroll-behavior: none on mobile              |
-|  - Global: Better iOS momentum scrolling                  |
-+----------------------------------------------------------+
++------------------------------------------+
+|              LEADS PIPELINE              |
++------------------------------------------+
+|  NEW  →  CONTACTED  →  NEGOTIATING  →  WON/LOST  |
+|  (5)      (3)          (2)             (1)       |
++------------------------------------------+
+             ↓ Convert to Location
++------------------------------------------+
+|         LOCATION CREATION                |
+|   (Pre-filled from lead data)            |
++------------------------------------------+
 ```
 
 ---
 
-## File Changes
+## Core Capabilities
+
+| Feature | Description |
+|---------|-------------|
+| Lead Pipeline | Visual kanban-style board with drag-and-drop status updates |
+| Lead Cards | Business info, contact details, potential revenue, follow-up dates |
+| Activity Timeline | Log calls, emails, site visits, notes with timestamps |
+| Priority Tags | Manual priority setting (hot, warm, cold) |
+| Convert to Location | One-click conversion that pre-fills location creation form |
+| Dashboard Widget | Leads overview with conversion metrics on main dashboard |
+| Mobile Optimized | Full functionality on iOS/Android with touch-friendly UI |
+
+---
+
+## Database Schema
+
+### New Table: `leads`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| user_id | uuid | Owner (RLS) |
+| business_name | text | Potential location name |
+| address | text | Business address |
+| contact_name | text | Primary contact |
+| contact_phone | text | Phone number |
+| contact_email | text | Email address |
+| status | text | new, contacted, negotiating, won, lost |
+| priority | text | hot, warm, cold (user-set) |
+| estimated_machines | integer | Potential machine count |
+| estimated_revenue | numeric | Monthly revenue estimate |
+| source | text | How lead was found (referral, cold call, etc.) |
+| next_follow_up | timestamptz | Scheduled follow-up date |
+| notes | text | General notes |
+| created_at | timestamptz | When lead was added |
+| updated_at | timestamptz | Last modification |
+| converted_location_id | uuid | Link to location if converted |
+
+### New Table: `lead_activities`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| lead_id | uuid | Foreign key to leads |
+| user_id | uuid | Who logged the activity |
+| activity_type | text | call, email, meeting, site_visit, note |
+| description | text | Activity details |
+| created_at | timestamptz | When activity occurred |
+
+---
+
+## New Files to Create
+
+### Pages
+- `src/pages/Leads.tsx` - Main CRM page with pipeline view
+
+### Components
+- `src/components/leads/LeadsPipeline.tsx` - Kanban board component
+- `src/components/leads/LeadCard.tsx` - Individual lead card
+- `src/components/leads/LeadDetailDialog.tsx` - Full lead details with activity timeline
+- `src/components/leads/LeadForm.tsx` - Add/edit lead form
+- `src/components/leads/ConvertToLocationDialog.tsx` - Conversion wizard
+- `src/components/leads/LeadActivityTimeline.tsx` - Activity history
+- `src/components/leads/LeadFilters.tsx` - Filter and search controls
+- `src/components/dashboard/LeadsWidget.tsx` - Dashboard summary widget
+
+### Hooks
+- `src/hooks/useLeadsDB.ts` - Lead CRUD operations and state management
+
+---
+
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/index.css` | Add global mobile scroll fixes, body overscroll, iOS momentum classes |
-| `src/components/layout/MobileLayout.tsx` | Improve scroll container styling, add safe area handling |
-| `src/components/ui/sheet.tsx` | Add touch-optimized scrolling for sheet content |
-| `src/components/ui/dialog.tsx` | Add mobile scroll optimization to dialog content |
-| `src/components/mobile/QuickAddSheet.tsx` | Fix scroll area calculation with safe areas |
-| `src/pages/MileageTracker.tsx` | Remove min-h-screen, use mobile-friendly height |
-| `src/pages/RevenueTracker.tsx` | Remove min-h-screen, use mobile-friendly height |
-| `src/pages/Locations.tsx` | Remove min-h-screen, use mobile-friendly height |
-| `src/pages/Dashboard.tsx` | Add mobile scroll optimization |
+| `src/App.tsx` | Add `/leads` route |
+| `src/components/layout/AppSidebar.tsx` | Add "Leads" to Operations menu |
+| `src/components/layout/MobileBottomNav.tsx` | Add Leads to More menu |
+| `src/pages/Dashboard.tsx` | Add LeadsWidget to widget options |
 
 ---
 
-## Implementation Details
+## UI/UX Design
 
-### 1. Global CSS Improvements (`src/index.css`)
-
-Add enhanced mobile scroll utilities:
-
-```css
-/* Global body scroll control for mobile */
-html, body {
-  overscroll-behavior-y: none; /* Prevent pull-to-refresh interference */
-}
-
-/* Enhanced mobile scroll class */
-.mobile-scroll-optimized {
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  overscroll-behavior-y: contain;
-}
-
-/* Sheet/dialog scroll optimization */
-.sheet-scroll-content {
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  overscroll-behavior-y: contain;
-}
-
-/* Prevent body scroll when modal open (iOS fix) */
-body.modal-open {
-  overflow: hidden;
-  position: fixed;
-  width: 100%;
-}
+### Pipeline View (Desktop)
+```text
++-------------+-------------+-------------+-------------+-------------+
+|    NEW      |  CONTACTED  | NEGOTIATING |    WON      |    LOST     |
+|     (5)     |     (3)     |     (2)     |     (1)     |     (0)     |
++-------------+-------------+-------------+-------------+-------------+
+| +---------+ | +---------+ | +---------+ | +---------+ |             |
+| |Joe's    | | |Pizza    | | |Mall     | | |Cinema   | |             |
+| |Arcade   | | |Palace   | | |Food Crt | | |Lobby    | |             |
+| |Hot      | | |Tom S.   | | |5 mach   | | |Converted| |             |
+| |3 mach   | | |2 mach   | | |         | | |         | |             |
+| +---------+ | +---------+ | +---------+ | +---------+ |             |
+| +---------+ | +---------+ | +---------+ |             |             |
+| |Family   | | |Bowl-o   | | |Arcade   | |             |             |
+| |Fun Ctr  | | |-rama    | | |World    | |             |             |
+| +---------+ | +---------+ | +---------+ |             |             |
++-------------+-------------+-------------+-------------+-------------+
 ```
 
-### 2. MobileLayout Improvements
-
-Update the main scroll container for better mobile behavior:
-
-```tsx
-<main 
-  ref={containerRef}
-  className="flex-1 overflow-y-auto pb-20 overscroll-contain mobile-scroll-optimized"
-  style={{ 
-    WebkitOverflowScrolling: 'touch',
-    paddingBottom: 'max(80px, calc(64px + env(safe-area-inset-bottom)))'
-  }}
->
+### Lead Detail View
+```text
++---------------------------------------------+
+| Joe's Arcade                    [Edit] [X]  |
++---------------------------------------------+
+| Address: 123 Main St, Downtown              |
+| Contact: Joe Smith                          |
+| Phone: 555-1234  Email: joe@arcade.com      |
++---------------------------------------------+
+| Status: NEW        Priority: Hot            |
+| Est. Machines: 3   Est. Revenue: $450/mo    |
+| Source: Referral   Next Follow-up: Feb 5    |
++---------------------------------------------+
+| ACTIVITY TIMELINE                           |
+| -----------------------------------------   |
+| Call - Feb 1 - Called, left voicemail       |
+| Email - Jan 28 - Sent intro email           |
+| Note - Jan 25 - Added lead from trade show  |
++---------------------------------------------+
+| [Log Activity]  [Convert to Location]       |
++---------------------------------------------+
 ```
-
-### 3. Sheet Component Touch Optimization
-
-Add scroll optimization to SheetContent:
-
-```tsx
-const SheetContent = React.forwardRef<...>(
-  ({ side = "right", className, children, ...props }, ref) => (
-    <SheetPortal>
-      <SheetOverlay />
-      <SheetPrimitive.Content
-        ref={ref}
-        className={cn(
-          sheetVariants({ side }), 
-          // Add mobile scroll optimization
-          "overflow-y-auto overscroll-contain",
-          className
-        )}
-        style={{ WebkitOverflowScrolling: 'touch' }}
-        {...props}
-      >
-```
-
-### 4. Dialog Mobile Optimization
-
-Update DialogContent for mobile scrolling:
-
-```tsx
-<DialogPrimitive.Content
-  ref={ref}
-  className={cn(
-    "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 ...",
-    // Add mobile optimization
-    "max-h-[90vh] overflow-y-auto overscroll-contain",
-    className
-  )}
-  style={{ WebkitOverflowScrolling: 'touch' }}
-  {...props}
->
-```
-
-### 5. QuickAddSheet Safe Area Fix
-
-Update height calculation to respect safe areas:
-
-```tsx
-<SheetContent 
-  side="bottom" 
-  className="h-[85vh] rounded-t-2xl flex flex-col"
-  style={{ 
-    maxHeight: 'calc(85vh - env(safe-area-inset-bottom))',
-    paddingBottom: 'env(safe-area-inset-bottom)'
-  }}
->
-  {/* ... */}
-  <div 
-    className="mt-4 overflow-y-auto flex-1 overscroll-contain"
-    style={{ WebkitOverflowScrolling: 'touch' }}
-  >
-```
-
-### 6. Page Layout Fixes
-
-For each page, remove `min-h-screen` which conflicts with MobileLayout:
-
-**Before:**
-```tsx
-<div className="min-h-screen bg-background">
-```
-
-**After:**
-```tsx
-<div className="bg-background">
-```
-
-The MobileLayout already handles the full-screen layout, so pages shouldn't enforce their own height.
 
 ---
 
-## Testing Checklist
+## Convert to Location Flow
 
-After implementation, verify on both iOS and Android:
+When user clicks "Convert to Location":
 
-1. **Dashboard scroll** - Smooth up/down scrolling, no stutter
-2. **Pull-to-refresh** - Works at top of page, doesn't interfere with normal scroll
-3. **Quick Add sheet** - Opens smoothly, form content scrollable, submit button visible
-4. **Route Editor dialog** - Can scroll to see all fields including Run Schedule
-5. **Bottom nav sheets** - "More" menu scrolls smoothly if needed
-6. **Long pages** - Inventory, Revenue, Locations all scroll properly
-7. **Form inputs** - Keyboard doesn't break scroll position
-8. **Select dropdowns** - Work correctly within sheets/dialogs
+1. Confirmation dialog appears with pre-filled data from lead
+2. User can adjust details before creating location
+3. Location is created with all lead data transferred
+4. Lead status automatically updates to "won"
+5. `converted_location_id` links lead to new location
+6. User is prompted to add machines to the new location
 
 ---
 
-## Why These Fixes Work
+## Dashboard Widget
 
-1. **`overscroll-behavior-y: contain`** - Prevents scroll chaining between nested scroll containers
-2. **`-webkit-overflow-scrolling: touch`** - Enables iOS momentum scrolling for native feel
-3. **Safe area handling** - Ensures content isn't hidden behind iPhone notch/home bar
-4. **Removing `min-h-screen`** - Prevents pages from creating their own scroll context when already in MobileLayout
-5. **Touch action** - Explicitly tells browser how to handle touch gestures
+New "Leads Overview" widget showing:
+- Total leads by status
+- Follow-ups due today
+- Recently added leads
+- Quick link to full Leads page
 
 ---
 
-## Technical Notes
+## Security
 
-- iOS Safari requires explicit `-webkit-overflow-scrolling: touch` for smooth scrolling in scroll containers
-- Android Chrome handles momentum scrolling natively but benefits from `overscroll-behavior`
-- The combination of `overscroll-contain` on the main container and `overscroll-behavior-y: none` on body prevents double-bounce effects
-- Safe area CSS functions (`env(safe-area-inset-*)`) work on all modern iOS/Android browsers
+- RLS policies ensure users only see their own leads
+- All CRUD operations require authenticated user
+- Activity logs tied to user_id for audit trail
+
+---
+
+## Implementation Order
+
+1. Database: Create `leads` and `lead_activities` tables with RLS
+2. Hook: Build `useLeadsDB.ts` with full CRUD operations
+3. Components: Create lead UI components (pipeline, cards, dialogs)
+4. Page: Build main Leads page with routing
+5. Navigation: Add to sidebar and mobile nav
+6. Conversion: Implement lead-to-location conversion flow
+7. Dashboard: Add leads widget
+8. Polish: Add animations, mobile optimization, empty states
 
