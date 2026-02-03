@@ -1,196 +1,320 @@
 
+## Improvements to CRM, Leads Responsiveness, and Maintenance System
 
-## State-of-the-Art CRM & Leads Management System
-
-Build a comprehensive lead tracking and customer relationship management module for ClawOps that allows users to capture, nurture, and convert leads into active machine locations.
+This plan addresses three key issues: fixing the lead-to-location conversion flow, making the leads page responsive for smaller screens, and adding manual maintenance request creation.
 
 ---
 
-## Feature Overview
+## Problems Identified
 
-```text
-+------------------------------------------+
-|              LEADS PIPELINE              |
-+------------------------------------------+
-|  NEW  →  CONTACTED  →  NEGOTIATING  →  WON/LOST  |
-|  (5)      (3)          (2)             (1)       |
-+------------------------------------------+
-             ↓ Convert to Location
-+------------------------------------------+
-|         LOCATION CREATION                |
-|   (Pre-filled from lead data)            |
-+------------------------------------------+
+| Issue | Root Cause | Impact |
+|-------|------------|--------|
+| Lead data not auto-importing | `useState` with static initialization doesn't trigger when dialog opens | Form fields are empty when "Convert to Location" is clicked |
+| Dialog UI mismatch | ConvertToLocationDialog uses a simplified form layout | Inconsistent experience vs. location creation page |
+| Leads page not responsive | Fixed column widths (280px) and horizontal scroll only | 35%+ of content hidden on smaller screens |
+| No manual maintenance entry | Hook only has fetch/update/delete, no create | Operators can't log issues they discover themselves |
+
+---
+
+## Solution 1: Fix "Create Location from Lead" Data Import & UI Consistency
+
+### Problem
+The `ConvertToLocationDialog` initializes `formData` with empty values and uses `useState` incorrectly to reset the form. The `useState(() => {...})` pattern being used is actually an initializer function, not an effect - so it only runs once on mount, not when the dialog opens.
+
+### Fix
+Use `useEffect` to properly populate form data when the dialog opens and the lead prop changes:
+
+```typescript
+// BEFORE (broken)
+useState(() => {
+  if (open && lead) {
+    resetForm();
+  }
+});
+
+// AFTER (correct)
+useEffect(() => {
+  if (open && lead) {
+    setFormData({
+      name: lead.business_name,
+      address: lead.address || '',
+      contact_person: lead.contact_name || '',
+      contact_phone: lead.contact_phone || '',
+      contact_email: lead.contact_email || '',
+      notes: lead.notes || '',
+    });
+    setIsSuccess(false);
+  }
+}, [open, lead]);
 ```
 
----
+### UI Consistency
+Enhance the ConvertToLocationDialog to match the LocationTrackerComponent dialog:
+- Add section headers with icons (Basic Info, Contact Info, Machine & Commission)
+- Include machine type selection with "Add Type" functionality
+- Add commission rate field
+- Add restock schedule options
+- Add active location toggle
+- Match the same grid layouts and styling
 
-## Core Capabilities
-
-| Feature | Description |
-|---------|-------------|
-| Lead Pipeline | Visual kanban-style board with drag-and-drop status updates |
-| Lead Cards | Business info, contact details, potential revenue, follow-up dates |
-| Activity Timeline | Log calls, emails, site visits, notes with timestamps |
-| Priority Tags | Manual priority setting (hot, warm, cold) |
-| Convert to Location | One-click conversion that pre-fills location creation form |
-| Dashboard Widget | Leads overview with conversion metrics on main dashboard |
-| Mobile Optimized | Full functionality on iOS/Android with touch-friendly UI |
+### Files to Modify
+- `src/components/leads/ConvertToLocationDialog.tsx`
 
 ---
 
-## Database Schema
+## Solution 2: Make Leads Page Responsive for Smaller Screens
 
-### New Table: `leads`
+### Problem
+The `LeadsPipeline` component uses fixed column widths:
+```tsx
+<div className="flex-shrink-0 w-[280px] md:w-[260px] lg:flex-1 lg:min-w-[240px]">
+```
+This creates a horizontal scroll experience that hides content on smaller screens.
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| user_id | uuid | Owner (RLS) |
-| business_name | text | Potential location name |
-| address | text | Business address |
-| contact_name | text | Primary contact |
-| contact_phone | text | Phone number |
-| contact_email | text | Email address |
-| status | text | new, contacted, negotiating, won, lost |
-| priority | text | hot, warm, cold (user-set) |
-| estimated_machines | integer | Potential machine count |
-| estimated_revenue | numeric | Monthly revenue estimate |
-| source | text | How lead was found (referral, cold call, etc.) |
-| next_follow_up | timestamptz | Scheduled follow-up date |
-| notes | text | General notes |
-| created_at | timestamptz | When lead was added |
-| updated_at | timestamptz | Last modification |
-| converted_location_id | uuid | Link to location if converted |
+### Fix Strategy
+Implement responsive layouts:
 
-### New Table: `lead_activities`
+1. **Mobile (< 768px)**: Single column with horizontal swipeable tabs for status filters
+2. **Tablet (768px-1024px)**: 2-3 visible columns with horizontal scroll
+3. **Desktop (> 1024px)**: All 5 columns visible in equal widths
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| lead_id | uuid | Foreign key to leads |
-| user_id | uuid | Who logged the activity |
-| activity_type | text | call, email, meeting, site_visit, note |
-| description | text | Activity details |
-| created_at | timestamptz | When activity occurred |
+### Implementation
 
----
+**Option A: Tab-based mobile view (recommended)**
+- Replace horizontal columns with status tabs on mobile
+- Each tab shows cards for that status
+- Add status indicator badges in tab headers
 
-## New Files to Create
+**Option B: Stacked mobile view**
+- Show one status column at a time
+- Add navigation buttons or swipe gestures
 
-### Pages
-- `src/pages/Leads.tsx` - Main CRM page with pipeline view
-
-### Components
-- `src/components/leads/LeadsPipeline.tsx` - Kanban board component
-- `src/components/leads/LeadCard.tsx` - Individual lead card
-- `src/components/leads/LeadDetailDialog.tsx` - Full lead details with activity timeline
-- `src/components/leads/LeadForm.tsx` - Add/edit lead form
-- `src/components/leads/ConvertToLocationDialog.tsx` - Conversion wizard
-- `src/components/leads/LeadActivityTimeline.tsx` - Activity history
-- `src/components/leads/LeadFilters.tsx` - Filter and search controls
-- `src/components/dashboard/LeadsWidget.tsx` - Dashboard summary widget
-
-### Hooks
-- `src/hooks/useLeadsDB.ts` - Lead CRUD operations and state management
-
----
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/App.tsx` | Add `/leads` route |
-| `src/components/layout/AppSidebar.tsx` | Add "Leads" to Operations menu |
-| `src/components/layout/MobileBottomNav.tsx` | Add Leads to More menu |
-| `src/pages/Dashboard.tsx` | Add LeadsWidget to widget options |
-
----
-
-## UI/UX Design
-
-### Pipeline View (Desktop)
+### Mobile Pipeline Layout
 ```text
-+-------------+-------------+-------------+-------------+-------------+
-|    NEW      |  CONTACTED  | NEGOTIATING |    WON      |    LOST     |
-|     (5)     |     (3)     |     (2)     |     (1)     |     (0)     |
-+-------------+-------------+-------------+-------------+-------------+
-| +---------+ | +---------+ | +---------+ | +---------+ |             |
-| |Joe's    | | |Pizza    | | |Mall     | | |Cinema   | |             |
-| |Arcade   | | |Palace   | | |Food Crt | | |Lobby    | |             |
-| |Hot      | | |Tom S.   | | |5 mach   | | |Converted| |             |
-| |3 mach   | | |2 mach   | | |         | | |         | |             |
-| +---------+ | +---------+ | +---------+ | +---------+ |             |
-| +---------+ | +---------+ | +---------+ |             |             |
-| |Family   | | |Bowl-o   | | |Arcade   | |             |             |
-| |Fun Ctr  | | |-rama    | | |World    | |             |             |
-| +---------+ | +---------+ | +---------+ |             |             |
-+-------------+-------------+-------------+-------------+-------------+
++-------------------------------------------+
+|  [New] [Contacted] [Negotiating] [Won] [Lost]  <- Horizontal scrollable tabs
++-------------------------------------------+
+|  +-----------------+                      |
+|  | Lead Card 1     |  <- Full width cards |
+|  +-----------------+                      |
+|  +-----------------+                      |
+|  | Lead Card 2     |                      |
+|  +-----------------+                      |
++-------------------------------------------+
 ```
 
-### Lead Detail View
-```text
-+---------------------------------------------+
-| Joe's Arcade                    [Edit] [X]  |
-+---------------------------------------------+
-| Address: 123 Main St, Downtown              |
-| Contact: Joe Smith                          |
-| Phone: 555-1234  Email: joe@arcade.com      |
-+---------------------------------------------+
-| Status: NEW        Priority: Hot            |
-| Est. Machines: 3   Est. Revenue: $450/mo    |
-| Source: Referral   Next Follow-up: Feb 5    |
-+---------------------------------------------+
-| ACTIVITY TIMELINE                           |
-| -----------------------------------------   |
-| Call - Feb 1 - Called, left voicemail       |
-| Email - Jan 28 - Sent intro email           |
-| Note - Jan 25 - Added lead from trade show  |
-+---------------------------------------------+
-| [Log Activity]  [Convert to Location]       |
-+---------------------------------------------+
+### Files to Modify
+- `src/components/leads/LeadsPipeline.tsx`
+- `src/pages/Leads.tsx` (adjust container padding/margins)
+
+---
+
+## Solution 3: Add Manual Maintenance Request Creation
+
+### Overview
+Add a "Report Issue" button to the Maintenance page header that opens a dialog for operators to manually log maintenance issues they discover during their rounds.
+
+### Database Considerations
+The existing `maintenance_reports` table and RLS policies already support authenticated inserts via the pattern:
+```sql
+user_id = get_machine_owner(machine_id)
 ```
 
----
+For authenticated users (operators), we can insert directly to the table since they own the machines.
 
-## Convert to Location Flow
+### New Component: `AddMaintenanceReportDialog`
+A form dialog with:
+- Location selector (dropdown of user's locations)
+- Machine selector (filtered by selected location)
+- Issue type dropdown (not_working, stuck_prize, coin_jam, display_issue, other)
+- Severity selector (low, medium, high)
+- Description textarea
+- Optional reporter name/contact (for logging if reported by someone else)
 
-When user clicks "Convert to Location":
+### Hook Enhancement
+Add `createReport` function to `useMaintenanceReports`:
 
-1. Confirmation dialog appears with pre-filled data from lead
-2. User can adjust details before creating location
-3. Location is created with all lead data transferred
-4. Lead status automatically updates to "won"
-5. `converted_location_id` links lead to new location
-6. User is prompted to add machines to the new location
+```typescript
+const createReport = async (data: {
+  machine_id: string;
+  issue_type: string;
+  description: string;
+  severity: string;
+  reporter_name?: string;
+  reporter_contact?: string;
+}) => {
+  if (!user) return null;
+  
+  const { data: report, error } = await supabase
+    .from("maintenance_reports")
+    .insert({
+      machine_id: data.machine_id,
+      user_id: user.id,
+      issue_type: data.issue_type,
+      description: data.description,
+      severity: data.severity,
+      reporter_name: data.reporter_name || null,
+      reporter_contact: data.reporter_contact || null,
+      status: "open",
+    })
+    .select()
+    .single();
+    
+  if (error) throw error;
+  
+  await fetchReports(); // Refresh the list
+  return report;
+};
+```
 
----
+### UI Integration
+Add to Maintenance page header:
+```tsx
+<div className="flex items-center justify-between">
+  <div>
+    <h1>Maintenance Reports</h1>
+    <p>Manage and track machine issues</p>
+  </div>
+  <Button onClick={() => setShowAddDialog(true)}>
+    <Plus className="h-4 w-4 mr-2" />
+    Report Issue
+  </Button>
+</div>
+```
 
-## Dashboard Widget
+### Files to Create
+- `src/components/maintenance/AddMaintenanceReportDialog.tsx`
 
-New "Leads Overview" widget showing:
-- Total leads by status
-- Follow-ups due today
-- Recently added leads
-- Quick link to full Leads page
-
----
-
-## Security
-
-- RLS policies ensure users only see their own leads
-- All CRUD operations require authenticated user
-- Activity logs tied to user_id for audit trail
+### Files to Modify
+- `src/hooks/useMaintenanceReports.ts` (add createReport function)
+- `src/pages/Maintenance.tsx` (add button and dialog)
 
 ---
 
 ## Implementation Order
 
-1. Database: Create `leads` and `lead_activities` tables with RLS
-2. Hook: Build `useLeadsDB.ts` with full CRUD operations
-3. Components: Create lead UI components (pipeline, cards, dialogs)
-4. Page: Build main Leads page with routing
-5. Navigation: Add to sidebar and mobile nav
-6. Conversion: Implement lead-to-location conversion flow
-7. Dashboard: Add leads widget
-8. Polish: Add animations, mobile optimization, empty states
+1. **Fix ConvertToLocationDialog data import** (Quick fix using useEffect)
+2. **Enhance ConvertToLocationDialog UI** (Match LocationTrackerComponent styling)
+3. **Make LeadsPipeline responsive** (Tab-based mobile view)
+4. **Add createReport to useMaintenanceReports** (Hook enhancement)
+5. **Create AddMaintenanceReportDialog** (New component)
+6. **Integrate manual report button** (Maintenance page update)
 
+---
+
+## Technical Details
+
+### ConvertToLocationDialog Enhancements
+
+**New imports needed:**
+- `NumberInput` from ui
+- `Select`, `SelectContent`, `SelectItem`, `SelectTrigger`, `SelectValue` from ui
+- `Switch` from ui
+- `Sparkles`, `Calendar` icons
+- `MACHINE_TYPE_OPTIONS` from useLocationsDB
+
+**New form fields:**
+```typescript
+const [formData, setFormData] = useState({
+  name: '',
+  address: '',
+  contact_person: '',
+  contact_phone: '',
+  contact_email: '',
+  notes: '',
+  // New fields to match location creation
+  machines: [] as MachineType[],
+  commissionRate: 0,
+  isActive: true,
+  collectionFrequencyDays: undefined as number | undefined,
+  restockDayOfWeek: undefined as number | undefined,
+});
+```
+
+### LeadsPipeline Responsive Changes
+
+**Mobile tab implementation:**
+```tsx
+{isMobile ? (
+  <div className="space-y-4">
+    {/* Status tabs - horizontal scroll */}
+    <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+      {statusColumns.map(({ status, label, icon: Icon, color }) => (
+        <button
+          key={status}
+          onClick={() => setActiveStatus(status)}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 rounded-lg whitespace-nowrap",
+            activeStatus === status ? "bg-primary text-primary-foreground" : "bg-muted"
+          )}
+        >
+          <Icon className="h-4 w-4" />
+          {label}
+          <Badge>{getLeadsForStatus(status).length}</Badge>
+        </button>
+      ))}
+    </div>
+    {/* Cards for active status */}
+    <div className="space-y-3">
+      {getLeadsForStatus(activeStatus).map(lead => (
+        <LeadCard key={lead.id} lead={lead} onClick={() => onLeadClick(lead)} />
+      ))}
+    </div>
+  </div>
+) : (
+  /* Existing desktop pipeline */
+)}
+```
+
+### AddMaintenanceReportDialog Structure
+```tsx
+export function AddMaintenanceReportDialog({ 
+  open, 
+  onOpenChange, 
+  onSuccess 
+}: Props) {
+  const { user } = useAuth();
+  const [locations, setLocations] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState('');
+  const [machines, setMachines] = useState([]);
+  const [formData, setFormData] = useState({
+    machine_id: '',
+    issue_type: 'other',
+    severity: 'medium',
+    description: '',
+    reporter_name: '',
+    reporter_contact: '',
+  });
+
+  // Fetch locations on mount
+  // Fetch machines when location changes
+  // Submit handler
+  
+  return (
+    <Dialog>
+      <DialogContent>
+        {/* Location selector */}
+        {/* Machine selector */}
+        {/* Issue type dropdown */}
+        {/* Severity radio group */}
+        {/* Description textarea */}
+        {/* Optional reporter fields */}
+        {/* Submit/Cancel buttons */}
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+---
+
+## Summary of Changes
+
+| File | Action | Description |
+|------|--------|-------------|
+| `ConvertToLocationDialog.tsx` | Modify | Fix useEffect bug, enhance UI to match location creation |
+| `LeadsPipeline.tsx` | Modify | Add mobile-responsive tab-based layout |
+| `Leads.tsx` | Modify | Adjust container for better mobile padding |
+| `useMaintenanceReports.ts` | Modify | Add createReport function |
+| `AddMaintenanceReportDialog.tsx` | Create | New dialog for manual maintenance entry |
+| `Maintenance.tsx` | Modify | Add "Report Issue" button and dialog integration |
