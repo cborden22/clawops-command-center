@@ -35,7 +35,9 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronUp,
+  Plus,
 } from "lucide-react";
+import { AddMaintenanceReportDialog } from "@/components/maintenance/AddMaintenanceReportDialog";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useMaintenanceReports, MaintenanceReport } from "@/hooks/useMaintenanceReports";
@@ -241,7 +243,10 @@ export default function Maintenance() {
     isLoaded,
     updateReport,
     deleteReport,
+    refetch,
   } = useMaintenanceReports();
+
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const handleStatusChange = async (report: MaintenanceReport, newStatus: string) => {
     const updates: Partial<MaintenanceReport> = { status: newStatus };
@@ -314,10 +319,23 @@ export default function Maintenance() {
   return (
     <div className="space-y-6 pb-24 md:pb-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Maintenance Reports</h1>
-        <p className="text-muted-foreground">Manage and track machine issues reported by customers</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Maintenance Reports</h1>
+          <p className="text-muted-foreground">Manage and track machine issues reported by customers</p>
+        </div>
+        <Button onClick={() => setShowAddDialog(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Report Issue
+        </Button>
       </div>
+
+      {/* Add Report Dialog */}
+      <AddMaintenanceReportDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onSuccess={refetch}
+      />
 
       {/* Stats Summary */}
       <div className="grid grid-cols-3 gap-4">
