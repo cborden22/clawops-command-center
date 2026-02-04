@@ -2,9 +2,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+export type WidgetSize = 'sm' | 'md' | 'lg' | 'full';
+
 export interface WidgetConfig {
   id: string;
   visible: boolean;
+  size: WidgetSize;
 }
 
 export interface UserPreferences {
