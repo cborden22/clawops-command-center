@@ -1,320 +1,333 @@
 
-## Improvements to CRM, Leads Responsiveness, and Maintenance System
 
-This plan addresses three key issues: fixing the lead-to-location conversion flow, making the leads page responsive for smaller screens, and adding manual maintenance request creation.
+## Smarter Dashboard: Lead Follow-ups & Advanced Widget Customization
 
----
-
-## Problems Identified
-
-| Issue | Root Cause | Impact |
-|-------|------------|--------|
-| Lead data not auto-importing | `useState` with static initialization doesn't trigger when dialog opens | Form fields are empty when "Convert to Location" is clicked |
-| Dialog UI mismatch | ConvertToLocationDialog uses a simplified form layout | Inconsistent experience vs. location creation page |
-| Leads page not responsive | Fixed column widths (280px) and horizontal scroll only | 35%+ of content hidden on smaller screens |
-| No manual maintenance entry | Hook only has fetch/update/delete, no create | Operators can't log issues they discover themselves |
+This plan addresses two major improvements: integrating lead follow-ups into the weekly calendar, and creating a professional grid-based dashboard layout with improved drag-and-drop functionality.
 
 ---
 
-## Solution 1: Fix "Create Location from Lead" Data Import & UI Consistency
+## Part 1: Add Lead Follow-ups to Weekly Calendar
 
-### Problem
-The `ConvertToLocationDialog` initializes `formData` with empty values and uses `useState` incorrectly to reset the form. The `useState(() => {...})` pattern being used is actually an initializer function, not an effect - so it only runs once on mount, not when the dialog opens.
+### Current State
+- The `useSmartScheduler` hook generates tasks for restocks, routes, and maintenance
+- Leads have a `next_follow_up` field (timestamptz) but are not included in the calendar
+- The `LeadsWidget` already has a `getLeadsWithFollowUpDue()` helper function
 
-### Fix
-Use `useEffect` to properly populate form data when the dialog opens and the lead prop changes:
+### Solution
+Add a new task type "followup" to the smart scheduler that includes leads with scheduled follow-up dates within the 7-day window.
 
+### Changes Required
+
+**File: `src/hooks/useSmartScheduler.ts`**
+
+1. Add new task type:
 ```typescript
-// BEFORE (broken)
-useState(() => {
-  if (open && lead) {
-    resetForm();
-  }
-});
-
-// AFTER (correct)
-useEffect(() => {
-  if (open && lead) {
-    setFormData({
-      name: lead.business_name,
-      address: lead.address || '',
-      contact_person: lead.contact_name || '',
-      contact_phone: lead.contact_phone || '',
-      contact_email: lead.contact_email || '',
-      notes: lead.notes || '',
-    });
-    setIsSuccess(false);
-  }
-}, [open, lead]);
+export type TaskType = "restock" | "route" | "maintenance" | "followup";
 ```
 
-### UI Consistency
-Enhance the ConvertToLocationDialog to match the LocationTrackerComponent dialog:
-- Add section headers with icons (Basic Info, Contact Info, Machine & Commission)
-- Include machine type selection with "Add Type" functionality
-- Add commission rate field
-- Add restock schedule options
-- Add active location toggle
-- Match the same grid layouts and styling
-
-### Files to Modify
-- `src/components/leads/ConvertToLocationDialog.tsx`
-
----
-
-## Solution 2: Make Leads Page Responsive for Smaller Screens
-
-### Problem
-The `LeadsPipeline` component uses fixed column widths:
-```tsx
-<div className="flex-shrink-0 w-[280px] md:w-[260px] lg:flex-1 lg:min-w-[240px]">
-```
-This creates a horizontal scroll experience that hides content on smaller screens.
-
-### Fix Strategy
-Implement responsive layouts:
-
-1. **Mobile (< 768px)**: Single column with horizontal swipeable tabs for status filters
-2. **Tablet (768px-1024px)**: 2-3 visible columns with horizontal scroll
-3. **Desktop (> 1024px)**: All 5 columns visible in equal widths
-
-### Implementation
-
-**Option A: Tab-based mobile view (recommended)**
-- Replace horizontal columns with status tabs on mobile
-- Each tab shows cards for that status
-- Add status indicator badges in tab headers
-
-**Option B: Stacked mobile view**
-- Show one status column at a time
-- Add navigation buttons or swipe gestures
-
-### Mobile Pipeline Layout
-```text
-+-------------------------------------------+
-|  [New] [Contacted] [Negotiating] [Won] [Lost]  <- Horizontal scrollable tabs
-+-------------------------------------------+
-|  +-----------------+                      |
-|  | Lead Card 1     |  <- Full width cards |
-|  +-----------------+                      |
-|  +-----------------+                      |
-|  | Lead Card 2     |                      |
-|  +-----------------+                      |
-+-------------------------------------------+
-```
-
-### Files to Modify
-- `src/components/leads/LeadsPipeline.tsx`
-- `src/pages/Leads.tsx` (adjust container padding/margins)
-
----
-
-## Solution 3: Add Manual Maintenance Request Creation
-
-### Overview
-Add a "Report Issue" button to the Maintenance page header that opens a dialog for operators to manually log maintenance issues they discover during their rounds.
-
-### Database Considerations
-The existing `maintenance_reports` table and RLS policies already support authenticated inserts via the pattern:
-```sql
-user_id = get_machine_owner(machine_id)
-```
-
-For authenticated users (operators), we can insert directly to the table since they own the machines.
-
-### New Component: `AddMaintenanceReportDialog`
-A form dialog with:
-- Location selector (dropdown of user's locations)
-- Machine selector (filtered by selected location)
-- Issue type dropdown (not_working, stuck_prize, coin_jam, display_issue, other)
-- Severity selector (low, medium, high)
-- Description textarea
-- Optional reporter name/contact (for logging if reported by someone else)
-
-### Hook Enhancement
-Add `createReport` function to `useMaintenanceReports`:
-
+2. Add leads to input interface:
 ```typescript
-const createReport = async (data: {
-  machine_id: string;
-  issue_type: string;
-  description: string;
-  severity: string;
-  reporter_name?: string;
-  reporter_contact?: string;
-}) => {
-  if (!user) return null;
-  
-  const { data: report, error } = await supabase
-    .from("maintenance_reports")
-    .insert({
-      machine_id: data.machine_id,
-      user_id: user.id,
-      issue_type: data.issue_type,
-      description: data.description,
-      severity: data.severity,
-      reporter_name: data.reporter_name || null,
-      reporter_contact: data.reporter_contact || null,
-      status: "open",
-    })
-    .select()
-    .single();
-    
-  if (error) throw error;
-  
-  await fetchReports(); // Refresh the list
-  return report;
+interface SmartSchedulerInput {
+  // ... existing fields
+  leads?: Array<{ 
+    id: string; 
+    business_name: string; 
+    next_follow_up: string | null;
+    status: string;
+    priority: string | null;
+  }>;
+}
+```
+
+3. Generate follow-up tasks in `weeklyTasks` memo:
+```typescript
+// Add lead follow-up tasks
+leads
+  .filter(l => l.next_follow_up && l.status !== 'won' && l.status !== 'lost')
+  .forEach(lead => {
+    const followUpDate = startOfDay(new Date(lead.next_follow_up));
+    if (isBefore(followUpDate, weekEnd) || isSameDay(followUpDate, weekEnd)) {
+      tasks.push({
+        id: `followup-${lead.id}`,
+        type: "followup",
+        title: lead.business_name,
+        subtitle: lead.priority === 'hot' ? 'Hot Lead' : 'Follow-up',
+        dueDate: followUpDate,
+        status: getTaskStatus(followUpDate),
+        priority: lead.priority === 'hot' ? 'high' : 'medium',
+        link: "/leads",
+        metadata: { leadId: lead.id },
+      });
+    }
+  });
+```
+
+**File: `src/components/dashboard/WeeklyCalendarWidget.tsx`**
+
+1. Add follow-up icon and colors:
+```typescript
+const TASK_ICONS: Record<TaskType, React.ReactNode> = {
+  // ... existing
+  followup: <Users className="h-3 w-3" />,
+};
+
+const TASK_COLORS: Record<TaskType, string> = {
+  // ... existing
+  followup: "bg-amber-500/10 text-amber-600 border-amber-500/20",
 };
 ```
 
-### UI Integration
-Add to Maintenance page header:
+2. Add legend item for follow-ups in the header
+
+**File: `src/pages/Dashboard.tsx`**
+
+1. Import and use leads data:
+```typescript
+const { leads } = useLeadsDB();
+```
+
+2. Pass leads to smart scheduler:
+```typescript
+const { tasksByDate, ... } = useSmartScheduler({
+  // ... existing
+  leads: leads.map(l => ({
+    id: l.id,
+    business_name: l.business_name,
+    next_follow_up: l.next_follow_up,
+    status: l.status,
+    priority: l.priority,
+  })),
+});
+```
+
+---
+
+## Part 2: Advanced Dashboard Grid Layout & Customization
+
+### Current Problems
+1. Widgets stack vertically only - no side-by-side placement
+2. Dragging doesn't auto-scroll the page
+3. Layout doesn't adapt well to different screen sizes
+
+### Solution Architecture
+
+Implement a responsive grid system where:
+- Widgets have configurable sizes (small, medium, large, full-width)
+- Small/medium widgets can sit side-by-side
+- Drag-and-drop auto-scrolls the viewport
+- Layout persists with size preferences
+
+### New Widget Configuration
+
+```typescript
+type WidgetSize = 'sm' | 'md' | 'lg' | 'full';
+
+interface WidgetConfig {
+  id: WidgetId;
+  label: string;
+  visible: boolean;
+  size: WidgetSize;  // NEW
+}
+
+// Size to grid column span mapping
+const SIZE_TO_COLS = {
+  sm: 'md:col-span-4',      // 1/3 width on desktop
+  md: 'md:col-span-6',      // 1/2 width on desktop  
+  lg: 'md:col-span-8',      // 2/3 width on desktop
+  full: 'md:col-span-12',   // Full width
+};
+```
+
+### Default Widget Sizes
+
+| Widget | Default Size | Rationale |
+|--------|-------------|-----------|
+| Primary Stats | full | 4 cards need full width |
+| Weekly Calendar | full | 7-day calendar needs full width |
+| Restock Reminders | md | Compact list, pairs well |
+| Maintenance | md | Compact list, pairs well |
+| Leads Pipeline | md | Summary stats, pairs well |
+| All-Time Summary | sm | Small data cards |
+| Top Locations | sm | Short list |
+| Low Stock Alerts | sm | Alert list |
+| Recent Transactions | md | Transaction list |
+| Quick Actions | full | 4 action buttons |
+
+### Layout Grid Structure
+
 ```tsx
-<div className="flex items-center justify-between">
-  <div>
-    <h1>Maintenance Reports</h1>
-    <p>Manage and track machine issues</p>
-  </div>
-  <Button onClick={() => setShowAddDialog(true)}>
-    <Plus className="h-4 w-4 mr-2" />
-    Report Issue
-  </Button>
+<div className="grid grid-cols-12 gap-4">
+  {widgets.map(widget => (
+    <div className={cn(
+      "col-span-12",           // Mobile: always full width
+      SIZE_TO_COLS[widget.size] // Desktop: configurable
+    )}>
+      {renderWidget(widget)}
+    </div>
+  ))}
 </div>
 ```
 
-### Files to Create
-- `src/components/maintenance/AddMaintenanceReportDialog.tsx`
+### Auto-Scroll During Drag
 
-### Files to Modify
-- `src/hooks/useMaintenanceReports.ts` (add createReport function)
-- `src/pages/Maintenance.tsx` (add button and dialog)
+Implement viewport scrolling when dragging near edges:
+
+```typescript
+const handleDrag = (e: React.DragEvent) => {
+  const scrollThreshold = 100; // pixels from edge
+  const scrollSpeed = 10;
+  
+  const { clientY } = e;
+  const viewportHeight = window.innerHeight;
+  
+  if (clientY < scrollThreshold) {
+    // Near top - scroll up
+    window.scrollBy(0, -scrollSpeed);
+  } else if (clientY > viewportHeight - scrollThreshold) {
+    // Near bottom - scroll down
+    window.scrollBy(0, scrollSpeed);
+  }
+};
+```
+
+### Size Selector in Customize Mode
+
+Add a size toggle button next to visibility toggle:
+
+```tsx
+{isCustomizing && (
+  <div className="absolute -top-2 -left-2 z-10 flex items-center gap-1 bg-background border rounded-lg shadow-lg p-1">
+    <GripVertical className="h-4 w-4" /> {/* Drag handle */}
+    <button onClick={() => toggleVisibility(widget.id)}>
+      {widget.visible ? <Eye /> : <EyeOff />}
+    </button>
+    <button onClick={() => cycleSize(widget.id)}>
+      <Maximize2 className="h-4 w-4" />
+    </button>
+    <span className="text-xs px-2">
+      {widget.label} ({widget.size})
+    </span>
+  </div>
+)}
+```
+
+### Size Cycling Logic
+
+```typescript
+const cycleSize = (id: WidgetId) => {
+  const sizeOrder: WidgetSize[] = ['sm', 'md', 'lg', 'full'];
+  setWidgets(prev => prev.map(w => {
+    if (w.id !== id) return w;
+    const currentIndex = sizeOrder.indexOf(w.size);
+    const nextIndex = (currentIndex + 1) % sizeOrder.length;
+    return { ...w, size: sizeOrder[nextIndex] };
+  }));
+};
+```
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/hooks/useSmartScheduler.ts` | Add followup task type and leads input |
+| `src/components/dashboard/WeeklyCalendarWidget.tsx` | Add followup icon/color, update legend |
+| `src/pages/Dashboard.tsx` | Grid layout, auto-scroll, size config, leads integration |
+| `src/hooks/useUserPreferences.ts` | Update WidgetConfig interface with size |
 
 ---
 
 ## Implementation Order
 
-1. **Fix ConvertToLocationDialog data import** (Quick fix using useEffect)
-2. **Enhance ConvertToLocationDialog UI** (Match LocationTrackerComponent styling)
-3. **Make LeadsPipeline responsive** (Tab-based mobile view)
-4. **Add createReport to useMaintenanceReports** (Hook enhancement)
-5. **Create AddMaintenanceReportDialog** (New component)
-6. **Integrate manual report button** (Maintenance page update)
+1. **Add lead follow-ups to scheduler** - Quick integration
+2. **Update WeeklyCalendarWidget** - Add new task type styling
+3. **Pass leads to Dashboard scheduler** - Wire up the data
+4. **Implement grid layout** - Replace vertical stack with 12-column grid
+5. **Add widget size configuration** - Add size property and cycling
+6. **Implement auto-scroll** - Smooth scrolling during drag
+7. **Update customize UI** - Size selector and improved controls
+8. **Persist size preferences** - Save to localStorage with layout
 
 ---
 
-## Technical Details
+## Visual Preview
 
-### ConvertToLocationDialog Enhancements
+### Before (Vertical Stack)
+```text
++------------------------------------------+
+|          Primary Stats (full)            |
++------------------------------------------+
+|          Weekly Calendar (full)          |
++------------------------------------------+
+|          Restock Reminders               |
++------------------------------------------+
+|          Maintenance                     |
++------------------------------------------+
+```
 
-**New imports needed:**
-- `NumberInput` from ui
-- `Select`, `SelectContent`, `SelectItem`, `SelectTrigger`, `SelectValue` from ui
-- `Switch` from ui
-- `Sparkles`, `Calendar` icons
-- `MACHINE_TYPE_OPTIONS` from useLocationsDB
+### After (Grid Layout)
+```text
++------------------------------------------+
+|          Primary Stats (full)            |
++------------------------------------------+
+|          Weekly Calendar (full)          |
++------------------------------------------+
+|    Restock (md)    |    Maintenance (md) |
++--------------------+---------------------+
+|  All-Time (sm)  | Top Loc (sm) | Alerts (sm)|
++-----------------+--------------+------------+
+|    Recent Transactions (md)   | Leads (md) |
++-------------------------------+------------+
+|          Quick Actions (full)            |
++------------------------------------------+
+```
 
-**New form fields:**
+---
+
+## Weekly Calendar with Follow-ups
+
+### Updated Legend
+```text
+This Week
+[●] Restock  [●] Route  [●] Maintenance  [●] Follow-up
+```
+
+### Calendar Cell Example
+```text
++-------------+
+|   Wed       |
+|    12       |
++-------------+
+| [📍] Joe's  |  <- Restock (blue)
+| [🛣] Route1 |  <- Route (purple)
+| [👥] Pizza  |  <- Lead Follow-up (amber)
++-------------+
+```
+
+---
+
+## Technical Considerations
+
+### CSS Grid Responsiveness
+- Mobile: All widgets span 12 columns (full width)
+- Tablet (md): Widgets respect their size setting
+- Desktop (lg): Same as tablet with more breathing room
+
+### Drag Auto-Scroll
+- Uses `requestAnimationFrame` for smooth scrolling
+- Scroll speed increases when closer to edge
+- Stops when drag ends
+
+### localStorage Schema Update
 ```typescript
-const [formData, setFormData] = useState({
-  name: '',
-  address: '',
-  contact_person: '',
-  contact_phone: '',
-  contact_email: '',
-  notes: '',
-  // New fields to match location creation
-  machines: [] as MachineType[],
-  commissionRate: 0,
-  isActive: true,
-  collectionFrequencyDays: undefined as number | undefined,
-  restockDayOfWeek: undefined as number | undefined,
-});
-```
-
-### LeadsPipeline Responsive Changes
-
-**Mobile tab implementation:**
-```tsx
-{isMobile ? (
-  <div className="space-y-4">
-    {/* Status tabs - horizontal scroll */}
-    <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
-      {statusColumns.map(({ status, label, icon: Icon, color }) => (
-        <button
-          key={status}
-          onClick={() => setActiveStatus(status)}
-          className={cn(
-            "flex items-center gap-2 px-3 py-2 rounded-lg whitespace-nowrap",
-            activeStatus === status ? "bg-primary text-primary-foreground" : "bg-muted"
-          )}
-        >
-          <Icon className="h-4 w-4" />
-          {label}
-          <Badge>{getLeadsForStatus(status).length}</Badge>
-        </button>
-      ))}
-    </div>
-    {/* Cards for active status */}
-    <div className="space-y-3">
-      {getLeadsForStatus(activeStatus).map(lead => (
-        <LeadCard key={lead.id} lead={lead} onClick={() => onLeadClick(lead)} />
-      ))}
-    </div>
-  </div>
-) : (
-  /* Existing desktop pipeline */
-)}
-```
-
-### AddMaintenanceReportDialog Structure
-```tsx
-export function AddMaintenanceReportDialog({ 
-  open, 
-  onOpenChange, 
-  onSuccess 
-}: Props) {
-  const { user } = useAuth();
-  const [locations, setLocations] = useState([]);
-  const [selectedLocation, setSelectedLocation] = useState('');
-  const [machines, setMachines] = useState([]);
-  const [formData, setFormData] = useState({
-    machine_id: '',
-    issue_type: 'other',
-    severity: 'medium',
-    description: '',
-    reporter_name: '',
-    reporter_contact: '',
-  });
-
-  // Fetch locations on mount
-  // Fetch machines when location changes
-  // Submit handler
-  
-  return (
-    <Dialog>
-      <DialogContent>
-        {/* Location selector */}
-        {/* Machine selector */}
-        {/* Issue type dropdown */}
-        {/* Severity radio group */}
-        {/* Description textarea */}
-        {/* Optional reporter fields */}
-        {/* Submit/Cancel buttons */}
-      </DialogContent>
-    </Dialog>
-  );
+interface SavedWidgetConfig {
+  id: string;
+  visible: boolean;
+  size: 'sm' | 'md' | 'lg' | 'full';
 }
 ```
 
----
+### Migration for Existing Users
+When loading saved layout, if `size` is missing, apply default sizes based on widget ID.
 
-## Summary of Changes
-
-| File | Action | Description |
-|------|--------|-------------|
-| `ConvertToLocationDialog.tsx` | Modify | Fix useEffect bug, enhance UI to match location creation |
-| `LeadsPipeline.tsx` | Modify | Add mobile-responsive tab-based layout |
-| `Leads.tsx` | Modify | Adjust container for better mobile padding |
-| `useMaintenanceReports.ts` | Modify | Add createReport function |
-| `AddMaintenanceReportDialog.tsx` | Create | New dialog for manual maintenance entry |
-| `Maintenance.tsx` | Modify | Add "Report Issue" button and dialog integration |
