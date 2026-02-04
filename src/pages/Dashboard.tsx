@@ -5,8 +5,9 @@ import { useRoutes } from "@/hooks/useRoutesDB";
 import { useUserSchedules } from "@/hooks/useUserSchedules";
 import { useSmartScheduler } from "@/hooks/useSmartScheduler";
 import { useMaintenanceReports } from "@/hooks/useMaintenanceReports";
+import { useLeadsDB } from "@/hooks/useLeadsDB";
 import { LeadsWidget } from "@/components/dashboard/LeadsWidget";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,9 @@ import {
   RotateCcw,
   ExternalLink,
   Wrench,
-  Calendar
+  Calendar,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 import { MaintenanceWidget } from "@/components/maintenance/MaintenanceWidget";
 import { WeeklyCalendarWidget } from "@/components/dashboard/WeeklyCalendarWidget";
@@ -38,6 +41,7 @@ import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { WidgetSize } from "@/hooks/useUserPreferences";
 
 type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance' | 'leads';
 
@@ -45,22 +49,37 @@ interface WidgetConfig {
   id: WidgetId;
   label: string;
   visible: boolean;
+  size: WidgetSize;
 }
 
 const DEFAULT_WIDGET_ORDER: WidgetConfig[] = [
-  { id: 'primaryStats', label: 'Primary Stats', visible: true },
-  { id: 'weeklyCalendar', label: 'Weekly Calendar', visible: true },
-  { id: 'collectionDue', label: 'Restock Reminders', visible: true },
-  { id: 'maintenance', label: 'Maintenance', visible: true },
-  { id: 'leads', label: 'Leads Pipeline', visible: true },
-  { id: 'allTimeSummary', label: 'All-Time Summary', visible: true },
-  { id: 'topLocations', label: 'Top Locations', visible: true },
-  { id: 'lowStockAlerts', label: 'Low Stock Alerts', visible: true },
-  { id: 'recentTransactions', label: 'Recent Transactions', visible: true },
-  { id: 'quickActions', label: 'Quick Actions', visible: true },
+  { id: 'primaryStats', label: 'Primary Stats', visible: true, size: 'full' },
+  { id: 'weeklyCalendar', label: 'Weekly Calendar', visible: true, size: 'full' },
+  { id: 'collectionDue', label: 'Restock Reminders', visible: true, size: 'md' },
+  { id: 'maintenance', label: 'Maintenance', visible: true, size: 'md' },
+  { id: 'leads', label: 'Leads Pipeline', visible: true, size: 'md' },
+  { id: 'allTimeSummary', label: 'All-Time Summary', visible: true, size: 'sm' },
+  { id: 'topLocations', label: 'Top Locations', visible: true, size: 'sm' },
+  { id: 'lowStockAlerts', label: 'Low Stock Alerts', visible: true, size: 'sm' },
+  { id: 'recentTransactions', label: 'Recent Transactions', visible: true, size: 'md' },
+  { id: 'quickActions', label: 'Quick Actions', visible: true, size: 'full' },
 ];
 
-const DASHBOARD_LAYOUT_KEY = "clawops-dashboard-layout";
+const SIZE_TO_COLS: Record<WidgetSize, string> = {
+  sm: 'md:col-span-4',
+  md: 'md:col-span-6',
+  lg: 'md:col-span-8',
+  full: 'md:col-span-12',
+};
+
+const SIZE_LABELS: Record<WidgetSize, string> = {
+  sm: '⅓',
+  md: '½',
+  lg: '⅔',
+  full: 'Full',
+};
+
+const DASHBOARD_LAYOUT_KEY = "clawops-dashboard-layout-v2";
 
 export default function Dashboard() {
   const { locations, activeLocations, isLoaded: locationsLoaded, refetch: refetchLocations } = useLocations();
@@ -69,8 +88,9 @@ export default function Dashboard() {
   const { routes, isLoaded: routesLoaded, refetch: refetchRoutes } = useRoutes();
   const { schedules, isLoaded: schedulesLoaded, refetch: refetchSchedules } = useUserSchedules();
   const { reports: maintenanceReports } = useMaintenanceReports();
+  const { leads } = useLeadsDB();
   
-  // Smart scheduler for calendar and reminders
+  // Smart scheduler for calendar and reminders - now includes leads
   const { 
     tasksByDate, 
     overdueRestocks, 
@@ -85,12 +105,21 @@ export default function Dashboard() {
       machineId: r.machine_id,
       description: r.description,
     })),
+    leads: leads.map(l => ({
+      id: l.id,
+      business_name: l.business_name,
+      next_follow_up: l.next_follow_up,
+      status: l.status,
+      priority: l.priority,
+    })),
   });
+
   const [widgets, setWidgets] = useState<WidgetConfig[]>(DEFAULT_WIDGET_ORDER);
   const [layoutLoaded, setLayoutLoaded] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [draggedWidget, setDraggedWidget] = useState<WidgetId | null>(null);
   const [dragOverWidget, setDragOverWidget] = useState<WidgetId | null>(null);
+  const scrollIntervalRef = useRef<number | null>(null);
   
   const isMobile = useIsMobile();
   const { registerRefresh, unregisterRefresh } = useMobileRefresh();
@@ -119,36 +148,14 @@ export default function Dashboard() {
         // Merge with defaults to handle new widgets
         const mergedWidgets = DEFAULT_WIDGET_ORDER.map(defaultWidget => {
           const savedWidget = savedWidgets.find((w: WidgetConfig) => w.id === defaultWidget.id);
-          return savedWidget || defaultWidget;
-        });
-        // Preserve order from saved
-        const orderedWidgets = savedWidgets
-          .filter((w: WidgetConfig) => DEFAULT_WIDGET_ORDER.some(d => d.id === w.id))
-          .map((w: WidgetConfig) => mergedWidgets.find(m => m.id === w.id)!);
-        // Add any new widgets at the end
-        DEFAULT_WIDGET_ORDER.forEach(d => {
-          if (!orderedWidgets.find((o: WidgetConfig) => o.id === d.id)) {
-            orderedWidgets.push(d);
+          if (savedWidget) {
+            return {
+              ...defaultWidget,
+              visible: savedWidget.visible,
+              size: savedWidget.size || defaultWidget.size,
+            };
           }
-        });
-        setWidgets(orderedWidgets);
-      } catch (e) {
-        console.error("Failed to load dashboard layout:", e);
-      }
-    }
-    setLayoutLoaded(true);
-  }, []);
-
-  // Load layout
-  useEffect(() => {
-    const saved = localStorage.getItem(DASHBOARD_LAYOUT_KEY);
-    if (saved) {
-      try {
-        const savedWidgets = JSON.parse(saved);
-        // Merge with defaults to handle new widgets
-        const mergedWidgets = DEFAULT_WIDGET_ORDER.map(defaultWidget => {
-          const savedWidget = savedWidgets.find((w: WidgetConfig) => w.id === defaultWidget.id);
-          return savedWidget || defaultWidget;
+          return defaultWidget;
         });
         // Preserve order from saved
         const orderedWidgets = savedWidgets
@@ -157,7 +164,7 @@ export default function Dashboard() {
         // Add any new widgets at the end
         DEFAULT_WIDGET_ORDER.forEach(d => {
           if (!orderedWidgets.find((o: WidgetConfig) => o.id === d.id)) {
-            orderedWidgets.push(d);
+            orderedWidgets.push(mergedWidgets.find(m => m.id === d.id)!);
           }
         });
         setWidgets(orderedWidgets);
@@ -179,6 +186,16 @@ export default function Dashboard() {
     setWidgets(prev => prev.map(w => w.id === id ? { ...w, visible: !w.visible } : w));
   };
 
+  const cycleSize = (id: WidgetId) => {
+    const sizeOrder: WidgetSize[] = ['sm', 'md', 'lg', 'full'];
+    setWidgets(prev => prev.map(w => {
+      if (w.id !== id) return w;
+      const currentIndex = sizeOrder.indexOf(w.size);
+      const nextIndex = (currentIndex + 1) % sizeOrder.length;
+      return { ...w, size: sizeOrder[nextIndex] };
+    }));
+  };
+
   const resetLayout = () => {
     setWidgets(DEFAULT_WIDGET_ORDER);
   };
@@ -193,10 +210,39 @@ export default function Dashboard() {
     if (draggedWidget && draggedWidget !== widgetId) {
       setDragOverWidget(widgetId);
     }
+    
+    // Auto-scroll when near edges
+    const scrollThreshold = 100;
+    const scrollSpeed = 15;
+    const { clientY } = e;
+    const viewportHeight = window.innerHeight;
+
+    // Clear any existing scroll interval
+    if (scrollIntervalRef.current) {
+      cancelAnimationFrame(scrollIntervalRef.current);
+    }
+
+    const scroll = () => {
+      if (clientY < scrollThreshold) {
+        window.scrollBy(0, -scrollSpeed);
+        scrollIntervalRef.current = requestAnimationFrame(scroll);
+      } else if (clientY > viewportHeight - scrollThreshold) {
+        window.scrollBy(0, scrollSpeed);
+        scrollIntervalRef.current = requestAnimationFrame(scroll);
+      }
+    };
+
+    if (clientY < scrollThreshold || clientY > viewportHeight - scrollThreshold) {
+      scroll();
+    }
   };
 
   const handleDragLeave = () => {
     setDragOverWidget(null);
+    if (scrollIntervalRef.current) {
+      cancelAnimationFrame(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
+    }
   };
 
   const handleDrop = (e: React.DragEvent, targetId: WidgetId) => {
@@ -216,11 +262,19 @@ export default function Dashboard() {
 
     setDraggedWidget(null);
     setDragOverWidget(null);
+    if (scrollIntervalRef.current) {
+      cancelAnimationFrame(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
+    }
   };
 
   const handleDragEnd = () => {
     setDraggedWidget(null);
     setDragOverWidget(null);
+    if (scrollIntervalRef.current) {
+      cancelAnimationFrame(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
+    }
   };
 
   const isLoaded = locationsLoaded && entriesLoaded && inventoryLoaded && layoutLoaded && routesLoaded && schedulesLoaded;
@@ -275,34 +329,34 @@ export default function Dashboard() {
 
   // Widget render functions
   const renderPrimaryStats = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-        <CardContent className="pt-6 relative">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-          <div className="flex items-center gap-4 relative">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg group-hover:scale-110 transition-transform duration-300">
-              <MapPin className="h-6 w-6 text-primary-foreground" />
+        <CardContent className="pt-4 sm:pt-6 relative">
+          <div className="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+          <div className="flex items-center gap-3 sm:gap-4 relative">
+            <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Active Locations</p>
-              <p className="text-3xl font-bold text-foreground tracking-tight">{activeLocations.length}</p>
-              <p className="text-xs text-muted-foreground">{totalMachines} machines total</p>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Active Locations</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{activeLocations.length}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{totalMachines} machines</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
       <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-        <CardContent className="pt-6 relative">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-          <div className="flex items-center gap-4 relative">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
-              <TrendingUp className="h-6 w-6 text-white" />
+        <CardContent className="pt-4 sm:pt-6 relative">
+          <div className="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-green-500/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+          <div className="flex items-center gap-3 sm:gap-4 relative">
+            <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Month Income</p>
-              <p className="text-3xl font-bold text-foreground tracking-tight">${totalIncome.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">{format(now, "MMMM")}</p>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Month Income</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">${totalIncome.toLocaleString()}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{format(now, "MMMM")}</p>
             </div>
           </div>
         </CardContent>
@@ -312,29 +366,29 @@ export default function Dashboard() {
         "glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden",
         netProfit < 0 && "border-destructive/30"
       )}>
-        <CardContent className="pt-6 relative">
+        <CardContent className="pt-4 sm:pt-6 relative">
           <div className={cn(
-            "absolute top-0 right-0 w-24 h-24 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500",
+            "absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500",
             netProfit >= 0 ? "bg-primary/10" : "bg-destructive/10"
           )} />
-          <div className="flex items-center gap-4 relative">
+          <div className="flex items-center gap-3 sm:gap-4 relative">
             <div className={cn(
-              "p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300",
+              "p-2 sm:p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300",
               netProfit >= 0 
                 ? "bg-gradient-to-br from-primary to-primary/80" 
                 : "bg-gradient-to-br from-destructive to-destructive/80"
             )}>
-              <Wallet className="h-6 w-6 text-white" />
+              <Wallet className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Net Profit</p>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Net Profit</p>
               <p className={cn(
-                "text-3xl font-bold tracking-tight",
+                "text-2xl sm:text-3xl font-bold tracking-tight",
                 netProfit >= 0 ? "text-foreground" : "text-destructive"
               )}>
                 ${Math.abs(netProfit).toLocaleString()}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
                 {netProfit >= 0 ? "Profit" : "Loss"} this month
               </p>
             </div>
@@ -346,27 +400,27 @@ export default function Dashboard() {
         "glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden",
         lowStockItems.length > 0 && "border-amber-500/30 bg-amber-500/5"
       )}>
-        <CardContent className="pt-6 relative">
+        <CardContent className="pt-4 sm:pt-6 relative">
           <div className={cn(
-            "absolute top-0 right-0 w-24 h-24 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500",
+            "absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500",
             lowStockItems.length > 0 ? "bg-amber-500/10" : "bg-accent/50"
           )} />
-          <div className="flex items-center gap-4 relative">
+          <div className="flex items-center gap-3 sm:gap-4 relative">
             <div className={cn(
-              "p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300",
+              "p-2 sm:p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300",
               lowStockItems.length > 0 
                 ? "bg-gradient-to-br from-amber-500 to-amber-600" 
                 : "bg-gradient-to-br from-muted-foreground/80 to-muted-foreground/60"
             )}>
-              <Package className="h-6 w-6 text-white" />
+              <Package className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Inventory</p>
-              <p className="text-3xl font-bold text-foreground tracking-tight">{totalInventoryItems}</p>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Inventory</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{totalInventoryItems}</p>
               {lowStockItems.length > 0 ? (
-                <p className="text-xs text-amber-600 font-medium">{lowStockItems.length} low stock alerts</p>
+                <p className="text-[10px] sm:text-xs text-amber-600 font-medium">{lowStockItems.length} low stock</p>
               ) : (
-                <p className="text-xs text-muted-foreground">All stocked up</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">All stocked</p>
               )}
             </div>
           </div>
@@ -376,14 +430,14 @@ export default function Dashboard() {
   );
 
   const renderAllTimeSummary = () => (
-    <Card className="glass-card">
+    <Card className="glass-card h-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <BarChart3 className="h-5 w-5 text-primary" />
           All-Time Summary
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         <div className="flex justify-between items-center p-3 rounded-lg bg-green-500/5 border border-green-500/10">
           <div className="flex items-center gap-3">
             <TrendingUp className="h-5 w-5 text-green-600" />
@@ -415,7 +469,7 @@ export default function Dashboard() {
   );
 
   const renderTopLocations = () => (
-    <Card className="glass-card">
+    <Card className="glass-card h-full">
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2">
           <Activity className="h-5 w-5 text-primary" />
@@ -449,7 +503,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="font-medium text-sm">{loc.name}</p>
-                  <p className="text-xs text-muted-foreground">{loc.address}</p>
+                  <p className="text-xs text-muted-foreground truncate max-w-[120px]">{loc.address}</p>
                 </div>
               </div>
               <span className="font-bold text-green-600">${loc.totalIncome.toLocaleString()}</span>
@@ -462,7 +516,7 @@ export default function Dashboard() {
 
   const renderLowStockAlerts = () => (
     <Card className={cn(
-      "glass-card",
+      "glass-card h-full",
       lowStockItems.length > 0 && "border-amber-500/30"
     )}>
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
@@ -544,7 +598,7 @@ export default function Dashboard() {
   );
 
   const renderRecentTransactions = () => (
-    <Card className="glass-card">
+    <Card className="glass-card h-full">
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2">
           <DollarSign className="h-5 w-5 text-primary" />
@@ -619,10 +673,10 @@ export default function Dashboard() {
   );
 
   const renderQuickActions = () => (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
       <Link to="/locations">
         <Card className="glass-card hover:shadow-hover transition-all duration-300 cursor-pointer group">
-          <CardContent className="p-4 flex items-center gap-3">
+          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
               <MapPin className="h-5 w-5 text-primary" />
             </div>
@@ -632,7 +686,7 @@ export default function Dashboard() {
       </Link>
       <Link to="/revenue">
         <Card className="glass-card hover:shadow-hover transition-all duration-300 cursor-pointer group">
-          <CardContent className="p-4 flex items-center gap-3">
+          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
               <DollarSign className="h-5 w-5 text-green-600" />
             </div>
@@ -642,7 +696,7 @@ export default function Dashboard() {
       </Link>
       <Link to="/commission-summary">
         <Card className="glass-card hover:shadow-hover transition-all duration-300 cursor-pointer group">
-          <CardContent className="p-4 flex items-center gap-3">
+          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
               <BarChart3 className="h-5 w-5 text-amber-600" />
             </div>
@@ -652,7 +706,7 @@ export default function Dashboard() {
       </Link>
       <Link to="/inventory">
         <Card className="glass-card hover:shadow-hover transition-all duration-300 cursor-pointer group">
-          <CardContent className="p-4 flex items-center gap-3">
+          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
               <Package className="h-5 w-5 text-purple-600" />
             </div>
@@ -751,68 +805,83 @@ export default function Dashboard() {
             <GripVertical className="h-5 w-5 text-primary" />
             <div>
               <p className="font-medium text-sm text-foreground">Customization Mode</p>
-              <p className="text-xs text-muted-foreground">Drag widgets to reorder. Click the eye icon to show/hide.</p>
+              <p className="text-xs text-muted-foreground">
+                Drag widgets to reorder • Click <Maximize2 className="h-3 w-3 inline" /> to resize • Click <Check className="h-3 w-3 inline" />/<X className="h-3 w-3 inline" /> to show/hide
+              </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Widgets */}
-      {widgets.map((widget) => {
-        if (!widget.visible && !isCustomizing) return null;
-        
-        return (
-          <div
-            key={widget.id}
-            draggable={isCustomizing}
-            onDragStart={(e) => handleDragStart(e, widget.id)}
-            onDragOver={(e) => handleDragOver(e, widget.id)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, widget.id)}
-            onDragEnd={handleDragEnd}
-            className={cn(
-              "transition-all duration-200",
-              isCustomizing && "relative",
-              isCustomizing && draggedWidget === widget.id && "opacity-50",
-              isCustomizing && dragOverWidget === widget.id && "ring-2 ring-primary ring-offset-2 rounded-xl"
-            )}
-          >
-            {isCustomizing && (
-              <div className="absolute -top-2 -left-2 z-10 flex items-center gap-1 bg-background border border-border rounded-lg shadow-lg p-1">
-                <div 
-                  className="p-1.5 cursor-grab active:cursor-grabbing hover:bg-muted rounded"
-                  title="Drag to reorder"
-                >
-                  <GripVertical className="h-4 w-4 text-muted-foreground" />
+      {/* Widgets Grid */}
+      <div className="grid grid-cols-12 gap-4">
+        {widgets.map((widget) => {
+          if (!widget.visible && !isCustomizing) return null;
+          
+          return (
+            <div
+              key={widget.id}
+              draggable={isCustomizing}
+              onDragStart={(e) => handleDragStart(e, widget.id)}
+              onDragOver={(e) => handleDragOver(e, widget.id)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, widget.id)}
+              onDragEnd={handleDragEnd}
+              className={cn(
+                "col-span-12",
+                SIZE_TO_COLS[widget.size],
+                "transition-all duration-200",
+                isCustomizing && "relative",
+                isCustomizing && draggedWidget === widget.id && "opacity-50 scale-[0.98]",
+                isCustomizing && dragOverWidget === widget.id && "ring-2 ring-primary ring-offset-2 rounded-xl"
+              )}
+            >
+              {isCustomizing && (
+                <div className="absolute -top-2 -left-2 z-10 flex items-center gap-0.5 bg-background border border-border rounded-lg shadow-lg p-0.5">
+                  <div 
+                    className="p-1.5 cursor-grab active:cursor-grabbing hover:bg-muted rounded"
+                    title="Drag to reorder"
+                  >
+                    <GripVertical className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <button
+                    onClick={() => toggleWidgetVisibility(widget.id)}
+                    className={cn(
+                      "p-1.5 rounded transition-colors",
+                      widget.visible 
+                        ? "hover:bg-muted text-foreground" 
+                        : "bg-muted/50 text-muted-foreground"
+                    )}
+                    title={widget.visible ? "Hide widget" : "Show widget"}
+                  >
+                    {widget.visible ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <X className="h-4 w-4" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => cycleSize(widget.id)}
+                    className="p-1.5 rounded hover:bg-muted transition-colors"
+                    title={`Size: ${SIZE_LABELS[widget.size]} (click to cycle)`}
+                  >
+                    <Maximize2 className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                  <span className="text-[10px] font-medium px-1.5 text-muted-foreground whitespace-nowrap">
+                    {widget.label} ({SIZE_LABELS[widget.size]})
+                  </span>
                 </div>
-                <button
-                  onClick={() => toggleWidgetVisibility(widget.id)}
-                  className={cn(
-                    "p-1.5 rounded transition-colors",
-                    widget.visible 
-                      ? "hover:bg-muted text-foreground" 
-                      : "bg-muted/50 text-muted-foreground"
-                  )}
-                  title={widget.visible ? "Hide widget" : "Show widget"}
-                >
-                  {widget.visible ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <X className="h-4 w-4" />
-                  )}
-                </button>
-                <span className="text-xs font-medium px-2 text-muted-foreground">{widget.label}</span>
+              )}
+              
+              <div className={cn(
+                !widget.visible && isCustomizing && "opacity-40 pointer-events-none"
+              )}>
+                {widgetRenderers[widget.id]()}
               </div>
-            )}
-            
-            <div className={cn(
-              !widget.visible && isCustomizing && "opacity-40 pointer-events-none"
-            )}>
-              {widgetRenderers[widget.id]()}
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }

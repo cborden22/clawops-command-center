@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Route, Package, Wrench, ChevronRight } from "lucide-react";
+import { Calendar, MapPin, Route, Package, Wrench, ChevronRight, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format, addDays, startOfDay, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -15,12 +15,14 @@ const TASK_ICONS: Record<TaskType, React.ReactNode> = {
   restock: <MapPin className="h-3 w-3" />,
   route: <Route className="h-3 w-3" />,
   maintenance: <Wrench className="h-3 w-3" />,
+  followup: <Users className="h-3 w-3" />,
 };
 
 const TASK_COLORS: Record<TaskType, string> = {
   restock: "bg-blue-500/10 text-blue-600 border-blue-500/20",
   route: "bg-purple-500/10 text-purple-600 border-purple-500/20",
   maintenance: "bg-red-500/10 text-red-600 border-red-500/20",
+  followup: "bg-amber-500/10 text-amber-600 border-amber-500/20",
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -42,12 +44,12 @@ export function WeeklyCalendarWidget({ tasksByDate }: WeeklyCalendarWidgetProps)
 
   return (
     <Card className="glass-card">
-      <CardHeader className="pb-3 flex flex-row items-center justify-between">
+      <CardHeader className="pb-3 flex flex-row items-center justify-between flex-wrap gap-2">
         <CardTitle className="text-lg flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" />
           This Week
         </CardTitle>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-muted-foreground flex-wrap">
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full bg-blue-500" />
             <span>Restock</span>
@@ -55,6 +57,14 @@ export function WeeklyCalendarWidget({ tasksByDate }: WeeklyCalendarWidgetProps)
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full bg-purple-500" />
             <span>Route</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-red-500" />
+            <span>Maint.</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-amber-500" />
+            <span>Follow-up</span>
           </div>
         </div>
       </CardHeader>

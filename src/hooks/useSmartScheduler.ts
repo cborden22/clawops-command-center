@@ -4,7 +4,7 @@ import { MileageRoute } from "@/hooks/useRoutesDB";
 import { UserSchedule } from "@/hooks/useUserSchedules";
 import { startOfDay, addDays, isSameDay, isAfter, isBefore, differenceInDays } from "date-fns";
 
-export type TaskType = "restock" | "route" | "maintenance";
+export type TaskType = "restock" | "route" | "maintenance" | "followup";
 export type TaskStatus = "overdue" | "due_today" | "due_soon" | "upcoming";
 
 export interface ScheduledTask {
@@ -20,6 +20,7 @@ export interface ScheduledTask {
     locationId?: string;
     routeId?: string;
     scheduleType?: string;
+    leadId?: string;
   };
 }
 
@@ -45,12 +46,21 @@ export interface RouteScheduleStatus {
   locationNames: string[];
 }
 
+export interface LeadFollowUp {
+  id: string;
+  business_name: string;
+  next_follow_up: string | null;
+  status: string;
+  priority: string | null;
+}
+
 interface SmartSchedulerInput {
   locations: Location[];
   routes: MileageRoute[];
   userSchedules: UserSchedule[];
   maintenanceReports?: Array<{ id: string; status: string; machineId: string; description: string }>;
   lastRestockDates?: Map<string, Date>;
+  leads?: LeadFollowUp[];
 }
 
 function calculateNextDueDate(
@@ -122,6 +132,7 @@ export function useSmartScheduler({
   userSchedules,
   maintenanceReports = [],
   lastRestockDates = new Map(),
+  leads = [],
 }: SmartSchedulerInput) {
   const today = startOfDay(new Date());
   const weekEnd = addDays(today, 7);
@@ -292,6 +303,26 @@ export function useSmartScheduler({
         });
       });
 
+    // Add lead follow-up tasks
+    leads
+      .filter((l) => l.next_follow_up && l.status !== "won" && l.status !== "lost")
+      .forEach((lead) => {
+        const followUpDate = startOfDay(new Date(lead.next_follow_up!));
+        if (isBefore(followUpDate, weekEnd) || isSameDay(followUpDate, weekEnd)) {
+          tasks.push({
+            id: `followup-${lead.id}`,
+            type: "followup",
+            title: lead.business_name,
+            subtitle: lead.priority === "hot" ? "Hot Lead" : "Follow-up",
+            dueDate: followUpDate,
+            status: getTaskStatus(followUpDate),
+            priority: lead.priority === "hot" ? "high" : "medium",
+            link: "/leads",
+            metadata: { leadId: lead.id },
+          });
+        }
+      });
+
     // Sort by date, then priority
     return tasks.sort((a, b) => {
       const dateDiff = a.dueDate.getTime() - b.dueDate.getTime();
@@ -300,7 +331,7 @@ export function useSmartScheduler({
       const priorityOrder = { high: 0, medium: 1, low: 2 };
       return priorityOrder[a.priority] - priorityOrder[b.priority];
     });
-  }, [restockStatuses, routeScheduleStatuses, maintenanceReports, today, weekEnd]);
+  }, [restockStatuses, routeScheduleStatuses, maintenanceReports, leads, today, weekEnd]);
 
   // Group tasks by date for calendar display
   const tasksByDate = useMemo(() => {
