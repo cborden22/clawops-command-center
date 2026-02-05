@@ -23,19 +23,13 @@ import {
   BarChart3,
   Wallet,
   Settings2,
-  GripVertical,
-  X,
-  Check,
-  RotateCcw,
   ExternalLink,
-  Wrench,
-  Calendar,
-  Maximize2,
-  Minimize2
+   Settings
 } from "lucide-react";
 import { MaintenanceWidget } from "@/components/maintenance/MaintenanceWidget";
 import { WeeklyCalendarWidget } from "@/components/dashboard/WeeklyCalendarWidget";
 import { RestockDueWidget } from "@/components/dashboard/RestockDueWidget";
+ import { DashboardCustomizer } from "@/components/dashboard/DashboardCustomizer";
 import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -70,13 +64,6 @@ const SIZE_TO_COLS: Record<WidgetSize, string> = {
   md: 'md:col-span-6',
   lg: 'md:col-span-8',
   full: 'md:col-span-12',
-};
-
-const SIZE_LABELS: Record<WidgetSize, string> = {
-  sm: '⅓',
-  md: '½',
-  lg: '⅔',
-  full: 'Full',
 };
 
 const DASHBOARD_LAYOUT_KEY = "clawops-dashboard-layout-v2";
@@ -116,10 +103,7 @@ export default function Dashboard() {
 
   const [widgets, setWidgets] = useState<WidgetConfig[]>(DEFAULT_WIDGET_ORDER);
   const [layoutLoaded, setLayoutLoaded] = useState(false);
-  const [isCustomizing, setIsCustomizing] = useState(false);
-  const [draggedWidget, setDraggedWidget] = useState<WidgetId | null>(null);
-  const [dragOverWidget, setDragOverWidget] = useState<WidgetId | null>(null);
-  const scrollIntervalRef = useRef<number | null>(null);
+   const [customizePanelOpen, setCustomizePanelOpen] = useState(false);
   
   const isMobile = useIsMobile();
   const { registerRefresh, unregisterRefresh } = useMobileRefresh();
@@ -182,99 +166,8 @@ export default function Dashboard() {
     }
   }, [widgets, layoutLoaded]);
 
-  const toggleWidgetVisibility = (id: WidgetId) => {
-    setWidgets(prev => prev.map(w => w.id === id ? { ...w, visible: !w.visible } : w));
-  };
-
-  const cycleSize = (id: WidgetId) => {
-    const sizeOrder: WidgetSize[] = ['sm', 'md', 'lg', 'full'];
-    setWidgets(prev => prev.map(w => {
-      if (w.id !== id) return w;
-      const currentIndex = sizeOrder.indexOf(w.size);
-      const nextIndex = (currentIndex + 1) % sizeOrder.length;
-      return { ...w, size: sizeOrder[nextIndex] };
-    }));
-  };
-
   const resetLayout = () => {
     setWidgets(DEFAULT_WIDGET_ORDER);
-  };
-
-  const handleDragStart = (e: React.DragEvent, widgetId: WidgetId) => {
-    setDraggedWidget(widgetId);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e: React.DragEvent, widgetId: WidgetId) => {
-    e.preventDefault();
-    if (draggedWidget && draggedWidget !== widgetId) {
-      setDragOverWidget(widgetId);
-    }
-    
-    // Auto-scroll when near edges
-    const scrollThreshold = 100;
-    const scrollSpeed = 15;
-    const { clientY } = e;
-    const viewportHeight = window.innerHeight;
-
-    // Clear any existing scroll interval
-    if (scrollIntervalRef.current) {
-      cancelAnimationFrame(scrollIntervalRef.current);
-    }
-
-    const scroll = () => {
-      if (clientY < scrollThreshold) {
-        window.scrollBy(0, -scrollSpeed);
-        scrollIntervalRef.current = requestAnimationFrame(scroll);
-      } else if (clientY > viewportHeight - scrollThreshold) {
-        window.scrollBy(0, scrollSpeed);
-        scrollIntervalRef.current = requestAnimationFrame(scroll);
-      }
-    };
-
-    if (clientY < scrollThreshold || clientY > viewportHeight - scrollThreshold) {
-      scroll();
-    }
-  };
-
-  const handleDragLeave = () => {
-    setDragOverWidget(null);
-    if (scrollIntervalRef.current) {
-      cancelAnimationFrame(scrollIntervalRef.current);
-      scrollIntervalRef.current = null;
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent, targetId: WidgetId) => {
-    e.preventDefault();
-    if (!draggedWidget || draggedWidget === targetId) return;
-
-    setWidgets(prev => {
-      const newWidgets = [...prev];
-      const draggedIndex = newWidgets.findIndex(w => w.id === draggedWidget);
-      const targetIndex = newWidgets.findIndex(w => w.id === targetId);
-      
-      const [removed] = newWidgets.splice(draggedIndex, 1);
-      newWidgets.splice(targetIndex, 0, removed);
-      
-      return newWidgets;
-    });
-
-    setDraggedWidget(null);
-    setDragOverWidget(null);
-    if (scrollIntervalRef.current) {
-      cancelAnimationFrame(scrollIntervalRef.current);
-      scrollIntervalRef.current = null;
-    }
-  };
-
-  const handleDragEnd = () => {
-    setDraggedWidget(null);
-    setDragOverWidget(null);
-    if (scrollIntervalRef.current) {
-      cancelAnimationFrame(scrollIntervalRef.current);
-      scrollIntervalRef.current = null;
-    }
   };
 
   const isLoaded = locationsLoaded && entriesLoaded && inventoryLoaded && layoutLoaded && routesLoaded && schedulesLoaded;
@@ -765,119 +658,41 @@ export default function Dashboard() {
         </div>
         
         <div className="flex items-center gap-2">
-          {isCustomizing ? (
-            <>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="gap-2"
-                onClick={resetLayout}
-              >
-                <RotateCcw className="h-4 w-4" />
-                Reset
-              </Button>
-              <Button 
-                size="sm" 
-                className="gap-2"
-                onClick={() => setIsCustomizing(false)}
-              >
-                <Check className="h-4 w-4" />
-                Done
-              </Button>
-            </>
-          ) : (
             <Button 
               variant="outline" 
               className="gap-2 shrink-0"
-              onClick={() => setIsCustomizing(true)}
+               onClick={() => setCustomizePanelOpen(true)}
             >
               <Settings2 className="h-4 w-4" />
               Customize
             </Button>
-          )}
         </div>
       </div>
 
-      {/* Customize Mode Banner */}
-      {isCustomizing && (
-        <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 animate-fade-in">
-          <div className="flex items-center gap-3">
-            <GripVertical className="h-5 w-5 text-primary" />
-            <div>
-              <p className="font-medium text-sm text-foreground">Customization Mode</p>
-              <p className="text-xs text-muted-foreground">
-                Drag widgets to reorder • Click <Maximize2 className="h-3 w-3 inline" /> to resize • Click <Check className="h-3 w-3 inline" />/<X className="h-3 w-3 inline" /> to show/hide
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+       {/* Dashboard Customizer Panel */}
+       <DashboardCustomizer
+         open={customizePanelOpen}
+         onOpenChange={setCustomizePanelOpen}
+         widgets={widgets}
+         onWidgetsChange={setWidgets}
+         onReset={resetLayout}
+       />
 
       {/* Widgets Grid */}
       <div className="grid grid-cols-12 gap-4">
         {widgets.map((widget) => {
-          if (!widget.visible && !isCustomizing) return null;
+           if (!widget.visible) return null;
           
           return (
             <div
               key={widget.id}
-              draggable={isCustomizing}
-              onDragStart={(e) => handleDragStart(e, widget.id)}
-              onDragOver={(e) => handleDragOver(e, widget.id)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, widget.id)}
-              onDragEnd={handleDragEnd}
               className={cn(
                 "col-span-12",
                 SIZE_TO_COLS[widget.size],
-                "transition-all duration-200",
-                isCustomizing && "relative",
-                isCustomizing && draggedWidget === widget.id && "opacity-50 scale-[0.98]",
-                isCustomizing && dragOverWidget === widget.id && "ring-2 ring-primary ring-offset-2 rounded-xl"
+                 "transition-all duration-200"
               )}
             >
-              {isCustomizing && (
-                <div className="absolute -top-2 -left-2 z-10 flex items-center gap-0.5 bg-background border border-border rounded-lg shadow-lg p-0.5">
-                  <div 
-                    className="p-1.5 cursor-grab active:cursor-grabbing hover:bg-muted rounded"
-                    title="Drag to reorder"
-                  >
-                    <GripVertical className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <button
-                    onClick={() => toggleWidgetVisibility(widget.id)}
-                    className={cn(
-                      "p-1.5 rounded transition-colors",
-                      widget.visible 
-                        ? "hover:bg-muted text-foreground" 
-                        : "bg-muted/50 text-muted-foreground"
-                    )}
-                    title={widget.visible ? "Hide widget" : "Show widget"}
-                  >
-                    {widget.visible ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <X className="h-4 w-4" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => cycleSize(widget.id)}
-                    className="p-1.5 rounded hover:bg-muted transition-colors"
-                    title={`Size: ${SIZE_LABELS[widget.size]} (click to cycle)`}
-                  >
-                    <Maximize2 className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                  <span className="text-[10px] font-medium px-1.5 text-muted-foreground whitespace-nowrap">
-                    {widget.label} ({SIZE_LABELS[widget.size]})
-                  </span>
-                </div>
-              )}
-              
-              <div className={cn(
-                !widget.visible && isCustomizing && "opacity-40 pointer-events-none"
-              )}>
-                {widgetRenderers[widget.id]()}
-              </div>
+               {widgetRenderers[widget.id]()}
             </div>
           );
         })}

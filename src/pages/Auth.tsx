@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Mail, Lock, User } from "lucide-react";
+ import { Sparkles, Mail, Lock, User, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
 
@@ -15,16 +15,23 @@ const passwordSchema = z.string().min(6, "Password must be at least 6 characters
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { signIn, signUp } = useAuth();
+   const { signIn, signUp, resetPasswordForEmail } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
   const [signupFullName, setSignupFullName] = useState("");
+   const [showSignupPassword, setShowSignupPassword] = useState(false);
+   const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
+ 
+   const [showForgotPassword, setShowForgotPassword] = useState(false);
+   const [resetEmail, setResetEmail] = useState("");
+   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,6 +123,42 @@ export default function Auth() {
     }
   };
 
+   const handleForgotPassword = async (e: React.FormEvent) => {
+     e.preventDefault();
+     
+     try {
+       emailSchema.parse(resetEmail);
+     } catch (err) {
+       if (err instanceof z.ZodError) {
+         toast({
+           title: "Validation Error",
+           description: err.errors[0].message,
+           variant: "destructive",
+         });
+         return;
+       }
+     }
+ 
+     setIsResettingPassword(true);
+     const { error } = await resetPasswordForEmail(resetEmail);
+     setIsResettingPassword(false);
+ 
+     if (error) {
+       toast({
+         title: "Reset Failed",
+         description: "Unable to send reset email. Please try again.",
+         variant: "destructive",
+       });
+     } else {
+       toast({
+         title: "Reset Email Sent",
+         description: "Check your email for a link to reset your password.",
+       });
+       setShowForgotPassword(false);
+       setResetEmail("");
+     }
+   };
+ 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted p-4">
       <div className="w-full max-w-md">
@@ -143,6 +186,45 @@ export default function Auth() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+             {showForgotPassword ? (
+               <form onSubmit={handleForgotPassword} className="space-y-4">
+                 <button
+                   type="button"
+                   onClick={() => setShowForgotPassword(false)}
+                   className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+                 >
+                   <ArrowLeft className="h-4 w-4" />
+                   Back to login
+                 </button>
+                 
+                 <div className="space-y-2">
+                   <h3 className="font-semibold text-lg">Reset your password</h3>
+                   <p className="text-sm text-muted-foreground">
+                     Enter your email address and we'll send you a link to reset your password.
+                   </p>
+                 </div>
+ 
+                 <div className="space-y-2">
+                   <Label htmlFor="reset-email">Email</Label>
+                   <div className="relative">
+                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                     <Input
+                       id="reset-email"
+                       type="email"
+                       placeholder="you@example.com"
+                       value={resetEmail}
+                       onChange={(e) => setResetEmail(e.target.value)}
+                       className="pl-10"
+                       required
+                     />
+                   </div>
+                 </div>
+ 
+                 <Button type="submit" className="w-full premium-button" disabled={isResettingPassword}>
+                   {isResettingPassword ? "Sending..." : "Send Reset Link"}
+                 </Button>
+               </form>
+             ) : (
             <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="login">Login</TabsTrigger>
@@ -173,16 +255,32 @@ export default function Auth() {
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="login-password"
-                        type="password"
+                         type={showLoginPassword ? "text" : "password"}
                         placeholder="••••••••"
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
-                        className="pl-10"
+                         className="pl-10 pr-10"
                         required
                       />
+                       <button
+                         type="button"
+                         onClick={() => setShowLoginPassword(!showLoginPassword)}
+                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                         aria-label={showLoginPassword ? "Hide password" : "Show password"}
+                       >
+                         {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                       </button>
                     </div>
                   </div>
 
+                   <button
+                     type="button"
+                     onClick={() => setShowForgotPassword(true)}
+                     className="text-sm text-primary hover:underline"
+                   >
+                     Forgot password?
+                   </button>
+ 
                   <Button type="submit" className="w-full premium-button" disabled={isLoading}>
                     {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
@@ -228,13 +326,21 @@ export default function Auth() {
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="signup-password"
-                        type="password"
+                         type={showSignupPassword ? "text" : "password"}
                         placeholder="••••••••"
                         value={signupPassword}
                         onChange={(e) => setSignupPassword(e.target.value)}
-                        className="pl-10"
+                         className="pl-10 pr-10"
                         required
                       />
+                       <button
+                         type="button"
+                         onClick={() => setShowSignupPassword(!showSignupPassword)}
+                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                         aria-label={showSignupPassword ? "Hide password" : "Show password"}
+                       >
+                         {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                       </button>
                     </div>
                   </div>
 
@@ -244,13 +350,21 @@ export default function Auth() {
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="signup-confirm-password"
-                        type="password"
+                         type={showSignupConfirmPassword ? "text" : "password"}
                         placeholder="••••••••"
                         value={signupConfirmPassword}
                         onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                        className="pl-10"
+                         className="pl-10 pr-10"
                         required
                       />
+                       <button
+                         type="button"
+                         onClick={() => setShowSignupConfirmPassword(!showSignupConfirmPassword)}
+                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                         aria-label={showSignupConfirmPassword ? "Hide password" : "Show password"}
+                       >
+                         {showSignupConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                       </button>
                     </div>
                   </div>
 
@@ -260,6 +374,7 @@ export default function Auth() {
                 </form>
               </TabsContent>
             </Tabs>
+             )}
           </CardContent>
         </Card>
       </div>
