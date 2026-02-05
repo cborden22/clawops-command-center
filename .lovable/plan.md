@@ -1,333 +1,230 @@
 
+## Password Reset & Show Password + Dashboard Customization Improvements
 
-## Smarter Dashboard: Lead Follow-ups & Advanced Widget Customization
-
-This plan addresses two major improvements: integrating lead follow-ups into the weekly calendar, and creating a professional grid-based dashboard layout with improved drag-and-drop functionality.
+This plan covers two major enhancements: adding password reset functionality with show/hide password toggles, and redesigning the dashboard customization experience to be more intuitive and user-friendly.
 
 ---
 
-## Part 1: Add Lead Follow-ups to Weekly Calendar
+## Part 1: Password Features
 
 ### Current State
-- The `useSmartScheduler` hook generates tasks for restocks, routes, and maintenance
-- Leads have a `next_follow_up` field (timestamptz) but are not included in the calendar
-- The `LeadsWidget` already has a `getLeadsWithFollowUpDue()` helper function
+- Login/Signup forms use password fields with type="password" (always hidden)
+- No "Forgot Password" functionality exists
+- Settings page has password change but no show/hide toggle
 
-### Solution
-Add a new task type "followup" to the smart scheduler that includes leads with scheduled follow-up dates within the 7-day window.
+### New Features
 
-### Changes Required
+#### 1.1 Show/Hide Password Toggle
+Add an eye icon button to all password fields across the app:
 
-**File: `src/hooks/useSmartScheduler.ts`**
+**Files affected:**
+- `src/pages/Auth.tsx` (login password, signup password, confirm password)
+- `src/pages/Settings.tsx` (current password, new password, confirm password)
 
-1. Add new task type:
-```typescript
-export type TaskType = "restock" | "route" | "maintenance" | "followup";
+**Implementation:**
+- Add `showLoginPassword`, `showSignupPassword`, `showSignupConfirmPassword` state variables
+- Replace static `type="password"` with dynamic `type={showPassword ? "text" : "password"}`
+- Add Eye/EyeOff button inside the input field
+
+**UI Example:**
+```text
+Password
+┌─────────────────────────────────────┐
+│ 🔒  mypassword123            👁️    │
+└─────────────────────────────────────┘
 ```
 
-2. Add leads to input interface:
-```typescript
-interface SmartSchedulerInput {
-  // ... existing fields
-  leads?: Array<{ 
-    id: string; 
-    business_name: string; 
-    next_follow_up: string | null;
-    status: string;
-    priority: string | null;
-  }>;
-}
+#### 1.2 Forgot Password Flow
+Add a complete password reset flow using Supabase's built-in email reset:
+
+**New Routes:**
+- Add a "Forgot Password?" link below the login form
+- Create a reset password page at `/reset-password`
+
+**Files to create/modify:**
+- `src/pages/Auth.tsx` - Add forgot password link and email entry mode
+- `src/pages/ResetPassword.tsx` - New page for setting new password after email link
+- `src/App.tsx` - Add route for `/reset-password`
+- `src/contexts/AuthContext.tsx` - Add `resetPasswordForEmail` function
+
+**Flow:**
+1. User clicks "Forgot Password?" on login form
+2. Shows email input field with "Send Reset Link" button
+3. Calls `supabase.auth.resetPasswordForEmail()` with redirect URL
+4. User receives email and clicks link
+5. User lands on `/reset-password` page with recovery token
+6. User enters new password and confirms
+7. Password is updated and user is redirected to dashboard
+
+---
+
+## Part 2: Dashboard Customization Improvements
+
+### Current Problems Identified
+1. **Clunky drag-and-drop** - No visual feedback during drag, hard to know where widget will land
+2. **Small control buttons** - Hard to tap on mobile
+3. **Confusing icons** - Check/X for visibility is unclear
+4. **Size cycling** - Clicking to cycle through sizes is tedious; no visual preview
+5. **No preview of changes** - Users can't see what different sizes look like before committing
+6. **Auto-scroll is jerky** - Current implementation uses recursive requestAnimationFrame
+
+### Solution: Redesigned Customization Panel
+
+#### 2.1 New Customization Overlay Panel
+Replace inline controls with a slide-out panel:
+
+**Design:**
+```text
+┌─────────────────────────────────────────────┐
+│ Customize Dashboard                      ✕  │
+├─────────────────────────────────────────────┤
+│                                             │
+│ Drag to reorder widgets                     │
+│                                             │
+│ ┌─────────────────────────────────────────┐ │
+│ │ ≡  Primary Stats           👁️  [Full ▼] │ │
+│ └─────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────┐ │
+│ │ ≡  Weekly Calendar         👁️  [Full ▼] │ │
+│ └─────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────┐ │
+│ │ ≡  Restock Reminders       👁️  [Half ▼] │ │
+│ └─────────────────────────────────────────┘ │
+│ ┌─────────────────────────────────────────┐ │
+│ │ ≡  Maintenance             👁️  [Half ▼] │ │
+│ └─────────────────────────────────────────┘ │
+│                                             │
+│ [Reset to Default]                          │
+│                                             │
+└─────────────────────────────────────────────┘
 ```
 
-3. Generate follow-up tasks in `weeklyTasks` memo:
-```typescript
-// Add lead follow-up tasks
-leads
-  .filter(l => l.next_follow_up && l.status !== 'won' && l.status !== 'lost')
-  .forEach(lead => {
-    const followUpDate = startOfDay(new Date(lead.next_follow_up));
-    if (isBefore(followUpDate, weekEnd) || isSameDay(followUpDate, weekEnd)) {
-      tasks.push({
-        id: `followup-${lead.id}`,
-        type: "followup",
-        title: lead.business_name,
-        subtitle: lead.priority === 'hot' ? 'Hot Lead' : 'Follow-up',
-        dueDate: followUpDate,
-        status: getTaskStatus(followUpDate),
-        priority: lead.priority === 'hot' ? 'high' : 'medium',
-        link: "/leads",
-        metadata: { leadId: lead.id },
-      });
-    }
-  });
-```
+#### 2.2 Better Size Selection
+Replace click-to-cycle with a dropdown menu:
 
-**File: `src/components/dashboard/WeeklyCalendarWidget.tsx`**
+**Size Options with Descriptions:**
+- **Small (⅓)** - Fits 3 per row
+- **Medium (½)** - Fits 2 per row  
+- **Large (⅔)** - Fits 1.5 per row
+- **Full** - Takes entire row
 
-1. Add follow-up icon and colors:
-```typescript
-const TASK_ICONS: Record<TaskType, React.ReactNode> = {
-  // ... existing
-  followup: <Users className="h-3 w-3" />,
-};
+#### 2.3 Improved Drag Experience
+- Add a drag handle with 6-dot grip icon
+- Show drop indicator line between widgets during drag
+- Smooth auto-scroll with easing
+- Touch-friendly with larger touch targets
 
-const TASK_COLORS: Record<TaskType, string> = {
-  // ... existing
-  followup: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-};
-```
+#### 2.4 Better Visual Feedback
+- Dragged widget gets a shadow and slight scale increase
+- Drop target shows a highlighted bar
+- Hidden widgets show as dimmed with strikethrough
+- Real-time preview of layout changes
 
-2. Add legend item for follow-ups in the header
+### Implementation Details
 
 **File: `src/pages/Dashboard.tsx`**
 
-1. Import and use leads data:
+1. Create a new `DashboardCustomizer` component (can be inline or separate file)
+2. Use Sheet/Drawer component for the customization panel
+3. Replace the inline controls with the panel
+4. Add proper touch event handlers for mobile drag
+5. Improve auto-scroll with smooth easing
+
+**New State:**
 ```typescript
-const { leads } = useLeadsDB();
+const [customizePanelOpen, setCustomizePanelOpen] = useState(false);
+const [tempWidgets, setTempWidgets] = useState<WidgetConfig[]>([]); // Preview state
 ```
 
-2. Pass leads to smart scheduler:
+**Size Dropdown:**
 ```typescript
-const { tasksByDate, ... } = useSmartScheduler({
-  // ... existing
-  leads: leads.map(l => ({
-    id: l.id,
-    business_name: l.business_name,
-    next_follow_up: l.next_follow_up,
-    status: l.status,
-    priority: l.priority,
-  })),
-});
+<Select value={widget.size} onValueChange={(size) => updateWidgetSize(widget.id, size)}>
+  <SelectTrigger className="w-24">
+    <SelectValue />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="sm">⅓ Small</SelectItem>
+    <SelectItem value="md">½ Half</SelectItem>
+    <SelectItem value="lg">⅔ Large</SelectItem>
+    <SelectItem value="full">Full</SelectItem>
+  </SelectContent>
+</Select>
 ```
 
----
-
-## Part 2: Advanced Dashboard Grid Layout & Customization
-
-### Current Problems
-1. Widgets stack vertically only - no side-by-side placement
-2. Dragging doesn't auto-scroll the page
-3. Layout doesn't adapt well to different screen sizes
-
-### Solution Architecture
-
-Implement a responsive grid system where:
-- Widgets have configurable sizes (small, medium, large, full-width)
-- Small/medium widgets can sit side-by-side
-- Drag-and-drop auto-scrolls the viewport
-- Layout persists with size preferences
-
-### New Widget Configuration
-
+**Visibility Toggle:**
 ```typescript
-type WidgetSize = 'sm' | 'md' | 'lg' | 'full';
-
-interface WidgetConfig {
-  id: WidgetId;
-  label: string;
-  visible: boolean;
-  size: WidgetSize;  // NEW
-}
-
-// Size to grid column span mapping
-const SIZE_TO_COLS = {
-  sm: 'md:col-span-4',      // 1/3 width on desktop
-  md: 'md:col-span-6',      // 1/2 width on desktop  
-  lg: 'md:col-span-8',      // 2/3 width on desktop
-  full: 'md:col-span-12',   // Full width
-};
+<button onClick={() => toggleVisibility(widget.id)}>
+  {widget.visible ? (
+    <Eye className="h-5 w-5 text-foreground" />
+  ) : (
+    <EyeOff className="h-5 w-5 text-muted-foreground" />
+  )}
+</button>
 ```
 
-### Default Widget Sizes
-
-| Widget | Default Size | Rationale |
-|--------|-------------|-----------|
-| Primary Stats | full | 4 cards need full width |
-| Weekly Calendar | full | 7-day calendar needs full width |
-| Restock Reminders | md | Compact list, pairs well |
-| Maintenance | md | Compact list, pairs well |
-| Leads Pipeline | md | Summary stats, pairs well |
-| All-Time Summary | sm | Small data cards |
-| Top Locations | sm | Short list |
-| Low Stock Alerts | sm | Alert list |
-| Recent Transactions | md | Transaction list |
-| Quick Actions | full | 4 action buttons |
-
-### Layout Grid Structure
-
-```tsx
-<div className="grid grid-cols-12 gap-4">
-  {widgets.map(widget => (
-    <div className={cn(
-      "col-span-12",           // Mobile: always full width
-      SIZE_TO_COLS[widget.size] // Desktop: configurable
-    )}>
-      {renderWidget(widget)}
-    </div>
-  ))}
-</div>
-```
-
-### Auto-Scroll During Drag
-
-Implement viewport scrolling when dragging near edges:
-
+**Better Auto-Scroll:**
 ```typescript
-const handleDrag = (e: React.DragEvent) => {
-  const scrollThreshold = 100; // pixels from edge
-  const scrollSpeed = 10;
-  
-  const { clientY } = e;
+const smoothAutoScroll = useCallback((clientY: number) => {
+  const threshold = 80;
+  const maxSpeed = 20;
   const viewportHeight = window.innerHeight;
   
-  if (clientY < scrollThreshold) {
-    // Near top - scroll up
-    window.scrollBy(0, -scrollSpeed);
-  } else if (clientY > viewportHeight - scrollThreshold) {
-    // Near bottom - scroll down
-    window.scrollBy(0, scrollSpeed);
+  let speed = 0;
+  if (clientY < threshold) {
+    // Ease-in as you get closer to edge
+    speed = -maxSpeed * (1 - clientY / threshold);
+  } else if (clientY > viewportHeight - threshold) {
+    speed = maxSpeed * (1 - (viewportHeight - clientY) / threshold);
   }
-};
-```
-
-### Size Selector in Customize Mode
-
-Add a size toggle button next to visibility toggle:
-
-```tsx
-{isCustomizing && (
-  <div className="absolute -top-2 -left-2 z-10 flex items-center gap-1 bg-background border rounded-lg shadow-lg p-1">
-    <GripVertical className="h-4 w-4" /> {/* Drag handle */}
-    <button onClick={() => toggleVisibility(widget.id)}>
-      {widget.visible ? <Eye /> : <EyeOff />}
-    </button>
-    <button onClick={() => cycleSize(widget.id)}>
-      <Maximize2 className="h-4 w-4" />
-    </button>
-    <span className="text-xs px-2">
-      {widget.label} ({widget.size})
-    </span>
-  </div>
-)}
-```
-
-### Size Cycling Logic
-
-```typescript
-const cycleSize = (id: WidgetId) => {
-  const sizeOrder: WidgetSize[] = ['sm', 'md', 'lg', 'full'];
-  setWidgets(prev => prev.map(w => {
-    if (w.id !== id) return w;
-    const currentIndex = sizeOrder.indexOf(w.size);
-    const nextIndex = (currentIndex + 1) % sizeOrder.length;
-    return { ...w, size: sizeOrder[nextIndex] };
-  }));
-};
+  
+  if (speed !== 0) {
+    window.scrollBy({ top: speed, behavior: 'instant' });
+  }
+}, []);
 ```
 
 ---
 
-## Files to Modify
+## Files to Modify/Create
 
 | File | Changes |
 |------|---------|
-| `src/hooks/useSmartScheduler.ts` | Add followup task type and leads input |
-| `src/components/dashboard/WeeklyCalendarWidget.tsx` | Add followup icon/color, update legend |
-| `src/pages/Dashboard.tsx` | Grid layout, auto-scroll, size config, leads integration |
-| `src/hooks/useUserPreferences.ts` | Update WidgetConfig interface with size |
+| `src/pages/Auth.tsx` | Add show/hide password toggles, forgot password link, email reset UI |
+| `src/pages/ResetPassword.tsx` | **NEW** - Password reset page after email link |
+| `src/pages/Settings.tsx` | Add show/hide password toggles to security section |
+| `src/App.tsx` | Add `/reset-password` route |
+| `src/contexts/AuthContext.tsx` | Add `resetPasswordForEmail` function |
+| `src/pages/Dashboard.tsx` | Redesign customization with panel, dropdown sizes, better drag UX |
 
 ---
 
 ## Implementation Order
 
-1. **Add lead follow-ups to scheduler** - Quick integration
-2. **Update WeeklyCalendarWidget** - Add new task type styling
-3. **Pass leads to Dashboard scheduler** - Wire up the data
-4. **Implement grid layout** - Replace vertical stack with 12-column grid
-5. **Add widget size configuration** - Add size property and cycling
-6. **Implement auto-scroll** - Smooth scrolling during drag
-7. **Update customize UI** - Size selector and improved controls
-8. **Persist size preferences** - Save to localStorage with layout
+1. **Show/Hide Password Toggles** - Quick wins for Auth.tsx and Settings.tsx
+2. **Forgot Password Link & Email Form** - Update Auth.tsx with reset email request
+3. **Reset Password Page** - Create new page and route
+4. **AuthContext Update** - Add reset function
+5. **Dashboard Panel Component** - Create the slide-out customization panel
+6. **Size Dropdown** - Replace cycle button with select dropdown
+7. **Improved Drag UX** - Better visual feedback and smooth scrolling
+8. **Touch Support** - Ensure mobile drag works smoothly
 
 ---
 
-## Visual Preview
+## Technical Notes
 
-### Before (Vertical Stack)
-```text
-+------------------------------------------+
-|          Primary Stats (full)            |
-+------------------------------------------+
-|          Weekly Calendar (full)          |
-+------------------------------------------+
-|          Restock Reminders               |
-+------------------------------------------+
-|          Maintenance                     |
-+------------------------------------------+
-```
+### Password Reset Security
+- Uses Supabase's built-in `resetPasswordForEmail` which sends a secure one-time link
+- Recovery tokens are handled automatically by Supabase
+- The `/reset-password` route detects the recovery session from URL hash/params
 
-### After (Grid Layout)
-```text
-+------------------------------------------+
-|          Primary Stats (full)            |
-+------------------------------------------+
-|          Weekly Calendar (full)          |
-+------------------------------------------+
-|    Restock (md)    |    Maintenance (md) |
-+--------------------+---------------------+
-|  All-Time (sm)  | Top Loc (sm) | Alerts (sm)|
-+-----------------+--------------+------------+
-|    Recent Transactions (md)   | Leads (md) |
-+-------------------------------+------------+
-|          Quick Actions (full)            |
-+------------------------------------------+
-```
+### Dashboard Customization UX
+- Changes are applied in real-time for immediate feedback
+- Auto-saves to localStorage on every change
+- Reset button restores factory defaults
+- Panel closes automatically when clicking "Done"
 
----
-
-## Weekly Calendar with Follow-ups
-
-### Updated Legend
-```text
-This Week
-[●] Restock  [●] Route  [●] Maintenance  [●] Follow-up
-```
-
-### Calendar Cell Example
-```text
-+-------------+
-|   Wed       |
-|    12       |
-+-------------+
-| [📍] Joe's  |  <- Restock (blue)
-| [🛣] Route1 |  <- Route (purple)
-| [👥] Pizza  |  <- Lead Follow-up (amber)
-+-------------+
-```
-
----
-
-## Technical Considerations
-
-### CSS Grid Responsiveness
-- Mobile: All widgets span 12 columns (full width)
-- Tablet (md): Widgets respect their size setting
-- Desktop (lg): Same as tablet with more breathing room
-
-### Drag Auto-Scroll
-- Uses `requestAnimationFrame` for smooth scrolling
-- Scroll speed increases when closer to edge
-- Stops when drag ends
-
-### localStorage Schema Update
-```typescript
-interface SavedWidgetConfig {
-  id: string;
-  visible: boolean;
-  size: 'sm' | 'md' | 'lg' | 'full';
-}
-```
-
-### Migration for Existing Users
-When loading saved layout, if `size` is missing, apply default sizes based on widget ID.
-
+### Accessibility
+- Password visibility toggles include aria-labels
+- Keyboard navigation for all controls
+- Focus management in the customization panel
