@@ -22,6 +22,7 @@ import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import ReportIssue from "./pages/ReportIssue";
+ import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -221,6 +222,8 @@ const App: React.FC = () => {
                 <Route path="/report/:locationSlug/:unitCode" element={<ReportIssue />} />
                 {/* Legacy UUID route for existing QR codes - e.g., /m/77ad0e7c-8304-4dbf-9506-6085d8148255 */}
                 <Route path="/m/:machineId" element={<ReportIssue />} />
+               {/* Password reset route - public, handles recovery token */}
+               <Route path="/reset-password" element={<ResetPassword />} />
                 {/* All other routes go through AuthProvider */}
                 <Route path="/*" element={<ProtectedAppRoutes />} />
               </Routes>
