@@ -4,6 +4,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { slugify, generateUnitCode } from "@/utils/slugify";
 
+// Parse date-only strings (YYYY-MM-DD) as local dates to avoid timezone shifts
+const parseDateOnly = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 export interface CommissionSummaryRecord {
   id: string;
   locationId: string;
@@ -460,7 +466,7 @@ export function useLocations() {
       // Delete revenue entries that match this commission payout
       // Match by: type = expense, category = Commission Payout, amount = commission_amount, date close to end_date
       if (summary) {
-        const endDate = new Date(summary.end_date);
+        const endDate = parseDateOnly(summary.end_date);
         const startSearch = new Date(endDate);
         startSearch.setDate(startSearch.getDate() - 1);
         const endSearch = new Date(endDate);
