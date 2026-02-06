@@ -74,7 +74,7 @@ export default function Dashboard() {
   const { items: inventoryItems, isLoaded: inventoryLoaded, refetch: refetchInventory } = useInventory();
   const { routes, isLoaded: routesLoaded, refetch: refetchRoutes } = useRoutes();
   const { schedules, isLoaded: schedulesLoaded, refetch: refetchSchedules } = useUserSchedules();
-  const { reports: maintenanceReports } = useMaintenanceReports();
+  const { reports: maintenanceReports, isLoaded: maintenanceLoaded } = useMaintenanceReports();
   const { leads } = useLeadsDB();
   
   // Smart scheduler for calendar and reminders - now includes leads
@@ -170,7 +170,7 @@ export default function Dashboard() {
     setWidgets(DEFAULT_WIDGET_ORDER);
   };
 
-  const isLoaded = locationsLoaded && entriesLoaded && inventoryLoaded && layoutLoaded && routesLoaded && schedulesLoaded;
+  const isLoaded = locationsLoaded && entriesLoaded && inventoryLoaded && layoutLoaded && routesLoaded && schedulesLoaded && maintenanceLoaded;
 
   // Calculate this month's revenue data
   const now = new Date();

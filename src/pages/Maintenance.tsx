@@ -241,6 +241,7 @@ export default function Maintenance() {
     inProgressReports,
     resolvedReports,
     isLoaded,
+    error,
     updateReport,
     deleteReport,
     refetch,
@@ -308,6 +309,27 @@ export default function Maintenance() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading maintenance reports...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6 pb-24 md:pb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Maintenance Reports</h1>
+          <p className="text-muted-foreground">Manage and track machine issues reported by customers</p>
+        </div>
+        <Card className="glass-card border-destructive/30">
+          <CardContent className="py-12 text-center">
+            <AlertTriangle className="h-12 w-12 mx-auto mb-3 text-destructive" />
+            <p className="font-medium text-destructive">Failed to Load Reports</p>
+            <p className="text-sm text-muted-foreground mb-4">{error}</p>
+            <Button onClick={refetch} variant="outline">
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

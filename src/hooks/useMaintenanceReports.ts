@@ -26,29 +26,34 @@ export function useMaintenanceReports() {
   const [reports, setReports] = useState<MaintenanceReport[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchReports = useCallback(async () => {
     if (!user) {
       setReports([]);
       setIsLoaded(true);
+      setError(null);
       return;
     }
 
     setIsLoading(true);
+    setError(null);
     try {
-      const { data, error } = await supabase
+      // Use regular joins (not !inner) to handle orphaned reports gracefully
+      const { data, error: fetchError } = await supabase
         .from("maintenance_reports")
         .select(`
           *,
-          location_machines!inner(
+          location_machines(
             machine_type,
             custom_label,
-            locations!inner(name)
+            locations(name)
           )
         `)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
 
       const formattedReports: MaintenanceReport[] = (data || []).map((report: any) => ({
         id: report.id,
@@ -63,14 +68,16 @@ export function useMaintenanceReports() {
         resolution_notes: report.resolution_notes,
         created_at: report.created_at,
         resolved_at: report.resolved_at,
-        machine_type: report.location_machines?.machine_type,
+        // Handle orphaned reports gracefully with fallbacks
+        machine_type: report.location_machines?.machine_type || "Unknown Machine",
         machine_label: report.location_machines?.custom_label,
-        location_name: report.location_machines?.locations?.name,
+        location_name: report.location_machines?.locations?.name || "Unknown Location",
       }));
 
       setReports(formattedReports);
-    } catch (error) {
-      console.error("Error fetching maintenance reports:", error);
+    } catch (err: any) {
+      console.error("Error fetching maintenance reports:", err);
+      setError(err?.message || "Failed to load maintenance reports");
     } finally {
       setIsLoaded(true);
       setIsLoading(false);
@@ -131,6 +138,7 @@ export function useMaintenanceReports() {
     resolvedReports,
     isLoaded,
     isLoading,
+    error,
     refetch: fetchReports,
     updateReport,
     deleteReport,
