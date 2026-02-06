@@ -5,14 +5,27 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useMileage } from "@/hooks/useMileageDB";
 import { useLocations } from "@/hooks/useLocationsDB";
 import { useVehicles } from "@/hooks/useVehiclesDB";
+import { useActiveTrip } from "@/hooks/useActiveTrip";
+import { useMileage, IRS_MILEAGE_RATE } from "@/hooks/useMileageDB";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Car, AlertTriangle } from "lucide-react";
+import { Loader2, Car, AlertTriangle, Play, CheckCircle, Trash2, MapPin, Clock } from "lucide-react";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
 import { LocationSelector, LocationSelection, getLocationDisplayString } from "@/components/mileage/LocationSelector";
 import { useNavigate } from "react-router-dom";
+import { format, formatDistanceToNow } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface QuickMileageFormProps {
   onSuccess: () => void;
@@ -30,9 +43,10 @@ const tripPurposes = [
 
 export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
   const navigate = useNavigate();
-  const { addEntry } = useMileage();
   const { activeLocations } = useLocations();
   const { vehicles, updateVehicleOdometer, getVehicleById } = useVehicles();
+  const { activeTrip, startTrip, completeTrip, discardTrip, updateTrip } = useActiveTrip();
+  const { refetch: refetchMileage } = useMileage();
   const { settings } = useAppSettings();
   
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
@@ -43,15 +57,6 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
   const [purpose, setPurpose] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Calculate miles from odometer readings
-  const startNum = parseFloat(odometerStart) || 0;
-  const endNum = parseFloat(odometerEnd) || 0;
-  const calculatedMiles = startNum && endNum && endNum > startNum ? endNum - startNum : null;
-  const isEndLessThanStart = odometerEnd && odometerStart && endNum <= startNum;
-  const isLargeJump = calculatedMiles !== null && calculatedMiles > 500;
-  
-  const selectedVehicle = selectedVehicleId ? getVehicleById(selectedVehicleId) : undefined;
   
   // Build warehouse address from settings
   const warehouseAddress = [
@@ -66,8 +71,16 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
     onSuccess(); // Close the sheet
   };
 
-  const handleSubmit = async () => {
-    // Validation
+  // For active trip completion
+  const activeTripVehicle = activeTrip ? getVehicleById(activeTrip.vehicleId) : undefined;
+  const activeEndNum = parseFloat(odometerEnd) || 0;
+  const activeCalculatedMiles = activeTrip && activeEndNum > activeTrip.odometerStart 
+    ? activeEndNum - activeTrip.odometerStart 
+    : 0;
+  const activeEstimatedDeduction = activeCalculatedMiles * IRS_MILEAGE_RATE;
+  const isActiveEndValid = activeTrip && activeEndNum > activeTrip.odometerStart;
+
+  const handleStartTrip = async () => {
     if (!selectedVehicleId) {
       toast({ title: "Vehicle Required", description: "Please select a vehicle.", variant: "destructive" });
       return;
@@ -86,56 +99,201 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       return;
     }
     
-    if (!odometerStart || !odometerEnd) {
-      toast({ title: "Odometer Required", description: "Enter both odometer readings.", variant: "destructive" });
+    if (!odometerStart) {
+      toast({ title: "Start Odometer Required", description: "Enter your current odometer reading.", variant: "destructive" });
       return;
     }
     
     const startVal = parseFloat(odometerStart);
-    const endVal = parseFloat(odometerEnd);
-    
-    if (isNaN(startVal) || isNaN(endVal) || endVal <= startVal) {
-      toast({ title: "Invalid Range", description: "End must be greater than start.", variant: "destructive" });
+    if (isNaN(startVal)) {
+      toast({ title: "Invalid Reading", description: "Please enter a valid odometer number.", variant: "destructive" });
       return;
     }
     
-    const milesToLog = endVal - startVal;
     const locationId = toSelection.type === "location" ? toSelection.locationId : undefined;
 
     setIsSubmitting(true);
     try {
-      const result = await addEntry({
-        date: new Date(),
+      const result = await startTrip({
+        vehicleId: selectedVehicleId,
         startLocation: startLocationStr,
         endLocation: endLocationStr,
         locationId,
-        miles: milesToLog,
-        purpose: purpose || "",
-        isRoundTrip: false,
-        notes: notes || "",
-        vehicleId: selectedVehicleId,
         odometerStart: startVal,
-        odometerEnd: endVal,
+        purpose: purpose || "Business Trip",
+        notes: notes || "",
+        trackingMode: "odometer",
       });
       
-      // Update vehicle's last recorded odometer
-      if (result && selectedVehicleId) {
-        await updateVehicleOdometer(selectedVehicleId, endVal);
+      if (result) {
+        toast({ 
+          title: "Trip Started!", 
+          description: "Enter end odometer when you arrive." 
+        });
+        // Reset form but keep sheet open to show active trip
+        setOdometerStart("");
+        setOdometerEnd("");
+        setPurpose("");
+        setNotes("");
       }
-      
-      toast({ 
-        title: "Trip logged!", 
-        description: `${milesToLog.toFixed(1)} miles recorded.` 
-      });
-      onSuccess();
     } catch (error) {
-      toast({ title: "Error", description: "Failed to log trip.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to start trip.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const isFormValid = selectedVehicleId && odometerStart && odometerEnd && !isEndLessThanStart;
+  const handleCompleteTrip = async () => {
+    if (!activeTrip || !isActiveEndValid) return;
+
+    setIsSubmitting(true);
+    try {
+      const success = await completeTrip({ odometerEnd: activeEndNum });
+      
+      if (success && activeTrip.vehicleId) {
+        await updateVehicleOdometer(activeTrip.vehicleId, activeEndNum);
+        refetchMileage();
+        onSuccess();
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to complete trip.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDiscardTrip = async () => {
+    setIsSubmitting(true);
+    await discardTrip();
+    setOdometerEnd("");
+    setIsSubmitting(false);
+  };
+
+  // If there's an active trip, show completion UI
+  if (activeTrip && activeTrip.trackingMode === "odometer") {
+    return (
+      <div className="space-y-4">
+        {/* Active Trip Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+            <span className="font-semibold text-foreground">Active Trip</span>
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Discard Trip?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete this in-progress trip.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDiscardTrip} className="bg-destructive text-destructive-foreground">
+                  Discard
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+
+        {/* Trip Details */}
+        <div className="p-4 rounded-lg bg-muted/30 space-y-2">
+          <div className="flex items-center gap-2 text-sm">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">To:</span>
+            <span className="font-medium">{activeTrip.endLocation}</span>
+          </div>
+          
+          <div className="flex items-center gap-2 text-sm">
+            <Car className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Vehicle:</span>
+            <span className="font-medium">{activeTripVehicle?.name || "Unknown"}</span>
+          </div>
+          
+          <div className="flex items-center gap-2 text-sm">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Started:</span>
+            <span className="font-medium">
+              {format(activeTrip.startedAt, "h:mm a")} ({formatDistanceToNow(activeTrip.startedAt, { addSuffix: true })})
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground ml-6">Start Odometer:</span>
+            <Badge variant="outline" className="font-mono">
+              {activeTrip.odometerStart.toLocaleString()}
+            </Badge>
+          </div>
+        </div>
+
+        {/* End Odometer Input */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">End Odometer *</Label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            placeholder="Enter current odometer..."
+            value={odometerEnd}
+            onChange={(e) => setOdometerEnd(e.target.value)}
+            className="h-14 text-xl font-semibold text-center"
+            onFocus={(e) => e.target.select()}
+          />
+        </div>
+
+        {/* Validation Warning */}
+        {odometerEnd && !isActiveEndValid && (
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+            <span>End must be greater than start ({activeTrip.odometerStart.toLocaleString()})</span>
+          </div>
+        )}
+
+        {/* Calculated Results */}
+        {activeCalculatedMiles > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-lg bg-primary/10 text-center">
+              <p className="text-xs text-muted-foreground mb-1">Miles</p>
+              <p className="text-2xl font-bold text-foreground">{activeCalculatedMiles.toFixed(1)}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-green-500/10 text-center">
+              <p className="text-xs text-muted-foreground mb-1">Est. Deduction</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                ${activeEstimatedDeduction.toFixed(2)}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Complete Button */}
+        <Button
+          onClick={handleCompleteTrip}
+          disabled={!isActiveEndValid || isSubmitting}
+          className="w-full h-14 text-lg font-semibold"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              Completing...
+            </>
+          ) : (
+            <>
+              <CheckCircle className="h-5 w-5 mr-2" />
+              Complete Trip
+            </>
+          )}
+        </Button>
+      </div>
+    );
+  }
+
+  // No active trip - show start trip form
+  const selectedVehicle = selectedVehicleId ? getVehicleById(selectedVehicleId) : undefined;
 
   return (
     <div className="space-y-4">
@@ -193,58 +351,22 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
         warehouseAddress={warehouseAddress}
       />
 
-      {/* Odometer Inputs */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Start Odometer *</Label>
-          <Input
-            type="number"
-            inputMode="numeric"
-            placeholder="e.g., 45276"
-            value={odometerStart}
-            onChange={(e) => setOdometerStart(e.target.value)}
-            className="h-14 text-xl font-semibold text-center"
-            onFocus={(e) => e.target.select()}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">End Odometer *</Label>
-          <Input
-            type="number"
-            inputMode="numeric"
-            placeholder="e.g., 45322"
-            value={odometerEnd}
-            onChange={(e) => setOdometerEnd(e.target.value)}
-            className="h-14 text-xl font-semibold text-center"
-            onFocus={(e) => e.target.select()}
-          />
-        </div>
+      {/* Start Odometer */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Start Odometer *</Label>
+        <Input
+          type="number"
+          inputMode="numeric"
+          placeholder="e.g., 45276"
+          value={odometerStart}
+          onChange={(e) => setOdometerStart(e.target.value)}
+          className="h-14 text-xl font-semibold text-center"
+          onFocus={(e) => e.target.select()}
+        />
+        <p className="text-xs text-muted-foreground">
+          Enter your current reading. You'll add the end reading when you arrive.
+        </p>
       </div>
-
-      {/* Calculated Miles Display */}
-      {calculatedMiles !== null && calculatedMiles > 0 && (
-        <div className="flex items-center justify-between p-4 rounded-lg bg-primary/10 border border-primary/20">
-          <span className="text-sm font-medium">Calculated Miles</span>
-          <Badge className="text-lg font-bold px-4 py-1">
-            {calculatedMiles.toFixed(1)} mi
-          </Badge>
-        </div>
-      )}
-
-      {/* Validation Warnings */}
-      {isEndLessThanStart && (
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
-          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-          <span>End must be greater than start</span>
-        </div>
-      )}
-      
-      {isLargeJump && !isEndLessThanStart && (
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-sm">
-          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-          <span>Large distance - verify readings</span>
-        </div>
-      )}
 
       {/* Purpose */}
       <div className="space-y-2">
@@ -274,21 +396,28 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
         />
       </div>
 
-      {/* Submit Button */}
+      {/* Start Trip Button */}
       <Button
-        onClick={handleSubmit}
-        disabled={isSubmitting || !isFormValid}
+        onClick={handleStartTrip}
+        disabled={isSubmitting || !selectedVehicleId || !odometerStart}
         className="w-full h-14 text-lg font-semibold"
       >
         {isSubmitting ? (
           <>
             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            Logging...
+            Starting...
           </>
         ) : (
-          "Log Trip"
+          <>
+            <Play className="h-5 w-5 mr-2" />
+            Start Trip
+          </>
         )}
       </Button>
+
+      <p className="text-xs text-center text-muted-foreground">
+        Trip will be saved. Return here to enter your end odometer when done.
+      </p>
     </div>
   );
 }

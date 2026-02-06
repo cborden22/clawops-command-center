@@ -39,6 +39,7 @@ export function useMileage() {
         .from("mileage_entries")
         .select("*")
         .eq("user_id", user.id)
+        .eq("status", "completed") // Only fetch completed entries for history
         .order("date", { ascending: false });
 
       if (error) throw error;
