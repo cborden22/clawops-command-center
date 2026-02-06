@@ -191,7 +191,7 @@ async function sendEmailNotification(
   `;
 
   await resend.emails.send({
-    from: "ClawOps <noreply@clawops.io>",
+    from: "ClawOps <noreply@clawops.com>",
     to: [ownerEmail],
     subject: `🔧 ${severityInfo.label} Priority: ${issueLabel} - ${machineLabel} at ${machineInfo.location_name}`,
     html: emailHtml,
