@@ -191,6 +191,16 @@ export default function Settings() {
       return;
     }
 
+    // Prevent setting the same password
+    if (currentPassword === newPassword) {
+      toast({
+        title: "Same Password",
+        description: "New password must be different from your current password.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsUpdatingPassword(true);
     try {
       // First verify the current password
