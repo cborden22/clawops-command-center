@@ -41,14 +41,15 @@ export default function Settings() {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   
   
-  // Security state
-  const [currentPassword, setCurrentPassword] = useState("");
+  // Security state - OTP flow
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-   const [showNewPassword, setShowNewPassword] = useState(false);
-   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Load profile from user metadata
   useEffect(() => {
@@ -147,8 +148,11 @@ export default function Settings() {
     const message = error?.message?.toLowerCase() || "";
     const code = error?.code || "";
     
-    if (message.includes("invalid login") || message.includes("invalid credentials")) {
-      return "Invalid current password. Please try again.";
+    if (message.includes("invalid") && message.includes("otp")) {
+      return "Invalid verification code. Please check and try again.";
+    }
+    if (message.includes("expired")) {
+      return "Verification code expired. Please request a new one.";
     }
     if (message.includes("same_password") || code === "same_password" || message.includes("different")) {
       return "New password must be different from your current password.";
@@ -156,29 +160,18 @@ export default function Settings() {
     if (message.includes("weak_password") || message.includes("too weak")) {
       return "Password is too weak. Please choose a stronger password.";
     }
-    if (message.includes("reauthentication") || code === "reauthentication_needed") {
-      return "Please try logging out and back in, then update your password.";
-    }
     if (message.includes("password")) {
       return "Password update failed. Please try again.";
     }
     return "An error occurred. Please try again.";
   };
 
-  const handleUpdatePassword = async () => {
-    if (!currentPassword) {
-      toast({
-        title: "Current Password Required",
-        description: "Please enter your current password to verify your identity.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  // Request OTP for password change
+  const handleRequestOtp = async () => {
     if (!newPassword || !confirmPassword) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all password fields.",
+        title: "Enter New Password",
+        description: "Please enter your new password before requesting a code.",
         variant: "destructive",
       });
       return;
@@ -202,11 +195,33 @@ export default function Settings() {
       return;
     }
 
-    // Prevent setting the same password
-    if (currentPassword === newPassword) {
+    setIsSendingOtp(true);
+    try {
+      const { error } = await supabase.auth.reauthenticate();
+      if (error) throw error;
+      
+      setOtpSent(true);
       toast({
-        title: "Same Password",
-        description: "New password must be different from your current password.",
+        title: "Code Sent",
+        description: "Check your email for a 6-digit verification code.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to Send Code",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  // Update password with OTP nonce
+  const handleUpdatePassword = async () => {
+    if (!otpCode || otpCode.length < 6) {
+      toast({
+        title: "Enter Verification Code",
+        description: "Please enter the 6-digit code from your email.",
         variant: "destructive",
       });
       return;
@@ -214,45 +229,18 @@ export default function Settings() {
 
     setIsUpdatingPassword(true);
     try {
-      // First verify the current password
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
-        email: user?.email || "",
-        password: currentPassword,
-      });
-
-      if (verifyError) {
-        toast({
-          title: "Verification Failed",
-          description: "Invalid current password. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Small delay to ensure session is fully updated after signIn
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Current password verified, now update to new password
       const { error } = await supabase.auth.updateUser({
-        password: newPassword
+        password: newPassword,
+        nonce: otpCode
       });
 
-      if (error) {
-        // Check for specific error types
-        if (error.message?.includes("same_password") || error.message?.includes("different")) {
-          toast({
-            title: "Password Error",
-            description: "New password must be different from your current password.",
-            variant: "destructive",
-          });
-          return;
-        }
-        throw error;
-      }
+      if (error) throw error;
 
-      setCurrentPassword("");
+      // Success - clear all fields
       setNewPassword("");
       setConfirmPassword("");
+      setOtpCode("");
+      setOtpSent(false);
       
       toast({
         title: "Password Updated",
@@ -630,84 +618,122 @@ export default function Settings() {
                 Password
               </CardTitle>
               <CardDescription>
-                Update your password to keep your account secure
+                Update your password using email verification
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="currentPassword">Current Password</Label>
-                 <div className="relative">
-                <Input
-                  id="currentPassword"
-                   type={showCurrentPassword ? "text" : "password"}
-                  placeholder="Enter current password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                   className="pr-10"
-                />
-                   <button
-                     type="button"
-                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                     aria-label={showCurrentPassword ? "Hide password" : "Show password"}
-                   >
-                     {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                   </button>
-                 </div>
-              </div>
-
+              {/* Step 1: New Password Fields */}
               <div className="space-y-2">
                 <Label htmlFor="newPassword">New Password</Label>
-                 <div className="relative">
-                <Input
-                  id="newPassword"
-                   type={showNewPassword ? "text" : "password"}
-                  placeholder="Enter new password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                   className="pr-10"
-                />
-                   <button
-                     type="button"
-                     onClick={() => setShowNewPassword(!showNewPassword)}
-                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                     aria-label={showNewPassword ? "Hide password" : "Show password"}
-                   >
-                     {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                   </button>
-                 </div>
+                <div className="relative">
+                  <Input
+                    id="newPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    placeholder="Enter new password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="pr-10"
+                    disabled={otpSent}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={showNewPassword ? "Hide password" : "Show password"}
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                 <div className="relative">
-                <Input
-                  id="confirmPassword"
-                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirm new password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                   className="pr-10"
-                />
-                   <button
-                     type="button"
-                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                     aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                   >
-                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                   </button>
-                 </div>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pr-10"
+                    disabled={otpSent}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
-              <Button 
-                className="gap-2" 
-                onClick={handleUpdatePassword}
-                disabled={isUpdatingPassword}
-              >
-                <Shield className="h-4 w-4" />
-                {isUpdatingPassword ? "Updating..." : "Update Password"}
-              </Button>
+              {/* Step 2: Request Code Button */}
+              {!otpSent && (
+                <Button 
+                  className="gap-2 w-full" 
+                  onClick={handleRequestOtp}
+                  disabled={isSendingOtp || !newPassword || !confirmPassword}
+                >
+                  <Key className="h-4 w-4" />
+                  {isSendingOtp ? "Sending Code..." : "Request Verification Code"}
+                </Button>
+              )}
+
+              {/* Step 3: OTP Input (shown after code is sent) */}
+              {otpSent && (
+                <>
+                  <Separator />
+                  <div className="space-y-2">
+                    <Label htmlFor="otpCode">Verification Code</Label>
+                    <Input
+                      id="otpCode"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      placeholder="Enter 6-digit code from email"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                      className="text-center text-lg tracking-widest"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Check your email ({user?.email}) for the code
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setOtpSent(false);
+                        setOtpCode("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      className="flex-1 gap-2" 
+                      onClick={handleUpdatePassword}
+                      disabled={isUpdatingPassword || otpCode.length < 6}
+                    >
+                      <Shield className="h-4 w-4" />
+                      {isUpdatingPassword ? "Updating..." : "Update Password"}
+                    </Button>
+                  </div>
+
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full text-muted-foreground"
+                    onClick={handleRequestOtp}
+                    disabled={isSendingOtp}
+                  >
+                    {isSendingOtp ? "Sending..." : "Resend Code"}
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
 
