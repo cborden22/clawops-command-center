@@ -47,6 +47,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ListSizeSelector, useListSize, applyListLimit, ListSize } from "@/components/shared/ListSizeSelector";
 
 const RESTOCK_FREQUENCY_OPTIONS = [
   { value: "none", label: "No Schedule", days: null },
@@ -95,6 +96,7 @@ export function LocationTrackerComponent() {
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [formData, setFormData] = useState(emptyFormData);
   const [viewLocation, setViewLocation] = useState<Location | null>(null);
+  const [locationsListSize, setLocationsListSize] = useListSize("locations-list-size", 20);
 
   const filteredLocations = locations.filter(
     (loc) =>
@@ -673,10 +675,10 @@ export function LocationTrackerComponent() {
         </CardHeader>
 
         <CardContent className="p-6">
-          {/* Search */}
+          {/* Search and List Size */}
           {locations.length > 0 && (
-            <div className="mb-6">
-              <div className="relative max-w-md">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+              <div className="relative max-w-md flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search locations..."
@@ -685,6 +687,12 @@ export function LocationTrackerComponent() {
                   className="pl-9 h-10 bg-background/50"
                 />
               </div>
+              <ListSizeSelector
+                storageKey="locations-list-size"
+                value={locationsListSize}
+                onChange={setLocationsListSize}
+                totalCount={filteredLocations.length}
+              />
             </div>
           )}
 
@@ -720,7 +728,7 @@ export function LocationTrackerComponent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredLocations.map((location) => (
+                  {applyListLimit(filteredLocations, locationsListSize).map((location) => (
                     <TableRow key={location.id} className="group transition-colors">
                       <TableCell>
                         <div>

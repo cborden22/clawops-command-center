@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -5,6 +6,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,8 +45,10 @@ import {
   TrendingDown,
   Minus,
   Trash2,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
-import { Location, MACHINE_TYPE_OPTIONS, CommissionSummaryRecord, LocationAgreementRecord } from "@/hooks/useLocationsDB";
+import { Location, MACHINE_TYPE_OPTIONS, CommissionSummaryRecord, LocationAgreementRecord, useLocations } from "@/hooks/useLocationsDB";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { generatePDFFromHTML } from "@/utils/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +65,8 @@ export function LocationDetailDialog({
   onOpenChange,
 }: LocationDetailDialogProps) {
   const { toast } = useToast();
+  const { deleteCommissionSummary } = useLocations();
+  const [deletingCommissionId, setDeletingCommissionId] = useState<string | null>(null);
   const {
     getCollectionsForLocation,
     calculateMachineStats,
@@ -70,6 +86,18 @@ export function LocationDetailDialog({
   const locationCollections = getCollectionsForLocation(location.id);
   const collectionCount = locationCollections.length;
   const locationStats = calculateLocationStats(location.id);
+
+  const handleDeleteCommission = async (summaryId: string) => {
+    setDeletingCommissionId(summaryId);
+    const success = await deleteCommissionSummary(summaryId);
+    setDeletingCommissionId(null);
+    if (success) {
+      toast({
+        title: "Commission Deleted",
+        description: "The commission summary and related expense have been removed.",
+      });
+    }
+  };
 
   const printCommissionSummary = (summary: CommissionSummaryRecord) => {
     const currentDate = new Date().toLocaleDateString();
@@ -845,6 +873,48 @@ export function LocationDetailDialog({
                             <Printer className="h-3.5 w-3.5 mr-1" />
                             Print
                           </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                disabled={deletingCommissionId === summary.id}
+                              >
+                                {deletingCommissionId === summary.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="flex items-center gap-2">
+                                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                                  Delete Commission Summary?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="space-y-2">
+                                  <p>
+                                    Are you sure you want to delete this commission summary for <strong>{format(new Date(summary.startDate), "MMM d")} - {format(new Date(summary.endDate), "MMM d, yyyy")}</strong>?
+                                  </p>
+                                  <p className="text-destructive font-medium">
+                                    This will also delete the associated ${summary.commissionAmount.toFixed(2)} expense entry from your Revenue Tracker.
+                                  </p>
+                                  <p className="text-xs">This action cannot be undone.</p>
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteCommission(summary.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete Commission
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
 

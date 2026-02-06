@@ -444,6 +444,60 @@ export function useLocations() {
     }
   };
 
+  const deleteCommissionSummary = async (summaryId: string): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      // First, find and delete the related revenue entry (commission payout expense)
+      const { data: summary, error: fetchError } = await supabase
+        .from("commission_summaries")
+        .select("*")
+        .eq("id", summaryId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Delete revenue entries that match this commission payout
+      // Match by: type = expense, category = Commission Payout, amount = commission_amount, date close to end_date
+      if (summary) {
+        const endDate = new Date(summary.end_date);
+        const startSearch = new Date(endDate);
+        startSearch.setDate(startSearch.getDate() - 1);
+        const endSearch = new Date(endDate);
+        endSearch.setDate(endSearch.getDate() + 1);
+
+        await supabase
+          .from("revenue_entries")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("type", "expense")
+          .eq("category", "Commission Payout")
+          .eq("amount", summary.commission_amount)
+          .gte("date", startSearch.toISOString())
+          .lte("date", endSearch.toISOString());
+      }
+
+      // Delete the commission summary
+      const { error } = await supabase
+        .from("commission_summaries")
+        .delete()
+        .eq("id", summaryId);
+
+      if (error) throw error;
+
+      await fetchLocations();
+      return true;
+    } catch (error: any) {
+      console.error("Error deleting commission summary:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete commission summary.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   const addAgreement = async (locationId: string, agreement: Omit<LocationAgreementRecord, "id" | "locationId" | "createdAt">) => {
     if (!user) return null;
 
@@ -493,6 +547,7 @@ export function useLocations() {
     deleteLocation,
     getLocationById,
     addCommissionSummary,
+    deleteCommissionSummary,
     addAgreement,
     refetch: fetchLocations,
   };
