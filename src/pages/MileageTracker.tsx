@@ -223,10 +223,15 @@ const MileageTracker = () => {
       return;
     }
     
-    if (!endLocationStr) {
-      toast({ title: "To Required", description: "Please select or enter a destination.", variant: "destructive" });
+    // If no route is selected, destination is required
+    if (!selectedRouteId && !endLocationStr) {
+      toast({ title: "To Required", description: "Please select a route or enter a destination.", variant: "destructive" });
       return;
     }
+    
+    // If route is selected, use route name as destination if To is empty
+    const selectedRoute = selectedRouteId ? routes.find(r => r.id === selectedRouteId) : null;
+    const finalEndLocation = endLocationStr || (selectedRoute ? `${selectedRoute.name} (Route)` : "");
     
     if (!odometerStart) {
       toast({ title: "Start Odometer Required", description: "Please enter your current odometer reading.", variant: "destructive" });
@@ -245,7 +250,7 @@ const MileageTracker = () => {
     const result = await startTrip({
       vehicleId: selectedVehicleId,
       startLocation: startLocationStr,
-      endLocation: endLocationStr,
+      endLocation: finalEndLocation,
       locationId,
       odometerStart: startVal,
       purpose: purpose.trim() || "Business Trip",
@@ -270,10 +275,20 @@ const MileageTracker = () => {
     const startLocationStr = getLocationDisplayString(fromSelection, activeLocations, warehouseAddress);
     const endLocationStr = getLocationDisplayString(toSelection, activeLocations, warehouseAddress);
     
-    if (!startLocationStr || !endLocationStr) {
-      toast({ title: "Locations Required", description: "Please select from and to locations.", variant: "destructive" });
+    if (!startLocationStr) {
+      toast({ title: "From Required", description: "Please select or enter a start location.", variant: "destructive" });
       return;
     }
+    
+    // If no route is selected, destination is required
+    if (!selectedRouteId && !endLocationStr) {
+      toast({ title: "To Required", description: "Please select a route or enter a destination.", variant: "destructive" });
+      return;
+    }
+    
+    // If route is selected, use route name as destination if To is empty
+    const selectedRoute = selectedRouteId ? routes.find(r => r.id === selectedRouteId) : null;
+    const finalEndLocation = endLocationStr || (selectedRoute ? `${selectedRoute.name} (Route)` : "");
     
     const locationId = toSelection.type === "location" ? toSelection.locationId : undefined;
     
@@ -281,7 +296,7 @@ const MileageTracker = () => {
     const result = await startTrip({
       vehicleId: selectedVehicleId,
       startLocation: startLocationStr,
-      endLocation: endLocationStr,
+      endLocation: finalEndLocation,
       locationId,
       odometerStart: 0, // GPS mode doesn't use odometer
       purpose: purpose.trim() || "Business Trip",
@@ -349,10 +364,15 @@ const MileageTracker = () => {
       return;
     }
     
-    if (!endLocationStr) {
-      toast({ title: "To Required", description: "Please select or enter a destination.", variant: "destructive" });
+    // If no route is selected, destination is required
+    if (!selectedRouteId && !endLocationStr) {
+      toast({ title: "To Required", description: "Please select a route or enter a destination.", variant: "destructive" });
       return;
     }
+    
+    // If route is selected, use route name as destination if To is empty
+    const selectedRoute = selectedRouteId ? routes.find(r => r.id === selectedRouteId) : null;
+    const finalEndLocation = endLocationStr || (selectedRoute ? `${selectedRoute.name} (Route)` : "");
     
     if (!odometerStart || !odometerEnd) {
       toast({ title: "Odometer Required", description: "Please enter both odometer readings.", variant: "destructive" });
@@ -380,7 +400,7 @@ const MileageTracker = () => {
     const result = await addEntry({
       date: tripDate,
       startLocation: startLocationStr,
-      endLocation: endLocationStr,
+      endLocation: finalEndLocation,
       locationId,
       miles: milesToLog,
       purpose: purpose.trim(),
