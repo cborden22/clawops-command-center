@@ -268,6 +268,13 @@ All colors MUST be HSL.
   .mobile-safe-top {
     padding-top: env(safe-area-inset-top, 0px);
   }
+
+  .mobile-safe-all {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+  }
   
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
@@ -286,10 +293,49 @@ All colors MUST be HSL.
     overscroll-behavior-y: contain;
   }
 
+  /* Enhanced scroll momentum for all scroll containers */
+  .scroll-smooth-momentum {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
   /* Sheet/dialog scroll optimization */
   .sheet-scroll-content {
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
     overscroll-behavior-y: contain;
+  }
+}
+
+/* Mobile Touch Targets & Form Controls */
+@media (max-width: 768px) {
+  /* Larger form controls on mobile for better touch targets */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    min-height: 48px;
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+  }
+
+  /* Button press feedback - remove default tap highlight */
+  button,
+  [role="button"],
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Ensure tabs have proper touch targets */
+  [role="tab"] {
+    min-height: 44px;
+  }
+}
+
+/* iOS input zoom prevention */
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
   }
 }
