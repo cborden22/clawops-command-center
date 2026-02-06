@@ -1,211 +1,125 @@
 
+## Goal (what you’re asking)
+Fix the *commission PDF timeframe* so that when you choose presets like **Last Month** or **This Month**, the PDF shows the correct month range (e.g., **Jan 1 – Jan 31**) and does not shift to **Dec 31 – Jan 31**.
 
-## Add Route Selection to Quick Mileage Form
-
-This plan adds the ability to select a saved route in the Quick Add mileage form on mobile, matching the functionality available on the full mileage tracker page. When a route is selected, it auto-populates the From and To locations and makes the To field optional.
-
----
-
-## Current State
-
-The **QuickMileageForm** currently:
-- Allows selecting a vehicle
-- Has From/To location selectors (manual entry)
-- Supports both Odometer and GPS tracking modes
-- Requires both From and To locations
-
-The **MileageTracker page** has a `RouteQuickSelector` component that:
-- Shows saved routes in a dropdown
-- Auto-populates From (first stop) and To (last stop) when a route is selected
-- Makes the "To" location optional when a route is selected
-- Sets the purpose to the route name
+This is a date parsing/formatting issue caused by treating date-only strings like full timestamps (timezone shift).
 
 ---
 
-## Solution
+## What’s happening (root cause)
+There are two different “paths” that can produce/print a commission PDF:
 
-Add the `RouteQuickSelector` component to the QuickMileageForm with the same behavior as the main mileage tracker page.
+1) **CommissionSummaryGenerator page** (`src/components/CommissionSummaryGenerator.tsx`)
+- Presets set `startDate/endDate` as JS `Date` objects.
+- When saving to the backend, it currently uses `toISOString()` which stores full timestamps (UTC).
+- “This Month” preset currently sets end date to **today**, not end of month.
 
----
+2) **Printing from a Location’s commission history** (`src/components/LocationDetailDialog.tsx`) — you’re on `/locations`
+- Commission summary records come back as **date-only strings** (`"YYYY-MM-DD"`).
+- The code uses `new Date("YYYY-MM-DD")`, which is interpreted as **UTC midnight**, then converted to local time for display.
+- In many timezones, that becomes the **previous calendar day**, causing “Jan 1” to show as **Dec 31**.
 
-## Implementation Details
-
-### Changes to QuickMileageForm.tsx
-
-**1. Add new imports:**
-```typescript
-import { useRoutes, MileageRoute, RouteStop } from "@/hooks/useRoutesDB";
-import { RouteQuickSelector } from "@/components/mileage/RouteQuickSelector";
-```
-
-**2. Add routes hook and state:**
-```typescript
-const { routes } = useRoutes();
-const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
-```
-
-**3. Add helper function to convert route stops to location selections:**
-```typescript
-const stopToLocationSelection = (stop: RouteStop): LocationSelection => {
-  if (stop.locationId) {
-    return { type: "location", locationId: stop.locationId };
-  }
-  
-  const customName = stop.customLocationName || "";
-  
-  // Check if this stop represents the warehouse
-  if (customName === warehouseAddress || 
-      customName.toLowerCase().includes("warehouse") ||
-      customName.toLowerCase() === "starting point") {
-    return { type: "warehouse" };
-  }
-  
-  return { type: "custom", customName };
-};
-```
-
-**4. Add route selection handler:**
-```typescript
-const handleRouteSelect = (route: MileageRoute | null) => {
-  if (!route) {
-    setSelectedRouteId(null);
-    return;
-  }
-  
-  setSelectedRouteId(route.id);
-  
-  // Auto-populate From and To from first and last stops
-  const firstStop = route.stops[0];
-  const lastStop = route.stops[route.stops.length - 1];
-  
-  if (firstStop) {
-    setFromSelection(stopToLocationSelection(firstStop));
-  }
-  
-  if (lastStop) {
-    setToSelection(stopToLocationSelection(lastStop));
-  }
-  
-  // Set purpose to route name
-  setPurpose(route.name);
-};
-```
-
-**5. Add handlers to clear route when From/To manually changed:**
-```typescript
-const handleFromChange = (selection: LocationSelection) => {
-  setFromSelection(selection);
-  if (selectedRouteId) setSelectedRouteId(null);
-};
-
-const handleToChange = (selection: LocationSelection) => {
-  setToSelection(selection);
-  if (selectedRouteId) setSelectedRouteId(null);
-};
-```
-
-**6. Update validation in `handleStartTrip` and `handleStartGpsTracking`:**
-```typescript
-// If no route is selected, destination is required
-if (!selectedRouteId && !endLocationStr) {
-  toast({ title: "To Required", description: "Please select a route or enter a destination." });
-  return;
-}
-
-// If route is selected, use route name as destination if To is empty
-const selectedRoute = selectedRouteId ? routes.find(r => r.id === selectedRouteId) : null;
-const finalEndLocation = endLocationStr || (selectedRoute ? `${selectedRoute.name} (Route)` : "");
-```
-
-**7. Update resetForm to clear route selection:**
-```typescript
-const resetForm = () => {
-  setOdometerStart("");
-  setOdometerEnd("");
-  setPurpose("");
-  setNotes("");
-  setToSelection({ type: "location" });
-  setSelectedRouteId(null);  // Add this
-};
-```
-
-**8. Add RouteQuickSelector to the form UI (after TrackingModeSelector):**
-```tsx
-{/* Route Quick Selector */}
-{routes.length > 0 && (
-  <RouteQuickSelector
-    routes={routes}
-    selectedRouteId={selectedRouteId}
-    onSelectRoute={handleRouteSelect}
-    locations={activeLocations}
-    warehouseAddress={warehouseAddress}
-  />
-)}
-```
-
-**9. Update LocationSelector usage to use the new handlers:**
-```tsx
-<LocationSelector
-  type="from"
-  value={fromSelection}
-  onChange={handleFromChange}  // Changed from setFromSelection
-  locations={activeLocations}
-  warehouseAddress={warehouseAddress}
-/>
-
-<LocationSelector
-  type="to"
-  value={toSelection}
-  onChange={handleToChange}  // Changed from setToSelection
-  locations={activeLocations}
-  warehouseAddress={warehouseAddress}
-/>
-```
+So even if the stored value is correct, the UI/PDF output becomes wrong due to timezone conversion.
 
 ---
 
-## Files to Modify
+## Fix strategy (simple + correct)
+### A) Always parse date-only strings as local calendar dates
+Create a small helper (in-place in the files we touch) like:
 
-| File | Changes |
-|------|---------|
-| `src/components/mobile/QuickMileageForm.tsx` | Add route selection, auto-population, and updated validation |
+- If value is `"YYYY-MM-DD"`:
+  - parse into `new Date(year, monthIndex, day)` (local time), not `new Date(string)`
+
+This guarantees “Jan 1” stays “Jan 1” in every timezone.
+
+### B) Store commission summary dates as date-only strings
+When saving commission summaries, store:
+- `start_date = format(date, "yyyy-MM-dd")`
+- `end_date = format(date, "yyyy-MM-dd")`
+
+This matches how the database is typed (string/date-like) and avoids timestamp drift.
+
+### C) Adjust “This Month” preset to match your expectation
+Update `setThisMonth()` so end date is:
+- `endOfMonth(today)`
+not today’s date, so “This Month” prints the full month range.
 
 ---
 
-## User Experience Flow
+## Concrete code changes (by file)
 
-1. User opens Quick Add sheet and taps "Mileage" tab
-2. If saved routes exist, a "Quick Start from Route" selector appears
-3. User selects a route → From/To auto-populate, Purpose set to route name
-4. User can still manually change From/To (this clears the route selection)
-5. Start Trip/GPS Tracking works as before, but "To" is now optional if a route is selected
+### 1) `src/components/LocationDetailDialog.tsx`
+**Change all usages of:**
+- `new Date(summary.startDate)` and `new Date(summary.endDate)`
+
+**To:**
+- a safe `parseDateOnly(summary.startDate)` / `parseDateOnly(summary.endDate)`
+
+This affects:
+- `periodText` in `printCommissionSummary`
+- the PDF filename date
+- the visible date range in the commissions list UI
+- the delete warning date range text
+
+**Expected result:**
+Commission PDFs and UI dates printed from `/locations` show correct month boundaries.
 
 ---
 
-## Visual Layout (After Implementation)
+### 2) `src/components/CommissionSummaryGenerator.tsx`
+**Preset fix:**
+- `setThisMonth()` should set:
+  - `startDate = startOfMonth(today)`
+  - `endDate = endOfMonth(today)`  
+So “This Month” means the full month, not “month-to-date”.
 
-```
-[ Odometer | GPS ]                    ← Tracking Mode
+**Saving fix:**
+When calling `addCommissionSummary(...)`, instead of:
+- `startDate: locationData.startDate.toISOString()`
+- `endDate: locationData.endDate.toISOString()`
 
-┌─ Quick Start from Route ────────────┐
-│  🗺 Select a saved route...         ▼│
-│                                      │
-│  Route stops: Warehouse → Shop A →  │
-│  Est. 12.4 miles [Round Trip]       │
-└──────────────────────────────────────┘
+Use:
+- `startDate: format(locationData.startDate, "yyyy-MM-dd")`
+- `endDate: format(locationData.endDate, "yyyy-MM-dd")`
 
-[ Vehicle Selector ]
+**Expected result:**
+Newly created commission summaries will store stable, timezone-safe dates and print correctly everywhere.
 
-[ From Location ]    ← Auto-filled from route
+---
 
-[ To Location ]      ← Auto-filled from route
+### 3) `src/hooks/useLocationsDB.ts`
+In `deleteCommissionSummary(...)` (cascade delete logic):
+- It currently does `new Date(summary.end_date)` for matching related revenue entries.
+- If `summary.end_date` is date-only, we should parse it with the same date-only parsing helper to avoid off-by-one day windows (which can cause the revenue entry match/delete to miss).
 
-[ Start Odometer ]   ← (odometer mode only)
+**Expected result:**
+Commission deletion continues to reliably delete the linked revenue tracker expense even across timezones.
 
-[ Purpose ]          ← Auto-filled with route name
+---
 
-[ Notes (Optional) ]
+## QA checklist (how we’ll verify)
+1) Go to **Commission Summary** page:
+   - Click **Last Month**
+   - Confirm it shows `Jan 01 - Jan 31` (for January example) in the period display and in the PDF.
+2) Click **This Month**
+   - Confirm it shows `Feb 01 - Feb 29` (or `Feb 28`) depending on year, not `Feb 01 - today`.
+3) Go to **Locations → open a location → Commissions**
+   - Print an existing commission summary (previously saved)
+   - Confirm it prints `Jan 01 - Jan 31` (no Dec 31)
+4) Delete a commission summary:
+   - Confirm warning shows correct period
+   - Confirm linked Revenue Tracker expense is removed as expected.
 
-[ Start Trip / Start GPS Tracking ]
-```
+---
 
+## Scope boundaries (what we are NOT changing)
+- No changes to the commission math or payout amounts
+- No changes to the “Generated on” text
+- Only fixing the **period/timeframe shown** and the underlying date parsing/saving so it’s always accurate
+
+---
+
+## Files we will modify
+- `src/components/LocationDetailDialog.tsx`
+- `src/components/CommissionSummaryGenerator.tsx`
+- `src/hooks/useLocationsDB.ts`
