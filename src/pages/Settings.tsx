@@ -145,8 +145,19 @@ export default function Settings() {
 
   const getSafeErrorMessage = (error: Error | any): string => {
     const message = error?.message?.toLowerCase() || "";
+    const code = error?.code || "";
+    
     if (message.includes("invalid login") || message.includes("invalid credentials")) {
       return "Invalid current password. Please try again.";
+    }
+    if (message.includes("same_password") || code === "same_password" || message.includes("different")) {
+      return "New password must be different from your current password.";
+    }
+    if (message.includes("weak_password") || message.includes("too weak")) {
+      return "Password is too weak. Please choose a stronger password.";
+    }
+    if (message.includes("reauthentication") || code === "reauthentication_needed") {
+      return "Please try logging out and back in, then update your password.";
     }
     if (message.includes("password")) {
       return "Password update failed. Please try again.";
@@ -218,12 +229,26 @@ export default function Settings() {
         return;
       }
 
+      // Small delay to ensure session is fully updated after signIn
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Current password verified, now update to new password
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
 
-      if (error) throw error;
+      if (error) {
+        // Check for specific error types
+        if (error.message?.includes("same_password") || error.message?.includes("different")) {
+          toast({
+            title: "Password Error",
+            description: "New password must be different from your current password.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw error;
+      }
 
       setCurrentPassword("");
       setNewPassword("");
