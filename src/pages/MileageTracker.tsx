@@ -33,6 +33,8 @@ import { LocationSelector, LocationSelection, getLocationDisplayString } from "@
 import { TrackingModeSelector, TrackingMode } from "@/components/mileage/TrackingModeSelector";
 import { ActiveTripCard } from "@/components/mileage/ActiveTripCard";
 import { GpsTracker } from "@/components/mileage/GpsTracker";
+import { RouteQuickSelector } from "@/components/mileage/RouteQuickSelector";
+import { MileageRoute, RouteStop } from "@/hooks/useRoutesDB";
 import { useNavigate } from "react-router-dom";
 
 type FilterPeriod = 
@@ -88,6 +90,9 @@ const MileageTracker = () => {
   const [odometerEnd, setOdometerEnd] = useState("");
   const [purpose, setPurpose] = useState("");
   const [notes, setNotes] = useState("");
+  
+  // Route template quick-start state
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [isStartingTrip, setIsStartingTrip] = useState(false);
   
   // Filter state
@@ -131,6 +136,26 @@ const MileageTracker = () => {
     navigate("/settings");
   };
 
+  // Helper to convert a route stop to LocationSelection
+  const stopToLocationSelection = (
+    stop: RouteStop
+  ): LocationSelection => {
+    if (stop.locationId) {
+      return { type: "location", locationId: stop.locationId };
+    }
+    
+    const customName = stop.customLocationName || "";
+    
+    // Check if this stop represents the warehouse
+    if (customName === warehouseAddress || 
+        customName.toLowerCase().includes("warehouse") ||
+        customName.toLowerCase() === "starting point") {
+      return { type: "warehouse" };
+    }
+    
+    return { type: "custom", customName };
+  };
+
   const resetForm = () => {
     setOdometerStart("");
     setOdometerEnd("");
@@ -138,7 +163,49 @@ const MileageTracker = () => {
     setNotes("");
     setToSelection({ type: "location" });
     setIsGpsTracking(false);
+    setSelectedRouteId(null);
     // Keep vehicle and from selection for convenience
+  };
+
+  // Handle From selection change - clears route if user manually changes
+  const handleFromChange = (selection: LocationSelection) => {
+    setFromSelection(selection);
+    if (selectedRouteId) {
+      setSelectedRouteId(null);
+    }
+  };
+
+  // Handle To selection change - clears route if user manually changes
+  const handleToChange = (selection: LocationSelection) => {
+    setToSelection(selection);
+    if (selectedRouteId) {
+      setSelectedRouteId(null);
+    }
+  };
+
+  // Handle route selection from quick selector
+  const handleRouteSelect = (route: MileageRoute | null) => {
+    if (!route) {
+      setSelectedRouteId(null);
+      return;
+    }
+    
+    setSelectedRouteId(route.id);
+    
+    // Get first and last stops
+    const firstStop = route.stops[0];
+    const lastStop = route.stops[route.stops.length - 1];
+    
+    if (firstStop) {
+      setFromSelection(stopToLocationSelection(firstStop));
+    }
+    
+    if (lastStop) {
+      setToSelection(stopToLocationSelection(lastStop));
+    }
+    
+    // Set purpose to route name
+    setPurpose(route.name);
   };
 
   // Start a new in-progress trip (for manual mode)
@@ -573,9 +640,9 @@ const MileageTracker = () => {
     toast({ title: "Export Complete", description: `Exported ${filteredEntries.length} trips to CSV.` });
   };
 
-  const handleUseRoute = (route: { name: string }) => {
+  const handleUseRoute = (route: MileageRoute) => {
     setActiveTab("log");
-    setPurpose(route.name);
+    handleRouteSelect(route);
   };
 
   if (!locationsLoaded || !mileageLoaded || !routesLoaded || !vehiclesLoaded) {
@@ -756,11 +823,20 @@ const MileageTracker = () => {
                         )}
                       </div>
 
+                      {/* Route Quick Selector */}
+                      <RouteQuickSelector
+                        routes={routes}
+                        selectedRouteId={selectedRouteId}
+                        onSelectRoute={handleRouteSelect}
+                        locations={activeLocations}
+                        warehouseAddress={warehouseAddress}
+                      />
+
                       {/* From Location */}
                       <LocationSelector
                         type="from"
                         value={fromSelection}
-                        onChange={setFromSelection}
+                        onChange={handleFromChange}
                         locations={activeLocations}
                         warehouseAddress={warehouseAddress}
                       />
@@ -769,7 +845,7 @@ const MileageTracker = () => {
                       <LocationSelector
                         type="to"
                         value={toSelection}
-                        onChange={setToSelection}
+                        onChange={handleToChange}
                         locations={activeLocations}
                         warehouseAddress={warehouseAddress}
                       />
