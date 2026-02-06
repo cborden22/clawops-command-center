@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, ChevronDown, Car, BarChart3, Wrench, Users } from "lucide-react"
+import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, ChevronDown, Car, BarChart3, Wrench, Users, UsersRound } from "lucide-react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import {
@@ -44,6 +44,10 @@ const financialsItems = [
   { title: "Agreement Generator", url: "/documents", icon: FileText },
 ]
 
+const managementItems = [
+  { title: "Team", url: "/team", icon: UsersRound },
+]
+
 export function AppSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -52,16 +56,19 @@ export function AppSidebar() {
   // Check if current route is in a group
   const isInOperations = operationsItems.some(item => location.pathname === item.url)
   const isInFinancials = financialsItems.some(item => location.pathname === item.url)
+  const isInManagement = managementItems.some(item => location.pathname === item.url)
 
   // State for collapsible groups - auto-expand if contains active route
   const [operationsOpen, setOperationsOpen] = useState(isInOperations)
   const [financialsOpen, setFinancialsOpen] = useState(isInFinancials)
+  const [managementOpen, setManagementOpen] = useState(isInManagement)
 
   // Auto-expand when navigating to a route in a group
   useEffect(() => {
     if (isInOperations) setOperationsOpen(true)
     if (isInFinancials) setFinancialsOpen(true)
-  }, [isInOperations, isInFinancials])
+    if (isInManagement) setManagementOpen(true)
+  }, [isInOperations, isInFinancials, isInManagement])
 
   const handleSignOut = async () => {
     await signOut()
@@ -188,6 +195,23 @@ export function AppSidebar() {
               <CollapsibleContent className="space-y-1">
                 <SidebarGroupContent className="space-y-2">
                   {financialsItems.map(renderNavItem)}
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+
+          {/* Management Group */}
+          <SidebarGroup>
+            <Collapsible open={managementOpen} onOpenChange={setManagementOpen}>
+              <CollapsibleTrigger asChild>
+                <button className="flex items-center justify-between w-full px-2 py-2 text-xs font-semibold text-gold-500 hover:text-gold-400 transition-colors">
+                  <span>Management</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${managementOpen ? 'rotate-0' : '-rotate-90'}`} />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-1">
+                <SidebarGroupContent className="space-y-2">
+                  {managementItems.map(renderNavItem)}
                 </SidebarGroupContent>
               </CollapsibleContent>
             </Collapsible>
