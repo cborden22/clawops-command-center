@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,10 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   CalendarIcon, Plus, Trash2, Car, Route, DollarSign,
-  Download, Sparkles, TrendingUp, AlertTriangle, Pencil, ChevronDown, ChevronRight
+  Download, Sparkles, TrendingUp, AlertTriangle, Pencil, ChevronDown, ChevronRight,
+  Navigation, Play
 } from "lucide-react";
 import { 
   format, subDays, startOfMonth, endOfMonth, isWithinInterval, 
@@ -27,8 +27,12 @@ import { useMileage, IRS_MILEAGE_RATE, MileageEntry } from "@/hooks/useMileageDB
 import { useRoutes } from "@/hooks/useRoutesDB";
 import { useVehicles } from "@/hooks/useVehiclesDB";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
+import { useActiveTrip } from "@/hooks/useActiveTrip";
 import { RouteManager } from "@/components/mileage/RouteManager";
 import { LocationSelector, LocationSelection, getLocationDisplayString } from "@/components/mileage/LocationSelector";
+import { TrackingModeSelector, TrackingMode } from "@/components/mileage/TrackingModeSelector";
+import { ActiveTripCard } from "@/components/mileage/ActiveTripCard";
+import { GpsTracker } from "@/components/mileage/GpsTracker";
 import { useNavigate } from "react-router-dom";
 
 type FilterPeriod = 
@@ -57,10 +61,23 @@ const tripPurposes = [
 const MileageTracker = () => {
   const navigate = useNavigate();
   const { activeLocations, isLoaded: locationsLoaded } = useLocations();
-  const { entries, addEntry, updateEntry, deleteEntry, calculateTotals, isLoaded: mileageLoaded } = useMileage();
+  const { entries, addEntry, updateEntry, deleteEntry, calculateTotals, isLoaded: mileageLoaded, refetch: refetchMileage } = useMileage();
   const { routes, addRoute, updateRoute, deleteRoute, isLoaded: routesLoaded } = useRoutes();
   const { vehicles, updateVehicleOdometer, getVehicleById, isLoaded: vehiclesLoaded } = useVehicles();
   const { settings } = useAppSettings();
+  const { 
+    activeTrip, 
+    isLoading: activeTripLoading, 
+    startTrip, 
+    updateTrip, 
+    completeTrip, 
+    discardTrip,
+    refetch: refetchActiveTrip 
+  } = useActiveTrip();
+  
+  // Tracking mode state
+  const [trackingMode, setTrackingMode] = useState<TrackingMode>("odometer");
+  const [isGpsTracking, setIsGpsTracking] = useState(false);
   
   // Form state - odometer only
   const [tripDate, setTripDate] = useState<Date>(new Date());
@@ -71,6 +88,7 @@ const MileageTracker = () => {
   const [odometerEnd, setOdometerEnd] = useState("");
   const [purpose, setPurpose] = useState("");
   const [notes, setNotes] = useState("");
+  const [isStartingTrip, setIsStartingTrip] = useState(false);
   
   // Filter state
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("thisMonth");
@@ -119,7 +137,134 @@ const MileageTracker = () => {
     setPurpose("");
     setNotes("");
     setToSelection({ type: "location" });
+    setIsGpsTracking(false);
     // Keep vehicle and from selection for convenience
+  };
+
+  // Start a new in-progress trip (for manual mode)
+  const handleStartTrip = async () => {
+    if (!selectedVehicleId) {
+      toast({ title: "Vehicle Required", description: "Please select a vehicle.", variant: "destructive" });
+      return;
+    }
+    
+    const startLocationStr = getLocationDisplayString(fromSelection, activeLocations, warehouseAddress);
+    const endLocationStr = getLocationDisplayString(toSelection, activeLocations, warehouseAddress);
+    
+    if (!startLocationStr) {
+      toast({ title: "From Required", description: "Please select or enter a start location.", variant: "destructive" });
+      return;
+    }
+    
+    if (!endLocationStr) {
+      toast({ title: "To Required", description: "Please select or enter a destination.", variant: "destructive" });
+      return;
+    }
+    
+    if (!odometerStart) {
+      toast({ title: "Start Odometer Required", description: "Please enter your current odometer reading.", variant: "destructive" });
+      return;
+    }
+    
+    const startVal = parseFloat(odometerStart);
+    if (isNaN(startVal)) {
+      toast({ title: "Invalid Reading", description: "Please enter a valid odometer number.", variant: "destructive" });
+      return;
+    }
+    
+    const locationId = toSelection.type === "location" ? toSelection.locationId : undefined;
+    
+    setIsStartingTrip(true);
+    const result = await startTrip({
+      vehicleId: selectedVehicleId,
+      startLocation: startLocationStr,
+      endLocation: endLocationStr,
+      locationId,
+      odometerStart: startVal,
+      purpose: purpose.trim() || "Business Trip",
+      notes: notes.trim(),
+      trackingMode: "odometer",
+    });
+    
+    if (result) {
+      toast({ title: "Trip Started", description: "Enter end odometer when you arrive." });
+      resetForm();
+    }
+    setIsStartingTrip(false);
+  };
+
+  // Start GPS tracking mode
+  const handleStartGpsTracking = async () => {
+    if (!selectedVehicleId) {
+      toast({ title: "Vehicle Required", description: "Please select a vehicle.", variant: "destructive" });
+      return;
+    }
+    
+    const startLocationStr = getLocationDisplayString(fromSelection, activeLocations, warehouseAddress);
+    const endLocationStr = getLocationDisplayString(toSelection, activeLocations, warehouseAddress);
+    
+    if (!startLocationStr || !endLocationStr) {
+      toast({ title: "Locations Required", description: "Please select from and to locations.", variant: "destructive" });
+      return;
+    }
+    
+    const locationId = toSelection.type === "location" ? toSelection.locationId : undefined;
+    
+    // Start the trip first
+    const result = await startTrip({
+      vehicleId: selectedVehicleId,
+      startLocation: startLocationStr,
+      endLocation: endLocationStr,
+      locationId,
+      odometerStart: 0, // GPS mode doesn't use odometer
+      purpose: purpose.trim() || "Business Trip",
+      notes: notes.trim(),
+      trackingMode: "gps",
+    });
+    
+    if (result) {
+      setIsGpsTracking(true);
+    }
+  };
+
+  // Handle GPS tracking completion
+  const handleGpsComplete = async (data: {
+    distanceMiles: number;
+    gpsDistanceMeters: number;
+    startLat?: number;
+    startLng?: number;
+    endLat?: number;
+    endLng?: number;
+  }) => {
+    const success = await completeTrip({
+      gpsDistanceMeters: data.gpsDistanceMeters,
+      gpsEndLat: data.endLat,
+      gpsEndLng: data.endLng,
+    });
+    
+    if (success) {
+      setIsGpsTracking(false);
+      resetForm();
+      refetchMileage();
+    }
+  };
+
+  // Handle active trip completion (manual mode)
+  const handleCompleteActiveTrip = async (odometerEnd: number): Promise<boolean> => {
+    const success = await completeTrip({ odometerEnd });
+    if (success) {
+      refetchMileage();
+    }
+    return success;
+  };
+
+  // Handle active trip discard
+  const handleDiscardTrip = async (): Promise<boolean> => {
+    const success = await discardTrip();
+    if (success) {
+      setIsGpsTracking(false);
+    }
+    return success;
   };
 
   const handleAddEntry = async () => {
@@ -521,186 +666,243 @@ const MileageTracker = () => {
 
             {/* Log Trip Tab */}
             <TabsContent value="log" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Active Trip Card - shown if there's an in-progress trip */}
+              {activeTrip && !isGpsTracking && activeTrip.trackingMode === "odometer" && (
+                <ActiveTripCard
+                  trip={activeTrip}
+                  onComplete={handleCompleteActiveTrip}
+                  onDiscard={handleDiscardTrip}
+                  onUpdateOdometer={(odometerEnd) => updateTrip({ odometerEnd })}
+                />
+              )}
+
+              {/* GPS Tracking UI - shown when GPS tracking is active */}
+              {activeTrip && (isGpsTracking || activeTrip.trackingMode === "gps") && (
                 <Card className="glass-card overflow-hidden">
                   <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b border-border/50">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <div className="p-2 rounded-lg bg-primary/10">
-                        <Sparkles className="h-4 w-4 text-primary" />
+                        <Navigation className="h-4 w-4 text-primary" />
                       </div>
-                      Log Trip
+                      GPS Tracking
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4 pt-6">
-                    {/* Date */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Date</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start text-left font-normal">
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {format(tripDate, "PPP")}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 z-50 bg-background border border-border">
-                          <Calendar
-                            mode="single"
-                            selected={tripDate}
-                            onSelect={(date) => date && setTripDate(date)}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
+                  <CardContent className="pt-6">
+                    <GpsTracker
+                      destination={activeTrip.endLocation}
+                      onComplete={handleGpsComplete}
+                      onCancel={handleDiscardTrip}
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
-                    {/* Vehicle Selector */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Vehicle *</Label>
-                      {vehicles.length === 0 ? (
-                        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                          <p className="text-sm text-amber-600 dark:text-amber-400">
-                            No vehicles added.{" "}
-                            <Button variant="link" className="p-0 h-auto text-amber-600 dark:text-amber-400 underline" onClick={handleNavigateToSettings}>
-                              Add one in Settings
-                            </Button>
+              {/* New Trip Form - shown when no active trip */}
+              {!activeTrip && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card className="glass-card overflow-hidden">
+                    <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b border-border/50">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                        </div>
+                        Start a Trip
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4 pt-6">
+                      {/* Tracking Mode Selector */}
+                      <TrackingModeSelector
+                        value={trackingMode}
+                        onChange={setTrackingMode}
+                        disabled={isStartingTrip}
+                      />
+
+                      {/* Vehicle Selector */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Vehicle *</Label>
+                        {vehicles.length === 0 ? (
+                          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                            <p className="text-sm text-amber-600 dark:text-amber-400">
+                              No vehicles added.{" "}
+                              <Button variant="link" className="p-0 h-auto text-amber-600 dark:text-amber-400 underline" onClick={handleNavigateToSettings}>
+                                Add one in Settings
+                              </Button>
+                            </p>
+                          </div>
+                        ) : (
+                          <Select value={selectedVehicleId} onValueChange={setSelectedVehicleId}>
+                            <SelectTrigger className="h-12">
+                              <SelectValue placeholder="Select a vehicle..." />
+                            </SelectTrigger>
+                            <SelectContent className="bg-background border border-border z-50">
+                              {vehicles.map((vehicle) => (
+                                <SelectItem key={vehicle.id} value={vehicle.id}>
+                                  <div className="flex items-center gap-2">
+                                    <Car className="h-4 w-4" />
+                                    <span>{vehicle.name}</span>
+                                    {vehicle.licensePlate && (
+                                      <span className="text-muted-foreground text-xs">({vehicle.licensePlate})</span>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        {selectedVehicle?.lastRecordedOdometer !== undefined && trackingMode === "odometer" && (
+                          <p className="text-xs text-muted-foreground pl-1">
+                            Last recorded: {selectedVehicle.lastRecordedOdometer.toLocaleString()} miles
+                          </p>
+                        )}
+                      </div>
+
+                      {/* From Location */}
+                      <LocationSelector
+                        type="from"
+                        value={fromSelection}
+                        onChange={setFromSelection}
+                        locations={activeLocations}
+                        warehouseAddress={warehouseAddress}
+                      />
+
+                      {/* To Location */}
+                      <LocationSelector
+                        type="to"
+                        value={toSelection}
+                        onChange={setToSelection}
+                        locations={activeLocations}
+                        warehouseAddress={warehouseAddress}
+                      />
+
+                      {/* Start Odometer - only for manual mode */}
+                      {trackingMode === "odometer" && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Start Odometer *</Label>
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            placeholder="e.g., 45276"
+                            value={odometerStart}
+                            onChange={(e) => setOdometerStart(e.target.value)}
+                            className="h-14 text-xl font-semibold text-center"
+                            onFocus={(e) => e.target.select()}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Enter your current odometer reading. You'll enter the end reading when you complete the trip.
                           </p>
                         </div>
-                      ) : (
-                        <Select value={selectedVehicleId} onValueChange={setSelectedVehicleId}>
-                          <SelectTrigger className="h-12">
-                            <SelectValue placeholder="Select a vehicle..." />
+                      )}
+
+                      {/* Purpose */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Purpose</Label>
+                        <Select value={purpose} onValueChange={setPurpose}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select purpose..." />
                           </SelectTrigger>
                           <SelectContent className="bg-background border border-border z-50">
-                            {vehicles.map((vehicle) => (
-                              <SelectItem key={vehicle.id} value={vehicle.id}>
-                                <div className="flex items-center gap-2">
-                                  <Car className="h-4 w-4" />
-                                  <span>{vehicle.name}</span>
-                                  {vehicle.licensePlate && (
-                                    <span className="text-muted-foreground text-xs">({vehicle.licensePlate})</span>
-                                  )}
-                                </div>
-                              </SelectItem>
+                            {tripPurposes.map((p) => (
+                              <SelectItem key={p} value={p}>{p}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                      )}
-                      {selectedVehicle?.lastRecordedOdometer !== undefined && (
-                        <p className="text-xs text-muted-foreground pl-1">
-                          Last recorded: {selectedVehicle.lastRecordedOdometer.toLocaleString()} miles
-                        </p>
-                      )}
-                    </div>
+                      </div>
 
-                    {/* From Location */}
-                    <LocationSelector
-                      type="from"
-                      value={fromSelection}
-                      onChange={setFromSelection}
-                      locations={activeLocations}
-                      warehouseAddress={warehouseAddress}
-                    />
-
-                    {/* To Location */}
-                    <LocationSelector
-                      type="to"
-                      value={toSelection}
-                      onChange={setToSelection}
-                      locations={activeLocations}
-                      warehouseAddress={warehouseAddress}
-                    />
-
-                    {/* Odometer Inputs */}
-                    <div className="grid grid-cols-2 gap-4">
+                      {/* Notes */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium">Start Odometer *</Label>
-                        <Input
-                          type="number"
-                          inputMode="numeric"
-                          placeholder="e.g., 45276"
-                          value={odometerStart}
-                          onChange={(e) => setOdometerStart(e.target.value)}
-                          className="h-14 text-xl font-semibold text-center"
-                          onFocus={(e) => e.target.select()}
+                        <Label className="text-sm font-medium">Notes (optional)</Label>
+                        <Textarea
+                          placeholder="Additional details..."
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                          rows={2}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">End Odometer *</Label>
-                        <Input
-                          type="number"
-                          inputMode="numeric"
-                          placeholder="e.g., 45322"
-                          value={odometerEnd}
-                          onChange={(e) => setOdometerEnd(e.target.value)}
-                          className="h-14 text-xl font-semibold text-center"
-                          onFocus={(e) => e.target.select()}
-                        />
-                      </div>
-                    </div>
 
-                    {/* Calculated Miles Display */}
-                    {calculatedMiles !== null && calculatedMiles > 0 && (
-                      <div className="flex items-center justify-between p-4 rounded-lg bg-primary/10 border border-primary/20">
-                        <span className="text-sm font-medium">Calculated Miles</span>
-                        <Badge className="text-lg font-bold px-4 py-1">
-                          {calculatedMiles.toFixed(1)} mi
-                        </Badge>
-                      </div>
-                    )}
+                      {/* Start Trip Button */}
+                      {trackingMode === "odometer" ? (
+                        <Button 
+                          onClick={handleStartTrip} 
+                          className="w-full h-12 gap-2"
+                          disabled={!selectedVehicleId || !odometerStart || isStartingTrip}
+                        >
+                          {isStartingTrip ? (
+                            <>Starting...</>
+                          ) : (
+                            <>
+                              <Play className="h-4 w-4" />
+                              Start Trip
+                            </>
+                          )}
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={handleStartGpsTracking} 
+                          className="w-full h-12 gap-2"
+                          disabled={!selectedVehicleId}
+                        >
+                          <Navigation className="h-4 w-4" />
+                          Start GPS Tracking
+                        </Button>
+                      )}
 
-                    {/* Validation Warnings */}
-                    {isEndLessThanStart && (
-                      <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
-                        <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                        <span>End odometer must be greater than start</span>
-                      </div>
-                    )}
-                    
-                    {isLargeJump && !isEndLessThanStart && (
-                      <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-sm">
-                        <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                        <span>Large distance detected - please verify readings</span>
-                      </div>
-                    )}
+                      <p className="text-xs text-center text-muted-foreground">
+                        {trackingMode === "odometer" 
+                          ? "Your trip will be saved. Return here to enter your end odometer when done."
+                          : "GPS will track your distance automatically. Make sure location is enabled."
+                        }
+                      </p>
+                    </CardContent>
+                  </Card>
 
-                    {/* Purpose */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Purpose</Label>
-                      <Select value={purpose} onValueChange={setPurpose}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select purpose..." />
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border border-border z-50">
-                          {tripPurposes.map((p) => (
-                            <SelectItem key={p} value={p}>{p}</SelectItem>
+                  {/* Recent Trips Preview */}
+                  <Card className="glass-card">
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-primary" />
+                        Recent Trips
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {entries.filter(e => e.miles > 0).slice(0, 5).length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Car className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                          <p className="text-sm">No trips logged yet</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {entries.filter(e => e.miles > 0).slice(0, 5).map(entry => (
+                            <div 
+                              key={entry.id} 
+                              className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium">{format(entry.date, "MM/dd")}</span>
+                                  <span className="text-sm text-muted-foreground truncate">
+                                    {entry.startLocation} → {entry.endLocation}
+                                  </span>
+                                </div>
+                              </div>
+                              <Badge variant="secondary">{entry.miles.toFixed(1)} mi</Badge>
+                            </div>
                           ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                          <Button
+                            variant="ghost"
+                            className="w-full"
+                            onClick={() => setActiveTab("history")}
+                          >
+                            View All History
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
 
-                    {/* Notes */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Notes (optional)</Label>
-                      <Textarea
-                        placeholder="Additional details..."
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        rows={2}
-                      />
-                    </div>
-
-                    <Button 
-                      onClick={handleAddEntry} 
-                      className="w-full gap-2"
-                      disabled={!selectedVehicleId || !odometerStart || !odometerEnd || isEndLessThanStart}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Log Trip
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Recent Trips Preview */}
+              {/* Show recent trips when active trip exists */}
+              {activeTrip && (
                 <Card className="glass-card">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -709,41 +911,31 @@ const MileageTracker = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {entries.slice(0, 5).length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Car className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                        <p className="text-sm">No trips logged yet</p>
+                    {entries.filter(e => e.miles > 0).slice(0, 3).length === 0 ? (
+                      <div className="text-center py-6 text-muted-foreground">
+                        <p className="text-sm">No completed trips yet</p>
                       </div>
                     ) : (
-                      <div className="space-y-3">
-                        {entries.slice(0, 5).map(entry => (
+                      <div className="space-y-2">
+                        {entries.filter(e => e.miles > 0).slice(0, 3).map(entry => (
                           <div 
                             key={entry.id} 
-                            className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50"
+                            className="flex items-center justify-between p-2 rounded-lg bg-muted/30"
                           >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">{format(entry.date, "MM/dd")}</span>
-                                <span className="text-sm text-muted-foreground truncate">
-                                  {entry.startLocation} → {entry.endLocation}
-                                </span>
-                              </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="font-medium">{format(entry.date, "MM/dd")}</span>
+                              <span className="text-muted-foreground truncate max-w-[150px]">
+                                → {entry.endLocation}
+                              </span>
                             </div>
-                            <Badge variant="secondary">{entry.miles.toFixed(1)} mi</Badge>
+                            <Badge variant="secondary" className="text-xs">{entry.miles.toFixed(1)} mi</Badge>
                           </div>
                         ))}
-                        <Button
-                          variant="ghost"
-                          className="w-full"
-                          onClick={() => setActiveTab("history")}
-                        >
-                          View All History
-                        </Button>
                       </div>
                     )}
                   </CardContent>
                 </Card>
-              </div>
+              )}
             </TabsContent>
 
             {/* Routes Tab */}

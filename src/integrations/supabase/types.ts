@@ -283,8 +283,11 @@ export type Database = {
           count: number | null
           custom_label: string | null
           id: string
+          is_card_enabled: boolean | null
+          last_nayax_sync: string | null
           location_id: string
           machine_type: string
+          nayax_machine_id: string | null
           unit_code: string | null
           win_probability: number | null
         }
@@ -293,8 +296,11 @@ export type Database = {
           count?: number | null
           custom_label?: string | null
           id?: string
+          is_card_enabled?: boolean | null
+          last_nayax_sync?: string | null
           location_id: string
           machine_type: string
+          nayax_machine_id?: string | null
           unit_code?: string | null
           win_probability?: number | null
         }
@@ -303,8 +309,11 @@ export type Database = {
           count?: number | null
           custom_label?: string | null
           id?: string
+          is_card_enabled?: boolean | null
+          last_nayax_sync?: string | null
           location_id?: string
           machine_type?: string
+          nayax_machine_id?: string | null
           unit_code?: string | null
           win_probability?: number | null
         }
@@ -497,9 +506,15 @@ export type Database = {
       }
       mileage_entries: {
         Row: {
+          completed_at: string | null
           created_at: string
           date: string
           end_location: string
+          gps_distance_meters: number | null
+          gps_end_lat: number | null
+          gps_end_lng: number | null
+          gps_start_lat: number | null
+          gps_start_lng: number | null
           id: string
           is_round_trip: boolean
           location_id: string | null
@@ -510,13 +525,22 @@ export type Database = {
           purpose: string | null
           route_id: string | null
           start_location: string
+          started_at: string | null
+          status: string | null
+          tracking_mode: string | null
           user_id: string
           vehicle_id: string | null
         }
         Insert: {
+          completed_at?: string | null
           created_at?: string
           date?: string
           end_location: string
+          gps_distance_meters?: number | null
+          gps_end_lat?: number | null
+          gps_end_lng?: number | null
+          gps_start_lat?: number | null
+          gps_start_lng?: number | null
           id?: string
           is_round_trip?: boolean
           location_id?: string | null
@@ -527,13 +551,22 @@ export type Database = {
           purpose?: string | null
           route_id?: string | null
           start_location: string
+          started_at?: string | null
+          status?: string | null
+          tracking_mode?: string | null
           user_id: string
           vehicle_id?: string | null
         }
         Update: {
+          completed_at?: string | null
           created_at?: string
           date?: string
           end_location?: string
+          gps_distance_meters?: number | null
+          gps_end_lat?: number | null
+          gps_end_lng?: number | null
+          gps_start_lat?: number | null
+          gps_start_lng?: number | null
           id?: string
           is_round_trip?: boolean
           location_id?: string | null
@@ -544,6 +577,9 @@ export type Database = {
           purpose?: string | null
           route_id?: string | null
           start_location?: string
+          started_at?: string | null
+          status?: string | null
+          tracking_mode?: string | null
           user_id?: string
           vehicle_id?: string | null
         }
@@ -660,6 +696,90 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      nayax_settings: {
+        Row: {
+          created_at: string
+          id: string
+          is_connected: boolean | null
+          last_sync: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_connected?: boolean | null
+          last_sync?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_connected?: boolean | null
+          last_sync?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      nayax_transactions: {
+        Row: {
+          amount: number
+          id: string
+          machine_id: string | null
+          nayax_machine_id: string | null
+          nayax_transaction_id: string
+          payment_method: string | null
+          raw_data: Json | null
+          revenue_entry_id: string | null
+          synced_at: string
+          transaction_date: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          id?: string
+          machine_id?: string | null
+          nayax_machine_id?: string | null
+          nayax_transaction_id: string
+          payment_method?: string | null
+          raw_data?: Json | null
+          revenue_entry_id?: string | null
+          synced_at?: string
+          transaction_date: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          id?: string
+          machine_id?: string | null
+          nayax_machine_id?: string | null
+          nayax_transaction_id?: string
+          payment_method?: string | null
+          raw_data?: Json | null
+          revenue_entry_id?: string | null
+          synced_at?: string
+          transaction_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nayax_transactions_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "location_machines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nayax_transactions_revenue_entry_id_fkey"
+            columns: ["revenue_entry_id"]
+            isOneToOne: false
+            referencedRelation: "revenue_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
