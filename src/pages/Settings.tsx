@@ -203,7 +203,7 @@ export default function Settings() {
       setOtpSent(true);
       toast({
         title: "Code Sent",
-        description: "Check your email for a 6-digit verification code.",
+        description: "Check your email for an 8-digit verification code.",
       });
     } catch (error: any) {
       toast({
@@ -218,10 +218,10 @@ export default function Settings() {
 
   // Update password with OTP nonce
   const handleUpdatePassword = async () => {
-    if (!otpCode || otpCode.length < 6) {
+    if (!otpCode || otpCode.length < 8) {
       toast({
         title: "Enter Verification Code",
-        description: "Please enter the 6-digit code from your email.",
+        description: "Please enter the 8-digit code from your email.",
         variant: "destructive",
       });
       return;
@@ -691,8 +691,8 @@ export default function Settings() {
                       id="otpCode"
                       type="text"
                       inputMode="numeric"
-                      maxLength={6}
-                      placeholder="Enter 6-digit code from email"
+                      maxLength={8}
+                      placeholder="Enter 8-digit code from email"
                       value={otpCode}
                       onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
                       className="text-center text-lg tracking-widest"
@@ -716,7 +716,7 @@ export default function Settings() {
                     <Button 
                       className="flex-1 gap-2" 
                       onClick={handleUpdatePassword}
-                      disabled={isUpdatingPassword || otpCode.length < 6}
+                      disabled={isUpdatingPassword || otpCode.length < 8}
                     >
                       <Shield className="h-4 w-4" />
                       {isUpdatingPassword ? "Updating..." : "Update Password"}
