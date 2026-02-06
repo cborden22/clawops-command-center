@@ -9,12 +9,14 @@ import { useLocations } from "@/hooks/useLocationsDB";
 import { useVehicles } from "@/hooks/useVehiclesDB";
 import { useActiveTrip } from "@/hooks/useActiveTrip";
 import { useMileage, IRS_MILEAGE_RATE } from "@/hooks/useMileageDB";
+import { useRoutes, MileageRoute, RouteStop } from "@/hooks/useRoutesDB";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Car, AlertTriangle, Play, CheckCircle, Trash2, MapPin, Clock, Navigation } from "lucide-react";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
 import { LocationSelector, LocationSelection, getLocationDisplayString } from "@/components/mileage/LocationSelector";
 import { TrackingModeSelector, TrackingMode } from "@/components/mileage/TrackingModeSelector";
 import { GpsTracker } from "@/components/mileage/GpsTracker";
+import { RouteQuickSelector } from "@/components/mileage/RouteQuickSelector";
 import { useNavigate } from "react-router-dom";
 import { format, formatDistanceToNow } from "date-fns";
 import {
@@ -49,6 +51,7 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
   const { vehicles, updateVehicleOdometer, getVehicleById } = useVehicles();
   const { activeTrip, startTrip, completeTrip, discardTrip } = useActiveTrip();
   const { refetch: refetchMileage } = useMileage();
+  const { routes } = useRoutes();
   const { settings } = useAppSettings();
   
   // Tracking mode state
@@ -56,6 +59,7 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
   const [isGpsCompleting, setIsGpsCompleting] = useState(false);
   
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [fromSelection, setFromSelection] = useState<LocationSelection>({ type: "warehouse" });
   const [toSelection, setToSelection] = useState<LocationSelection>({ type: "location" });
   const [odometerStart, setOdometerStart] = useState("");
@@ -71,6 +75,60 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
     settings.warehouseState,
     settings.warehouseZip
   ].filter(Boolean).join(", ");
+  
+  // Helper to convert route stop to location selection
+  const stopToLocationSelection = (stop: RouteStop): LocationSelection => {
+    if (stop.locationId) {
+      return { type: "location", locationId: stop.locationId };
+    }
+    
+    const customName = stop.customLocationName || "";
+    
+    // Check if this stop represents the warehouse
+    if (customName === warehouseAddress || 
+        customName.toLowerCase().includes("warehouse") ||
+        customName.toLowerCase() === "starting point") {
+      return { type: "warehouse" };
+    }
+    
+    return { type: "custom", customName };
+  };
+  
+  // Route selection handler
+  const handleRouteSelect = (route: MileageRoute | null) => {
+    if (!route) {
+      setSelectedRouteId(null);
+      return;
+    }
+    
+    setSelectedRouteId(route.id);
+    
+    // Auto-populate From and To from first and last stops
+    const firstStop = route.stops[0];
+    const lastStop = route.stops[route.stops.length - 1];
+    
+    if (firstStop) {
+      setFromSelection(stopToLocationSelection(firstStop));
+    }
+    
+    if (lastStop) {
+      setToSelection(stopToLocationSelection(lastStop));
+    }
+    
+    // Set purpose to route name
+    setPurpose(route.name);
+  };
+  
+  // Handlers to clear route when From/To manually changed
+  const handleFromChange = (selection: LocationSelection) => {
+    setFromSelection(selection);
+    if (selectedRouteId) setSelectedRouteId(null);
+  };
+  
+  const handleToChange = (selection: LocationSelection) => {
+    setToSelection(selection);
+    if (selectedRouteId) setSelectedRouteId(null);
+  };
 
   const handleNavigateToSettings = () => {
     navigate("/settings");
@@ -92,6 +150,7 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
     setPurpose("");
     setNotes("");
     setToSelection({ type: "location" });
+    setSelectedRouteId(null);
   };
 
   const handleStartTrip = async () => {
@@ -108,10 +167,15 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       return;
     }
     
-    if (!endLocationStr) {
-      toast({ title: "To Required", description: "Please select or enter a destination.", variant: "destructive" });
+    // If no route is selected, destination is required
+    const selectedRoute = selectedRouteId ? routes.find(r => r.id === selectedRouteId) : null;
+    if (!selectedRouteId && !endLocationStr) {
+      toast({ title: "To Required", description: "Please select a route or enter a destination.", variant: "destructive" });
       return;
     }
+    
+    // If route is selected, use route name as destination if To is empty
+    const finalEndLocation = endLocationStr || (selectedRoute ? `${selectedRoute.name} (Route)` : "");
     
     if (!odometerStart) {
       toast({ title: "Start Odometer Required", description: "Enter your current odometer reading.", variant: "destructive" });
@@ -131,12 +195,13 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       const result = await startTrip({
         vehicleId: selectedVehicleId,
         startLocation: startLocationStr,
-        endLocation: endLocationStr,
+        endLocation: finalEndLocation,
         locationId,
         odometerStart: startVal,
         purpose: purpose || "Business Trip",
         notes: notes || "",
         trackingMode: "odometer",
+        routeId: selectedRouteId || undefined,
       });
       
       if (result) {
@@ -167,10 +232,15 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       return;
     }
     
-    if (!endLocationStr) {
-      toast({ title: "To Required", description: "Please select or enter a destination.", variant: "destructive" });
+    // If no route is selected, destination is required
+    const selectedRoute = selectedRouteId ? routes.find(r => r.id === selectedRouteId) : null;
+    if (!selectedRouteId && !endLocationStr) {
+      toast({ title: "To Required", description: "Please select a route or enter a destination.", variant: "destructive" });
       return;
     }
+    
+    // If route is selected, use route name as destination if To is empty
+    const finalEndLocation = endLocationStr || (selectedRoute ? `${selectedRoute.name} (Route)` : "");
     
     const locationId = toSelection.type === "location" ? toSelection.locationId : undefined;
 
@@ -179,12 +249,13 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       const result = await startTrip({
         vehicleId: selectedVehicleId,
         startLocation: startLocationStr,
-        endLocation: endLocationStr,
+        endLocation: finalEndLocation,
         locationId,
         odometerStart: 0, // GPS mode doesn't use odometer
         purpose: purpose || "Business Trip",
         notes: notes || "",
         trackingMode: "gps",
+        routeId: selectedRouteId || undefined,
       });
       
       if (result) {
@@ -402,6 +473,17 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
         disabled={isSubmitting}
       />
 
+      {/* Route Quick Selector */}
+      {routes.length > 0 && (
+        <RouteQuickSelector
+          routes={routes}
+          selectedRouteId={selectedRouteId}
+          onSelectRoute={handleRouteSelect}
+          locations={activeLocations}
+          warehouseAddress={warehouseAddress}
+        />
+      )}
+
       {/* Vehicle Selector */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">Vehicle *</Label>
@@ -442,7 +524,7 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       <LocationSelector
         type="from"
         value={fromSelection}
-        onChange={setFromSelection}
+        onChange={handleFromChange}
         locations={activeLocations}
         warehouseAddress={warehouseAddress}
       />
@@ -451,7 +533,7 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       <LocationSelector
         type="to"
         value={toSelection}
-        onChange={setToSelection}
+        onChange={handleToChange}
         locations={activeLocations}
         warehouseAddress={warehouseAddress}
       />
