@@ -44,7 +44,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; cl
 
 export function MaintenanceWidget() {
   const navigate = useNavigate();
-  const { openReports, inProgressReports, isLoaded, updateReport } = useMaintenanceReports();
+  const { openReports, inProgressReports, isLoaded, error, refetch, updateReport } = useMaintenanceReports();
 
   const handleStatusChange = async (report: MaintenanceReport, newStatus: string) => {
     const updates: Partial<MaintenanceReport> = { status: newStatus };
@@ -75,6 +75,26 @@ export function MaintenanceWidget() {
       <Card className="glass-card">
         <CardContent className="flex items-center justify-center py-12">
           <div className="animate-pulse text-muted-foreground">Loading...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="glass-card border-destructive/30">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Wrench className="h-5 w-5 text-muted-foreground" />
+            Maintenance
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="py-6 text-center">
+          <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-destructive" />
+          <p className="text-sm text-destructive mb-3">Failed to load</p>
+          <Button variant="outline" size="sm" onClick={refetch}>
+            Try Again
+          </Button>
         </CardContent>
       </Card>
     );
