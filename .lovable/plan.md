@@ -1,230 +1,348 @@
 
-## Password Reset & Show Password + Dashboard Customization Improvements
+## Enhanced Routes Tracking: GPS Live Tracking + Simplified Manual Entry
 
-This plan covers two major enhancements: adding password reset functionality with show/hide password toggles, and redesigning the dashboard customization experience to be more intuitive and user-friendly.
+This plan adds two distinct mileage tracking modes: **GPS Live Tracking** using the phone's geolocation, and a **Simplified Manual Mode** that streamlines the current odometer-based workflow with support for "in-progress" trips that auto-save.
 
 ---
 
-## Part 1: Password Features
+## Overview
 
 ### Current State
-- Login/Signup forms use password fields with type="password" (always hidden)
-- No "Forgot Password" functionality exists
-- Settings page has password change but no show/hide toggle
+- The mileage tracker requires entering both start AND end odometer readings upfront
+- No GPS-based tracking capability
+- No concept of "in-progress" trips that can be completed later
+- Users cannot start a trip and update the end odometer after completing their route
 
 ### New Features
 
-#### 1.1 Show/Hide Password Toggle
-Add an eye icon button to all password fields across the app:
+**Option 1: GPS Live Tracking**
+- Start tracking when leaving, phone records distance using GPS
+- Real-time distance display during the trip
+- Auto-saves periodically to prevent data loss
+- End tracking when done, miles are calculated automatically
 
-**Files affected:**
-- `src/pages/Auth.tsx` (login password, signup password, confirm password)
-- `src/pages/Settings.tsx` (current password, new password, confirm password)
-
-**Implementation:**
-- Add `showLoginPassword`, `showSignupPassword`, `showSignupConfirmPassword` state variables
-- Replace static `type="password"` with dynamic `type={showPassword ? "text" : "password"}`
-- Add Eye/EyeOff button inside the input field
-
-**UI Example:**
-```text
-Password
-┌─────────────────────────────────────┐
-│ 🔒  mypassword123            👁️    │
-└─────────────────────────────────────┘
-```
-
-#### 1.2 Forgot Password Flow
-Add a complete password reset flow using Supabase's built-in email reset:
-
-**New Routes:**
-- Add a "Forgot Password?" link below the login form
-- Create a reset password page at `/reset-password`
-
-**Files to create/modify:**
-- `src/pages/Auth.tsx` - Add forgot password link and email entry mode
-- `src/pages/ResetPassword.tsx` - New page for setting new password after email link
-- `src/App.tsx` - Add route for `/reset-password`
-- `src/contexts/AuthContext.tsx` - Add `resetPasswordForEmail` function
-
-**Flow:**
-1. User clicks "Forgot Password?" on login form
-2. Shows email input field with "Send Reset Link" button
-3. Calls `supabase.auth.resetPasswordForEmail()` with redirect URL
-4. User receives email and clicks link
-5. User lands on `/reset-password` page with recovery token
-6. User enters new password and confirms
-7. Password is updated and user is redirected to dashboard
+**Option 2: Simplified Manual Mode**
+- Select vehicle, from location, and destination (or select a saved route template)
+- Enter start odometer only when beginning
+- Trip saves immediately as "in-progress"
+- Return later to enter end odometer and complete the trip
+- Data auto-saves as you type
 
 ---
 
-## Part 2: Dashboard Customization Improvements
+## Part 1: Database Changes
 
-### Current Problems Identified
-1. **Clunky drag-and-drop** - No visual feedback during drag, hard to know where widget will land
-2. **Small control buttons** - Hard to tap on mobile
-3. **Confusing icons** - Check/X for visibility is unclear
-4. **Size cycling** - Clicking to cycle through sizes is tedious; no visual preview
-5. **No preview of changes** - Users can't see what different sizes look like before committing
-6. **Auto-scroll is jerky** - Current implementation uses recursive requestAnimationFrame
+### New Columns for `mileage_entries` table
 
-### Solution: Redesigned Customization Panel
+| Column | Type | Purpose |
+|--------|------|---------|
+| `status` | text | Track trip state: 'in_progress', 'completed' |
+| `tracking_mode` | text | 'gps' or 'odometer' |
+| `gps_distance_meters` | numeric | Raw GPS-calculated distance |
+| `gps_start_lat` | numeric | Starting GPS latitude |
+| `gps_start_lng` | numeric | Starting GPS longitude |
+| `gps_end_lat` | numeric | Ending GPS latitude |
+| `gps_end_lng` | numeric | Ending GPS longitude |
+| `started_at` | timestamptz | When tracking started (for GPS mode) |
+| `completed_at` | timestamptz | When trip was completed |
 
-#### 2.1 New Customization Overlay Panel
-Replace inline controls with a slide-out panel:
-
-**Design:**
-```text
-┌─────────────────────────────────────────────┐
-│ Customize Dashboard                      ✕  │
-├─────────────────────────────────────────────┤
-│                                             │
-│ Drag to reorder widgets                     │
-│                                             │
-│ ┌─────────────────────────────────────────┐ │
-│ │ ≡  Primary Stats           👁️  [Full ▼] │ │
-│ └─────────────────────────────────────────┘ │
-│ ┌─────────────────────────────────────────┐ │
-│ │ ≡  Weekly Calendar         👁️  [Full ▼] │ │
-│ └─────────────────────────────────────────┘ │
-│ ┌─────────────────────────────────────────┐ │
-│ │ ≡  Restock Reminders       👁️  [Half ▼] │ │
-│ └─────────────────────────────────────────┘ │
-│ ┌─────────────────────────────────────────┐ │
-│ │ ≡  Maintenance             👁️  [Half ▼] │ │
-│ └─────────────────────────────────────────┘ │
-│                                             │
-│ [Reset to Default]                          │
-│                                             │
-└─────────────────────────────────────────────┘
-```
-
-#### 2.2 Better Size Selection
-Replace click-to-cycle with a dropdown menu:
-
-**Size Options with Descriptions:**
-- **Small (⅓)** - Fits 3 per row
-- **Medium (½)** - Fits 2 per row  
-- **Large (⅔)** - Fits 1.5 per row
-- **Full** - Takes entire row
-
-#### 2.3 Improved Drag Experience
-- Add a drag handle with 6-dot grip icon
-- Show drop indicator line between widgets during drag
-- Smooth auto-scroll with easing
-- Touch-friendly with larger touch targets
-
-#### 2.4 Better Visual Feedback
-- Dragged widget gets a shadow and slight scale increase
-- Drop target shows a highlighted bar
-- Hidden widgets show as dimmed with strikethrough
-- Real-time preview of layout changes
-
-### Implementation Details
-
-**File: `src/pages/Dashboard.tsx`**
-
-1. Create a new `DashboardCustomizer` component (can be inline or separate file)
-2. Use Sheet/Drawer component for the customization panel
-3. Replace the inline controls with the panel
-4. Add proper touch event handlers for mobile drag
-5. Improve auto-scroll with smooth easing
-
-**New State:**
-```typescript
-const [customizePanelOpen, setCustomizePanelOpen] = useState(false);
-const [tempWidgets, setTempWidgets] = useState<WidgetConfig[]>([]); // Preview state
-```
-
-**Size Dropdown:**
-```typescript
-<Select value={widget.size} onValueChange={(size) => updateWidgetSize(widget.id, size)}>
-  <SelectTrigger className="w-24">
-    <SelectValue />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="sm">⅓ Small</SelectItem>
-    <SelectItem value="md">½ Half</SelectItem>
-    <SelectItem value="lg">⅔ Large</SelectItem>
-    <SelectItem value="full">Full</SelectItem>
-  </SelectContent>
-</Select>
-```
-
-**Visibility Toggle:**
-```typescript
-<button onClick={() => toggleVisibility(widget.id)}>
-  {widget.visible ? (
-    <Eye className="h-5 w-5 text-foreground" />
-  ) : (
-    <EyeOff className="h-5 w-5 text-muted-foreground" />
-  )}
-</button>
-```
-
-**Better Auto-Scroll:**
-```typescript
-const smoothAutoScroll = useCallback((clientY: number) => {
-  const threshold = 80;
-  const maxSpeed = 20;
-  const viewportHeight = window.innerHeight;
-  
-  let speed = 0;
-  if (clientY < threshold) {
-    // Ease-in as you get closer to edge
-    speed = -maxSpeed * (1 - clientY / threshold);
-  } else if (clientY > viewportHeight - threshold) {
-    speed = maxSpeed * (1 - (viewportHeight - clientY) / threshold);
-  }
-  
-  if (speed !== 0) {
-    window.scrollBy({ top: speed, behavior: 'instant' });
-  }
-}, []);
+### Migration SQL
+```sql
+ALTER TABLE mileage_entries
+ADD COLUMN IF NOT EXISTS status text DEFAULT 'completed',
+ADD COLUMN IF NOT EXISTS tracking_mode text DEFAULT 'odometer',
+ADD COLUMN IF NOT EXISTS gps_distance_meters numeric,
+ADD COLUMN IF NOT EXISTS gps_start_lat numeric,
+ADD COLUMN IF NOT EXISTS gps_start_lng numeric,
+ADD COLUMN IF NOT EXISTS gps_end_lat numeric,
+ADD COLUMN IF NOT EXISTS gps_end_lng numeric,
+ADD COLUMN IF NOT EXISTS started_at timestamptz,
+ADD COLUMN IF NOT EXISTS completed_at timestamptz;
 ```
 
 ---
 
-## Files to Modify/Create
+## Part 2: GPS Live Tracking Hook
 
+### New Hook: `useGpsTracking.ts`
+
+Creates a React hook that wraps the browser's Geolocation API:
+
+```typescript
+interface GpsTrackingState {
+  isTracking: boolean;
+  distanceMeters: number;
+  distanceMiles: number;
+  currentPosition: { lat: number; lng: number } | null;
+  startPosition: { lat: number; lng: number } | null;
+  error: string | null;
+  accuracy: number | null;
+  elapsedTime: number; // seconds
+}
+
+function useGpsTracking() {
+  // State management
+  // Start tracking: navigator.geolocation.watchPosition()
+  // Calculate distance using Haversine formula
+  // Stop tracking: navigator.geolocation.clearWatch()
+  // Auto-save every 30 seconds
+}
+```
+
+**Key Features:**
+- Uses `watchPosition()` for continuous GPS updates
+- Calculates cumulative distance using Haversine formula
+- Handles GPS errors gracefully (no signal, denied permission)
+- Shows current accuracy level to user
+- Battery-conscious: configurable update frequency
+
+---
+
+## Part 3: Simplified Manual Entry Flow
+
+### Redesigned "Log Trip" Tab
+
+Replace the current form with a two-phase flow:
+
+**Phase 1: Start Trip**
+```text
++-----------------------------------------------+
+|  Start a Trip                                 |
++-----------------------------------------------+
+|  [Mode: GPS Tracking ○ | Manual Odometer ●]  |
++-----------------------------------------------+
+|  Vehicle *        [ My Work Van       ▼ ]    |
+|  From *           [ Warehouse         ▼ ]    |
+|  To *             [ Pete's Bar        ▼ ]    |
+|                   -- OR --                   |
+|  Use Route        [ Morning Route     ▼ ]    |
++-----------------------------------------------+
+|  Start Odometer * [___45,276___]             |
+|                                               |
+|  Purpose          [ Collection Run    ▼ ]    |
++-----------------------------------------------+
+|         [ Start Trip ]                        |
++-----------------------------------------------+
+```
+
+When user clicks "Start Trip":
+- Create mileage entry with `status: 'in_progress'`
+- Save start odometer, from/to locations, vehicle
+- Show active trip card at top of page
+
+**Phase 2: Complete Trip (Active Trip Card)**
+```text
++-----------------------------------------------+
+|  🚗 Active Trip                    [Discard]  |
++-----------------------------------------------+
+|  Pete's Bar                                   |
+|  Started: 2:30 PM                             |
+|  Start Odometer: 45,276                       |
++-----------------------------------------------+
+|  End Odometer *   [___45,298___]             |
+|                                               |
+|  Calculated:  22.0 miles                      |
+|  Est. Deduction: $14.74                       |
++-----------------------------------------------+
+|         [ Complete Trip ]                     |
++-----------------------------------------------+
+```
+
+**Key Behaviors:**
+- Active trip persists even if app is closed (stored in database with status='in_progress')
+- End odometer field auto-saves as user types (debounced)
+- User can discard an active trip if they made a mistake
+- Only one active trip at a time per vehicle
+
+---
+
+## Part 4: GPS Tracking Mode UI
+
+When user selects "GPS Tracking" mode:
+
+**Starting GPS Trip:**
+```text
++-----------------------------------------------+
+|  Start GPS Tracking                           |
++-----------------------------------------------+
+|  Vehicle *        [ My Work Van       ▼ ]    |
+|  From *           [ Warehouse         ▼ ]    |
+|  To *             [ Pete's Bar        ▼ ]    |
+|  Purpose          [ Collection Run    ▼ ]    |
++-----------------------------------------------+
+|  📍 GPS Accuracy: High (5m)                   |
+|                                               |
+|         [ Start Tracking ]                    |
++-----------------------------------------------+
+```
+
+**Live Tracking Display:**
+```text
++-----------------------------------------------+
+|  🔴 Tracking Active                 [Stop]   |
++-----------------------------------------------+
+|  Distance:     12.4 miles                     |
+|  Est. Deduction: $8.31                        |
+|  Duration:     0:23:45                        |
+|                                               |
+|  📍 Signal: Strong                            |
+|     Accuracy: 8m                              |
++-----------------------------------------------+
+|  Destination: Pete's Bar                      |
+|                                               |
+|         [ Complete & Save Trip ]              |
++-----------------------------------------------+
+```
+
+**GPS Error Handling:**
+- Permission denied: Show settings instruction
+- No GPS available: Fall back to manual mode
+- Weak signal: Show warning, continue tracking
+- Battery low: Reduce update frequency
+
+---
+
+## Part 5: Quick Add Integration
+
+Update the mobile "Quick Add" sheet to support the new flow:
+
+**Quick Mileage Form Changes:**
+1. Add mode toggle (GPS vs Manual)
+2. Support starting an "in-progress" trip
+3. Add "Complete Active Trip" option if one exists
+4. Auto-detect vehicle's last recorded odometer as default
+
+---
+
+## Part 6: Selecting a Route Template
+
+When user selects a route template instead of manual from/to:
+
+```text
++-----------------------------------------------+
+|  Use Route Template                           |
++-----------------------------------------------+
+|  [ Morning Route ▼ ]                          |
+|                                               |
+|  Stops: Warehouse → Joe's → Pete's → Mike's   |
+|  Template Miles: 34.2 mi (RT)                 |
++-----------------------------------------------+
+|  Start Odometer * [___45,276___]             |
+|                                               |
+|         [ Start Route ]                       |
++-----------------------------------------------+
+```
+
+When route is selected:
+- Auto-populate From (first stop) and To (last stop)
+- Pre-fill purpose with route name
+- Link entry to `route_id` in database
+
+---
+
+## Implementation Files
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `src/hooks/useGpsTracking.ts` | GPS tracking hook with Haversine distance calculation |
+| `src/hooks/useActiveTrip.ts` | Manage in-progress trip state |
+| `src/components/mileage/GpsTracker.tsx` | Live GPS tracking UI component |
+| `src/components/mileage/ActiveTripCard.tsx` | Active trip completion card |
+| `src/components/mileage/TrackingModeSelector.tsx` | Toggle between GPS/Manual modes |
+
+### Modified Files
 | File | Changes |
 |------|---------|
-| `src/pages/Auth.tsx` | Add show/hide password toggles, forgot password link, email reset UI |
-| `src/pages/ResetPassword.tsx` | **NEW** - Password reset page after email link |
-| `src/pages/Settings.tsx` | Add show/hide password toggles to security section |
-| `src/App.tsx` | Add `/reset-password` route |
-| `src/contexts/AuthContext.tsx` | Add `resetPasswordForEmail` function |
-| `src/pages/Dashboard.tsx` | Redesign customization with panel, dropdown sizes, better drag UX |
+| `src/hooks/useMileageDB.ts` | Add status field, update/complete in-progress entries |
+| `src/pages/MileageTracker.tsx` | Redesign Log Trip tab with two-phase flow, add GPS mode |
+| `src/components/mobile/QuickMileageForm.tsx` | Add mode toggle, support in-progress trips |
+
+---
+
+## Technical Details
+
+### Haversine Distance Formula
+```typescript
+function haversineDistance(
+  lat1: number, lon1: number,
+  lat2: number, lon2: number
+): number {
+  const R = 3958.8; // Earth's radius in miles
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+```
+
+### GPS Tracking Options
+```typescript
+const gpsOptions: PositionOptions = {
+  enableHighAccuracy: true,  // Use GPS (not WiFi/cell)
+  timeout: 10000,            // 10 second timeout
+  maximumAge: 5000,          // Accept 5-second-old position
+};
+```
+
+### Auto-Save Strategy
+- **GPS Mode**: Save accumulated distance every 30 seconds
+- **Manual Mode**: Debounce save end odometer (1 second delay)
+- **Both**: Final save on "Complete Trip" action
+
+---
+
+## User Flow Summary
+
+### Quick Single-Location Trip
+1. Open Routes page or Quick Add
+2. Select vehicle (auto-fills last odometer)
+3. Choose "To" location
+4. Enter current odometer reading
+5. Click "Start Trip" - saves immediately as in-progress
+6. After visiting location, enter end odometer
+7. Click "Complete Trip" - calculates and saves miles
+
+### Full Route with GPS
+1. Select "GPS Tracking" mode
+2. Select vehicle and route template
+3. Grant GPS permission if needed
+4. Click "Start Tracking"
+5. Drive your route - watch miles accumulate
+6. Click "Complete & Save Trip" when done
+
+### Resume In-Progress Trip
+1. Open Routes page
+2. See "Active Trip" card at top
+3. Enter end odometer
+4. Click "Complete Trip"
 
 ---
 
 ## Implementation Order
 
-1. **Show/Hide Password Toggles** - Quick wins for Auth.tsx and Settings.tsx
-2. **Forgot Password Link & Email Form** - Update Auth.tsx with reset email request
-3. **Reset Password Page** - Create new page and route
-4. **AuthContext Update** - Add reset function
-5. **Dashboard Panel Component** - Create the slide-out customization panel
-6. **Size Dropdown** - Replace cycle button with select dropdown
-7. **Improved Drag UX** - Better visual feedback and smooth scrolling
-8. **Touch Support** - Ensure mobile drag works smoothly
+1. **Database migration** - Add new columns for status, tracking_mode, GPS data
+2. **Update useMileageDB hook** - Support in-progress entries, new fields
+3. **Create useActiveTrip hook** - Fetch/manage current in-progress trip
+4. **Build ActiveTripCard component** - UI for completing trips
+5. **Redesign MileageTracker Log Trip tab** - Two-phase manual flow
+6. **Create useGpsTracking hook** - GPS tracking logic
+7. **Build GpsTracker component** - Live tracking UI
+8. **Add TrackingModeSelector** - Mode toggle component
+9. **Integrate GPS mode** - Connect GPS UI to mileage tracker
+10. **Update QuickMileageForm** - Support both modes on mobile
+11. **Add route template selection** - Pre-fill from saved routes
 
 ---
 
-## Technical Notes
+## Edge Cases Handled
 
-### Password Reset Security
-- Uses Supabase's built-in `resetPasswordForEmail` which sends a secure one-time link
-- Recovery tokens are handled automatically by Supabase
-- The `/reset-password` route detects the recovery session from URL hash/params
-
-### Dashboard Customization UX
-- Changes are applied in real-time for immediate feedback
-- Auto-saves to localStorage on every change
-- Reset button restores factory defaults
-- Panel closes automatically when clicking "Done"
-
-### Accessibility
-- Password visibility toggles include aria-labels
-- Keyboard navigation for all controls
-- Focus management in the customization panel
+- **App closed during tracking**: GPS mode stops tracking, in-progress trip can be completed manually
+- **No GPS permission**: Fall back to manual mode with explanation
+- **Weak GPS signal**: Show warning, continue tracking with degraded accuracy
+- **Multiple vehicles**: Only one active trip per vehicle at a time
+- **Invalid odometer**: Validate end > start, show clear error
+- **Discard trip**: Allow user to delete in-progress trip if made in error
