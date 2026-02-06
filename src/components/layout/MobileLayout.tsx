@@ -3,8 +3,7 @@ import { MobileHeader } from "./MobileHeader";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { QuickAddSheet } from "../mobile/QuickAddSheet";
 import { MobileRefreshProvider, useMobileRefresh } from "@/contexts/MobileRefreshContext";
-import { RefreshIndicator } from "../mobile/RefreshIndicator";
-import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { UpdateNotification } from "../mobile/UpdateNotification";
 
 interface MobileLayoutProps {
   children: ReactNode;
@@ -13,27 +12,18 @@ interface MobileLayoutProps {
 function MobileLayoutInner({ children }: MobileLayoutProps) {
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const { isRefreshing, triggerRefresh } = useMobileRefresh();
-  
-  const { pullDistance, containerRef } = usePullToRefresh({
-    onRefresh: triggerRefresh,
-    isRefreshing,
-  });
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <MobileHeader onRefresh={triggerRefresh} isRefreshing={isRefreshing} />
+      <UpdateNotification />
       <main 
-        ref={containerRef}
         className="flex-1 overflow-y-auto overscroll-contain mobile-scroll-optimized"
         style={{ 
           WebkitOverflowScrolling: 'touch',
           paddingBottom: 'max(80px, calc(64px + env(safe-area-inset-bottom)))'
         }}
       >
-        <RefreshIndicator 
-          pullDistance={pullDistance} 
-          isRefreshing={isRefreshing} 
-        />
         {children}
       </main>
       <MobileBottomNav onQuickAddOpen={() => setQuickAddOpen(true)} />

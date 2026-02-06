@@ -10,9 +10,11 @@ import { useVehicles } from "@/hooks/useVehiclesDB";
 import { useActiveTrip } from "@/hooks/useActiveTrip";
 import { useMileage, IRS_MILEAGE_RATE } from "@/hooks/useMileageDB";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Car, AlertTriangle, Play, CheckCircle, Trash2, MapPin, Clock } from "lucide-react";
+import { Loader2, Car, AlertTriangle, Play, CheckCircle, Trash2, MapPin, Clock, Navigation } from "lucide-react";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
 import { LocationSelector, LocationSelection, getLocationDisplayString } from "@/components/mileage/LocationSelector";
+import { TrackingModeSelector, TrackingMode } from "@/components/mileage/TrackingModeSelector";
+import { GpsTracker } from "@/components/mileage/GpsTracker";
 import { useNavigate } from "react-router-dom";
 import { format, formatDistanceToNow } from "date-fns";
 import {
@@ -45,9 +47,13 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
   const navigate = useNavigate();
   const { activeLocations } = useLocations();
   const { vehicles, updateVehicleOdometer, getVehicleById } = useVehicles();
-  const { activeTrip, startTrip, completeTrip, discardTrip, updateTrip } = useActiveTrip();
+  const { activeTrip, startTrip, completeTrip, discardTrip } = useActiveTrip();
   const { refetch: refetchMileage } = useMileage();
   const { settings } = useAppSettings();
+  
+  // Tracking mode state
+  const [trackingMode, setTrackingMode] = useState<TrackingMode>("odometer");
+  const [isGpsCompleting, setIsGpsCompleting] = useState(false);
   
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
   const [fromSelection, setFromSelection] = useState<LocationSelection>({ type: "warehouse" });
@@ -79,6 +85,14 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
     : 0;
   const activeEstimatedDeduction = activeCalculatedMiles * IRS_MILEAGE_RATE;
   const isActiveEndValid = activeTrip && activeEndNum > activeTrip.odometerStart;
+
+  const resetForm = () => {
+    setOdometerStart("");
+    setOdometerEnd("");
+    setPurpose("");
+    setNotes("");
+    setToSelection({ type: "location" });
+  };
 
   const handleStartTrip = async () => {
     if (!selectedVehicleId) {
@@ -130,16 +144,88 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
           title: "Trip Started!", 
           description: "Enter end odometer when you arrive." 
         });
-        // Reset form but keep sheet open to show active trip
-        setOdometerStart("");
-        setOdometerEnd("");
-        setPurpose("");
-        setNotes("");
+        resetForm();
       }
     } catch (error) {
       toast({ title: "Error", description: "Failed to start trip.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleStartGpsTracking = async () => {
+    if (!selectedVehicleId) {
+      toast({ title: "Vehicle Required", description: "Please select a vehicle.", variant: "destructive" });
+      return;
+    }
+    
+    const startLocationStr = getLocationDisplayString(fromSelection, activeLocations, warehouseAddress);
+    const endLocationStr = getLocationDisplayString(toSelection, activeLocations, warehouseAddress);
+    
+    if (!startLocationStr) {
+      toast({ title: "From Required", description: "Please select or enter a start location.", variant: "destructive" });
+      return;
+    }
+    
+    if (!endLocationStr) {
+      toast({ title: "To Required", description: "Please select or enter a destination.", variant: "destructive" });
+      return;
+    }
+    
+    const locationId = toSelection.type === "location" ? toSelection.locationId : undefined;
+
+    setIsSubmitting(true);
+    try {
+      const result = await startTrip({
+        vehicleId: selectedVehicleId,
+        startLocation: startLocationStr,
+        endLocation: endLocationStr,
+        locationId,
+        odometerStart: 0, // GPS mode doesn't use odometer
+        purpose: purpose || "Business Trip",
+        notes: notes || "",
+        trackingMode: "gps",
+      });
+      
+      if (result) {
+        toast({ 
+          title: "GPS Tracking Started!", 
+          description: "Tracking your route..." 
+        });
+        resetForm();
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to start GPS tracking.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGpsComplete = async (data: {
+    distanceMiles: number;
+    gpsDistanceMeters: number;
+    startLat?: number;
+    startLng?: number;
+    endLat?: number;
+    endLng?: number;
+    elapsedSeconds: number;
+  }) => {
+    setIsGpsCompleting(true);
+    try {
+      const success = await completeTrip({
+        gpsDistanceMeters: data.gpsDistanceMeters,
+        gpsEndLat: data.endLat,
+        gpsEndLng: data.endLng,
+      });
+      
+      if (success) {
+        refetchMileage();
+        onSuccess();
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to complete trip.", variant: "destructive" });
+    } finally {
+      setIsGpsCompleting(false);
     }
   };
 
@@ -169,7 +255,19 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
     setIsSubmitting(false);
   };
 
-  // If there's an active trip, show completion UI
+  // If there's an active GPS trip, show GPS tracker UI
+  if (activeTrip && activeTrip.trackingMode === "gps") {
+    return (
+      <GpsTracker
+        destination={activeTrip.endLocation}
+        onComplete={handleGpsComplete}
+        onCancel={handleDiscardTrip}
+        isCompleting={isGpsCompleting}
+      />
+    );
+  }
+
+  // If there's an active odometer trip, show completion UI
   if (activeTrip && activeTrip.trackingMode === "odometer") {
     return (
       <div className="space-y-4">
@@ -274,7 +372,7 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
         <Button
           onClick={handleCompleteTrip}
           disabled={!isActiveEndValid || isSubmitting}
-          className="w-full h-14 text-lg font-semibold"
+          className="w-full h-14 text-lg font-semibold touch-manipulation active:scale-[0.98]"
         >
           {isSubmitting ? (
             <>
@@ -297,6 +395,13 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
 
   return (
     <div className="space-y-4">
+      {/* Tracking Mode Selector */}
+      <TrackingModeSelector
+        value={trackingMode}
+        onChange={setTrackingMode}
+        disabled={isSubmitting}
+      />
+
       {/* Vehicle Selector */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">Vehicle *</Label>
@@ -351,22 +456,24 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
         warehouseAddress={warehouseAddress}
       />
 
-      {/* Start Odometer */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Start Odometer *</Label>
-        <Input
-          type="number"
-          inputMode="numeric"
-          placeholder="e.g., 45276"
-          value={odometerStart}
-          onChange={(e) => setOdometerStart(e.target.value)}
-          className="h-14 text-xl font-semibold text-center"
-          onFocus={(e) => e.target.select()}
-        />
-        <p className="text-xs text-muted-foreground">
-          Enter your current reading. You'll add the end reading when you arrive.
-        </p>
-      </div>
+      {/* Odometer Mode: Start Odometer Input */}
+      {trackingMode === "odometer" && (
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Start Odometer *</Label>
+          <Input
+            type="number"
+            inputMode="numeric"
+            placeholder="e.g., 45276"
+            value={odometerStart}
+            onChange={(e) => setOdometerStart(e.target.value)}
+            className="h-14 text-xl font-semibold text-center"
+            onFocus={(e) => e.target.select()}
+          />
+          <p className="text-xs text-muted-foreground">
+            Enter your current reading. You'll add the end reading when you arrive.
+          </p>
+        </div>
+      )}
 
       {/* Purpose */}
       <div className="space-y-2">
@@ -397,26 +504,49 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       </div>
 
       {/* Start Trip Button */}
-      <Button
-        onClick={handleStartTrip}
-        disabled={isSubmitting || !selectedVehicleId || !odometerStart}
-        className="w-full h-14 text-lg font-semibold"
-      >
-        {isSubmitting ? (
-          <>
-            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            Starting...
-          </>
-        ) : (
-          <>
-            <Play className="h-5 w-5 mr-2" />
-            Start Trip
-          </>
-        )}
-      </Button>
+      {trackingMode === "odometer" ? (
+        <Button
+          onClick={handleStartTrip}
+          disabled={isSubmitting || !selectedVehicleId || !odometerStart}
+          className="w-full h-14 text-lg font-semibold touch-manipulation active:scale-[0.98]"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              Starting...
+            </>
+          ) : (
+            <>
+              <Play className="h-5 w-5 mr-2" />
+              Start Trip
+            </>
+          )}
+        </Button>
+      ) : (
+        <Button
+          onClick={handleStartGpsTracking}
+          disabled={isSubmitting || !selectedVehicleId}
+          className="w-full h-14 text-lg font-semibold touch-manipulation active:scale-[0.98]"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+              Starting...
+            </>
+          ) : (
+            <>
+              <Navigation className="h-5 w-5 mr-2" />
+              Start GPS Tracking
+            </>
+          )}
+        </Button>
+      )}
 
       <p className="text-xs text-center text-muted-foreground">
-        Trip will be saved. Return here to enter your end odometer when done.
+        {trackingMode === "odometer" 
+          ? "Trip will be saved. Return here to enter your end odometer when done."
+          : "GPS will track your distance automatically. Keep this app open while driving."
+        }
       </p>
     </div>
   );
