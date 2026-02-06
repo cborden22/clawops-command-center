@@ -33,6 +33,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Textarea } from "@/components/ui/textarea";
 import { useReceiptViewer } from "@/hooks/useReceiptViewer";
 import { ReceiptModal } from "@/components/shared/ReceiptModal";
+import { ListSizeSelector, useListSize, applyListLimit, ListSize } from "@/components/shared/ListSizeSelector";
 
 type FilterPeriod = 
   | "past7days" 
@@ -119,6 +120,9 @@ export function RevenueTrackerComponent() {
   const [filterType, setFilterType] = useState<"all" | EntryType | "business">("all");
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
+  
+  // List size state for pagination
+  const [entriesListSize, setEntriesListSize] = useListSize("revenue-entries-list-size", 20);
 
   // Get expense categories based on whether it's a business expense or location expense
   const expenseCategories = isBusinessExpense ? BUSINESS_EXPENSE_CATEGORIES : LOCATION_EXPENSE_CATEGORIES;
@@ -1125,12 +1129,19 @@ export function RevenueTrackerComponent() {
           {/* Entry History */}
           <Card className="glass-card overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-muted/50 to-transparent border-b border-border/50">
-              <CardTitle className="text-lg flex items-center gap-2">
+              <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
                 <div className="p-2 rounded-lg bg-muted">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </div>
                 Entry History
-                <Badge variant="secondary" className="ml-auto">{filteredEntries.length} entries</Badge>
+                <div className="ml-auto flex items-center gap-3">
+                  <ListSizeSelector
+                    storageKey="revenue-entries-list-size"
+                    value={entriesListSize}
+                    onChange={setEntriesListSize}
+                    totalCount={filteredEntries.length}
+                  />
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
@@ -1153,7 +1164,7 @@ export function RevenueTrackerComponent() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredEntries.slice(0, 15).map((entry) => (
+                      {applyListLimit(filteredEntries, entriesListSize).map((entry) => (
                         <TableRow key={entry.id} className="group">
                           <TableCell className="text-muted-foreground">{format(entry.date, "MMM d, yyyy")}</TableCell>
                           <TableCell>

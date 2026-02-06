@@ -40,6 +40,7 @@ import {
 import { QRCodeGenerator } from "@/components/maintenance/QRCodeGenerator";
 import { toast } from "@/hooks/use-toast";
 import { useLocations, Location, MachineType, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocationsDB";
+import { ListSizeSelector, useListSize, applyListLimit, ListSize } from "@/components/shared/ListSizeSelector";
 
 interface MachineWithLocation {
   machineType: MachineType;
@@ -67,6 +68,7 @@ export function MachinesManager() {
     winProbability: undefined as number | undefined,
     costPerPlay: 0.50,
   });
+  const [machinesListSize, setMachinesListSize] = useListSize("machines-list-size", 20);
 
   // Flatten all machines from all locations
   const allMachines: MachineWithLocation[] = locations.flatMap((location) =>
@@ -392,10 +394,10 @@ export function MachinesManager() {
         </CardHeader>
 
         <CardContent className="p-6">
-          {/* Search */}
+          {/* Search and List Size */}
           {allMachines.length > 0 && (
-            <div className="mb-6">
-              <div className="relative max-w-md">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+              <div className="relative max-w-md flex-1 min-w-[200px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search machines or locations..."
@@ -404,6 +406,12 @@ export function MachinesManager() {
                   className="pl-9 h-10 bg-background/50"
                 />
               </div>
+              <ListSizeSelector
+                storageKey="machines-list-size"
+                value={machinesListSize}
+                onChange={setMachinesListSize}
+                totalCount={filteredMachines.length}
+              />
             </div>
           )}
 
@@ -436,7 +444,7 @@ export function MachinesManager() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredMachines.map((machine, idx) => (
+                  {applyListLimit(filteredMachines, machinesListSize).map((machine, idx) => (
                     <TableRow key={`${machine.location.id}-${machine.index}-${idx}`} className="group transition-colors">
                       <TableCell>
                         <p className="font-medium">{machine.machineType.label}</p>

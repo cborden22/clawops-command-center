@@ -37,6 +37,7 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
+import { ListSizeSelector, useListSize, applyListLimit, ListSize } from "@/components/shared/ListSizeSelector";
 
 interface CartItem {
   id: string;
@@ -96,6 +97,9 @@ export function InventoryTrackerComponent() {
 
   // History refresh trigger
   const [historyRefresh, setHistoryRefresh] = useState(0);
+  
+  // List size state
+  const [inventoryListSize, setInventoryListSize] = useListSize("inventory-list-size", 40);
 
   // Load last stock run from localStorage
   useEffect(() => {
@@ -541,15 +545,23 @@ export function InventoryTrackerComponent() {
         </Card>
       )}
 
-      {/* Search */}
+      {/* Search and List Size */}
       {items.length > 0 && (
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search items..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search items..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <ListSizeSelector
+            storageKey="inventory-list-size"
+            value={inventoryListSize}
+            onChange={setInventoryListSize}
+            totalCount={filteredItems.length}
           />
         </div>
       )}
@@ -568,7 +580,7 @@ export function InventoryTrackerComponent() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {filteredItems.map((item) => {
+          {applyListLimit(filteredItems, inventoryListSize).map((item) => {
             const cartQty = getCartQuantity(item.id);
             const isInCart = cartQty > 0;
             const returnQty = getReturnCartQuantity(item.id);
