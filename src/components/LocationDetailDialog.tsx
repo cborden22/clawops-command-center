@@ -53,6 +53,12 @@ import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { generatePDFFromHTML } from "@/utils/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
 
+// Parse date-only strings (YYYY-MM-DD) as local dates to avoid timezone shifts
+const parseDateOnly = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 interface LocationDetailDialogProps {
   location: Location | null;
   open: boolean;
@@ -101,7 +107,7 @@ export function LocationDetailDialog({
 
   const printCommissionSummary = (summary: CommissionSummaryRecord) => {
     const currentDate = new Date().toLocaleDateString();
-    const periodText = `${format(new Date(summary.startDate), "MMM dd, yyyy")} - ${format(new Date(summary.endDate), "MMM dd, yyyy")}`;
+    const periodText = `${format(parseDateOnly(summary.startDate), "MMM dd, yyyy")} - ${format(parseDateOnly(summary.endDate), "MMM dd, yyyy")}`;
     
     const content = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333; line-height: 1.6;">
@@ -159,7 +165,7 @@ export function LocationDetailDialog({
       </div>
     `;
 
-    const filename = `commission-summary-${location.name.replace(/\s+/g, '-').toLowerCase()}-${format(new Date(summary.startDate), 'yyyy-MM-dd')}.pdf`;
+    const filename = `commission-summary-${location.name.replace(/\s+/g, '-').toLowerCase()}-${format(parseDateOnly(summary.startDate), 'yyyy-MM-dd')}.pdf`;
     
     generatePDFFromHTML(content, {
       filename,
@@ -856,8 +862,8 @@ export function LocationDetailDialog({
                         <div>
                           <p className="font-medium flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
-                            {format(new Date(summary.startDate), "MMM d")} -{" "}
-                            {format(new Date(summary.endDate), "MMM d, yyyy")}
+                            {format(parseDateOnly(summary.startDate), "MMM d")} -{" "}
+                            {format(parseDateOnly(summary.endDate), "MMM d, yyyy")}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -896,7 +902,7 @@ export function LocationDetailDialog({
                                 </AlertDialogTitle>
                                 <AlertDialogDescription className="space-y-2">
                                   <p>
-                                    Are you sure you want to delete this commission summary for <strong>{format(new Date(summary.startDate), "MMM d")} - {format(new Date(summary.endDate), "MMM d, yyyy")}</strong>?
+                                    Are you sure you want to delete this commission summary for <strong>{format(parseDateOnly(summary.startDate), "MMM d")} - {format(parseDateOnly(summary.endDate), "MMM d, yyyy")}</strong>?
                                   </p>
                                   <p className="text-destructive font-medium">
                                     This will also delete the associated ${summary.commissionAmount.toFixed(2)} expense entry from your Revenue Tracker.

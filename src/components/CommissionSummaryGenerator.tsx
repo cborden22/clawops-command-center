@@ -100,7 +100,7 @@ export function CommissionSummaryGenerator() {
     setLocationData(prev => ({
       ...prev,
       startDate: startOfMonth(today),
-      endDate: today
+      endDate: endOfMonth(today)
     }))
   }
 
@@ -250,8 +250,8 @@ export function CommissionSummaryGenerator() {
       // Save commission summary to location if a location was selected
       if (locationData.locationId && locationData.startDate && locationData.endDate) {
         const result = await addCommissionSummary(locationData.locationId, {
-          startDate: locationData.startDate.toISOString(),
-          endDate: locationData.endDate.toISOString(),
+          startDate: format(locationData.startDate, "yyyy-MM-dd"),
+          endDate: format(locationData.endDate, "yyyy-MM-dd"),
           totalRevenue: locationData.totalRevenue,
           commissionPercentage: locationData.commissionPercentage,
           commissionAmount: locationData.commissionAmount,
