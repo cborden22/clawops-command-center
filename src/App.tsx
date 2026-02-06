@@ -19,10 +19,11 @@ import Maintenance from "./pages/Maintenance";
 import Receipts from "./pages/Receipts";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import Team from "./pages/Team";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import ReportIssue from "./pages/ReportIssue";
- import ResetPassword from "./pages/ResetPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -197,6 +198,16 @@ function ProtectedAppRoutes() {
             <ProtectedRoute>
               <AppLayout>
                 <Settings />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/team"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Team />
               </AppLayout>
             </ProtectedRoute>
           }

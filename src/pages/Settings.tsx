@@ -21,9 +21,10 @@ import {
   Warehouse,
   DollarSign,
   Palette,
-   Car,
-   Eye,
-   EyeOff
+  Car,
+  Eye,
+  EyeOff,
+  Bell
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { VehicleManager } from "@/components/settings/VehicleManager";
@@ -40,6 +41,9 @@ export default function Settings() {
   // App Settings saving state
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   
+  // Email notification preferences
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
+  const [isLoadingNotificationPref, setIsLoadingNotificationPref] = useState(true);
   
   // Security state - OTP flow
   const [newPassword, setNewPassword] = useState("");
@@ -51,13 +55,66 @@ export default function Settings() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Load profile from user metadata
+  // Load profile from user metadata and notification preference
   useEffect(() => {
     if (user) {
       setFullName(user.user_metadata?.full_name || "");
+      
+      // Load email notification preference from profiles table
+      const loadNotificationPref = async () => {
+        try {
+          const { data } = await supabase
+            .from("profiles")
+            .select("email_notifications_enabled")
+            .eq("user_id", user.id)
+            .single();
+          
+          if (data) {
+            setEmailNotificationsEnabled(data.email_notifications_enabled ?? true);
+          }
+        } catch (error) {
+          console.error("Error loading notification preference:", error);
+        } finally {
+          setIsLoadingNotificationPref(false);
+        }
+      };
+      
+      loadNotificationPref();
     }
   }, [user]);
 
+  const handleToggleEmailNotifications = async (checked: boolean) => {
+    if (!user) return;
+    
+    setEmailNotificationsEnabled(checked);
+    
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ 
+          email_notifications_enabled: checked,
+          updated_at: new Date().toISOString() 
+        })
+        .eq("user_id", user.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: checked ? "Notifications Enabled" : "Notifications Disabled",
+        description: checked 
+          ? "You'll receive email notifications for maintenance reports." 
+          : "Email notifications have been turned off.",
+      });
+    } catch (error) {
+      console.error("Error updating notification preference:", error);
+      setEmailNotificationsEnabled(!checked); // Revert on error
+      toast({
+        title: "Error",
+        description: "Failed to update notification preference.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSaveAppSettings = async () => {
     setIsSavingSettings(true);
@@ -540,6 +597,35 @@ export default function Settings() {
                   id="autoBackup"
                   checked={appSettings.autoBackup}
                   onCheckedChange={handleToggleAutoBackup}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Notifications */}
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5 text-primary" />
+                Notifications
+              </CardTitle>
+              <CardDescription>
+                Configure how you receive alerts and updates
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="emailNotifications">Email Notifications</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receive email alerts when maintenance reports are submitted
+                  </p>
+                </div>
+                <Switch
+                  id="emailNotifications"
+                  checked={emailNotificationsEnabled}
+                  onCheckedChange={handleToggleEmailNotifications}
+                  disabled={isLoadingNotificationPref}
                 />
               </div>
             </CardContent>

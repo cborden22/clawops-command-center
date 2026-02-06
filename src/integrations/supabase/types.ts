@@ -785,6 +785,7 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string | null
+          email_notifications_enabled: boolean | null
           full_name: string | null
           id: string
           updated_at: string | null
@@ -793,6 +794,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           email?: string | null
+          email_notifications_enabled?: boolean | null
           full_name?: string | null
           id?: string
           updated_at?: string | null
@@ -801,6 +803,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           email?: string | null
+          email_notifications_enabled?: boolean | null
           full_name?: string | null
           id?: string
           updated_at?: string | null
@@ -888,6 +891,148 @@ export type Database = {
           total_items?: number
           total_products?: number
           user_id?: string
+        }
+        Relationships: []
+      }
+      task_assignments: {
+        Row: {
+          assignee_user_id: string
+          completed_at: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          maintenance_report_id: string | null
+          owner_user_id: string
+          priority: string | null
+          status: string
+          title: string | null
+        }
+        Insert: {
+          assignee_user_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          maintenance_report_id?: string | null
+          owner_user_id: string
+          priority?: string | null
+          status?: string
+          title?: string | null
+        }
+        Update: {
+          assignee_user_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          maintenance_report_id?: string | null
+          owner_user_id?: string
+          priority?: string | null
+          status?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_assignments_maintenance_report_id_fkey"
+            columns: ["maintenance_report_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_member_permissions: {
+        Row: {
+          can_manage_maintenance: boolean | null
+          can_view_documents: boolean | null
+          can_view_inventory: boolean | null
+          can_view_leads: boolean | null
+          can_view_locations: boolean | null
+          can_view_maintenance: boolean | null
+          can_view_reports: boolean | null
+          can_view_revenue: boolean | null
+          created_at: string | null
+          id: string
+          team_member_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          can_manage_maintenance?: boolean | null
+          can_view_documents?: boolean | null
+          can_view_inventory?: boolean | null
+          can_view_leads?: boolean | null
+          can_view_locations?: boolean | null
+          can_view_maintenance?: boolean | null
+          can_view_reports?: boolean | null
+          can_view_revenue?: boolean | null
+          created_at?: string | null
+          id?: string
+          team_member_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          can_manage_maintenance?: boolean | null
+          can_view_documents?: boolean | null
+          can_view_inventory?: boolean | null
+          can_view_leads?: boolean | null
+          can_view_locations?: boolean | null
+          can_view_maintenance?: boolean | null
+          can_view_reports?: boolean | null
+          can_view_revenue?: boolean | null
+          created_at?: string | null
+          id?: string
+          team_member_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_member_permissions_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_members: {
+        Row: {
+          accepted_at: string | null
+          created_at: string | null
+          id: string
+          invited_at: string | null
+          invited_email: string
+          member_user_id: string | null
+          owner_user_id: string
+          role: Database["public"]["Enums"]["team_role"]
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string | null
+          id?: string
+          invited_at?: string | null
+          invited_email: string
+          member_user_id?: string | null
+          owner_user_id: string
+          role?: Database["public"]["Enums"]["team_role"]
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string | null
+          id?: string
+          invited_at?: string | null
+          invited_email?: string
+          member_user_id?: string | null
+          owner_user_id?: string
+          role?: Database["public"]["Enums"]["team_role"]
+          status?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1013,9 +1158,21 @@ export type Database = {
           machine_type: string
         }[]
       }
+      get_team_role: {
+        Args: { checking_user_id: string; owner_id: string }
+        Returns: Database["public"]["Enums"]["team_role"]
+      }
+      has_team_permission: {
+        Args: {
+          checking_user_id: string
+          owner_id: string
+          permission_name: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      team_role: "owner" | "manager" | "technician"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1142,6 +1299,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      team_role: ["owner", "manager", "technician"],
+    },
   },
 } as const
