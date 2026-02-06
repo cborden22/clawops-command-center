@@ -5,14 +5,6 @@ import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -44,14 +36,10 @@ import {
   Sparkles,
   MapPin,
   QrCode,
-  CreditCard,
-  Wifi,
-  WifiOff,
 } from "lucide-react";
 import { QRCodeGenerator } from "@/components/maintenance/QRCodeGenerator";
 import { toast } from "@/hooks/use-toast";
 import { useLocations, Location, MachineType, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocationsDB";
-import { useNayaxIntegration } from "@/hooks/useNayaxIntegration";
 
 interface MachineWithLocation {
   machineType: MachineType;
@@ -61,7 +49,6 @@ interface MachineWithLocation {
 
 export function MachinesManager() {
   const { locations, updateLocation, isLoaded } = useLocations();
-  const { isConnected: isNayaxConnected } = useNayaxIntegration();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingMachine, setEditingMachine] = useState<MachineWithLocation | null>(null);
@@ -79,9 +66,6 @@ export function MachinesManager() {
     customLabel: "",
     winProbability: undefined as number | undefined,
     costPerPlay: 0.50,
-    // Nayax fields
-    isCardEnabled: false,
-    nayaxMachineId: "",
   });
 
   // Flatten all machines from all locations
@@ -133,8 +117,6 @@ export function MachinesManager() {
         count: formData.count,
         winProbability: formData.winProbability,
         costPerPlay: formData.costPerPlay,
-        isCardEnabled: formData.isCardEnabled,
-        nayaxMachineId: formData.nayaxMachineId || undefined,
       };
 
       await updateLocation(location.id, { machines: updatedMachines });
@@ -146,15 +128,7 @@ export function MachinesManager() {
       // Add new machine
       const updatedMachines = [
         ...(location.machines || []),
-        { 
-          type: formData.type, 
-          label, 
-          count: formData.count, 
-          winProbability: formData.winProbability, 
-          costPerPlay: formData.costPerPlay,
-          isCardEnabled: formData.isCardEnabled,
-          nayaxMachineId: formData.nayaxMachineId || undefined,
-        },
+        { type: formData.type, label, count: formData.count, winProbability: formData.winProbability, costPerPlay: formData.costPerPlay },
       ];
 
       await updateLocation(location.id, { machines: updatedMachines });
@@ -180,8 +154,6 @@ export function MachinesManager() {
           : machine.machineType.label,
       winProbability: machine.machineType.winProbability,
       costPerPlay: machine.machineType.costPerPlay ?? 0.50,
-      isCardEnabled: machine.machineType.isCardEnabled ?? false,
-      nayaxMachineId: machine.machineType.nayaxMachineId ?? "",
     });
     setShowAddDialog(true);
   };
@@ -205,8 +177,6 @@ export function MachinesManager() {
       customLabel: "",
       winProbability: undefined,
       costPerPlay: 0.50,
-      isCardEnabled: false,
-      nayaxMachineId: "",
     });
   };
 
@@ -408,54 +378,6 @@ export function MachinesManager() {
                   </div>
                 </div>
 
-                <Separator className="my-4" />
-
-                {/* Payment Options Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4 text-primary" />
-                    <Label className="text-base font-medium">Payment Options</Label>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="isCardEnabled">Credit Card Enabled</Label>
-                      <p className="text-xs text-muted-foreground">
-                        This machine accepts card payments via Nayax
-                      </p>
-                    </div>
-                    <Switch
-                      id="isCardEnabled"
-                      checked={formData.isCardEnabled}
-                      onCheckedChange={(checked) =>
-                        setFormData((prev) => ({ ...prev, isCardEnabled: checked }))
-                      }
-                    />
-                  </div>
-
-                  {formData.isCardEnabled && (
-                    <div className="space-y-2">
-                      <Label htmlFor="nayaxMachineId">Nayax Machine ID (Telemetry ID)</Label>
-                      <Input
-                        id="nayaxMachineId"
-                        placeholder="e.g., 942488501"
-                        value={formData.nayaxMachineId}
-                        onChange={(e) =>
-                          setFormData((prev) => ({ ...prev, nayaxMachineId: e.target.value }))
-                        }
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Find this in Nayax Core → Machines → Overview
-                      </p>
-                      {!isNayaxConnected && (
-                        <p className="text-xs text-destructive">
-                          ⚠️ Connect Nayax in Settings → Integrations to sync sales data
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-
                 <div className="flex gap-2 pt-4">
                   <Button onClick={handleSubmit} className="flex-1 premium-button">
                     {editingMachine ? "Update Machine" : "Add Machine"}
@@ -509,7 +431,6 @@ export function MachinesManager() {
                     <TableHead className="font-semibold">Machine</TableHead>
                     <TableHead className="font-semibold">Type</TableHead>
                     <TableHead className="font-semibold">Location</TableHead>
-                    <TableHead className="font-semibold">Status</TableHead>
                     <TableHead className="text-center font-semibold">Count</TableHead>
                     <TableHead className="text-right font-semibold w-[100px]">Actions</TableHead>
                   </TableRow>
@@ -531,32 +452,6 @@ export function MachinesManager() {
                           <MapPin className="h-3 w-3 text-muted-foreground" />
                           <span>{machine.location.name}</span>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex items-center gap-2">
-                                {machine.machineType.isCardEnabled ? (
-                                  <>
-                                    <div className="h-2 w-2 rounded-full bg-primary" />
-                                    <span className="text-sm">Card Enabled</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-                                    <span className="text-sm text-muted-foreground">Cash Only</span>
-                                  </>
-                                )}
-                              </div>
-                            </TooltipTrigger>
-                            {machine.machineType.nayaxMachineId && (
-                              <TooltipContent>
-                                <p>Nayax ID: {machine.machineType.nayaxMachineId}</p>
-                              </TooltipContent>
-                            )}
-                          </Tooltip>
-                        </TooltipProvider>
                       </TableCell>
                       <TableCell className="text-center font-medium">
                         {machine.machineType.count}

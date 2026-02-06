@@ -21,14 +21,12 @@ import {
   Warehouse,
   DollarSign,
   Palette,
-  Car,
-  Eye,
-  EyeOff,
-  Plug,
+   Car,
+   Eye,
+   EyeOff
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { VehicleManager } from "@/components/settings/VehicleManager";
-import { NayaxIntegration } from "@/components/settings/NayaxIntegration";
 
 
 export default function Settings() {
@@ -259,7 +257,7 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="app" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
           <TabsTrigger value="app" className="gap-2">
             <SettingsIcon className="h-4 w-4" />
             <span className="hidden sm:inline">App</span>
@@ -271,10 +269,6 @@ export default function Settings() {
           <TabsTrigger value="security" className="gap-2">
             <Shield className="h-4 w-4" />
             <span className="hidden sm:inline">Security</span>
-          </TabsTrigger>
-          <TabsTrigger value="integrations" className="gap-2">
-            <Plug className="h-4 w-4" />
-            <span className="hidden sm:inline">Integrations</span>
           </TabsTrigger>
         </TabsList>
 
@@ -695,11 +689,6 @@ export default function Settings() {
               </Button>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Integrations Tab */}
-        <TabsContent value="integrations" className="space-y-6">
-          <NayaxIntegration />
         </TabsContent>
       </Tabs>
     </div>
