@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
     `;
 
     const emailResponse = await resend.emails.send({
-      from: "ClawOps <noreply@clawops.io>",
+      from: "ClawOps <noreply@clawops.com>",
       to: [email],
       subject: `${inviterDisplay} invited you to join their team on ClawOps`,
       html: emailHtml,
