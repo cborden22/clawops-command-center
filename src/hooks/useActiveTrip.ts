@@ -9,6 +9,7 @@ export interface ActiveTrip {
   startLocation: string;
   endLocation: string;
   locationId?: string;
+  routeId?: string;
   odometerStart: number;
   odometerEnd?: number;
   purpose: string;
@@ -52,6 +53,7 @@ export function useActiveTrip() {
           startLocation: data.start_location,
           endLocation: data.end_location,
           locationId: data.location_id || undefined,
+          routeId: data.route_id || undefined,
           odometerStart: Number(data.odometer_start) || 0,
           odometerEnd: data.odometer_end ? Number(data.odometer_end) : undefined,
           purpose: data.purpose || "",
@@ -82,6 +84,7 @@ export function useActiveTrip() {
     startLocation: string;
     endLocation: string;
     locationId?: string;
+    routeId?: string;
     odometerStart: number;
     purpose: string;
     notes?: string;
@@ -110,6 +113,7 @@ export function useActiveTrip() {
           start_location: tripData.startLocation,
           end_location: tripData.endLocation,
           location_id: tripData.locationId || null,
+          route_id: tripData.routeId || null,
           odometer_start: tripData.odometerStart,
           miles: 0, // Will be calculated when trip is completed
           purpose: tripData.purpose,
@@ -132,6 +136,7 @@ export function useActiveTrip() {
         startLocation: data.start_location,
         endLocation: data.end_location,
         locationId: data.location_id || undefined,
+        routeId: data.route_id || undefined,
         odometerStart: Number(data.odometer_start) || 0,
         purpose: data.purpose || "",
         notes: data.notes || "",
