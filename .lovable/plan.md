@@ -1,108 +1,99 @@
 
 
-## Fix Password Update Failing (422 Error)
+## Fix Password Change with OTP Verification
 
-### Problem Confirmed
-The auth logs show:
-- `POST /token` (signInWithPassword) returns **200** (success)
-- `PUT /user` (updateUser) returns **422** (unprocessable entity)
+### Problem
+The password update keeps failing with a **422 error** on `PUT /user`. Despite disabling "Secure password change" in auth settings and adding session delays, the update still fails immediately. The logs confirm the issue persists.
 
-This indicates the password verification works, but the password update itself fails.
+### Root Cause
+The backend may have cached the old "Secure password change" requirement, or there's a fundamental session token conflict when calling `signInWithPassword` followed by `updateUser`. The 100ms delay wasn't sufficient to resolve this.
 
----
+### Solution: OTP Reauthentication Flow
+Implement the official Supabase reauthentication flow:
 
-### Root Cause Analysis
+1. User enters their new password
+2. Click "Request Code" - sends an OTP to their email via `supabase.auth.reauthenticate()`
+3. User enters the 6-digit code from their email
+4. Click "Update Password" - updates password with `supabase.auth.updateUser({ password, nonce })`
 
-The 422 error can occur because:
-
-1. **Session conflict**: When `signInWithPassword` is called, it creates new session tokens. The `updateUser` call immediately after may be using stale session data, causing a mismatch.
-
-2. **Reauthentication still required**: Even with "Secure password change" disabled, the backend may still expect the session to be in a specific state.
-
-3. **Password policy violation**: The new password may be in a breached password list or doesn't meet backend requirements.
+This is the most reliable approach and matches what you selected ("Email code (OTP)").
 
 ---
 
-### Solution
+### Implementation Details
 
-Replace the current "verify then update" flow with a more reliable approach:
+#### Step 1: Update Settings.tsx - Add OTP State Variables
 
-**Option A: Use the session from signIn directly**
+```typescript
+// Add new state for OTP flow
+const [otpCode, setOtpCode] = useState("");
+const [otpSent, setOtpSent] = useState(false);
+const [isSendingOtp, setIsSendingOtp] = useState(false);
+```
 
-After `signInWithPassword` succeeds, the Supabase client automatically updates its internal session. However, there may be a race condition. We should:
-1. Wait for the session to propagate
-2. Then call `updateUser`
+#### Step 2: Create "Request Code" Function
 
-**Option B: Remove the pre-verification step (Recommended)**
+```typescript
+const handleRequestOtp = async () => {
+  // Validate new password fields first
+  if (!newPassword || !confirmPassword) {
+    toast({ title: "Enter New Password", description: "...", variant: "destructive" });
+    return;
+  }
+  if (newPassword !== confirmPassword) { /* validation */ }
+  if (newPassword.length < 6) { /* validation */ }
 
-Since the user is already authenticated (logged in), we don't need to call `signInWithPassword` to verify. We can:
-1. Directly call `updateUser` with the new password
-2. If it fails due to security requirements, show a helpful error
+  setIsSendingOtp(true);
+  try {
+    const { error } = await supabase.auth.reauthenticate();
+    if (error) throw error;
+    
+    setOtpSent(true);
+    toast({
+      title: "Code Sent",
+      description: "Check your email for a 6-digit verification code.",
+    });
+  } catch (error) {
+    toast({
+      title: "Failed to Send Code",
+      description: "Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSendingOtp(false);
+  }
+};
+```
 
-However, this removes the "confirm current password" security check. 
-
-**Option C: Use reauthenticate flow**
-
-Call `supabase.auth.reauthenticate()` which sends an OTP to the user's email, then use that nonce for `updateUser`. This is more complex but most secure.
-
----
-
-### Recommended Implementation (Option A - Fixed)
-
-The issue is that after `signInWithPassword`, we need to ensure the session is fully updated before calling `updateUser`. We'll add a small delay and ensure we're using the fresh session:
+#### Step 3: Update Password Function with Nonce
 
 ```typescript
 const handleUpdatePassword = async () => {
-  // ... validation checks ...
+  if (!otpCode) {
+    toast({ title: "Enter Code", description: "Enter the 6-digit code from your email.", variant: "destructive" });
+    return;
+  }
 
   setIsUpdatingPassword(true);
   try {
-    // Verify the current password
-    const { data: signInData, error: verifyError } = await supabase.auth.signInWithPassword({
-      email: user?.email || "",
-      password: currentPassword,
-    });
-
-    if (verifyError) {
-      toast({
-        title: "Verification Failed",
-        description: "Invalid current password. Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Small delay to ensure session is fully updated
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // Update password with fresh session
     const { error } = await supabase.auth.updateUser({
-      password: newPassword
+      password: newPassword,
+      nonce: otpCode  // The OTP code proves identity
     });
 
-    if (error) {
-      // Check for specific error types
-      if (error.message?.includes("same_password") || error.message?.includes("different")) {
-        toast({
-          title: "Password Error",
-          description: "New password must be different from your current password.",
-          variant: "destructive",
-        });
-        return;
-      }
-      throw error;
-    }
+    if (error) throw error;
 
-    // Success
-    setCurrentPassword("");
+    // Success - clear all fields
     setNewPassword("");
     setConfirmPassword("");
+    setOtpCode("");
+    setOtpSent(false);
     
     toast({
       title: "Password Updated",
       description: "Your password has been changed successfully.",
     });
-  } catch (error: any) {
+  } catch (error) {
     toast({
       title: "Error",
       description: getSafeErrorMessage(error),
@@ -114,34 +105,21 @@ const handleUpdatePassword = async () => {
 };
 ```
 
----
+#### Step 4: Update UI in Security Tab
 
-### Additional Fix: Improved Error Handling
+Remove "Current Password" field (no longer needed with OTP).
 
-Update the `getSafeErrorMessage` function to handle more 422 error cases:
-
-```typescript
-const getSafeErrorMessage = (error: Error | any): string => {
-  const message = error?.message?.toLowerCase() || "";
-  const code = error?.code || "";
-  
-  if (message.includes("invalid login") || message.includes("invalid credentials")) {
-    return "Invalid current password. Please try again.";
-  }
-  if (message.includes("same_password") || code === "same_password") {
-    return "New password must be different from your current password.";
-  }
-  if (message.includes("weak_password") || message.includes("too weak")) {
-    return "Password is too weak. Please choose a stronger password.";
-  }
-  if (message.includes("reauthentication") || code === "reauthentication_needed") {
-    return "Please try logging out and back in, then update your password.";
-  }
-  if (message.includes("password")) {
-    return "Password update failed. Please try again.";
-  }
-  return "An error occurred. Please try again.";
-};
+Add new UI flow:
+```
++-------------------------------------+
+|  New Password          [••••••] 👁  |
+|  Confirm Password      [••••••] 👁  |
++-------------------------------------+
+|  [ Request Code ]  (sends OTP)      |
++-------------------------------------+
+|  Verification Code   [______]       |  <- Only shown after OTP sent
+|  [ Update Password ]                |
++-------------------------------------+
 ```
 
 ---
@@ -150,16 +128,25 @@ const getSafeErrorMessage = (error: Error | any): string => {
 
 | File | Changes |
 |------|---------|
-| `src/pages/Settings.tsx` | Add delay after signIn, improve error handling for 422 cases |
+| `src/pages/Settings.tsx` | Replace current password flow with OTP flow |
 
 ---
 
-### Verification Steps
+### User Experience
 
-After implementation:
-1. Go to **Settings > Security**
-2. Enter current password, new password, and confirm
-3. Click "Update Password"
-4. Should see success message "Password Updated"
-5. Log out and log back in with the new password to verify
+1. Go to Settings > Security
+2. Enter new password and confirm
+3. Click "Request Code"
+4. Check email for 6-digit code
+5. Enter code and click "Update Password"
+6. Success message shown
+
+---
+
+### Technical Notes
+
+- `supabase.auth.reauthenticate()` sends a reauthentication nonce (OTP) to the user's registered email
+- The `nonce` parameter in `updateUser()` tells Supabase this is a verified password change
+- No need for current password entry since the OTP proves identity
+- This bypasses all the session token conflicts we've been experiencing
 
