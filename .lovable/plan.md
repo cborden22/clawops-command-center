@@ -1,348 +1,194 @@
 
-## Enhanced Routes Tracking: GPS Live Tracking + Simplified Manual Entry
+## Maintenance Section Stability Improvements
 
-This plan adds two distinct mileage tracking modes: **GPS Live Tracking** using the phone's geolocation, and a **Simplified Manual Mode** that streamlines the current odometer-based workflow with support for "in-progress" trips that auto-save.
-
----
-
-## Overview
-
-### Current State
-- The mileage tracker requires entering both start AND end odometer readings upfront
-- No GPS-based tracking capability
-- No concept of "in-progress" trips that can be completed later
-- Users cannot start a trip and update the end odometer after completing their route
-
-### New Features
-
-**Option 1: GPS Live Tracking**
-- Start tracking when leaving, phone records distance using GPS
-- Real-time distance display during the trip
-- Auto-saves periodically to prevent data loss
-- End tracking when done, miles are calculated automatically
-
-**Option 2: Simplified Manual Mode**
-- Select vehicle, from location, and destination (or select a saved route template)
-- Enter start odometer only when beginning
-- Trip saves immediately as "in-progress"
-- Return later to enter end odometer and complete the trip
-- Data auto-saves as you type
+This plan addresses the app freezing issue when logging in after a maintenance ticket is submitted. The fix involves making the maintenance data fetching more robust, improving error handling, and ensuring the app gracefully handles edge cases.
 
 ---
 
-## Part 1: Database Changes
+## Root Cause Analysis
 
-### New Columns for `mileage_entries` table
+After investigating the code, several potential issues were identified:
 
-| Column | Type | Purpose |
-|--------|------|---------|
-| `status` | text | Track trip state: 'in_progress', 'completed' |
-| `tracking_mode` | text | 'gps' or 'odometer' |
-| `gps_distance_meters` | numeric | Raw GPS-calculated distance |
-| `gps_start_lat` | numeric | Starting GPS latitude |
-| `gps_start_lng` | numeric | Starting GPS longitude |
-| `gps_end_lat` | numeric | Ending GPS latitude |
-| `gps_end_lng` | numeric | Ending GPS longitude |
-| `started_at` | timestamptz | When tracking started (for GPS mode) |
-| `completed_at` | timestamptz | When trip was completed |
+1. **Aggressive `!inner` Joins**: The `useMaintenanceReports` hook uses `!inner` joins which will fail if the related `location_machines` or `locations` records are missing/deleted
+2. **Silent Error Handling**: Errors are caught but not surfaced to users, making debugging difficult
+3. **No Loading State Check on Dashboard**: The Dashboard uses maintenance data without checking if it's loaded
+4. **Missing RLS Filter**: The maintenance query doesn't filter by `user_id`, relying solely on RLS which could cause performance issues with large datasets
 
-### Migration SQL
-```sql
-ALTER TABLE mileage_entries
-ADD COLUMN IF NOT EXISTS status text DEFAULT 'completed',
-ADD COLUMN IF NOT EXISTS tracking_mode text DEFAULT 'odometer',
-ADD COLUMN IF NOT EXISTS gps_distance_meters numeric,
-ADD COLUMN IF NOT EXISTS gps_start_lat numeric,
-ADD COLUMN IF NOT EXISTS gps_start_lng numeric,
-ADD COLUMN IF NOT EXISTS gps_end_lat numeric,
-ADD COLUMN IF NOT EXISTS gps_end_lng numeric,
-ADD COLUMN IF NOT EXISTS started_at timestamptz,
-ADD COLUMN IF NOT EXISTS completed_at timestamptz;
+---
+
+## Solution Overview
+
+### 1. Make the Query More Resilient
+
+Change from `!inner` joins (which require matching records) to regular joins (which allow null values):
+
+**Current Query (problematic):**
+```typescript
+.select(`
+  *,
+  location_machines!inner(
+    machine_type,
+    custom_label,
+    locations!inner(name)
+  )
+`)
 ```
 
----
+**Fixed Query (resilient):**
+```typescript
+.select(`
+  *,
+  location_machines(
+    machine_type,
+    custom_label,
+    locations(name)
+  )
+`)
+.eq("user_id", user.id) // Explicit filter for better performance
+```
 
-## Part 2: GPS Live Tracking Hook
+### 2. Improve Error State Management
 
-### New Hook: `useGpsTracking.ts`
-
-Creates a React hook that wraps the browser's Geolocation API:
+Add proper error state tracking and display:
 
 ```typescript
-interface GpsTrackingState {
-  isTracking: boolean;
-  distanceMeters: number;
-  distanceMiles: number;
-  currentPosition: { lat: number; lng: number } | null;
-  startPosition: { lat: number; lng: number } | null;
-  error: string | null;
-  accuracy: number | null;
-  elapsedTime: number; // seconds
-}
+const [error, setError] = useState<string | null>(null);
 
-function useGpsTracking() {
-  // State management
-  // Start tracking: navigator.geolocation.watchPosition()
-  // Calculate distance using Haversine formula
-  // Stop tracking: navigator.geolocation.clearWatch()
-  // Auto-save every 30 seconds
+// In fetchReports:
+} catch (error: any) {
+  console.error("Error fetching maintenance reports:", error);
+  setError(error?.message || "Failed to load maintenance reports");
 }
 ```
 
-**Key Features:**
-- Uses `watchPosition()` for continuous GPS updates
-- Calculates cumulative distance using Haversine formula
-- Handles GPS errors gracefully (no signal, denied permission)
-- Shows current accuracy level to user
-- Battery-conscious: configurable update frequency
+### 3. Handle Orphaned Reports Gracefully
+
+Reports with deleted machines should show a fallback message rather than crashing:
+
+```typescript
+machine_type: report.location_machines?.machine_type || "Unknown Machine",
+machine_label: report.location_machines?.custom_label,
+location_name: report.location_machines?.locations?.name || "Unknown Location",
+```
+
+### 4. Add Loading State to Dashboard
+
+Ensure the Dashboard doesn't render maintenance-dependent widgets until data is loaded:
+
+```typescript
+const { reports: maintenanceReports, isLoaded: maintenanceLoaded } = useMaintenanceReports();
+
+// Include in isLoaded check
+const isLoaded = locationsLoaded && entriesLoaded && inventoryLoaded && 
+                 layoutLoaded && routesLoaded && schedulesLoaded && maintenanceLoaded;
+```
+
+### 5. Add Retry Mechanism
+
+Add a retry button when errors occur so users can attempt to reload:
+
+```typescript
+{error && (
+  <Card className="glass-card border-destructive/30">
+    <CardContent className="py-6 text-center">
+      <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-destructive" />
+      <p className="text-sm text-destructive">{error}</p>
+      <Button variant="outline" size="sm" className="mt-3" onClick={refetch}>
+        Try Again
+      </Button>
+    </CardContent>
+  </Card>
+)}
+```
 
 ---
 
-## Part 3: Simplified Manual Entry Flow
+## Files to Modify
 
-### Redesigned "Log Trip" Tab
-
-Replace the current form with a two-phase flow:
-
-**Phase 1: Start Trip**
-```text
-+-----------------------------------------------+
-|  Start a Trip                                 |
-+-----------------------------------------------+
-|  [Mode: GPS Tracking ○ | Manual Odometer ●]  |
-+-----------------------------------------------+
-|  Vehicle *        [ My Work Van       ▼ ]    |
-|  From *           [ Warehouse         ▼ ]    |
-|  To *             [ Pete's Bar        ▼ ]    |
-|                   -- OR --                   |
-|  Use Route        [ Morning Route     ▼ ]    |
-+-----------------------------------------------+
-|  Start Odometer * [___45,276___]             |
-|                                               |
-|  Purpose          [ Collection Run    ▼ ]    |
-+-----------------------------------------------+
-|         [ Start Trip ]                        |
-+-----------------------------------------------+
-```
-
-When user clicks "Start Trip":
-- Create mileage entry with `status: 'in_progress'`
-- Save start odometer, from/to locations, vehicle
-- Show active trip card at top of page
-
-**Phase 2: Complete Trip (Active Trip Card)**
-```text
-+-----------------------------------------------+
-|  🚗 Active Trip                    [Discard]  |
-+-----------------------------------------------+
-|  Pete's Bar                                   |
-|  Started: 2:30 PM                             |
-|  Start Odometer: 45,276                       |
-+-----------------------------------------------+
-|  End Odometer *   [___45,298___]             |
-|                                               |
-|  Calculated:  22.0 miles                      |
-|  Est. Deduction: $14.74                       |
-+-----------------------------------------------+
-|         [ Complete Trip ]                     |
-+-----------------------------------------------+
-```
-
-**Key Behaviors:**
-- Active trip persists even if app is closed (stored in database with status='in_progress')
-- End odometer field auto-saves as user types (debounced)
-- User can discard an active trip if they made a mistake
-- Only one active trip at a time per vehicle
-
----
-
-## Part 4: GPS Tracking Mode UI
-
-When user selects "GPS Tracking" mode:
-
-**Starting GPS Trip:**
-```text
-+-----------------------------------------------+
-|  Start GPS Tracking                           |
-+-----------------------------------------------+
-|  Vehicle *        [ My Work Van       ▼ ]    |
-|  From *           [ Warehouse         ▼ ]    |
-|  To *             [ Pete's Bar        ▼ ]    |
-|  Purpose          [ Collection Run    ▼ ]    |
-+-----------------------------------------------+
-|  📍 GPS Accuracy: High (5m)                   |
-|                                               |
-|         [ Start Tracking ]                    |
-+-----------------------------------------------+
-```
-
-**Live Tracking Display:**
-```text
-+-----------------------------------------------+
-|  🔴 Tracking Active                 [Stop]   |
-+-----------------------------------------------+
-|  Distance:     12.4 miles                     |
-|  Est. Deduction: $8.31                        |
-|  Duration:     0:23:45                        |
-|                                               |
-|  📍 Signal: Strong                            |
-|     Accuracy: 8m                              |
-+-----------------------------------------------+
-|  Destination: Pete's Bar                      |
-|                                               |
-|         [ Complete & Save Trip ]              |
-+-----------------------------------------------+
-```
-
-**GPS Error Handling:**
-- Permission denied: Show settings instruction
-- No GPS available: Fall back to manual mode
-- Weak signal: Show warning, continue tracking
-- Battery low: Reduce update frequency
-
----
-
-## Part 5: Quick Add Integration
-
-Update the mobile "Quick Add" sheet to support the new flow:
-
-**Quick Mileage Form Changes:**
-1. Add mode toggle (GPS vs Manual)
-2. Support starting an "in-progress" trip
-3. Add "Complete Active Trip" option if one exists
-4. Auto-detect vehicle's last recorded odometer as default
-
----
-
-## Part 6: Selecting a Route Template
-
-When user selects a route template instead of manual from/to:
-
-```text
-+-----------------------------------------------+
-|  Use Route Template                           |
-+-----------------------------------------------+
-|  [ Morning Route ▼ ]                          |
-|                                               |
-|  Stops: Warehouse → Joe's → Pete's → Mike's   |
-|  Template Miles: 34.2 mi (RT)                 |
-+-----------------------------------------------+
-|  Start Odometer * [___45,276___]             |
-|                                               |
-|         [ Start Route ]                       |
-+-----------------------------------------------+
-```
-
-When route is selected:
-- Auto-populate From (first stop) and To (last stop)
-- Pre-fill purpose with route name
-- Link entry to `route_id` in database
-
----
-
-## Implementation Files
-
-### New Files
-| File | Purpose |
-|------|---------|
-| `src/hooks/useGpsTracking.ts` | GPS tracking hook with Haversine distance calculation |
-| `src/hooks/useActiveTrip.ts` | Manage in-progress trip state |
-| `src/components/mileage/GpsTracker.tsx` | Live GPS tracking UI component |
-| `src/components/mileage/ActiveTripCard.tsx` | Active trip completion card |
-| `src/components/mileage/TrackingModeSelector.tsx` | Toggle between GPS/Manual modes |
-
-### Modified Files
 | File | Changes |
 |------|---------|
-| `src/hooks/useMileageDB.ts` | Add status field, update/complete in-progress entries |
-| `src/pages/MileageTracker.tsx` | Redesign Log Trip tab with two-phase flow, add GPS mode |
-| `src/components/mobile/QuickMileageForm.tsx` | Add mode toggle, support in-progress trips |
+| `src/hooks/useMaintenanceReports.ts` | Remove `!inner` joins, add user_id filter, add error state, improve null handling |
+| `src/pages/Maintenance.tsx` | Display error state with retry option |
+| `src/pages/Dashboard.tsx` | Wait for maintenance data before rendering dependent widgets |
+| `src/components/maintenance/MaintenanceWidget.tsx` | Handle error state gracefully |
 
 ---
 
-## Technical Details
+## Technical Changes
 
-### Haversine Distance Formula
+### useMaintenanceReports.ts
+
+**Add error state:**
 ```typescript
-function haversineDistance(
-  lat1: number, lon1: number,
-  lat2: number, lon2: number
-): number {
-  const R = 3958.8; // Earth's radius in miles
-  const dLat = toRadians(lat2 - lat1);
-  const dLon = toRadians(lon2 - lon1);
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-}
+const [error, setError] = useState<string | null>(null);
 ```
 
-### GPS Tracking Options
+**Change the query:**
+- Remove `!inner` from joins to allow null values
+- Add explicit `.eq("user_id", user.id)` filter for performance
+- Handle null values with fallbacks in data mapping
+
+**Return error state:**
 ```typescript
-const gpsOptions: PositionOptions = {
-  enableHighAccuracy: true,  // Use GPS (not WiFi/cell)
-  timeout: 10000,            // 10 second timeout
-  maximumAge: 5000,          // Accept 5-second-old position
+return {
+  reports,
+  openReports,
+  inProgressReports,
+  resolvedReports,
+  isLoaded,
+  isLoading,
+  error,
+  refetch: fetchReports,
+  updateReport,
+  deleteReport,
 };
 ```
 
-### Auto-Save Strategy
-- **GPS Mode**: Save accumulated distance every 30 seconds
-- **Manual Mode**: Debounce save end odometer (1 second delay)
-- **Both**: Final save on "Complete Trip" action
+### Maintenance.tsx
+
+**Add error display:**
+- Show an error card when data fails to load
+- Include a "Try Again" button to retry fetching
+- Preserve existing UI for when data loads successfully
+
+### Dashboard.tsx
+
+**Update loading check:**
+- Include `maintenanceLoaded` in the `isLoaded` computation
+- Safely handle the case where `maintenanceReports` might be undefined
 
 ---
 
-## User Flow Summary
+## Additional Improvements
 
-### Quick Single-Location Trip
-1. Open Routes page or Quick Add
-2. Select vehicle (auto-fills last odometer)
-3. Choose "To" location
-4. Enter current odometer reading
-5. Click "Start Trip" - saves immediately as in-progress
-6. After visiting location, enter end odometer
-7. Click "Complete Trip" - calculates and saves miles
+### Create Maintenance Report with Auth Check
 
-### Full Route with GPS
-1. Select "GPS Tracking" mode
-2. Select vehicle and route template
-3. Grant GPS permission if needed
-4. Click "Start Tracking"
-5. Drive your route - watch miles accumulate
-6. Click "Complete & Save Trip" when done
+For the `AddMaintenanceReportDialog` that operators use, add proper validation:
+- Ensure the machine exists before submitting
+- Show meaningful error messages on failure
+- Prevent double-submissions with loading state
 
-### Resume In-Progress Trip
-1. Open Routes page
-2. See "Active Trip" card at top
-3. Enter end odometer
-4. Click "Complete Trip"
+### Database Consideration
+
+If orphaned reports become common, consider adding a database cleanup function or cascade delete rules. However, this is out of scope for the immediate fix.
+
+---
+
+## Testing Checklist
+
+After implementation:
+1. Submit a maintenance report via the public QR code page
+2. Log in as the operator and verify the app loads without freezing
+3. Navigate to the Maintenance page and verify reports display correctly
+4. Delete a location with associated maintenance reports and verify the app still works
+5. Test the "Try Again" button when simulating network errors
 
 ---
 
 ## Implementation Order
 
-1. **Database migration** - Add new columns for status, tracking_mode, GPS data
-2. **Update useMileageDB hook** - Support in-progress entries, new fields
-3. **Create useActiveTrip hook** - Fetch/manage current in-progress trip
-4. **Build ActiveTripCard component** - UI for completing trips
-5. **Redesign MileageTracker Log Trip tab** - Two-phase manual flow
-6. **Create useGpsTracking hook** - GPS tracking logic
-7. **Build GpsTracker component** - Live tracking UI
-8. **Add TrackingModeSelector** - Mode toggle component
-9. **Integrate GPS mode** - Connect GPS UI to mileage tracker
-10. **Update QuickMileageForm** - Support both modes on mobile
-11. **Add route template selection** - Pre-fill from saved routes
-
----
-
-## Edge Cases Handled
-
-- **App closed during tracking**: GPS mode stops tracking, in-progress trip can be completed manually
-- **No GPS permission**: Fall back to manual mode with explanation
-- **Weak GPS signal**: Show warning, continue tracking with degraded accuracy
-- **Multiple vehicles**: Only one active trip per vehicle at a time
-- **Invalid odometer**: Validate end > start, show clear error
-- **Discard trip**: Allow user to delete in-progress trip if made in error
+1. Update `useMaintenanceReports.ts` with resilient query and error handling
+2. Update `Maintenance.tsx` with error display
+3. Update `Dashboard.tsx` with proper loading state
+4. Update `MaintenanceWidget.tsx` with error handling
+5. Test the complete flow end-to-end
