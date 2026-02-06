@@ -43,6 +43,10 @@ export interface MachineType {
   winProbability?: number; // Stored as "1 in X" (e.g., 15 means 1 in 15 odds)
   costPerPlay?: number; // Dollar value per play (e.g., 0.50, 1.00, 2.00)
   unitCode?: string; // Auto-generated unit code for QR URLs (e.g., "claw-1")
+  // Nayax integration fields
+  nayaxMachineId?: string; // Nayax Telemetry ID for API mapping
+  isCardEnabled?: boolean; // Whether machine accepts credit cards (online vs offline)
+  lastNayaxSync?: string; // Last sync timestamp from Nayax
 }
 
 export const MACHINE_TYPE_OPTIONS: { value: MachineType["type"]; label: string }[] = [
@@ -152,6 +156,10 @@ export function useLocations() {
               winProbability: m.win_probability ? Number(m.win_probability) : undefined,
               costPerPlay: m.cost_per_play ? Number(m.cost_per_play) : 0.50,
               unitCode: m.unit_code || undefined, // Include unit code for QR URLs
+              // Nayax integration fields
+              nayaxMachineId: m.nayax_machine_id || undefined,
+              isCardEnabled: m.is_card_enabled ?? false,
+              lastNayaxSync: m.last_nayax_sync || undefined,
             };
           });
 
@@ -283,6 +291,9 @@ export function useLocations() {
             win_probability: m.winProbability || null,
             cost_per_play: m.costPerPlay ?? 0.50,
             unit_code: unitCode,
+            // Nayax integration fields
+            nayax_machine_id: m.nayaxMachineId || null,
+            is_card_enabled: m.isCardEnabled ?? false,
           };
         });
 
@@ -362,6 +373,9 @@ export function useLocations() {
               win_probability: m.winProbability || null,
               cost_per_play: m.costPerPlay ?? 0.50,
               unit_code: unitCode,
+              // Nayax integration fields
+              nayax_machine_id: m.nayaxMachineId || null,
+              is_card_enabled: m.isCardEnabled ?? false,
             };
           });
 
