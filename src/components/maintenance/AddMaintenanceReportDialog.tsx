@@ -103,10 +103,10 @@ export function AddMaintenanceReportDialog({ open, onOpenChange, onSuccess }: Ad
     if (!user) return;
     setIsLoadingLocations(true);
     try {
+      // RLS handles access control - owners see own data, team members see owner data via has_team_permission()
       const { data, error } = await supabase
         .from("locations")
         .select("id, name")
-        .eq("user_id", user.id)
         .eq("is_active", true)
         .order("name");
 

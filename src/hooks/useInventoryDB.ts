@@ -99,10 +99,10 @@ export function useInventory() {
     }
 
     try {
+      // RLS handles access control - owners see own data, team members see owner data via has_team_permission()
       const { data, error } = await supabase
         .from("inventory_items")
         .select("*")
-        .eq("user_id", user.id)
         .order("last_updated", { ascending: false });
 
       if (error) throw error;

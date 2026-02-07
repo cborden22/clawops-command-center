@@ -96,10 +96,10 @@ export function useLocations() {
 
     try {
       // Fetch locations
+      // RLS handles access control - owners see own data, team members see owner data via has_team_permission()
       const { data: locationsData, error: locationsError } = await supabase
         .from("locations")
         .select("*")
-        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (locationsError) throw locationsError;

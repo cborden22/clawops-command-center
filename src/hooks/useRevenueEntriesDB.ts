@@ -30,10 +30,10 @@ export function useRevenueEntries() {
     }
 
     try {
+      // RLS handles access control - owners see own data, team members see owner data via has_team_permission()
       const { data, error } = await supabase
         .from("revenue_entries")
         .select("*")
-        .eq("user_id", user.id)
         .order("date", { ascending: false });
 
       if (error) throw error;

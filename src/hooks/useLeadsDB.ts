@@ -72,6 +72,7 @@ export function useLeadsDB() {
 
     try {
       setIsLoading(true);
+      // RLS handles access control - owners see own data, team members see owner data via has_team_permission()
       const { data, error } = await supabase
         .from('leads')
         .select('*')
