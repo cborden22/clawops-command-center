@@ -1,84 +1,87 @@
 
-## Fix Team Member Data Visibility
 
-### Problem
-When a team member logs in, they cannot see any data (locations, maintenance reports, etc.) even though they have the correct permissions assigned. The data exists in the owner's account but the team member sees empty screens.
+## Fix Team Member Data Visibility - Database Policy Update
 
-### Root Cause
-The frontend hooks explicitly filter queries by the logged-in user's ID:
-```javascript
-.eq("user_id", user.id)
-```
+### Issue Summary
+After investigating, the frontend code changes are correctly deployed and working. The RLS policies on the main tables (`locations`, `location_machines`, `maintenance_reports`, `inventory_items`, `revenue_entries`, `leads`) are correctly configured with team permission policies.
 
-This bypasses the RLS policies that allow team members to access their owner's data. The RLS policies are correctly configured using `has_team_permission()`, but the frontend code adds an explicit filter that prevents team members from seeing owner data.
-
-### Solution
-Remove the explicit `user_id` filter from SELECT queries on tables that have team permission RLS policies. The RLS policies will automatically:
-1. Allow owners to see their own data
-2. Allow team members to see their owner's data based on their permissions
+However, there are **two missing team RLS policies** that need to be added, and the user may need to refresh their browser and ensure they're logged in as the correct team member account (`cameron@sqftent.com`).
 
 ---
 
-### Files to Modify
+### Missing RLS Policies
 
-| File | Change |
-|------|--------|
-| `src/hooks/useLocationsDB.ts` | Remove `.eq("user_id", user.id)` from fetchLocations query |
-| `src/hooks/useMaintenanceReports.ts` | Remove `.eq("user_id", user.id)` from fetchReports query |
-| `src/hooks/useInventoryDB.ts` | Remove `.eq("user_id", user.id)` from fetch query |
-| `src/hooks/useRevenueEntriesDB.ts` | Remove `.eq("user_id", user.id)` from fetchEntries query |
-| `src/hooks/useLeadsDB.ts` | Remove `.eq("user_id", user.id)` from fetchLeads query |
-| `src/hooks/useReportsData.ts` | Remove filters from queries for locations, revenue, inventory |
-| `src/components/maintenance/AddMaintenanceReportDialog.tsx` | Remove filter from locations query |
+The following child tables are missing team member SELECT policies:
+
+| Table | Current Policy | Issue |
+|-------|---------------|-------|
+| `commission_summaries` | Only checks `locations.user_id = auth.uid()` | Team members can't see owner's commission summaries |
+| `location_agreements` | Only checks `locations.user_id = auth.uid()` | Team members can't see owner's agreements |
 
 ---
 
-### Technical Details
+### Database Migration Required
 
-**Before (locations query):**
-```typescript
-const { data: locationsData } = await supabase
-  .from("locations")
-  .select("*")
-  .eq("user_id", user.id)  // ❌ Blocks team member access
-  .order("created_at", { ascending: false });
-```
+Add team member SELECT policies to both tables:
 
-**After (locations query):**
-```typescript
-const { data: locationsData } = await supabase
-  .from("locations")
-  .select("*")
-  // RLS handles access control:
-  // - Owners see their own data (user_id = auth.uid())
-  // - Team members see owner data via has_team_permission()
-  .order("created_at", { ascending: false });
+```sql
+-- Add team permission policy for commission_summaries
+CREATE POLICY "Team members can view owner commission summaries"
+ON public.commission_summaries FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM public.locations l
+    WHERE l.id = commission_summaries.location_id
+      AND has_team_permission(auth.uid(), l.user_id, 'locations')
+  )
+);
+
+-- Add team permission policy for location_agreements  
+CREATE POLICY "Team members can view owner location agreements"
+ON public.location_agreements FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM public.locations l
+    WHERE l.id = location_agreements.location_id
+      AND has_team_permission(auth.uid(), l.user_id, 'locations')
+  )
+);
 ```
 
 ---
 
-### Why This Works
-The RLS policies on these tables already have two SELECT policies:
-1. **Owner policy**: `USING (auth.uid() = user_id)` - owners see their own data
-2. **Team policy**: `USING (has_team_permission(auth.uid(), user_id, 'permission_name'))` - team members see owner data
+### Testing Instructions
 
-When a query is made without an explicit user_id filter, RLS evaluates both policies and returns all rows the user is authorized to see.
+After the fix is deployed:
 
----
-
-### Tables NOT Changed
-These tables should keep their `user_id` filter because they are user-specific settings without team RLS policies:
-- `user_preferences` - Personal dashboard settings
-- `user_schedules` - Personal schedules
-- `profiles` - Personal profile data
-- `vehicles` - Personal vehicle data
-- `mileage_entries` - Personal mileage tracking
-- `mileage_routes` - Personal routes
+1. **Log out** of the current account (if logged in as `admin@test.com`)
+2. **Log in as `cameron@sqftent.com`** (the team member)
+3. **Hard refresh** the browser (Ctrl+Shift+R or Cmd+Shift+R)
+4. Navigate to **Locations** - should see 15 locations from `chborden22@gmail.com`
+5. Navigate to **Maintenance** - should see any maintenance reports from the owner
+6. Navigate to **Inventory** - should see owner's inventory items
 
 ---
 
-### Testing After Implementation
-1. Log in as the team member (`cbordensales@gmail.com`)
-2. Navigate to Locations - should see owner's "test" location
-3. Navigate to Maintenance - should see any maintenance reports
-4. Navigate to Inventory - should see owner's inventory (if permissions allow)
+### Verification of Current State
+
+I've verified the following are working correctly:
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| `useLocationsDB.ts` | Correct | No `user_id` filter in SELECT query |
+| `useMaintenanceReports.ts` | Correct | No `user_id` filter in SELECT query |
+| `useInventoryDB.ts` | Correct | No `user_id` filter in SELECT query |
+| `useRevenueEntriesDB.ts` | Correct | No `user_id` filter in SELECT query |
+| `useLeadsDB.ts` | Correct | No `user_id` filter in SELECT query |
+| `locations` RLS | Correct | Has team permission policy |
+| `location_machines` RLS | Correct | Has team permission policy |
+| `has_team_permission()` | Correct | Returns `true` for cameron viewing chborden22's data |
+| Team member record | Correct | cameron@sqftent.com is active team member of chborden22@gmail.com |
+
+---
+
+### Important Note
+
+The network logs show the current preview session is logged in as `admin@test.com`, not `cameron@sqftent.com`. When `cameron@sqftent.com` logs in and views the Locations page, they should see all 15 locations from `chborden22@gmail.com`.
+
