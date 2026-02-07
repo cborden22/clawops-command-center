@@ -1,87 +1,116 @@
 
+## What’s actually happening
 
-## Fix Team Member Data Visibility - Database Policy Update
+Your backend records show the team relationship is correctly set up:
 
-### Issue Summary
-After investigating, the frontend code changes are correctly deployed and working. The RLS policies on the main tables (`locations`, `location_machines`, `maintenance_reports`, `inventory_items`, `revenue_entries`, `leads`) are correctly configured with team permission policies.
+- Owner profile: `chborden22@gmail.com` → user_id `4770ed25-863f-40bb-96d4-9dbe0855e349`
+- Team member profile: `cameron@sqftent.com` → user_id `4f28bd1d-602f-49e3-ade0-0ac174d79f82`
+- Team membership row exists and is **active**
+- Permissions row exists and has **all view permissions = true**
+- Owner has data: **15 locations**, **2 maintenance reports**
 
-However, there are **two missing team RLS policies** that need to be added, and the user may need to refresh their browser and ensure they're logged in as the correct team member account (`cameron@sqftent.com`).
+So this is not “the team member created their own business so nothing can be shared.” The share relationship exists and permissions are true.
+
+Given that, the most likely cause is **Row Level Security policy evaluation** on the shared tables: the “owner can view” and “team member can view” SELECT policies are currently not combining the way we expect. If they’re being treated as restrictive (AND) instead of permissive (OR), a team member will see *zero rows* even though `has_team_permission()` returns true.
+
+The frontend query filters were already removed, and code search confirms there are no remaining `.eq("user_id", user.id)` filters on locations SELECTs.
+
+## Goal
+
+Make shared tables return rows when either:
+- the logged-in user is the owner of the row, OR
+- the logged-in user has team permission to view the owner’s rows
+
+…and do this in a way that is consistent across all shared modules (Locations, Maintenance, Inventory, Revenue, Leads, Reports).
 
 ---
 
-### Missing RLS Policies
+## Plan: Fix by consolidating SELECT RLS policies (database migration)
 
-The following child tables are missing team member SELECT policies:
+### 1) Update SELECT policies for “shared business tables”
+For each shared table below, we will:
+1. **DROP** the existing two SELECT policies:
+   - “Users can view own …”
+   - “Team members can view owner …”
+2. **CREATE a single SELECT policy** that explicitly uses `OR`:
 
-| Table | Current Policy | Issue |
-|-------|---------------|-------|
-| `commission_summaries` | Only checks `locations.user_id = auth.uid()` | Team members can't see owner's commission summaries |
-| `location_agreements` | Only checks `locations.user_id = auth.uid()` | Team members can't see owner's agreements |
+#### Tables and policy logic
+- **locations**
+  - `USING (auth.uid() = user_id OR has_team_permission(auth.uid(), user_id, 'locations'))`
 
----
+- **inventory_items**
+  - `USING (auth.uid() = user_id OR has_team_permission(auth.uid(), user_id, 'inventory'))`
 
-### Database Migration Required
+- **revenue_entries**
+  - `USING (auth.uid() = user_id OR has_team_permission(auth.uid(), user_id, 'revenue'))`
 
-Add team member SELECT policies to both tables:
+- **leads**
+  - `USING (auth.uid() = user_id OR has_team_permission(auth.uid(), user_id, 'leads'))`
+
+- **maintenance_reports**
+  - `USING (auth.uid() = user_id OR has_team_permission(auth.uid(), user_id, 'maintenance'))`
+  - (We will **not** change the existing UPDATE policy that allows team members with manage permission to update maintenance.)
+
+### 2) Update SELECT policies for “child tables tied to locations”
+These tables don’t have a direct `user_id`, so visibility must be derived through the related location:
+
+- **location_machines**
+- **commission_summaries**
+- **location_agreements**
+
+We will replace their separate owner/team SELECT policies with one policy:
 
 ```sql
--- Add team permission policy for commission_summaries
-CREATE POLICY "Team members can view owner commission summaries"
-ON public.commission_summaries FOR SELECT
 USING (
   EXISTS (
-    SELECT 1 FROM public.locations l
-    WHERE l.id = commission_summaries.location_id
-      AND has_team_permission(auth.uid(), l.user_id, 'locations')
+    SELECT 1
+    FROM public.locations l
+    WHERE l.id = <child>.location_id
+      AND (
+        l.user_id = auth.uid()
+        OR has_team_permission(auth.uid(), l.user_id, 'locations')
+      )
   )
-);
-
--- Add team permission policy for location_agreements  
-CREATE POLICY "Team members can view owner location agreements"
-ON public.location_agreements FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 FROM public.locations l
-    WHERE l.id = location_agreements.location_id
-      AND has_team_permission(auth.uid(), l.user_id, 'locations')
-  )
-);
+)
 ```
 
----
+This ensures the team member can see machines/summaries/agreements for the owner’s locations.
 
-### Testing Instructions
+### 3) Safety checks (before/after)
+We’ll validate in the backend (read-only checks):
+- The team_members row is still active
+- Owner still sees their own data
+- Team member can now see owner rows in:
+  - locations
+  - maintenance_reports
+  - location_machines
+  - inventory_items (if any exist)
+  - revenue_entries (if any exist)
+  - leads (if any exist)
 
-After the fix is deployed:
-
-1. **Log out** of the current account (if logged in as `admin@test.com`)
-2. **Log in as `cameron@sqftent.com`** (the team member)
-3. **Hard refresh** the browser (Ctrl+Shift+R or Cmd+Shift+R)
-4. Navigate to **Locations** - should see 15 locations from `chborden22@gmail.com`
-5. Navigate to **Maintenance** - should see any maintenance reports from the owner
-6. Navigate to **Inventory** - should see owner's inventory items
-
----
-
-### Verification of Current State
-
-I've verified the following are working correctly:
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| `useLocationsDB.ts` | Correct | No `user_id` filter in SELECT query |
-| `useMaintenanceReports.ts` | Correct | No `user_id` filter in SELECT query |
-| `useInventoryDB.ts` | Correct | No `user_id` filter in SELECT query |
-| `useRevenueEntriesDB.ts` | Correct | No `user_id` filter in SELECT query |
-| `useLeadsDB.ts` | Correct | No `user_id` filter in SELECT query |
-| `locations` RLS | Correct | Has team permission policy |
-| `location_machines` RLS | Correct | Has team permission policy |
-| `has_team_permission()` | Correct | Returns `true` for cameron viewing chborden22's data |
-| Team member record | Correct | cameron@sqftent.com is active team member of chborden22@gmail.com |
+### 4) App-side verification steps (you will do in the UI)
+After the migration:
+1. Log out completely
+2. Log in as **team member** `cameron@sqftent.com`
+3. Hard refresh (Ctrl+Shift+R / Cmd+Shift+R)
+4. Visit:
+   - **Locations**: should show the owner’s ~15 locations
+   - **Maintenance**: should show the owner’s 2 reports
+   - **Inventory/Revenue/Leads**: should show owner data if those tables have records
 
 ---
 
-### Important Note
+## Why this will fix it
 
-The network logs show the current preview session is logged in as `admin@test.com`, not `cameron@sqftent.com`. When `cameron@sqftent.com` logs in and views the Locations page, they should see all 15 locations from `chborden22@gmail.com`.
+Instead of relying on how multiple policies combine internally, we make the logic unambiguous by encoding the intended “owner OR team member” visibility into a single policy per table.
+
+This eliminates the possibility that policy-combination behavior (permissive vs restrictive interaction) is what’s preventing team visibility.
+
+---
+
+## Technical notes (for completeness)
+
+- No frontend changes are required for this specific fix (queries are already correctly not filtering by user_id).
+- We will avoid changes to user-specific tables (profiles, vehicles, schedules, mileage) to prevent accidental privacy leaks.
+- We will not alter INSERT/UPDATE/DELETE policies except where absolutely necessary; the main issue is SELECT visibility.
 
