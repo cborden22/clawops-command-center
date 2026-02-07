@@ -6,17 +6,26 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { ScheduledTask, TaskType } from "@/hooks/useSmartScheduler";
 import { CalendarTask } from "@/hooks/useCalendarTasks";
 
+type TaskType = "restock" | "route" | "maintenance" | "followup" | "custom";
+
+interface DisplayTask {
+  id: string;
+  type: TaskType;
+  title: string;
+  subtitle?: string;
+  dueDate: Date;
+}
+
 interface AgendaViewProps {
-  scheduledTasks: ScheduledTask[];
+  scheduledTasks: DisplayTask[];
   customTasks: CalendarTask[];
   onToggleCustomTask?: (taskId: string) => void;
   daysToShow?: number;
 }
 
-const taskTypeConfig: Record<TaskType | "custom", { icon: React.ComponentType<{ className?: string }>; color: string; label: string }> = {
+const taskTypeConfig: Record<TaskType, { icon: React.ComponentType<{ className?: string }>; color: string; label: string }> = {
   restock: { icon: Package, color: "bg-emerald-500/20 text-emerald-600 border-emerald-500/30", label: "Restock" },
   route: { icon: Car, color: "bg-blue-500/20 text-blue-600 border-blue-500/30", label: "Route" },
   maintenance: { icon: Wrench, color: "bg-orange-500/20 text-orange-600 border-orange-500/30", label: "Maintenance" },
@@ -26,7 +35,7 @@ const taskTypeConfig: Record<TaskType | "custom", { icon: React.ComponentType<{ 
 
 interface AgendaItem {
   id: string;
-  type: TaskType | "custom";
+  type: TaskType;
   title: string;
   subtitle?: string;
   date: Date;
