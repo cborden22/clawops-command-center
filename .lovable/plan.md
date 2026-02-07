@@ -1,164 +1,169 @@
 
 
-## Fix Team Member Permission Visibility in Location Details
+## Hide Navigation Menu Items Based on Team Member Permissions
 
 ### Problem Summary
 
-When a team member is granted access to view locations, they can currently see **all tabs** in the Location Detail Dialog:
-- Collections (should require `can_view_revenue` permission)
-- Agreements (should require `can_view_documents` permission)
-- Commissions (should require `can_view_documents` permission)
+When an account owner restricts a team member's access to certain features (e.g., Revenue, Leads, Reports), the corresponding **navigation menu items still appear** in both:
+1. **Desktop Sidebar** (`AppSidebar.tsx`)
+2. **Mobile Bottom Nav** (`MobileBottomNav.tsx`)
 
-The RLS policies correctly restrict data access at the database level, but the **frontend UI doesn't hide these tabs** based on the user's actual permissions.
-
-### Root Cause
-
-There's no mechanism in the frontend to:
-1. Detect if the current user is a team member (subuser) vs. account owner
-2. Fetch and check the current user's team permissions
-3. Conditionally show/hide UI elements based on those permissions
+Team members can still see all menu options even if they don't have permission to access those pages. While RLS protects the data at the database level, the UI should also hide inaccessible options for a better user experience.
 
 ### Solution
 
-Create a new hook `useMyTeamPermissions` that:
-1. Checks if the current user is a team member on any account
-2. Fetches their permissions from `team_member_permissions` table
-3. Provides permission flags that components can use
+Integrate the existing `useMyTeamPermissions` hook into both navigation components to:
+1. Filter menu items based on the user's permissions
+2. Hide entire menu sections if no items within are accessible
+3. Keep the "Team" section hidden for team members (only owners manage teams)
 
-Then modify `LocationDetailDialog.tsx` to conditionally render tabs based on permissions.
+---
+
+### Permission to Route Mapping
+
+| Route | Permission Required |
+|-------|---------------------|
+| `/` (Dashboard) | Always visible |
+| `/leads` | `canViewLeads` |
+| `/locations` | `canViewLocations` |
+| `/maintenance` | `canViewMaintenance` |
+| `/mileage` | Always visible (mileage is personal tracking) |
+| `/inventory` | `canViewInventory` |
+| `/revenue` | `canViewRevenue` |
+| `/reports` | `canViewReports` |
+| `/commission-summary` | `canViewDocuments` |
+| `/documents` | `canViewDocuments` |
+| `/receipts` | `canViewRevenue` (receipts are tied to revenue) |
+| `/team` | `isOwner` only |
+| `/settings` | Always visible |
 
 ---
 
 ### Technical Implementation
 
-#### 1. New Hook: `useMyTeamPermissions.ts`
+#### 1. Modify `AppSidebar.tsx`
 
-Creates a hook that fetches the current user's team membership and permissions:
+Add permission-based filtering to the sidebar navigation:
 
 ```typescript
-// src/hooks/useMyTeamPermissions.ts
-export interface MyPermissions {
-  isOwner: boolean;              // true if viewing own data
-  isTeamMember: boolean;         // true if viewing as team member
-  canViewRevenue: boolean;       // can see collections
-  canViewDocuments: boolean;     // can see agreements/commissions
-  canViewLocations: boolean;
-  canViewMaintenance: boolean;
-  canManageMaintenance: boolean;
-  canViewInventory: boolean;
-  canViewLeads: boolean;
-  canViewReports: boolean;
+import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions";
+
+export function AppSidebar() {
+  const permissions = useMyTeamPermissions();
+  
+  // Filter operations items based on permissions
+  const filteredOperationsItems = operationsItems.filter(item => {
+    if (item.url === "/leads") return permissions.isOwner || permissions.canViewLeads;
+    if (item.url === "/locations") return permissions.isOwner || permissions.canViewLocations;
+    if (item.url === "/maintenance") return permissions.isOwner || permissions.canViewMaintenance;
+    if (item.url === "/inventory") return permissions.isOwner || permissions.canViewInventory;
+    if (item.url === "/mileage") return true; // Always visible
+    return true;
+  });
+  
+  // Filter financials items based on permissions
+  const filteredFinancialsItems = financialsItems.filter(item => {
+    if (item.url === "/revenue") return permissions.isOwner || permissions.canViewRevenue;
+    if (item.url === "/reports") return permissions.isOwner || permissions.canViewReports;
+    if (item.url === "/commission-summary") return permissions.isOwner || permissions.canViewDocuments;
+    if (item.url === "/documents") return permissions.isOwner || permissions.canViewDocuments;
+    return true;
+  });
+  
+  // Management section only visible to owners
+  const showManagement = permissions.isOwner;
+  
+  // Only render sections if they have items
+  const showOperations = filteredOperationsItems.length > 0;
+  const showFinancials = filteredFinancialsItems.length > 0;
+  
+  // ... render filtered items instead of full lists
 }
+```
 
-export function useMyTeamPermissions() {
-  // Query team_members where member_user_id = auth.uid()
-  // If found, fetch corresponding team_member_permissions
-  // If not found, user is owner with full permissions
-  // Return permissions object
+#### 2. Modify `MobileBottomNav.tsx`
+
+Apply the same filtering logic to mobile navigation:
+
+```typescript
+import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions";
+
+export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
+  const permissions = useMyTeamPermissions();
+  
+  // Filter main tabs (bottom bar)
+  const filteredMainTabs = mainTabs.filter(tab => {
+    if (tab.path === "/revenue") return permissions.isOwner || permissions.canViewRevenue;
+    if (tab.path === "/inventory") return permissions.isOwner || permissions.canViewInventory;
+    return true; // Dashboard, Add, More always visible
+  });
+  
+  // Filter operations items in More menu
+  const filteredOperationsItems = operationsItems.filter(item => {
+    if (item.path === "/leads") return permissions.isOwner || permissions.canViewLeads;
+    if (item.path === "/locations") return permissions.isOwner || permissions.canViewLocations;
+    if (item.path === "/maintenance") return permissions.isOwner || permissions.canViewMaintenance;
+    if (item.path === "/inventory") return permissions.isOwner || permissions.canViewInventory;
+    if (item.path === "/mileage") return true;
+    return true;
+  });
+  
+  // Filter financials items in More menu
+  const filteredFinancialsItems = financialsItems.filter(item => {
+    if (item.path === "/revenue") return permissions.isOwner || permissions.canViewRevenue;
+    if (item.path === "/reports") return permissions.isOwner || permissions.canViewReports;
+    if (item.path === "/receipts") return permissions.isOwner || permissions.canViewRevenue;
+    if (item.isDocuments) return permissions.isOwner || permissions.canViewDocuments;
+    return true;
+  });
+  
+  // Conditionally hide entire sections in More menu
+  const showOperationsSection = filteredOperationsItems.length > 0;
+  const showFinancialsSection = filteredFinancialsItems.length > 0;
+  
+  // ... render filtered items
 }
 ```
 
-**Key Logic:**
-- If no team membership exists for current user → they're an owner → all permissions = true
-- If team membership exists → fetch permissions from `team_member_permissions`
-- Permissions map:
-  - Collections tab → `canViewRevenue` 
-  - Agreements tab → `canViewDocuments`
-  - Commissions tab → `canViewDocuments`
+#### 3. Handle Loading State
 
-#### 2. Modify `LocationDetailDialog.tsx`
+While permissions are loading, show a minimal skeleton or the full menu (to prevent flash of content). Use `permissions.isLoading` to handle this gracefully:
 
-Update the dialog to conditionally render tabs:
-
-**Before:**
-```tsx
-<TabsList className="grid w-full grid-cols-4">
-  <TabsTrigger value="details">Details</TabsTrigger>
-  <TabsTrigger value="collections">Collections</TabsTrigger>
-  <TabsTrigger value="agreements">Agreements</TabsTrigger>
-  <TabsTrigger value="commissions">Commissions</TabsTrigger>
-</TabsList>
+```typescript
+// Option: Show loading skeleton for nav items while permissions load
+if (permissions.isLoading) {
+  return <SidebarSkeleton />;
+}
 ```
 
-**After:**
-```tsx
-const { canViewRevenue, canViewDocuments, isOwner } = useMyTeamPermissions();
-
-// Calculate visible tab count for grid layout
-const visibleTabCount = 1 + 
-  (isOwner || canViewRevenue ? 1 : 0) + 
-  (isOwner || canViewDocuments ? 2 : 0);
-
-<TabsList className={`grid w-full grid-cols-${visibleTabCount}`}>
-  <TabsTrigger value="details">Details</TabsTrigger>
-  
-  {/* Collections - requires revenue permission */}
-  {(isOwner || canViewRevenue) && (
-    <TabsTrigger value="collections">Collections</TabsTrigger>
-  )}
-  
-  {/* Agreements - requires documents permission */}
-  {(isOwner || canViewDocuments) && (
-    <TabsTrigger value="agreements">Agreements</TabsTrigger>
-  )}
-  
-  {/* Commissions - requires documents permission */}
-  {(isOwner || canViewDocuments) && (
-    <TabsTrigger value="commissions">Commissions</TabsTrigger>
-  )}
-</TabsList>
-```
-
-Also conditionally render the corresponding `TabsContent` components to prevent rendering hidden data.
+Or simply wait until permissions are loaded before filtering.
 
 ---
 
-### Files to Create/Modify
+### Files to Modify
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `src/hooks/useMyTeamPermissions.ts` | Create | Hook to fetch current user's team permissions |
-| `src/components/LocationDetailDialog.tsx` | Modify | Conditionally show/hide tabs based on permissions |
+| File | Changes |
+|------|---------|
+| `src/components/layout/AppSidebar.tsx` | Add `useMyTeamPermissions` hook, filter nav items based on permissions |
+| `src/components/layout/MobileBottomNav.tsx` | Add `useMyTeamPermissions` hook, filter main tabs and More menu items |
 
-### Permission Mapping
-
-| UI Element | Required Permission |
-|------------|---------------------|
-| Collections tab | `can_view_revenue` |
-| Agreements tab | `can_view_documents` |
-| Commissions tab | `can_view_documents` |
-| Details tab | Always visible (if `can_view_locations` is true, they have access) |
+---
 
 ### Edge Cases
 
-1. **Owner viewing own data**: All permissions = true (bypass checks)
-2. **Team member with no permissions record**: Treat as restricted (default false)
-3. **User is both owner AND team member on different accounts**: Check context - are they viewing their own data or someone else's?
-
-### Data Flow
-
-```
-User opens Location Detail Dialog
-        ↓
-useMyTeamPermissions() hook runs
-        ↓
-Query: SELECT * FROM team_members WHERE member_user_id = auth.uid()
-        ↓
-If found → Fetch team_member_permissions
-If not found → User is owner (full access)
-        ↓
-Return permissions object
-        ↓
-LocationDetailDialog uses permissions to conditionally render tabs
-```
+1. **Loading state**: While permissions load, show all items or a skeleton to prevent layout shift
+2. **Empty sections**: If a filtered section has zero items, hide the section header entirely
+3. **Active route on hidden item**: If user is on a restricted route and gets permissions revoked, they see the page but navigation doesn't highlight it (data is still protected by RLS)
 
 ---
 
-### Testing Checklist
+### Expected Behavior After Implementation
 
-After implementation:
-1. As **owner**: Verify all 4 tabs visible in Location Detail Dialog
-2. As **team member with `can_view_documents=false`**: Verify Agreements and Commissions tabs are hidden
-3. As **team member with `can_view_revenue=false`**: Verify Collections tab is hidden
-4. As **team member with both permissions disabled**: Verify only Details tab is visible
+| Scenario | Result |
+|----------|--------|
+| Owner views navigation | All items visible, including Team management |
+| Team member with no `canViewRevenue` | Revenue Tracker, Receipts hidden from nav |
+| Team member with no `canViewDocuments` | Agreement Generator, Commission Summary hidden |
+| Team member with no `canViewLeads` | Leads hidden from nav |
+| Team member with full permissions | All items visible EXCEPT Team management |
 
