@@ -1,190 +1,163 @@
 
 
-## Integrate Calendar Components - Complete the Overhaul
+## Fix Android Scrolling Issue
 
-The calendar components were created but never connected to the main Calendar page. This plan integrates all the new functionality to make task creation, filtering, and the agenda view available.
+### Problem Summary
+
+The app is not scrolling on Android devices. After analyzing the codebase, I found several CSS issues that prevent scrolling specifically on Android browsers.
 
 ---
 
-### Problem
+### Root Causes Identified
 
-The following components exist but are not used in `Calendar.tsx`:
-- `AddTaskDialog` - Allows creating custom tasks
-- `CalendarFilters` - Toggle buttons for filtering by task type
-- `AgendaView` - List-based view of upcoming tasks
-- `useCalendarTasks` - Hook for managing custom calendar tasks
-
-The Calendar page currently only shows auto-generated tasks (restocks, routes, maintenance, follow-ups) with no way to add custom events.
+| Issue | Location | Impact |
+|-------|----------|--------|
+| **`overscroll-behavior-y: none`** on html/body | `src/index.css` line 136 | Prevents native scroll behavior on some Android browsers |
+| **`touch-action: pan-y`** in scroll container | `src/index.css` line 292 | Combined with flex layout, can cause scroll lock on Android |
+| **Missing explicit height** on main container | `MobileLayout.tsx` line 25-30 | Flex child with `overflow-y-auto` needs explicit height for Android |
+| **Conflicting `min-h-screen` calculations** | `MobileLayout.tsx` line 18-21 | The CSS calc with safe areas can cause issues on Android Chrome |
 
 ---
 
 ### Solution
 
-Update `Calendar.tsx` to:
-1. Import and use all created calendar components
-2. Add the "Add Task" button in the header
-3. Add filter toggles below the header
-4. Add "Agenda" as a third view mode alongside Month/Week
-5. Load and display custom tasks from the database
-6. Include a "custom" task type in the task configuration
-7. Allow marking custom tasks as complete
+**1. Fix the Global CSS (index.css)**
+
+Remove the aggressive `overscroll-behavior-y: none` from html/body and make the mobile scroll optimizations Android-compatible:
+
+```css
+/* Before */
+html, body {
+  overscroll-behavior-y: none;
+}
+
+/* After */
+html {
+  overflow-x: hidden;
+}
+
+body {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+```
+
+**2. Fix Mobile Layout (MobileLayout.tsx)**
+
+The main scrollable area needs an explicit height calculation that works on Android:
+
+```tsx
+// Before
+<main 
+  className="flex-1 overflow-y-auto overscroll-contain mobile-scroll-optimized"
+  style={{ 
+    WebkitOverflowScrolling: 'touch',
+    paddingBottom: 'max(80px, calc(64px + env(safe-area-inset-bottom)))'
+  }}
+>
+
+// After
+<main 
+  className="flex-1 overflow-y-auto overflow-x-hidden"
+  style={{ 
+    WebkitOverflowScrolling: 'touch',
+    paddingBottom: 'max(80px, calc(64px + env(safe-area-inset-bottom)))',
+    minHeight: 0, /* Critical for flex child scrolling */
+  }}
+>
+```
+
+**3. Update Mobile Scroll Optimization Class (index.css)**
+
+Make the scroll class Android-compatible:
+
+```css
+/* Before */
+.mobile-scroll-optimized {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
+}
+
+/* After */
+.mobile-scroll-optimized {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y pinch-zoom;
+  overscroll-behavior-y: auto;
+}
+```
+
+**4. Fix Container Height Calculation (MobileLayout.tsx)**
+
+The parent container needs proper flex behavior:
+
+```tsx
+// Before
+<div 
+  className="min-h-screen bg-background flex flex-col"
+  style={{
+    minHeight: 'calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+  }}
+>
+
+// After
+<div 
+  className="h-screen bg-background flex flex-col overflow-hidden"
+  style={{
+    height: '100dvh', /* Dynamic viewport height - better for mobile */
+  }}
+>
+```
 
 ---
 
-### Changes to Calendar.tsx
-
-**New Imports**
-```typescript
-import { AddTaskDialog } from "@/components/calendar/AddTaskDialog";
-import { CalendarFilters, TaskTypeFilter } from "@/components/calendar/CalendarFilters";
-import { AgendaView } from "@/components/calendar/AgendaView";
-import { useCalendarTasks, CalendarTask } from "@/hooks/useCalendarTasks";
-import { CheckSquare } from "lucide-react";
-```
-
-**New State**
-```typescript
-const [viewMode, setViewMode] = useState<"month" | "week" | "agenda">("month");
-const [activeFilters, setActiveFilters] = useState<TaskTypeFilter[]>([
-  "restock", "route", "maintenance", "followup", "custom"
-]);
-```
-
-**New Hook Usage**
-```typescript
-const { tasks: customTasks, toggleCompleted } = useCalendarTasks();
-```
-
-**Add "custom" to taskTypeConfig**
-```typescript
-custom: { icon: CheckSquare, color: "bg-purple-500/20 text-purple-600 border-purple-500/30", label: "Task" },
-```
-
-**Updated Header Layout**
-```text
-+----------------------------------------------------------+
-| Calendar                                                  |
-| View and manage your scheduled tasks                      |
-|                                                           |
-| [Today] [Month][Week][Agenda]              [+ Add Task]   |
-+----------------------------------------------------------+
-| Filters: [Restocks] [Routes] [Maintenance] [Follow-ups] [Tasks] |
-+----------------------------------------------------------+
-```
-
-**Merge Custom Tasks into Calendar**
-- Convert custom tasks to the same format as scheduled tasks
-- Apply filters to show/hide task types
-- In Agenda view, use the AgendaView component directly
-- In Month/Week views, combine filtered tasks with custom tasks
-
-**Filter Logic**
-```typescript
-const filteredTasks = useMemo(() => {
-  return allTasks.filter(task => activeFilters.includes(task.type));
-}, [allTasks, activeFilters]);
-```
-
----
-
-### Updated View Modes
-
-| Mode | Description |
-|------|-------------|
-| Month | Grid calendar showing task dots, click day for details |
-| Week | 7-column detailed view with scrollable task lists per day |
-| Agenda | Scrollable list grouped by date (Today, Tomorrow, etc.) |
-
----
-
-### File to Modify
+### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/pages/Calendar.tsx` | Full integration of new components |
+| `src/index.css` | Remove restrictive overscroll-behavior, update mobile scroll class |
+| `src/components/layout/MobileLayout.tsx` | Fix container heights and scroll handling for Android |
 
 ---
 
-### UI Flow After Changes
+### Technical Explanation
 
-1. User sees Calendar with Month view by default
-2. Filter toggles let them show/hide specific task types
-3. "Add Task" button opens dialog to create custom events
-4. Switching to Agenda view shows a clean list format
-5. Custom tasks appear with purple styling and can be marked complete
-6. Clicking a day shows both scheduled and custom tasks in the detail panel
+**Why Android Fails When iOS Works:**
+
+1. **Dynamic Viewport Height**: iOS Safari handles `100vh` differently than Android Chrome. The new `100dvh` unit is more reliable across both platforms.
+
+2. **Flex Overflow**: When a flex child has `overflow-y: auto`, it needs either:
+   - An explicit height, OR
+   - `min-height: 0` to allow it to shrink below its content size
+
+3. **Touch Action**: `touch-action: pan-y` alone can conflict with Android's gesture navigation. Adding `pinch-zoom` helps.
+
+4. **Overscroll Behavior**: Setting `overscroll-behavior-y: none` on the body prevents the default scroll container behavior on some Android browsers.
 
 ---
 
-### Technical Implementation Details
+### Changes Summary
 
-**Combining Tasks**
+```text
+src/index.css
+├── Remove overscroll-behavior-y: none from html, body
+├── Keep overscroll-behavior-y on specific scroll containers only
+└── Update .mobile-scroll-optimized class
 
-Custom tasks need to be converted to match the ScheduledTask interface:
-
-```typescript
-const allTasks = useMemo(() => {
-  const combined: ScheduledTask[] = [...monthlyTasks];
-  
-  customTasks.forEach((ct) => {
-    const taskDate = new Date(ct.taskDate + "T00:00:00");
-    if (taskDate >= monthStart && taskDate <= monthEnd) {
-      combined.push({
-        id: ct.id,
-        type: "custom" as TaskType,
-        title: ct.title,
-        subtitle: ct.description || undefined,
-        dueDate: taskDate,
-        status: ct.completed ? "completed" : "upcoming",
-        priority: "medium",
-        link: "/calendar",
-        metadata: { isCustom: true, completed: ct.completed },
-      });
-    }
-  });
-  
-  return combined;
-}, [monthlyTasks, customTasks, currentDate]);
-```
-
-**Filter Toggle Handler**
-
-```typescript
-const handleToggleFilter = (filter: TaskTypeFilter) => {
-  setActiveFilters(prev => 
-    prev.includes(filter) 
-      ? prev.filter(f => f !== filter)
-      : [...prev, filter]
-  );
-};
-```
-
-**Agenda View Integration**
-
-When viewMode is "agenda", render the AgendaView component instead of the calendar grid:
-
-```typescript
-{viewMode === "agenda" ? (
-  <AgendaView
-    scheduledTasks={filteredMonthlyTasks}
-    customTasks={customTasks.filter(t => activeFilters.includes("custom"))}
-    onToggleCustomTask={toggleCompleted}
-  />
-) : (
-  // Existing month/week grid code
-)}
+src/components/layout/MobileLayout.tsx
+├── Change min-h-screen to h-screen with overflow-hidden
+├── Use 100dvh for better mobile support
+├── Add min-height: 0 to main element
+└── Remove conflicting safe-area calculation on container
 ```
 
 ---
 
-### Expected Outcome
+### Expected Result
 
-| Feature | Status |
-|---------|--------|
-| Add Task button visible in header | Will work |
-| Filter toggles functional | Will work |
-| Agenda view available | Will work |
-| Custom tasks appear on calendar | Will work |
-| Custom tasks can be marked complete | Will work |
-| Task type filtering works | Will work |
+After these changes:
+- Scrolling will work on both Android and iOS
+- Pull-to-refresh gestures will be handled correctly
+- Safe area insets will still be respected for notched devices
+- The bottom navigation will remain fixed and accessible
 
