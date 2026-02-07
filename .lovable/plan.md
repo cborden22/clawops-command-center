@@ -1,272 +1,113 @@
 
+## Fix Maintenance Email Links & Remove Lovable Branding
 
-## Implementation Plan: 5 Bug Fixes and Features
+### Problem Analysis
 
-This plan addresses all 5 requested changes:
-
-1. **Commission Summary Deletion UI Fix** - Summaries don't disappear after deletion
-2. **Bug Reporting System** - Allow users to report issues that come back to you
-3. **Mobile UI Touch Target Fixes** - X buttons and refresh button not clickable
-4. **PWA Update Button Fix** - Update button not working when banner appears
-5. **Route Selection Logic** - Hide To/From fields when a route is selected
-
----
-
-### Issue 1: Commission Summary Deletion Not Updating UI
-
-**Problem**: When deleting a commission summary from the location detail dialog, the database deletion succeeds but the UI doesn't update because `viewLocation` in `LocationTrackerComponent` is a stale snapshot that never gets refreshed.
-
-**Root Cause Analysis**:
-- `LocationDetailDialog` receives `location` as a prop from parent
-- When `deleteCommissionSummary` is called, it deletes from DB and calls `fetchLocations()`
-- But `viewLocation` state in parent still holds the old location object
-- The dialog displays the stale `location.commissionSummaries` array
-
-**Solution**: 
-1. Modify `LocationDetailDialog` to accept a callback prop when data changes
-2. In `LocationTrackerComponent`, sync `viewLocation` with the updated `locations` array after any modification
-
-**Files to Modify**:
-- `src/components/LocationDetailDialog.tsx` - Add `onDataChange` callback prop
-- `src/components/LocationTrackerComponent.tsx` - Add effect to sync `viewLocation` with locations array
-
----
-
-### Issue 2: Bug/Issue Reporting System
-
-**Solution**: Create a simple feedback system that stores user-submitted bug reports in a database table, which you can query later.
-
-**Implementation**:
-1. Create new database table `user_feedback` to store reports
-2. Create a simple feedback dialog/form component
-3. Add a "Report Issue" button accessible from Settings or the More menu
-4. Store reports with: description, page, timestamp, user contact (optional)
-
-**Database Table**:
-```sql
-CREATE TABLE user_feedback (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id),
-  feedback_type text NOT NULL, -- 'bug', 'feature', 'other'
-  description text NOT NULL,
-  page_url text,
-  user_email text,
-  status text DEFAULT 'new',
-  created_at timestamptz DEFAULT now()
-);
+**Issue 1: Email links not working**
+The maintenance report email at line 179 contains a hardcoded URL:
+```html
+<a href="https://clawops-command-center.lovable.app/maintenance">
 ```
 
-**Files to Create/Modify**:
-- **New**: `src/components/shared/FeedbackDialog.tsx` - Modal form for submitting feedback
-- **New**: `src/hooks/useFeedback.ts` - Hook for submitting feedback to database
-- Modify: `src/pages/Settings.tsx` - Add "Report Issue" button
-- Modify: `src/components/layout/MobileBottomNav.tsx` - Add "Report Issue" in More menu
+This is problematic because:
+- If you set up a custom domain (e.g., `clawops.com`), this link would bypass it
+- Email clients may have issues with the long subdomain format
+
+**Issue 2: Lovable branding still present**
+Found in these locations:
+| File | Line(s) | Content |
+|------|---------|---------|
+| `index.html` | 23, 26-27 | Lovable OpenGraph images and Twitter @lovable_dev reference |
+| `submit-maintenance-report/index.ts` | 179 | `clawops-command-center.lovable.app` URL |
+| `send-team-invite/index.ts` | 131 | `clawops-command-center.lovable.app` URL |
+| `README.md` | All | Lovable project documentation (internal file) |
 
 ---
 
-### Issue 3: Mobile UI Touch Target Fixes
+### Solution
 
-**Problems Identified**:
-1. Refresh button in MobileHeader may be too small (currently `p-2 -m-2` = 40px touch target)
-2. X/close buttons across the app may be undersized
-3. UpdateNotification X button is `h-8 w-8` (32px) - too small for mobile
+#### 1. Update Edge Functions to Use Dynamic Base URL
 
-**Solution**: Ensure all interactive elements meet 44-48px minimum touch target sizes per mobile UX standards.
+The edge functions cannot use `window.location.origin` (no browser context). Instead, we'll:
+- Use an environment variable for the base URL
+- Fall back to the published URL if not set
 
-**Files to Modify**:
-- `src/components/layout/MobileHeader.tsx` - Increase refresh button touch target to 44px minimum
-- `src/components/shared/UpdateNotification.tsx` - Increase X button to 44px minimum
-- `src/components/ui/dialog.tsx` - Check and increase close button size if needed
-
----
-
-### Issue 4: PWA Update Button Not Working
-
-**Problem**: Clicking "Update" button on the update banner does nothing.
-
-**Root Cause Analysis**:
-Looking at `useServiceWorkerUpdate.ts`:
+**submit-maintenance-report/index.ts** (line 179):
 ```typescript
-const applyUpdate = useCallback(() => {
-  if (updateSW) {
-    console.log("PWA: Applying update and reloading...");
-    updateSW(true); // true = reload after update
-  }
-}, [updateSW]);
+// Before
+<a href="https://clawops-command-center.lovable.app/maintenance" ...>
+
+// After - use environment variable
+const baseUrl = Deno.env.get("APP_BASE_URL") || "https://clawops.com";
+// Then in the email HTML:
+<a href="${baseUrl}/maintenance" ...>
 ```
 
-The `updateSW` function from `registerSW` might not be properly invoking the skip waiting message. The issue is likely that:
-1. The callback reference may be stale
-2. The `registerSW` return function needs to be called correctly
+**send-team-invite/index.ts** (line 131):
+```typescript
+// Before
+<a href="https://clawops-command-center.lovable.app/auth" ...>
 
-**Solution**:
-1. Add explicit error handling and logging to debug the flow
-2. Ensure the update function properly triggers `skipWaiting` and page reload
-3. Add a fallback: if `updateSW(true)` doesn't work, force reload with `window.location.reload()`
+// After
+const baseUrl = Deno.env.get("APP_BASE_URL") || "https://clawops.com";
+// Then in the email HTML:
+<a href="${baseUrl}/auth" ...>
+```
 
-**Files to Modify**:
-- `src/hooks/useServiceWorkerUpdate.ts` - Add fallback reload mechanism and better error handling
+#### 2. Add APP_BASE_URL Secret
+
+Add a new secret `APP_BASE_URL` with value:
+- If you have a custom domain: `https://your-custom-domain.com`
+- If not: `https://clawops-command-center.lovable.app`
+
+This allows you to change the domain later without modifying code.
+
+#### 3. Update index.html - Remove Lovable Meta Tags
+
+**Remove/update these lines (22-27)**:
+```html
+<!-- BEFORE -->
+<meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@lovable_dev" />
+<meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+<!-- AFTER - Use ClawOps branding -->
+<meta property="og:image" content="/icons/icon-512.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@clawops" /> <!-- or remove if no Twitter -->
+<meta name="twitter:image" content="/icons/icon-512.png" />
+```
+
+#### 4. Update README.md
+
+Replace Lovable references with ClawOps documentation. This is primarily a developer file but good to clean up.
 
 ---
 
-### Issue 5: Hide To/From Fields When Route is Selected
+### Files to Modify
 
-**Problem**: When a saved route is selected in the mileage tracker, the To and From location fields should be hidden since the route already defines the path.
+| File | Change |
+|------|--------|
+| `supabase/functions/submit-maintenance-report/index.ts` | Add `baseUrl` variable from env, use in email link |
+| `supabase/functions/send-team-invite/index.ts` | Add `baseUrl` variable from env, use in email link |
+| `index.html` | Replace Lovable OpenGraph/Twitter images with ClawOps icons |
+| `README.md` | Replace Lovable references with ClawOps branding |
 
-**Current Behavior** (from `MileageTracker.tsx` lines 855-870):
-- Route selector is shown
-- From/To LocationSelector components are always visible
-- When a route is selected, it auto-fills From/To but they remain visible
+### Secret to Add
 
-**Solution**: Conditionally hide the From/To LocationSelector components when a route is selected, showing a summary of the route instead.
-
-**Files to Modify**:
-- `src/pages/MileageTracker.tsx` - Add conditional rendering to hide LocationSelector when `selectedRouteId` is set
-
----
-
-## Technical Implementation Details
-
-### 1. Commission Summary Deletion Fix
-
-**LocationTrackerComponent.tsx changes**:
-```typescript
-// Add useEffect to keep viewLocation in sync with locations
-useEffect(() => {
-  if (viewLocation) {
-    const updated = locations.find(l => l.id === viewLocation.id);
-    if (updated) {
-      setViewLocation(updated);
-    } else {
-      setViewLocation(null); // Location was deleted
-    }
-  }
-}, [locations]);
-```
-
-### 2. Bug Reporting System
-
-**New table with RLS**:
-```sql
-CREATE TABLE user_feedback (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  feedback_type text NOT NULL DEFAULT 'bug',
-  description text NOT NULL,
-  page_url text,
-  user_email text,
-  status text DEFAULT 'new',
-  created_at timestamptz DEFAULT now()
-);
-
-ALTER TABLE user_feedback ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can create feedback" ON user_feedback
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can view own feedback" ON user_feedback
-  FOR SELECT USING (auth.uid() = user_id);
-```
-
-### 3. Mobile Touch Target Fixes
-
-**MobileHeader.tsx refresh button** (increase from 40px to 48px):
-```typescript
-<button
-  onClick={handleRefresh}
-  disabled={isRefreshing}
-  className="p-3 -m-1 min-w-[48px] min-h-[48px] flex items-center justify-center touch-manipulation active:scale-95 transition-transform"
-  aria-label="Refresh data"
->
-```
-
-**UpdateNotification.tsx X button** (increase from 32px to 44px):
-```typescript
-<Button
-  size="sm"
-  variant="ghost"
-  onClick={dismissUpdate}
-  className="h-11 w-11 p-0 min-w-[44px] min-h-[44px] ..."
->
-```
-
-### 4. PWA Update Button Fix
-
-**useServiceWorkerUpdate.ts**:
-```typescript
-const applyUpdate = useCallback(async () => {
-  if (updateSW) {
-    console.log("PWA: Applying update...");
-    try {
-      await updateSW(true);
-    } catch (error) {
-      console.error("PWA: Update failed, forcing reload:", error);
-    }
-    // Fallback: force reload if updateSW doesn't trigger reload
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
-  } else {
-    console.log("PWA: No updateSW function, forcing reload");
-    window.location.reload();
-  }
-}, [updateSW]);
-```
-
-### 5. Route Selection - Hide To/From
-
-**MileageTracker.tsx** (around line 856-871):
-```tsx
-{/* Only show manual From/To if no route is selected */}
-{!selectedRouteId && (
-  <>
-    {/* From Location */}
-    <LocationSelector
-      type="from"
-      value={fromSelection}
-      onChange={handleFromChange}
-      locations={activeLocations}
-      warehouseAddress={warehouseAddress}
-    />
-
-    {/* To Location */}
-    <LocationSelector
-      type="to"
-      value={toSelection}
-      onChange={handleToChange}
-      locations={activeLocations}
-      warehouseAddress={warehouseAddress}
-    />
-  </>
-)}
-```
+| Secret Name | Value | Purpose |
+|-------------|-------|---------|
+| `APP_BASE_URL` | `https://clawops.com` (or your domain) | Base URL for email links |
 
 ---
 
-## Files Summary
+### Implementation Notes
 
-| File | Change Type | Purpose |
-|------|-------------|---------|
-| `src/components/LocationTrackerComponent.tsx` | Modify | Sync viewLocation with locations array |
-| `src/components/shared/FeedbackDialog.tsx` | Create | Bug reporting modal form |
-| `src/hooks/useFeedback.ts` | Create | Hook for submitting feedback |
-| `src/pages/Settings.tsx` | Modify | Add "Report Issue" button |
-| `src/components/layout/MobileBottomNav.tsx` | Modify | Add "Report Issue" in More menu |
-| `src/components/layout/MobileHeader.tsx` | Modify | Increase refresh button touch target |
-| `src/components/shared/UpdateNotification.tsx` | Modify | Increase X button touch target |
-| `src/hooks/useServiceWorkerUpdate.ts` | Modify | Add fallback reload for updates |
-| `src/pages/MileageTracker.tsx` | Modify | Hide To/From when route selected |
+1. **Edge function changes**: The `baseUrl` will be defined at the top of the handler function, making it easy to update centrally if needed.
 
-**Database Migration**: Create `user_feedback` table with RLS policies
+2. **Fallback behavior**: If `APP_BASE_URL` is not set, the functions will use `https://clawops.com` as the default (assuming you own this domain). If not, we can set a different fallback.
 
----
+3. **Testing**: After deployment, trigger a maintenance report submission and verify the email link opens correctly.
 
-## Testing Recommendations
-
-After implementation:
-1. Test commission deletion - verify summaries disappear from the list immediately
-2. Submit a test bug report and verify it appears in the database
-3. Test all X buttons and refresh button on mobile - ensure they're tappable
-4. Trigger a PWA update and verify the Update button works
-5. Test route selection - verify To/From fields hide when a route is selected
-
+4. **No QRCodeGenerator changes needed**: That file already uses `window.location.origin` dynamically, which is correct for client-side code.
