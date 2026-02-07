@@ -64,7 +64,7 @@ export function AppSidebar() {
       if (item.url === "/locations") return permissions.isOwner || permissions.canViewLocations
       if (item.url === "/maintenance") return permissions.isOwner || permissions.canViewMaintenance
       if (item.url === "/inventory") return permissions.isOwner || permissions.canViewInventory
-      if (item.url === "/mileage") return true // Always visible
+      if (item.url === "/mileage") return permissions.isOwner || permissions.canViewMileage
       return true
     })
   }, [permissions])

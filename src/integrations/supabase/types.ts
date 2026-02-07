@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_tasks: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          created_by_user_id: string | null
+          description: string | null
+          id: string
+          task_date: string
+          task_type: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          task_date: string
+          task_type?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          task_date?: string
+          task_type?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       commission_summaries: {
         Row: {
           commission_amount: number | null
@@ -298,6 +334,7 @@ export type Database = {
           count: number | null
           custom_label: string | null
           id: string
+          installed_at: string | null
           is_card_enabled: boolean | null
           last_nayax_sync: string | null
           location_id: string
@@ -311,6 +348,7 @@ export type Database = {
           count?: number | null
           custom_label?: string | null
           id?: string
+          installed_at?: string | null
           is_card_enabled?: boolean | null
           last_nayax_sync?: string | null
           location_id: string
@@ -324,6 +362,7 @@ export type Database = {
           count?: number | null
           custom_label?: string | null
           id?: string
+          installed_at?: string | null
           is_card_enabled?: boolean | null
           last_nayax_sync?: string | null
           location_id?: string

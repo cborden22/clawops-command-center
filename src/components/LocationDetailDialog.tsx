@@ -692,6 +692,11 @@ export function LocationDetailDialog({
                         {location.machines.map((machine, index) => (
                           <Badge key={index} variant="secondary" className="text-xs">
                             {machine.label}: {machine.count}
+                            {machine.installedAt && (
+                              <span className="ml-1 opacity-70">
+                                ({format(new Date(machine.installedAt + 'T00:00:00'), "MMM yyyy")})
+                              </span>
+                            )}
                           </Badge>
                         ))}
                       </div>
@@ -781,6 +786,9 @@ export function LocationDetailDialog({
                                 <div className="flex flex-col items-start">
                                   <span className="font-medium">{machine.label}</span>
                                   <span className="text-xs text-muted-foreground">
+                                    {machine.installedAt && (
+                                      <>Installed: {format(new Date(machine.installedAt + 'T00:00:00'), "MMM d, yyyy")} | </>
+                                    )}
                                     {machine.winProbability
                                       ? `Expected: 1 in ${machine.winProbability}`
                                       : "No probability set"}
