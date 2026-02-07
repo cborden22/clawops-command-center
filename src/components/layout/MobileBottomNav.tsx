@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { LayoutDashboard, DollarSign, Package, Plus, MoreHorizontal, MapPin, Car, FileText, Settings, LogOut, Receipt, BarChart3, Wrench, Users, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { DocumentsSheet } from "@/components/mobile/DocumentsSheet";
 import { FeedbackDialog } from "@/components/shared/FeedbackDialog";
+import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions";
 
 interface MobileBottomNavProps {
   onQuickAddOpen: () => void;
@@ -32,17 +33,53 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut } = useAuth();
+  const permissions = useMyTeamPermissions();
   const [moreOpen, setMoreOpen] = useState(false);
   const [documentsOpen, setDocumentsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
-  const mainTabs = [
+  const allMainTabs = [
     { path: "/", icon: LayoutDashboard, label: "Home" },
     { path: "/revenue", icon: DollarSign, label: "Revenue" },
     { path: "quick-add", icon: Plus, label: "Add", isAction: true },
     { path: "/inventory", icon: Package, label: "Inventory" },
     { path: "more", icon: MoreHorizontal, label: "More", isMenu: true },
   ];
+
+  // Filter main tabs based on permissions
+  const mainTabs = useMemo(() => {
+    if (permissions.isLoading) return allMainTabs;
+    return allMainTabs.filter(tab => {
+      if (tab.path === "/revenue") return permissions.isOwner || permissions.canViewRevenue;
+      if (tab.path === "/inventory") return permissions.isOwner || permissions.canViewInventory;
+      return true; // Dashboard, Add, More always visible
+    });
+  }, [permissions]);
+
+  // Filter operations items in More menu
+  const filteredOperationsItems = useMemo(() => {
+    if (permissions.isLoading) return operationsItems;
+    return operationsItems.filter(item => {
+      if (item.path === "/leads") return permissions.isOwner || permissions.canViewLeads;
+      if (item.path === "/locations") return permissions.isOwner || permissions.canViewLocations;
+      if (item.path === "/maintenance") return permissions.isOwner || permissions.canViewMaintenance;
+      if (item.path === "/inventory") return permissions.isOwner || permissions.canViewInventory;
+      if (item.path === "/mileage") return true; // Always visible
+      return true;
+    });
+  }, [permissions]);
+
+  // Filter financials items in More menu
+  const filteredFinancialsItems = useMemo(() => {
+    if (permissions.isLoading) return financialsItems;
+    return financialsItems.filter(item => {
+      if (item.path === "/revenue") return permissions.isOwner || permissions.canViewRevenue;
+      if (item.path === "/reports") return permissions.isOwner || permissions.canViewReports;
+      if (item.path === "/receipts") return permissions.isOwner || permissions.canViewRevenue;
+      if (item.isDocuments) return permissions.isOwner || permissions.canViewDocuments;
+      return true;
+    });
+  }, [permissions]);
 
   const handleTabClick = (tab: typeof mainTabs[0]) => {
     if (tab.isAction) {
@@ -107,26 +144,32 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
                 </SheetTrigger>
                 <SheetContent side="bottom" className="rounded-t-2xl">
                   {/* Operations Section */}
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
-                      Operations
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {operationsItems.map(renderMoreItem)}
+                  {filteredOperationsItems.length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                        Operations
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {filteredOperationsItems.map(renderMoreItem)}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  <Separator className="my-4" />
+                  {filteredOperationsItems.length > 0 && filteredFinancialsItems.length > 0 && (
+                    <Separator className="my-4" />
+                  )}
 
                   {/* Financials & Reports Section */}
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
-                      Financials & Reports
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {financialsItems.map(renderMoreItem)}
+                  {filteredFinancialsItems.length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                        Financials & Reports
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {filteredFinancialsItems.map(renderMoreItem)}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <Separator className="my-4" />
 

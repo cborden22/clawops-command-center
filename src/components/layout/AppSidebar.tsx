@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, ChevronDown, Car, BarChart3, Wrench, Users, UsersRound } from "lucide-react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
+import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions"
 import {
   Sidebar,
   SidebarContent,
@@ -52,11 +53,40 @@ export function AppSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, signOut } = useAuth()
+  const permissions = useMyTeamPermissions()
 
-  // Check if current route is in a group
-  const isInOperations = operationsItems.some(item => location.pathname === item.url)
-  const isInFinancials = financialsItems.some(item => location.pathname === item.url)
-  const isInManagement = managementItems.some(item => location.pathname === item.url)
+  // Filter operations items based on permissions
+  const filteredOperationsItems = useMemo(() => {
+    if (permissions.isLoading) return operationsItems
+    return operationsItems.filter(item => {
+      if (item.url === "/leads") return permissions.isOwner || permissions.canViewLeads
+      if (item.url === "/locations") return permissions.isOwner || permissions.canViewLocations
+      if (item.url === "/maintenance") return permissions.isOwner || permissions.canViewMaintenance
+      if (item.url === "/inventory") return permissions.isOwner || permissions.canViewInventory
+      if (item.url === "/mileage") return true // Always visible
+      return true
+    })
+  }, [permissions])
+
+  // Filter financials items based on permissions
+  const filteredFinancialsItems = useMemo(() => {
+    if (permissions.isLoading) return financialsItems
+    return financialsItems.filter(item => {
+      if (item.url === "/revenue") return permissions.isOwner || permissions.canViewRevenue
+      if (item.url === "/reports") return permissions.isOwner || permissions.canViewReports
+      if (item.url === "/commission-summary") return permissions.isOwner || permissions.canViewDocuments
+      if (item.url === "/documents") return permissions.isOwner || permissions.canViewDocuments
+      return true
+    })
+  }, [permissions])
+
+  // Management section only visible to owners
+  const showManagement = permissions.isOwner
+
+  // Check if current route is in a group (use filtered items)
+  const isInOperations = filteredOperationsItems.some(item => location.pathname === item.url)
+  const isInFinancials = filteredFinancialsItems.some(item => location.pathname === item.url)
+  const isInManagement = showManagement && managementItems.some(item => location.pathname === item.url)
 
   // State for collapsible groups - auto-expand if contains active route
   const [operationsOpen, setOperationsOpen] = useState(isInOperations)
@@ -167,55 +197,61 @@ export function AppSidebar() {
           </SidebarGroup>
 
           {/* Operations Group */}
-          <SidebarGroup>
-            <Collapsible open={operationsOpen} onOpenChange={setOperationsOpen}>
-              <CollapsibleTrigger asChild>
-                <button className="flex items-center justify-between w-full px-2 py-2 text-xs font-semibold text-gold-500 hover:text-gold-400 transition-colors">
-                  <span>Operations</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${operationsOpen ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-1">
-                <SidebarGroupContent className="space-y-2">
-                  {operationsItems.map(renderNavItem)}
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </SidebarGroup>
+          {filteredOperationsItems.length > 0 && (
+            <SidebarGroup>
+              <Collapsible open={operationsOpen} onOpenChange={setOperationsOpen}>
+                <CollapsibleTrigger asChild>
+                  <button className="flex items-center justify-between w-full px-2 py-2 text-xs font-semibold text-gold-500 hover:text-gold-400 transition-colors">
+                    <span>Operations</span>
+                    <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${operationsOpen ? 'rotate-0' : '-rotate-90'}`} />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-1">
+                  <SidebarGroupContent className="space-y-2">
+                    {filteredOperationsItems.map(renderNavItem)}
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarGroup>
+          )}
 
           {/* Financials & Reports Group */}
-          <SidebarGroup>
-            <Collapsible open={financialsOpen} onOpenChange={setFinancialsOpen}>
-              <CollapsibleTrigger asChild>
-                <button className="flex items-center justify-between w-full px-2 py-2 text-xs font-semibold text-gold-500 hover:text-gold-400 transition-colors">
-                  <span>Financials & Reports</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${financialsOpen ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-1">
-                <SidebarGroupContent className="space-y-2">
-                  {financialsItems.map(renderNavItem)}
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </SidebarGroup>
+          {filteredFinancialsItems.length > 0 && (
+            <SidebarGroup>
+              <Collapsible open={financialsOpen} onOpenChange={setFinancialsOpen}>
+                <CollapsibleTrigger asChild>
+                  <button className="flex items-center justify-between w-full px-2 py-2 text-xs font-semibold text-gold-500 hover:text-gold-400 transition-colors">
+                    <span>Financials & Reports</span>
+                    <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${financialsOpen ? 'rotate-0' : '-rotate-90'}`} />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-1">
+                  <SidebarGroupContent className="space-y-2">
+                    {filteredFinancialsItems.map(renderNavItem)}
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarGroup>
+          )}
 
-          {/* Management Group */}
-          <SidebarGroup>
-            <Collapsible open={managementOpen} onOpenChange={setManagementOpen}>
-              <CollapsibleTrigger asChild>
-                <button className="flex items-center justify-between w-full px-2 py-2 text-xs font-semibold text-gold-500 hover:text-gold-400 transition-colors">
-                  <span>Management</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${managementOpen ? 'rotate-0' : '-rotate-90'}`} />
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-1">
-                <SidebarGroupContent className="space-y-2">
-                  {managementItems.map(renderNavItem)}
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </SidebarGroup>
+          {/* Management Group - Only visible to owners */}
+          {showManagement && (
+            <SidebarGroup>
+              <Collapsible open={managementOpen} onOpenChange={setManagementOpen}>
+                <CollapsibleTrigger asChild>
+                  <button className="flex items-center justify-between w-full px-2 py-2 text-xs font-semibold text-gold-500 hover:text-gold-400 transition-colors">
+                    <span>Management</span>
+                    <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${managementOpen ? 'rotate-0' : '-rotate-90'}`} />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-1">
+                  <SidebarGroupContent className="space-y-2">
+                    {managementItems.map(renderNavItem)}
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarGroup>
+          )}
         </SidebarMenu>
       </SidebarContent>
 
