@@ -9,6 +9,7 @@ import { AppSettingsProvider } from "@/contexts/AppSettingsContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Documents from "./pages/Documents";
+import CalendarPage from "./pages/Calendar";
 import CommissionSummary from "./pages/CommissionSummary";
 import InventoryTracker from "./pages/InventoryTracker";
 import RevenueTracker from "./pages/RevenueTracker";
@@ -208,6 +209,16 @@ function ProtectedAppRoutes() {
             <ProtectedRoute>
               <AppLayout>
                 <Team />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <CalendarPage />
               </AppLayout>
             </ProtectedRoute>
           }
