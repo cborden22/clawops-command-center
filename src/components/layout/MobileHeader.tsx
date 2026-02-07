@@ -47,7 +47,7 @@ export function MobileHeader({ onRefresh, isRefreshing }: MobileHeaderProps) {
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="p-2 -m-2 touch-manipulation active:scale-95 transition-transform"
+              className="p-3 -m-1 min-w-[48px] min-h-[48px] flex items-center justify-center touch-manipulation active:scale-95 transition-transform"
               aria-label="Refresh data"
             >
               <RefreshCw 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,6 +97,19 @@ export function LocationTrackerComponent() {
   const [formData, setFormData] = useState(emptyFormData);
   const [viewLocation, setViewLocation] = useState<Location | null>(null);
   const [locationsListSize, setLocationsListSize] = useListSize("locations-list-size", 20);
+
+  // Sync viewLocation with locations array to reflect updates after deletion/modification
+  useEffect(() => {
+    if (viewLocation) {
+      const updated = locations.find(l => l.id === viewLocation.id);
+      if (updated) {
+        setViewLocation(updated);
+      } else {
+        // Location was deleted
+        setViewLocation(null);
+      }
+    }
+  }, [locations]);
 
   const filteredLocations = locations.filter(
     (loc) =>

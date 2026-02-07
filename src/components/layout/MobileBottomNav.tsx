@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, DollarSign, Package, Plus, MoreHorizontal, MapPin, Car, FileText, Settings, LogOut, Receipt, BarChart3, Wrench, Users } from "lucide-react";
+import { LayoutDashboard, DollarSign, Package, Plus, MoreHorizontal, MapPin, Car, FileText, Settings, LogOut, Receipt, BarChart3, Wrench, Users, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { DocumentsSheet } from "@/components/mobile/DocumentsSheet";
+import { FeedbackDialog } from "@/components/shared/FeedbackDialog";
 
 interface MobileBottomNavProps {
   onQuickAddOpen: () => void;
@@ -33,6 +34,7 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
   const { signOut } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
   const [documentsOpen, setDocumentsOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const mainTabs = [
     { path: "/", icon: LayoutDashboard, label: "Home" },
@@ -128,7 +130,7 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
 
                   <Separator className="my-4" />
 
-                  {/* Settings & Sign Out */}
+                  {/* Settings, Report Issue & Sign Out */}
                   <div className="space-y-2">
                     <Button
                       variant="outline"
@@ -140,6 +142,17 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
                     >
                       <Settings className="h-4 w-4 mr-2" />
                       Settings
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        setMoreOpen(false);
+                        setFeedbackOpen(true);
+                      }}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Report Issue
                     </Button>
                     <Button
                       variant="ghost"
@@ -198,6 +211,7 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
         })}
       </div>
       <DocumentsSheet open={documentsOpen} onOpenChange={setDocumentsOpen} />
+      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     </nav>
   );
 }
