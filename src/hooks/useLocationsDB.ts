@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { slugify, generateUnitCode } from "@/utils/slugify";
-import { useTeamContext } from "@/hooks/useTeamContext";
+import { useTeamContext } from "@/contexts/TeamContext";
 
 // Parse date-only strings (YYYY-MM-DD) as local dates to avoid timezone shifts
 const parseDateOnly = (dateStr: string): Date => {

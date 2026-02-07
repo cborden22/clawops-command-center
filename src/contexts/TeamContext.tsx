@@ -1,24 +1,30 @@
-import { useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface TeamContext {
+interface TeamContextValue {
   isTeamMember: boolean;
   ownerUserId: string | null;
   effectiveUserId: string | null;
   isLoading: boolean;
 }
 
+const TeamContext = createContext<TeamContextValue | undefined>(undefined);
+
+interface TeamContextProviderProps {
+  children: ReactNode;
+}
+
 /**
- * Hook to get the effective owner context for data operations.
+ * Provider for team context. Wraps the app to provide team member info.
  * 
- * If the current user is a team member, this returns the owner's ID
+ * If the current user is a team member, effectiveUserId returns the owner's ID
  * to use for user_id columns (for proper RLS) while keeping track
  * of who actually created the data (created_by_user_id).
  * 
  * If the current user is an owner, returns their own ID.
  */
-export function useTeamContext(): TeamContext {
+export function TeamContextProvider({ children }: TeamContextProviderProps) {
   const { user } = useAuth();
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
   const [isTeamMember, setIsTeamMember] = useState(false);
@@ -69,11 +75,34 @@ export function useTeamContext(): TeamContext {
     fetchTeamContext();
   }, [user?.id]);
 
-  return {
+  const value: TeamContextValue = {
     isTeamMember,
     ownerUserId,
-    // The effective user ID to use for user_id columns in inserts
     effectiveUserId: ownerUserId,
     isLoading,
   };
+
+  return (
+    <TeamContext.Provider value={value}>
+      {children}
+    </TeamContext.Provider>
+  );
+}
+
+/**
+ * Hook to get the effective owner context for data operations.
+ * Must be used within a TeamContextProvider.
+ */
+export function useTeamContext(): TeamContextValue {
+  const context = useContext(TeamContext);
+  if (context === undefined) {
+    // Return a safe default if used outside provider (during initial render)
+    return {
+      isTeamMember: false,
+      ownerUserId: null,
+      effectiveUserId: null,
+      isLoading: true,
+    };
+  }
+  return context;
 }
