@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { useTeamContext } from "@/hooks/useTeamContext";
 
 export interface MileageEntry {
   id: string;
@@ -24,6 +25,7 @@ export const IRS_MILEAGE_RATE = 0.67;
 
 export function useMileage() {
   const { user } = useAuth();
+  const { effectiveUserId } = useTeamContext();
   const [entries, setEntries] = useState<MileageEntry[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -83,7 +85,7 @@ export function useMileage() {
   }, [user?.id]);
 
   const addEntry = async (entry: Omit<MileageEntry, "id" | "createdAt">) => {
-    if (!user) return null;
+    if (!user || !effectiveUserId) return null;
 
     // If round trip, the actual miles is already doubled by the caller or we can store as-is
     // The component will handle the doubling before calling this
@@ -93,7 +95,8 @@ export function useMileage() {
       const { data, error } = await supabase
         .from("mileage_entries")
         .insert({
-          user_id: user.id,
+          user_id: effectiveUserId,           // Owner's ID (for RLS visibility)
+          created_by_user_id: user.id,        // Actual creator (for attribution)
           date: entry.date.toISOString(),
           start_location: entry.startLocation,
           end_location: entry.endLocation,

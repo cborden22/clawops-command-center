@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { useTeamContext } from "@/hooks/useTeamContext";
 
 export type EntryType = "income" | "expense";
 
@@ -19,6 +20,7 @@ export interface RevenueEntry {
 
 export function useRevenueEntries() {
   const { user } = useAuth();
+  const { effectiveUserId } = useTeamContext();
   const [entries, setEntries] = useState<RevenueEntry[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -73,13 +75,14 @@ export function useRevenueEntries() {
   }, [user?.id]);
 
   const addEntry = async (entry: Omit<RevenueEntry, "id">) => {
-    if (!user) return null;
+    if (!user || !effectiveUserId) return null;
 
     try {
       const { data, error } = await supabase
         .from("revenue_entries")
         .insert({
-          user_id: user.id,
+          user_id: effectiveUserId,           // Owner's ID (for RLS visibility)
+          created_by_user_id: user.id,        // Actual creator (for attribution)
           type: entry.type,
           location_id: entry.locationId || null,
           machine_type: entry.machineType || null,
@@ -158,7 +161,6 @@ export function useRevenueEntries() {
           receipt_url: updates.receiptUrl !== undefined ? (updates.receiptUrl || null) : undefined,
         })
         .eq("id", id)
-        .eq("user_id", user.id)
         .select()
         .single();
 
