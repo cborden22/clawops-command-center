@@ -24,10 +24,12 @@ import {
   Car,
   Eye,
   EyeOff,
-  Bell
+  Bell,
+  MessageSquare
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { VehicleManager } from "@/components/settings/VehicleManager";
+import { FeedbackDialog } from "@/components/shared/FeedbackDialog";
 
 
 export default function Settings() {
@@ -54,6 +56,9 @@ export default function Settings() {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  // Feedback dialog state
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // Load profile from user metadata and notification preference
   useEffect(() => {
@@ -634,6 +639,29 @@ export default function Settings() {
           {/* Vehicles Section */}
           <VehicleManager />
 
+          {/* Report Issue Section */}
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                Feedback & Support
+              </CardTitle>
+              <CardDescription>
+                Report bugs, request features, or share feedback
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={() => setFeedbackOpen(true)}
+              >
+                <MessageSquare className="h-4 w-4" />
+                Report an Issue
+              </Button>
+            </CardContent>
+          </Card>
+
           <Button 
             onClick={handleSaveAppSettings} 
             disabled={isSavingSettings}
@@ -642,6 +670,8 @@ export default function Settings() {
             <Save className="h-4 w-4" />
             {isSavingSettings ? "Saving..." : "Save App Settings"}
           </Button>
+          
+          <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
         </TabsContent>
 
         {/* Profile Tab */}

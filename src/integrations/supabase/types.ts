@@ -1036,6 +1036,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_feedback: {
+        Row: {
+          created_at: string | null
+          description: string
+          feedback_type: string
+          id: string
+          page_url: string | null
+          status: string | null
+          user_email: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          feedback_type?: string
+          id?: string
+          page_url?: string | null
+          status?: string | null
+          user_email?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          feedback_type?: string
+          id?: string
+          page_url?: string | null
+          status?: string | null
+          user_email?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           created_at: string | null

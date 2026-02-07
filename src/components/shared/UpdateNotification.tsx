@@ -28,9 +28,9 @@ export function UpdateNotification() {
             size="sm"
             variant="ghost"
             onClick={dismissUpdate}
-            className="h-8 w-8 p-0 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
+            className="h-11 w-11 p-0 min-w-[44px] min-h-[44px] text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 touch-manipulation active:scale-95"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </Button>
         </div>
       </div>

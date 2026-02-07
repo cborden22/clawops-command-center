@@ -34,10 +34,25 @@ export function useServiceWorkerUpdate() {
     setUpdateSW(() => updateFunction);
   }, []);
 
-  const applyUpdate = useCallback(() => {
+  const applyUpdate = useCallback(async () => {
+    console.log("PWA: Applying update...");
+    
     if (updateSW) {
-      console.log("PWA: Applying update and reloading...");
-      updateSW(true); // true = reload after update
+      try {
+        await updateSW(true); // true = reload after update
+      } catch (error) {
+        console.error("PWA: Update call failed:", error);
+      }
+      
+      // Fallback: force reload if updateSW doesn't trigger reload within 500ms
+      setTimeout(() => {
+        console.log("PWA: Fallback reload triggered");
+        window.location.reload();
+      }, 500);
+    } else {
+      // No updateSW function available, just reload
+      console.log("PWA: No updateSW function, forcing reload");
+      window.location.reload();
     }
   }, [updateSW]);
 

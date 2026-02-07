@@ -852,23 +852,55 @@ const MileageTracker = () => {
                         warehouseAddress={warehouseAddress}
                       />
 
-                      {/* From Location */}
-                      <LocationSelector
-                        type="from"
-                        value={fromSelection}
-                        onChange={handleFromChange}
-                        locations={activeLocations}
-                        warehouseAddress={warehouseAddress}
-                      />
+                      {/* Only show manual From/To if no route is selected */}
+                      {!selectedRouteId && (
+                        <>
+                          {/* From Location */}
+                          <LocationSelector
+                            type="from"
+                            value={fromSelection}
+                            onChange={handleFromChange}
+                            locations={activeLocations}
+                            warehouseAddress={warehouseAddress}
+                          />
 
-                      {/* To Location */}
-                      <LocationSelector
-                        type="to"
-                        value={toSelection}
-                        onChange={handleToChange}
-                        locations={activeLocations}
-                        warehouseAddress={warehouseAddress}
-                      />
+                          {/* To Location */}
+                          <LocationSelector
+                            type="to"
+                            value={toSelection}
+                            onChange={handleToChange}
+                            locations={activeLocations}
+                            warehouseAddress={warehouseAddress}
+                          />
+                        </>
+                      )}
+                      
+                      {/* Show route summary when route is selected */}
+                      {selectedRouteId && (
+                        <div className="p-3 rounded-lg bg-muted/50 border border-border space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-muted-foreground">Route Selected</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedRouteId(null);
+                                setFromSelection({ type: "warehouse" });
+                                setToSelection({ type: "location" });
+                                setPurpose("");
+                              }}
+                              className="h-7 text-xs"
+                            >
+                              Clear
+                            </Button>
+                          </div>
+                          <div className="text-sm">
+                            <span className="font-medium">{getLocationDisplayString(fromSelection, activeLocations, warehouseAddress)}</span>
+                            <span className="text-muted-foreground mx-2">→</span>
+                            <span className="font-medium">{getLocationDisplayString(toSelection, activeLocations, warehouseAddress)}</span>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Start Odometer - only for manual mode */}
                       {trackingMode === "odometer" && (
