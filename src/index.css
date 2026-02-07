@@ -131,9 +131,14 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  /* Global mobile scroll control */
-  html, body {
-    overscroll-behavior-y: none;
+  /* Global mobile scroll control - Android compatible */
+  html {
+    overflow-x: hidden;
+  }
+
+  body {
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   body {
@@ -286,11 +291,11 @@ All colors MUST be HSL.
     to { box-shadow: 0 0 30px hsl(221 83% 53% / 0.25); }
   }
 
-  /* Improve mobile scrolling performance */
+  /* Improve mobile scrolling performance - Android compatible */
   .mobile-scroll-optimized {
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
-    overscroll-behavior-y: contain;
+    touch-action: pan-y pinch-zoom;
+    overscroll-behavior-y: auto;
   }
 
   /* Enhanced scroll momentum for all scroll containers */
