@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useTeamContext } from '@/hooks/useTeamContext';
+import { useTeamContext } from '@/contexts/TeamContext';
 
 export type LeadStatus = 'new' | 'contacted' | 'negotiating' | 'won' | 'lost';
 export type LeadPriority = 'hot' | 'warm' | 'cold';

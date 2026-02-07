@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppSettingsProvider } from "@/contexts/AppSettingsContext";
+import { TeamContextProvider } from "@/contexts/TeamContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Documents from "./pages/Documents";
@@ -74,7 +75,8 @@ function AuthRoute({ children }: { children: React.ReactNode }) {
 function ProtectedAppRoutes() {
   return (
     <AuthProvider>
-      <Routes>
+      <TeamContextProvider>
+        <Routes>
         <Route
           path="/auth"
           element={
@@ -224,7 +226,8 @@ function ProtectedAppRoutes() {
           }
         />
         <Route path="*" element={<NotFound />} />
-      </Routes>
+        </Routes>
+      </TeamContextProvider>
     </AuthProvider>
   );
 }
