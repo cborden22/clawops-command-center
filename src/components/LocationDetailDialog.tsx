@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -77,6 +77,19 @@ export function LocationDetailDialog({
   const { deleteCommissionSummary, toggleCommissionPaid } = useLocations();
   const [deletingCommissionId, setDeletingCommissionId] = useState<string | null>(null);
   const [togglingPaidId, setTogglingPaidId] = useState<string | null>(null);
+  
+  // Local state for commission summaries to enable immediate UI updates
+  const [localCommissionSummaries, setLocalCommissionSummaries] = useState<CommissionSummaryRecord[]>(
+    location?.commissionSummaries || []
+  );
+  
+  // Sync local state when location prop changes
+  useEffect(() => {
+    if (location) {
+      setLocalCommissionSummaries(location.commissionSummaries || []);
+    }
+  }, [location?.id, location?.commissionSummaries]);
+  
   const {
     getCollectionsForLocation,
     calculateMachineStats,
@@ -110,7 +123,7 @@ export function LocationDetailDialog({
   if (!location) return null;
 
   const agreementCount = location.agreements?.length || 0;
-  const commissionCount = location.commissionSummaries?.length || 0;
+  const commissionCount = localCommissionSummaries?.length || 0;
   const locationCollections = getCollectionsForLocation(location.id);
   const collectionCount = locationCollections.length;
   const locationStats = calculateLocationStats(location.id);
@@ -132,6 +145,16 @@ export function LocationDetailDialog({
     const success = await toggleCommissionPaid(summaryId, !currentPaid);
     setTogglingPaidId(null);
     if (success) {
+      // Update local state immediately for instant UI feedback
+      setLocalCommissionSummaries(prev => prev.map(s => 
+        s.id === summaryId 
+          ? { 
+              ...s, 
+              commissionPaid: !currentPaid, 
+              commissionPaidAt: !currentPaid ? new Date().toISOString() : null 
+            }
+          : s
+      ));
       toast({
         title: !currentPaid ? "Marked as Paid" : "Marked as Unpaid",
         description: !currentPaid 
@@ -928,7 +951,7 @@ export function LocationDetailDialog({
                   </p>
                 </div>
               ) : (
-                location.commissionSummaries.map((summary) => (
+                localCommissionSummaries.map((summary) => (
                   <Card key={summary.id} className={`hover:shadow-md transition-shadow ${summary.commissionPaid ? 'border-l-4 border-l-emerald-500' : ''}`}>
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between mb-3">

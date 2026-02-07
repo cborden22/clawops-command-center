@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, ChevronDown, Car, BarChart3, Wrench, Users, UsersRound } from "lucide-react"
+import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, ChevronDown, Car, BarChart3, Wrench, Users, UsersRound, Calendar } from "lucide-react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions"
@@ -47,6 +47,7 @@ const financialsItems = [
 
 const managementItems = [
   { title: "Team", url: "/team", icon: UsersRound },
+  { title: "Calendar", url: "/calendar", icon: Calendar },
 ]
 
 export function AppSidebar() {
