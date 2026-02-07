@@ -1,271 +1,190 @@
 
-## Enhancement Plan: Machine Install Date, Calendar Overhaul, and Permission Audit
 
-This plan covers three improvements:
-1. **Machine Install Date** - Add an "installed_at" field to track when machines were placed at locations
-2. **Calendar Overhaul** - Redesign the calendar to be more functional with task creation, filtering, and better UX
-3. **Permission Enforcement Audit** - Review and fix all permission-gated UI to ensure team members see only what they're allowed to
+## Integrate Calendar Components - Complete the Overhaul
+
+The calendar components were created but never connected to the main Calendar page. This plan integrates all the new functionality to make task creation, filtering, and the agenda view available.
 
 ---
 
-### Part 1: Machine Install Date
+### Problem
 
-**Problem**: There's no way to track when a machine was installed at a location. This is useful for:
-- Maintenance scheduling based on machine age
-- Performance analysis over time
-- Contract renewal reminders
-- Asset tracking
+The following components exist but are not used in `Calendar.tsx`:
+- `AddTaskDialog` - Allows creating custom tasks
+- `CalendarFilters` - Toggle buttons for filtering by task type
+- `AgendaView` - List-based view of upcoming tasks
+- `useCalendarTasks` - Hook for managing custom calendar tasks
 
-**Database Change**
-
-Add `installed_at` column to `location_machines` table:
-
-```sql
-ALTER TABLE location_machines 
-ADD COLUMN installed_at date DEFAULT CURRENT_DATE;
-```
-
-**UI Changes**
-
-| File | Change |
-|------|--------|
-| `src/components/MachinesManager.tsx` | Add date picker for "Install Date" in add/edit dialog |
-| `src/components/LocationDetailDialog.tsx` | Display install date in machine details |
-| `src/hooks/useLocationsDB.ts` | Include `installed_at` in machine type and CRUD operations |
-
-**Form Addition** (MachinesManager.tsx)
-
-Add a date picker field after the Cost Per Play section:
-- Label: "Install Date"
-- Default: Today's date
-- Optional for existing machines (nullable for backwards compatibility)
-
-**Display** (LocationDetailDialog.tsx)
-
-In the machine accordion, show:
-- "Installed: Feb 7, 2026" or "Installed: 6 months ago"
+The Calendar page currently only shows auto-generated tasks (restocks, routes, maintenance, follow-ups) with no way to add custom events.
 
 ---
 
-### Part 2: Calendar Overhaul
+### Solution
 
-**Current Issues**
-- Calendar feels static and view-only
-- No way to add custom tasks/events
-- Week view columns are cramped on mobile
-- No quick filters to focus on specific task types
-- Detail panel requires clicking each day individually
+Update `Calendar.tsx` to:
+1. Import and use all created calendar components
+2. Add the "Add Task" button in the header
+3. Add filter toggles below the header
+4. Add "Agenda" as a third view mode alongside Month/Week
+5. Load and display custom tasks from the database
+6. Include a "custom" task type in the task configuration
+7. Allow marking custom tasks as complete
 
-**Proposed Improvements**
+---
 
-| Feature | Description |
-|---------|-------------|
-| **Quick Filters** | Toggle buttons to show/hide Restocks, Routes, Maintenance, Follow-ups |
-| **Add Task Button** | Create custom calendar events with date, title, type |
-| **Agenda View** | New view mode showing a scrollable list of upcoming tasks |
-| **Click-to-Navigate** | Clicking a task navigates to the relevant page (Locations, Maintenance, etc.) |
-| **Mobile Optimization** | Better touch targets, swipe between weeks |
-| **Today Badge** | More prominent "Today" indicator |
-| **Task Count Summary** | Header showing "3 tasks today, 12 this week" |
+### Changes to Calendar.tsx
 
-**New Component: Custom Task Dialog**
-
-Allow owners to create ad-hoc calendar events:
-- Title (required)
-- Date (required)
-- Type: Custom/Reminder/Meeting/Other
-- Notes (optional)
-- Assign to team member (optional, future enhancement)
-
-This requires a new `calendar_tasks` table:
-
-```sql
-CREATE TABLE calendar_tasks (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  title text NOT NULL,
-  description text,
-  task_date date NOT NULL,
-  task_type text DEFAULT 'reminder',
-  completed boolean DEFAULT false,
-  created_at timestamptz DEFAULT now()
-);
-
-ALTER TABLE calendar_tasks ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can manage own calendar tasks"
-ON calendar_tasks FOR ALL
-USING (auth.uid() = user_id)
-WITH CHECK (auth.uid() = user_id);
+**New Imports**
+```typescript
+import { AddTaskDialog } from "@/components/calendar/AddTaskDialog";
+import { CalendarFilters, TaskTypeFilter } from "@/components/calendar/CalendarFilters";
+import { AgendaView } from "@/components/calendar/AgendaView";
+import { useCalendarTasks, CalendarTask } from "@/hooks/useCalendarTasks";
+import { CheckSquare } from "lucide-react";
 ```
 
-**Files to Create**
+**New State**
+```typescript
+const [viewMode, setViewMode] = useState<"month" | "week" | "agenda">("month");
+const [activeFilters, setActiveFilters] = useState<TaskTypeFilter[]>([
+  "restock", "route", "maintenance", "followup", "custom"
+]);
+```
 
-| File | Purpose |
-|------|---------|
-| `src/components/calendar/CalendarFilters.tsx` | Filter toggles for task types |
-| `src/components/calendar/AddTaskDialog.tsx` | Dialog to create custom tasks |
-| `src/components/calendar/AgendaView.tsx` | List-based agenda view component |
-| `src/hooks/useCalendarTasks.ts` | CRUD hook for custom calendar tasks |
+**New Hook Usage**
+```typescript
+const { tasks: customTasks, toggleCompleted } = useCalendarTasks();
+```
 
-**Files to Modify**
+**Add "custom" to taskTypeConfig**
+```typescript
+custom: { icon: CheckSquare, color: "bg-purple-500/20 text-purple-600 border-purple-500/30", label: "Task" },
+```
+
+**Updated Header Layout**
+```text
++----------------------------------------------------------+
+| Calendar                                                  |
+| View and manage your scheduled tasks                      |
+|                                                           |
+| [Today] [Month][Week][Agenda]              [+ Add Task]   |
++----------------------------------------------------------+
+| Filters: [Restocks] [Routes] [Maintenance] [Follow-ups] [Tasks] |
++----------------------------------------------------------+
+```
+
+**Merge Custom Tasks into Calendar**
+- Convert custom tasks to the same format as scheduled tasks
+- Apply filters to show/hide task types
+- In Agenda view, use the AgendaView component directly
+- In Month/Week views, combine filtered tasks with custom tasks
+
+**Filter Logic**
+```typescript
+const filteredTasks = useMemo(() => {
+  return allTasks.filter(task => activeFilters.includes(task.type));
+}, [allTasks, activeFilters]);
+```
+
+---
+
+### Updated View Modes
+
+| Mode | Description |
+|------|-------------|
+| Month | Grid calendar showing task dots, click day for details |
+| Week | 7-column detailed view with scrollable task lists per day |
+| Agenda | Scrollable list grouped by date (Today, Tomorrow, etc.) |
+
+---
+
+### File to Modify
 
 | File | Changes |
 |------|---------|
-| `src/pages/Calendar.tsx` | Add filters, agenda view toggle, task creation, improved layout |
+| `src/pages/Calendar.tsx` | Full integration of new components |
 
-**New Calendar Layout**
+---
 
-```text
-+----------------------------------------------------------+
-| Management Calendar              [Today] [Month][Week][Agenda] |
-+----------------------------------------------------------+
-| < February 2026 >                                         |
-|                                                           |
-| Filters: [Restocks] [Routes] [Maintenance] [Follow-ups] [+ Add] |
-|                                                           |
-|  Sun    Mon    Tue    Wed    Thu    Fri    Sat           |
-| +------+------+------+------+------+------+------+       |
-| |      | 2    | 3    | 4    | 5    | 6    | 7    |       |
-| |      | [2]  |      |      | [1]  |      | [3]  |       |
-| +------+------+------+------+------+------+------+       |
-|                                                           |
-| Summary: 2 tasks today | 8 this week | 1 overdue          |
-+----------------------------------------------------------+
+### UI Flow After Changes
+
+1. User sees Calendar with Month view by default
+2. Filter toggles let them show/hide specific task types
+3. "Add Task" button opens dialog to create custom events
+4. Switching to Agenda view shows a clean list format
+5. Custom tasks appear with purple styling and can be marked complete
+6. Clicking a day shows both scheduled and custom tasks in the detail panel
+
+---
+
+### Technical Implementation Details
+
+**Combining Tasks**
+
+Custom tasks need to be converted to match the ScheduledTask interface:
+
+```typescript
+const allTasks = useMemo(() => {
+  const combined: ScheduledTask[] = [...monthlyTasks];
+  
+  customTasks.forEach((ct) => {
+    const taskDate = new Date(ct.taskDate + "T00:00:00");
+    if (taskDate >= monthStart && taskDate <= monthEnd) {
+      combined.push({
+        id: ct.id,
+        type: "custom" as TaskType,
+        title: ct.title,
+        subtitle: ct.description || undefined,
+        dueDate: taskDate,
+        status: ct.completed ? "completed" : "upcoming",
+        priority: "medium",
+        link: "/calendar",
+        metadata: { isCustom: true, completed: ct.completed },
+      });
+    }
+  });
+  
+  return combined;
+}, [monthlyTasks, customTasks, currentDate]);
 ```
 
-**Agenda View** (new toggle)
+**Filter Toggle Handler**
 
-```text
-+----------------------------------------------------------+
-| Today - Friday, February 7                                |
-| +------------------------------------------------------+ |
-| | [Restock] Pizza Palace - Restock due         9:00 AM | |
-| | [Route] Weekly Route A - 3 stops             2:00 PM | |
-| +------------------------------------------------------+ |
-|                                                           |
-| Tomorrow - Saturday, February 8                           |
-| +------------------------------------------------------+ |
-| | [Follow-up] Joe's Arcade - Hot lead         All Day  | |
-| +------------------------------------------------------+ |
-+----------------------------------------------------------+
+```typescript
+const handleToggleFilter = (filter: TaskTypeFilter) => {
+  setActiveFilters(prev => 
+    prev.includes(filter) 
+      ? prev.filter(f => f !== filter)
+      : [...prev, filter]
+  );
+};
+```
+
+**Agenda View Integration**
+
+When viewMode is "agenda", render the AgendaView component instead of the calendar grid:
+
+```typescript
+{viewMode === "agenda" ? (
+  <AgendaView
+    scheduledTasks={filteredMonthlyTasks}
+    customTasks={customTasks.filter(t => activeFilters.includes("custom"))}
+    onToggleCustomTask={toggleCompleted}
+  />
+) : (
+  // Existing month/week grid code
+)}
 ```
 
 ---
 
-### Part 3: Permission Enforcement Audit
+### Expected Outcome
 
-**Current State**
+| Feature | Status |
+|---------|--------|
+| Add Task button visible in header | Will work |
+| Filter toggles functional | Will work |
+| Agenda view available | Will work |
+| Custom tasks appear on calendar | Will work |
+| Custom tasks can be marked complete | Will work |
+| Task type filtering works | Will work |
 
-The app uses `useMyTeamPermissions` hook which returns these flags:
-- `canViewRevenue`, `canViewDocuments`, `canViewLocations`, `canViewMaintenance`
-- `canManageMaintenance`, `canViewInventory`, `canViewLeads`, `canViewReports`
-- `can_view_mileage` (in DB, needs UI enforcement)
-- `can_assign_tasks` (in DB, for supervisors)
-
-**Issues Found**
-
-| Location | Issue |
-|----------|-------|
-| `AppSidebar.tsx` line 67 | Routes/Mileage is always visible, should check `canViewMileage` |
-| `MobileBottomNav.tsx` | Routes/Mileage always visible in More menu |
-| `useMyTeamPermissions.ts` | Missing `canViewMileage` and `canAssignTasks` in return object |
-| `Calendar.tsx` | No permission filtering - shows all tasks regardless of permissions |
-| `Dashboard.tsx` | Weekly calendar widget may show restricted task types |
-| `/calendar` route | Should be owner-only or respect task-type permissions |
-
-**Fix Plan**
-
-1. **Update `useMyTeamPermissions.ts`**
-   - Add `canViewMileage: boolean` to the interface and return object
-   - Add `canAssignTasks: boolean` to the interface and return object
-
-2. **Update Navigation Filtering**
-   - `AppSidebar.tsx`: Change line 67 from `return true` to check mileage permission
-   - `MobileBottomNav.tsx`: Apply same mileage permission check
-
-3. **Update Calendar Page**
-   - Filter out task types the user doesn't have permission to view
-   - Hide the calendar entirely if user has no permissions for any task type
-   - Or: Show only tasks for modules they can access
-
-4. **Update Dashboard Widgets**
-   - `WeeklyCalendarWidget` should filter tasks by permission
-   - `RestockDueWidget` should only show if user has locations permission
-   - `LeadsWidget` should only show if user has leads permission
-   - `MaintenanceWidget` should only show if user has maintenance permission
-
-**Permission Matrix Reference**
-
-| Permission | Affects |
-|------------|---------|
-| `canViewLocations` | Locations page, restock tasks in calendar |
-| `canViewMaintenance` | Maintenance page, maintenance tasks in calendar |
-| `canViewInventory` | Inventory page |
-| `canViewRevenue` | Revenue page, Collections tab in Location Detail |
-| `canViewLeads` | Leads page, follow-up tasks in calendar |
-| `canViewReports` | Reports page |
-| `canViewDocuments` | Documents page, Agreements/Commissions tabs |
-| `canViewMileage` | Routes page, route tasks in calendar |
-| `canAssignTasks` | Ability to assign tasks to team members (future) |
-
----
-
-### Implementation Order
-
-**Phase 1: Permission Fixes (Critical)**
-1. Update `useMyTeamPermissions.ts` to include mileage and task assignment
-2. Fix navigation filtering for mileage
-3. Add permission filtering to Calendar page
-4. Add permission filtering to Dashboard widgets
-
-**Phase 2: Machine Install Date**
-1. Database migration to add column
-2. Update hooks and types
-3. Update MachinesManager form
-4. Update LocationDetailDialog display
-
-**Phase 3: Calendar Overhaul**
-1. Create custom tasks table and hook
-2. Build filter component
-3. Build add task dialog
-4. Build agenda view
-5. Update Calendar page with new features
-6. Mobile optimization
-
----
-
-### Files Summary
-
-**New Files to Create**
-- `src/components/calendar/CalendarFilters.tsx`
-- `src/components/calendar/AddTaskDialog.tsx`
-- `src/components/calendar/AgendaView.tsx`
-- `src/hooks/useCalendarTasks.ts`
-
-**Files to Modify**
-- `src/hooks/useMyTeamPermissions.ts` - Add mileage and task permissions
-- `src/components/layout/AppSidebar.tsx` - Fix mileage permission check
-- `src/components/layout/MobileBottomNav.tsx` - Fix mileage permission check
-- `src/pages/Calendar.tsx` - Add filters, views, task creation, permission filtering
-- `src/pages/Dashboard.tsx` - Add permission filtering to widgets
-- `src/components/MachinesManager.tsx` - Add install date field
-- `src/components/LocationDetailDialog.tsx` - Display install date
-- `src/hooks/useLocationsDB.ts` - Handle installed_at in machine operations
-
-**Database Migrations**
-1. Add `installed_at` column to `location_machines`
-2. Create `calendar_tasks` table with RLS policies
-
----
-
-### Expected Outcomes
-
-| Feature | Benefit |
-|---------|---------|
-| Machine install date | Better asset tracking and maintenance scheduling |
-| Calendar filters | Quickly focus on specific task types |
-| Custom tasks | Add reminders and events not tied to automated schedules |
-| Agenda view | Easier mobile experience, quick daily overview |
-| Permission enforcement | Team members only see what they're authorized to access |
-| Mileage permission | Route Drivers can be restricted to only mileage access |
