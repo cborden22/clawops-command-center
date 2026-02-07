@@ -64,7 +64,7 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
       if (item.path === "/locations") return permissions.isOwner || permissions.canViewLocations;
       if (item.path === "/maintenance") return permissions.isOwner || permissions.canViewMaintenance;
       if (item.path === "/inventory") return permissions.isOwner || permissions.canViewInventory;
-      if (item.path === "/mileage") return true; // Always visible
+      if (item.path === "/mileage") return permissions.isOwner || permissions.canViewMileage;
       return true;
     });
   }, [permissions]);

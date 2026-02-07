@@ -52,6 +52,7 @@ export interface MachineType {
   winProbability?: number; // Stored as "1 in X" (e.g., 15 means 1 in 15 odds)
   costPerPlay?: number; // Dollar value per play (e.g., 0.50, 1.00, 2.00)
   unitCode?: string; // Auto-generated unit code for QR URLs (e.g., "claw-1")
+  installedAt?: string; // Date when machine was installed at location (YYYY-MM-DD)
 }
 
 export const MACHINE_TYPE_OPTIONS: { value: MachineType["type"]; label: string }[] = [
@@ -162,6 +163,7 @@ export function useLocations() {
               winProbability: m.win_probability ? Number(m.win_probability) : undefined,
               costPerPlay: m.cost_per_play ? Number(m.cost_per_play) : 0.50,
               unitCode: m.unit_code || undefined, // Include unit code for QR URLs
+              installedAt: m.installed_at || undefined, // Include install date
             };
           });
 
@@ -295,6 +297,7 @@ export function useLocations() {
             win_probability: m.winProbability || null,
             cost_per_play: m.costPerPlay ?? 0.50,
             unit_code: unitCode,
+            installed_at: m.installedAt || null,
           };
         });
 
@@ -374,6 +377,7 @@ export function useLocations() {
               win_probability: m.winProbability || null,
               cost_per_play: m.costPerPlay ?? 0.50,
               unit_code: unitCode,
+              installed_at: m.installedAt || null,
             };
           });
 

@@ -14,6 +14,8 @@ export interface MyPermissions {
   canViewInventory: boolean;
   canViewLeads: boolean;
   canViewReports: boolean;
+  canViewMileage: boolean;       // can see routes/mileage
+  canAssignTasks: boolean;       // can assign tasks to team members
 }
 
 const DEFAULT_OWNER_PERMISSIONS: MyPermissions = {
@@ -28,6 +30,8 @@ const DEFAULT_OWNER_PERMISSIONS: MyPermissions = {
   canViewInventory: true,
   canViewLeads: true,
   canViewReports: true,
+  canViewMileage: true,
+  canAssignTasks: true,
 };
 
 const DEFAULT_RESTRICTED_PERMISSIONS: MyPermissions = {
@@ -42,6 +46,8 @@ const DEFAULT_RESTRICTED_PERMISSIONS: MyPermissions = {
   canViewInventory: false,
   canViewLeads: false,
   canViewReports: false,
+  canViewMileage: false,
+  canAssignTasks: false,
 };
 
 /**
@@ -122,6 +128,8 @@ export function useMyTeamPermissions(): MyPermissions {
           canViewInventory: permData.can_view_inventory ?? false,
           canViewLeads: permData.can_view_leads ?? false,
           canViewReports: permData.can_view_reports ?? false,
+          canViewMileage: permData.can_view_mileage ?? false,
+          canAssignTasks: permData.can_assign_tasks ?? false,
         });
       } catch (error) {
         console.error("Unexpected error fetching permissions:", error);

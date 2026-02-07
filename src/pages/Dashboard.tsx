@@ -6,8 +6,9 @@ import { useUserSchedules } from "@/hooks/useUserSchedules";
 import { useSmartScheduler } from "@/hooks/useSmartScheduler";
 import { useMaintenanceReports } from "@/hooks/useMaintenanceReports";
 import { useLeadsDB } from "@/hooks/useLeadsDB";
+import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions";
 import { LeadsWidget } from "@/components/dashboard/LeadsWidget";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,6 +77,7 @@ export default function Dashboard() {
   const { schedules, isLoaded: schedulesLoaded, refetch: refetchSchedules } = useUserSchedules();
   const { reports: maintenanceReports, isLoaded: maintenanceLoaded } = useMaintenanceReports();
   const { leads } = useLeadsDB();
+  const permissions = useMyTeamPermissions();
   
   // Smart scheduler for calendar and reminders - now includes leads
   const { 
@@ -107,6 +109,25 @@ export default function Dashboard() {
   
   const isMobile = useIsMobile();
   const { registerRefresh, unregisterRefresh } = useMobileRefresh();
+  
+  // Filter widgets based on permissions
+  const filteredWidgets = useMemo(() => {
+    return widgets.filter(widget => {
+      if (permissions.isLoading) return true;
+      if (permissions.isOwner) return true;
+      
+      // Permission-based filtering
+      if (widget.id === 'leads') return permissions.canViewLeads;
+      if (widget.id === 'maintenance') return permissions.canViewMaintenance;
+      if (widget.id === 'collectionDue') return permissions.canViewLocations;
+      if (widget.id === 'recentTransactions') return permissions.canViewRevenue;
+      if (widget.id === 'allTimeSummary') return permissions.canViewRevenue;
+      if (widget.id === 'topLocations') return permissions.canViewLocations && permissions.canViewRevenue;
+      if (widget.id === 'lowStockAlerts') return permissions.canViewInventory;
+      
+      return true;
+    });
+  }, [widgets, permissions]);
 
   // Register mobile refresh callback
   useEffect(() => {
@@ -680,7 +701,7 @@ export default function Dashboard() {
 
       {/* Widgets Grid */}
       <div className="grid grid-cols-12 gap-4">
-        {widgets.map((widget) => {
+        {filteredWidgets.map((widget) => {
            if (!widget.visible) return null;
           
           return (

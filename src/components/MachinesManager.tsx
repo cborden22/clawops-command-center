@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import {
   Plus,
   Trash2,
   Edit,
@@ -36,11 +43,13 @@ import {
   Sparkles,
   MapPin,
   QrCode,
+  CalendarIcon,
 } from "lucide-react";
 import { QRCodeGenerator } from "@/components/maintenance/QRCodeGenerator";
 import { toast } from "@/hooks/use-toast";
 import { useLocations, Location, MachineType, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocationsDB";
 import { ListSizeSelector, useListSize, applyListLimit, ListSize } from "@/components/shared/ListSizeSelector";
+import { cn } from "@/lib/utils";
 
 interface MachineWithLocation {
   machineType: MachineType;
@@ -67,6 +76,7 @@ export function MachinesManager() {
     customLabel: "",
     winProbability: undefined as number | undefined,
     costPerPlay: 0.50,
+    installedAt: new Date().toISOString().split('T')[0],
   });
   const [machinesListSize, setMachinesListSize] = useListSize("machines-list-size", 20);
 
@@ -119,6 +129,7 @@ export function MachinesManager() {
         count: formData.count,
         winProbability: formData.winProbability,
         costPerPlay: formData.costPerPlay,
+        installedAt: formData.installedAt,
       };
 
       await updateLocation(location.id, { machines: updatedMachines });
@@ -130,7 +141,7 @@ export function MachinesManager() {
       // Add new machine
       const updatedMachines = [
         ...(location.machines || []),
-        { type: formData.type, label, count: formData.count, winProbability: formData.winProbability, costPerPlay: formData.costPerPlay },
+        { type: formData.type, label, count: formData.count, winProbability: formData.winProbability, costPerPlay: formData.costPerPlay, installedAt: formData.installedAt },
       ];
 
       await updateLocation(location.id, { machines: updatedMachines });
@@ -156,6 +167,7 @@ export function MachinesManager() {
           : machine.machineType.label,
       winProbability: machine.machineType.winProbability,
       costPerPlay: machine.machineType.costPerPlay ?? 0.50,
+      installedAt: machine.machineType.installedAt || new Date().toISOString().split('T')[0],
     });
     setShowAddDialog(true);
   };
@@ -179,6 +191,7 @@ export function MachinesManager() {
       customLabel: "",
       winProbability: undefined,
       costPerPlay: 0.50,
+      installedAt: new Date().toISOString().split('T')[0],
     });
   };
 
@@ -378,6 +391,43 @@ export function MachinesManager() {
                       </Button>
                     ))}
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Install Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !formData.installedAt && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formData.installedAt
+                          ? format(new Date(formData.installedAt + 'T00:00:00'), "PPP")
+                          : "Select install date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={formData.installedAt ? new Date(formData.installedAt + 'T00:00:00') : undefined}
+                        onSelect={(date) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            installedAt: date ? format(date, "yyyy-MM-dd") : prev.installedAt,
+                          }))
+                        }
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <p className="text-xs text-muted-foreground">
+                    When was this machine installed at the location?
+                  </p>
                 </div>
 
                 <div className="flex gap-2 pt-4">
