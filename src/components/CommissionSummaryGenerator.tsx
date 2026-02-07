@@ -14,6 +14,7 @@ import { FileText, Download, Calendar as CalendarIcon, Building2, User, DollarSi
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns"
 import { cn } from "@/lib/utils"
 import { generatePDFFromHTML } from "@/utils/pdfGenerator"
+import { sanitizeForHTML } from "@/utils/htmlSanitize"
 import { useLocations } from "@/hooks/useLocationsDB"
 import { addRevenueExpense } from "@/hooks/useRevenueEntriesDB"
 import { useAuth } from "@/contexts/AuthContext"
@@ -122,6 +123,11 @@ export function CommissionSummaryGenerator() {
     const currentDate = new Date().toLocaleDateString()
     const periodText = getFormattedPeriod()
     
+    // Sanitize user inputs before embedding in HTML
+    const safeName = sanitizeForHTML(locationData.name);
+    const safeContactPerson = sanitizeForHTML(locationData.contactPerson);
+    const safeNotes = sanitizeForHTML(locationData.notes);
+
     // Template with revenue shown (current behavior)
     const contentWithRevenue = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333; line-height: 1.6;">
@@ -135,11 +141,11 @@ export function CommissionSummaryGenerator() {
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 12px 0; font-weight: 600; color: #374151; width: 40%; border-bottom: 1px solid #f3f4f6;">Business Name:</td>
-              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${locationData.name}</td>
+              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${safeName}</td>
             </tr>
             <tr>
               <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Contact Person:</td>
-              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${locationData.contactPerson || 'N/A'}</td>
+              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${safeContactPerson || 'N/A'}</td>
             </tr>
             <tr>
               <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Period:</td>
@@ -164,10 +170,10 @@ export function CommissionSummaryGenerator() {
           </div>
         </div>
 
-        ${locationData.notes ? `
+        ${safeNotes ? `
         <div style="margin: 30px 0;">
           <h3 style="font-size: 16px; color: #374151; margin: 0 0 15px 0; font-weight: 600;">Additional Notes</h3>
-          <div style="color: #4b5563; line-height: 1.6; margin: 0; padding: 20px; background: #f9fafb; border-radius: 6px; border-left: 4px solid #e5e7eb;">${locationData.notes}</div>
+          <div style="color: #4b5563; line-height: 1.6; margin: 0; padding: 20px; background: #f9fafb; border-radius: 6px; border-left: 4px solid #e5e7eb;">${safeNotes}</div>
         </div>
         ` : ''}
 
@@ -192,11 +198,11 @@ export function CommissionSummaryGenerator() {
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 12px 0; font-weight: 600; color: #374151; width: 40%; border-bottom: 1px solid #f3f4f6;">Business Name:</td>
-              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${locationData.name}</td>
+              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${safeName}</td>
             </tr>
             <tr>
               <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Contact Person:</td>
-              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${locationData.contactPerson || 'N/A'}</td>
+              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${safeContactPerson || 'N/A'}</td>
             </tr>
             <tr>
               <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Period:</td>
@@ -217,10 +223,10 @@ export function CommissionSummaryGenerator() {
           </div>
         </div>
 
-        ${locationData.notes ? `
+        ${safeNotes ? `
         <div style="margin: 30px 0;">
           <h3 style="font-size: 16px; color: #374151; margin: 0 0 15px 0; font-weight: 600;">Additional Notes</h3>
-          <div style="color: #4b5563; line-height: 1.6; margin: 0; padding: 20px; background: #f9fafb; border-radius: 6px; border-left: 4px solid #e5e7eb;">${locationData.notes}</div>
+          <div style="color: #4b5563; line-height: 1.6; margin: 0; padding: 20px; background: #f9fafb; border-radius: 6px; border-left: 4px solid #e5e7eb;">${safeNotes}</div>
         </div>
         ` : ''}
 
