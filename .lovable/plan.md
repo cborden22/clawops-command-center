@@ -1,195 +1,198 @@
 
 
-## Fix Commission Checkbox + Add Management Calendar Page
+## Fix Team Data Sharing - Complete Solution
 
-This plan addresses two issues:
-1. **Commission Paid Checkbox Not Updating**: When you click the checkbox to mark a commission as paid, the visual state doesn't update immediately in the dialog
-2. **Missing Calendar Page**: The full month/week calendar view under Management section was discussed but not implemented
+### Problem Summary
 
----
+When a team member adds data (leads, revenue, inventory, mileage), the owner cannot see it. This is because:
 
-### Issue 1: Commission Checkbox Not Updating
-
-**Root Cause Analysis**
-
-The `LocationDetailDialog` receives a `location` prop that is a snapshot from when the dialog was opened. When `toggleCommissionPaid` is called, it:
-1. Updates the database
-2. Calls `fetchLocations()` to refresh the locations array
-
-However, the dialog continues to display the **stale** `location` object that was passed to it. The parent component's state updates, but the dialog doesn't see the new data because:
-- The `location` prop is passed by value (a copy)
-- React doesn't re-render the dialog with the new location unless the parent explicitly passes the updated object
-
-**Solution**
-
-Add local state in `LocationDetailDialog` to track commission summaries and update it after successful toggle. When `toggleCommissionPaid` succeeds, update the local state to reflect the change immediately.
-
-**Files to Modify**
-- `src/components/LocationDetailDialog.tsx`
-
-**Changes**
-1. Add local state for commission summaries that syncs from props
-2. After successful toggle, update local state immediately for instant UI feedback
-3. Add `useEffect` to sync local state when the `location` prop changes
+1. **Hook issue**: All data hooks insert with `user_id: user.id` (team member's ID) instead of the owner's ID
+2. **RLS INSERT policy issue**: Current policies check `auth.uid() = user_id`, which would reject inserts where `user_id` is the owner's ID but `auth.uid()` is the team member's ID
+3. **Attribution missing**: The `created_by_user_id` column exists but is never populated
 
 ---
 
-### Issue 2: Management Calendar Page
+### Current Database State (Evidence)
 
-**Requested Feature**
+Looking at the `leads` table:
+- Team member `4f28bd1d-602f-49e3-ade0-0ac174d79f82` works for owner `4770ed25-863f-40bb-96d4-9dbe0855e349`
+- Team member's leads have `user_id: 4f28bd1d-602f-49e3-ade0-0ac174d79f82`
+- Owner can't see them because RLS checks `auth.uid() = user_id` (owner's ID doesn't match)
 
-A dedicated Calendar page under the Management section with:
-- Month view to see the entire month at a glance
-- Week view with detailed time slots
-- Task creation - add custom tasks/events directly on calendar
-- Team assignment - assign scheduled tasks to specific team members (future enhancement)
+---
 
-This is **separate** from the existing dashboard "This Week" widget which should remain unchanged.
+### Solution Overview
 
-**Implementation Plan**
+**Two-Part Fix:**
 
-1. **Create new Calendar page**: `src/pages/Calendar.tsx`
-   - Month view showing all scheduled tasks
-   - Week view with more detailed daily breakdown
-   - Toggle between views
-   - Click on a day to see details or add tasks
-   
-2. **Add route**: Update `src/App.tsx` with `/calendar` route
+1. **Database**: Update RLS INSERT policies to allow team members to insert on behalf of their owner using `get_effective_owner_id(auth.uid())`
 
-3. **Add navigation**: Update `src/components/layout/AppSidebar.tsx` to include Calendar under Management section
+2. **Frontend**: Update all data hooks to:
+   - Use `useTeamContext` to get the effective owner ID
+   - Set `user_id` to the owner's ID (for RLS visibility)
+   - Set `created_by_user_id` to the actual user's ID (for attribution)
 
-**Calendar Page Design**
+---
 
-```text
-+--------------------------------------------------+
-| Management Calendar                    [Month][Week] |
-+--------------------------------------------------+
-|                                                  |
-|  < February 2026 >                              |
-|                                                  |
-|  Sun    Mon    Tue    Wed    Thu    Fri    Sat  |
-| +------+------+------+------+------+------+------+
-| |  1   |  2   |  3   |  4   |  5   |  6   |  7   |
-| |      | [R]  |      |      | [M]  |      |      |
-| |------+------+------+------+------+------+------|
-| |  8   |  9   |  10  |  11  |  12  |  13  |  14  |
-| |      | [R]  |      |      |      | [FU] |      |
-| +------+------+------+------+------+------+------+
-|                                                  |
-| Legend: [R]=Restock [M]=Maintenance [FU]=Follow-up |
-+--------------------------------------------------+
+### Part 1: Database Migration
+
+Update INSERT policies for all affected tables to check that the user_id matches the effective owner ID:
+
+```sql
+-- Drop existing INSERT policies
+DROP POLICY IF EXISTS "Users can create own leads" ON leads;
+DROP POLICY IF EXISTS "Users can create own revenue entries" ON revenue_entries;
+DROP POLICY IF EXISTS "Users can create own inventory" ON inventory_items;
+DROP POLICY IF EXISTS "Users can create their own mileage entries" ON mileage_entries;
+DROP POLICY IF EXISTS "Users can create own locations" ON locations;
+
+-- Create new INSERT policies that allow team members to insert for their owner
+CREATE POLICY "Users and team members can create leads"
+ON leads FOR INSERT
+WITH CHECK (user_id = get_effective_owner_id(auth.uid()));
+
+CREATE POLICY "Users and team members can create revenue entries"
+ON revenue_entries FOR INSERT
+WITH CHECK (user_id = get_effective_owner_id(auth.uid()));
+
+CREATE POLICY "Users and team members can create inventory"
+ON inventory_items FOR INSERT
+WITH CHECK (user_id = get_effective_owner_id(auth.uid()));
+
+CREATE POLICY "Users and team members can create mileage entries"
+ON mileage_entries FOR INSERT
+WITH CHECK (user_id = get_effective_owner_id(auth.uid()));
+
+CREATE POLICY "Users and team members can create locations"
+ON locations FOR INSERT
+WITH CHECK (user_id = get_effective_owner_id(auth.uid()));
 ```
 
-**Data Sources (already available)**
-- Restock schedules from `useSmartScheduler`
-- Route schedules from `useSmartScheduler`
-- Maintenance reports from `useMaintenanceReports`
-- Lead follow-ups from `useLeadsDB`
+Also update the UPDATE and DELETE policies for consistency (team members should be able to modify data they can see).
 
 ---
 
-### Files to Create
+### Part 2: Hook Updates
 
-| File | Purpose |
+**Files to modify:**
+
+| Hook | Changes |
 |------|---------|
-| `src/pages/Calendar.tsx` | Management calendar with month/week views |
+| `useLeadsDB.ts` | Use `useTeamContext`, set `user_id` to `effectiveUserId`, add `created_by_user_id` |
+| `useRevenueEntriesDB.ts` | Use `useTeamContext`, set `user_id` to `effectiveUserId`, add `created_by_user_id` |
+| `useInventoryDB.ts` | Use `useTeamContext`, set `user_id` to `effectiveUserId`, add `created_by_user_id` |
+| `useMileageDB.ts` | Use `useTeamContext`, set `user_id` to `effectiveUserId`, add `created_by_user_id` |
+| `useLocationsDB.ts` | Use `useTeamContext`, set `user_id` to `effectiveUserId` |
 
-### Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/components/LocationDetailDialog.tsx` | Fix commission checkbox state sync |
-| `src/App.tsx` | Add `/calendar` route |
-| `src/components/layout/AppSidebar.tsx` | Add Calendar to Management section |
-
----
-
-### Technical Details
-
-#### Commission Checkbox Fix
+**Example change for `useLeadsDB.ts`:**
 
 ```typescript
-// Add local state for commission summaries
-const [localCommissionSummaries, setLocalCommissionSummaries] = useState<CommissionSummaryRecord[]>(
-  location?.commissionSummaries || []
-);
+// Before
+const createLead = async (input: CreateLeadInput) => {
+  const { data, error } = await supabase
+    .from('leads')
+    .insert({
+      ...input,
+      user_id: user.id,  // ❌ Team member's ID
+    })
+}
 
-// Sync when location changes
-useEffect(() => {
-  if (location) {
-    setLocalCommissionSummaries(location.commissionSummaries);
-  }
-}, [location?.id, location?.commissionSummaries]);
-
-// Update handler to update local state immediately
-const handleToggleCommissionPaid = async (summaryId: string, currentPaid: boolean) => {
-  setTogglingPaidId(summaryId);
-  const success = await toggleCommissionPaid(summaryId, !currentPaid);
-  setTogglingPaidId(null);
-  
-  if (success) {
-    // Update local state immediately for UI feedback
-    setLocalCommissionSummaries(prev => prev.map(s => 
-      s.id === summaryId 
-        ? { ...s, commissionPaid: !currentPaid, commissionPaidAt: !currentPaid ? new Date().toISOString() : null }
-        : s
-    ));
-    // Toast notification...
-  }
-};
-
-// Use localCommissionSummaries instead of location.commissionSummaries in the render
-```
-
-#### Calendar Page Structure
-
-```typescript
-// src/pages/Calendar.tsx
-export default function Calendar() {
-  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  
-  // Use existing hooks for data
-  const { locations } = useLocations();
-  const { routes } = useRoutesDB();
-  const { leads } = useLeadsDB();
-  const { reports } = useMaintenanceReports();
-  
-  // Smart scheduler provides task data
-  const { weeklyTasks, tasksByDate, restockStatuses, routeScheduleStatuses } = useSmartScheduler({
-    locations,
-    routes,
-    userSchedules: [],
-    maintenanceReports: reports,
-    leads: leads.map(l => ({...})),
-  });
-  
-  // Render month or week view based on viewMode
+// After
+const createLead = async (input: CreateLeadInput) => {
+  const { data, error } = await supabase
+    .from('leads')
+    .insert({
+      ...input,
+      user_id: effectiveUserId,  // ✅ Owner's ID (for RLS)
+      created_by_user_id: user.id,  // ✅ Team member's ID (for attribution)
+    })
 }
 ```
 
 ---
 
-### Navigation Update
+### Part 3: Data Migration (Optional)
 
-Add to `managementItems` in `AppSidebar.tsx`:
+Fix existing data that was inserted with wrong user_id:
+
+```sql
+-- Update leads created by team members to use owner's user_id
+UPDATE leads
+SET 
+  user_id = tm.owner_user_id,
+  created_by_user_id = leads.user_id
+FROM team_members tm
+WHERE leads.user_id = tm.member_user_id
+  AND tm.status = 'active'
+  AND leads.created_by_user_id IS NULL;
+```
+
+This migrates existing records so owners can see team member data retroactively.
+
+---
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| New migration SQL | Create - RLS policy updates |
+| `src/hooks/useLeadsDB.ts` | Modify - Add useTeamContext integration |
+| `src/hooks/useRevenueEntriesDB.ts` | Modify - Add useTeamContext integration |
+| `src/hooks/useInventoryDB.ts` | Modify - Add useTeamContext integration |
+| `src/hooks/useMileageDB.ts` | Modify - Add useTeamContext integration |
+| `src/hooks/useLocationsDB.ts` | Modify - Add useTeamContext integration |
+
+---
+
+### Technical Details
+
+#### useTeamContext Integration Pattern
+
+Each hook will:
+1. Import and use `useTeamContext`
+2. Wait for context to load before allowing operations
+3. Use `effectiveUserId` for `user_id` column
+4. Use `user.id` for `created_by_user_id` column
 
 ```typescript
-const managementItems = [
-  { title: "Team", url: "/team", icon: UsersRound },
-  { title: "Calendar", url: "/calendar", icon: Calendar },
-];
+export function useLeadsDB() {
+  const { user } = useAuth();
+  const { effectiveUserId, isLoading: isTeamContextLoading } = useTeamContext();
+  
+  const createLead = async (input: CreateLeadInput) => {
+    if (!user || !effectiveUserId) return null;
+    
+    const { data, error } = await supabase
+      .from('leads')
+      .insert({
+        ...input,
+        user_id: effectiveUserId,          // Owner's ID
+        created_by_user_id: user.id,       // Actual creator
+        status: input.status || 'new',
+        priority: input.priority || 'warm',
+      })
+      // ...
+  };
+}
 ```
 
 ---
 
-### Expected Behavior After Implementation
+### Expected Behavior After Fix
 
-| Action | Result |
-|--------|--------|
-| Click commission "Unpaid" checkbox | Immediately shows "Paid" with green border |
-| Navigate to /calendar | Shows month view of all scheduled tasks |
-| Toggle to Week view | Shows detailed weekly breakdown |
-| Click on a day | Highlights day, shows task details |
-| Tasks from dashboard | Same data sources, different presentation |
+| Scenario | Before | After |
+|----------|--------|-------|
+| Team member adds lead | Owner can't see it | Owner sees it immediately |
+| Team member adds revenue | Owner can't see it | Owner sees it with attribution |
+| Owner views lead | Missing team data | All team leads visible |
+| Attribution badge | Empty | Shows "Added by [Team Member]" |
+
+---
+
+### Verification Steps
+
+1. Log in as team member, add a lead
+2. Log in as owner, verify lead appears in pipeline
+3. Check lead shows "Added by [Team Member Name]" attribution
+4. Repeat for revenue, inventory, mileage entries
 
