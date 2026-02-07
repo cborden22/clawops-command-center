@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { slugify, generateUnitCode } from "@/utils/slugify";
+import { useTeamContext } from "@/hooks/useTeamContext";
 
 // Parse date-only strings (YYYY-MM-DD) as local dates to avoid timezone shifts
 const parseDateOnly = (dateStr: string): Date => {
@@ -86,6 +87,7 @@ export interface Location {
 
 export function useLocations() {
   const { user } = useAuth();
+  const { effectiveUserId } = useTeamContext();
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -245,7 +247,7 @@ export function useLocations() {
   }, [user?.id]);
 
   const addLocation = async (locationData: Omit<Location, "id" | "createdAt" | "commissionSummaries" | "agreements" | "machines"> & { machines?: MachineType[] }) => {
-    if (!user) return null;
+    if (!user || !effectiveUserId) return null;
 
     try {
       // Auto-generate slug from location name
@@ -254,7 +256,7 @@ export function useLocations() {
       const { data: newLoc, error: locError } = await supabase
         .from("locations")
         .insert({
-          user_id: user.id,
+          user_id: effectiveUserId,           // Owner's ID (for RLS visibility)
           name: locationData.name,
           slug: generatedSlug,
           address: locationData.address,

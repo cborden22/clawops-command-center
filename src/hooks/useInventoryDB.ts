@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { useTeamContext } from "@/hooks/useTeamContext";
 
 export interface InventoryItem {
   id: string;
@@ -88,6 +89,7 @@ export async function updateStockRunReturns(
 
 export function useInventory() {
   const { user } = useAuth();
+  const { effectiveUserId } = useTeamContext();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -147,7 +149,7 @@ export function useInventory() {
   }, [user?.id]);
 
   const addItem = async (item: Omit<InventoryItem, "id" | "lastUpdated">) => {
-    if (!user) return null;
+    if (!user || !effectiveUserId) return null;
 
     try {
       // Calculate price per item if lastPrice and packageQuantity are provided
@@ -158,7 +160,8 @@ export function useInventory() {
       const { data, error } = await supabase
         .from("inventory_items")
         .insert({
-          user_id: user.id,
+          user_id: effectiveUserId,           // Owner's ID (for RLS visibility)
+          created_by_user_id: user.id,        // Actual creator (for attribution)
           name: item.name,
           category: item.category,
           quantity: item.quantity,

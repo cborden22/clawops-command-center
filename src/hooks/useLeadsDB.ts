@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useTeamContext } from '@/hooks/useTeamContext';
 
 export type LeadStatus = 'new' | 'contacted' | 'negotiating' | 'won' | 'lost';
 export type LeadPriority = 'hot' | 'warm' | 'cold';
@@ -66,6 +67,7 @@ export function useLeadsDB() {
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { effectiveUserId } = useTeamContext();
 
   const fetchLeads = useCallback(async () => {
     if (!user) return;
@@ -97,14 +99,15 @@ export function useLeadsDB() {
   }, [fetchLeads]);
 
   const createLead = async (input: CreateLeadInput): Promise<Lead | null> => {
-    if (!user) return null;
+    if (!user || !effectiveUserId) return null;
 
     try {
       const { data, error } = await supabase
         .from('leads')
         .insert({
           ...input,
-          user_id: user.id,
+          user_id: effectiveUserId,           // Owner's ID (for RLS visibility)
+          created_by_user_id: user.id,        // Actual creator (for attribution)
           status: input.status || 'new',
           priority: input.priority || 'warm',
         })
@@ -222,14 +225,15 @@ export function useLeadsDB() {
   };
 
   const createActivity = async (input: CreateActivityInput): Promise<LeadActivity | null> => {
-    if (!user) return null;
+    if (!user || !effectiveUserId) return null;
 
     try {
       const { data, error } = await supabase
         .from('lead_activities')
         .insert({
           ...input,
-          user_id: user.id,
+          user_id: effectiveUserId,           // Owner's ID (for RLS visibility)
+          created_by_user_id: user.id,        // Actual creator (for attribution)
         })
         .select()
         .single();
