@@ -10,7 +10,7 @@
  import { toast } from "@/hooks/use-toast";
  import { z } from "zod";
  
- const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+ const passwordSchema = z.string().min(8, "Password must be at least 8 characters");
  
  export default function ResetPassword() {
    const navigate = useNavigate();
