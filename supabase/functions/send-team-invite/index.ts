@@ -1,4 +1,5 @@
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,6 +28,39 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Authenticate the request - ensure user is logged in
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      console.error("Auth validation failed:", claimsError);
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = claimsData.claims.sub;
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) {
       console.error("RESEND_API_KEY not configured");
@@ -49,8 +83,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return new Response(JSON.stringify({ error: "Invalid email format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const roleLabel = role === "manager" ? "Manager" : "Technician";
-    const inviterDisplay = inviter_name || "A ClawOps user";
+    // Sanitize inviter_name to prevent XSS in emails
+    const sanitizedInviterName = (inviter_name || "A ClawOps user")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .slice(0, 100); // Limit length
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -68,7 +115,7 @@ Deno.serve(async (req) => {
         
         <div style="background: #ffffff; border: 1px solid #e5e7eb; border-top: none; padding: 32px; border-radius: 0 0 12px 12px;">
           <p style="font-size: 16px; color: #374151;">
-            <strong>${inviterDisplay}</strong> has invited you to join their team as a <strong>${roleLabel}</strong>.
+            <strong>${sanitizedInviterName}</strong> has invited you to join their team as a <strong>${roleLabel}</strong>.
           </p>
 
           <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin: 24px 0;">
@@ -88,7 +135,7 @@ Deno.serve(async (req) => {
           </div>
 
           <p style="text-align: center; color: #9ca3af; font-size: 14px; margin-top: 24px;">
-            Create an account or sign in with <strong>${email}</strong> to get started.
+            Create an account or sign in with <strong>${email.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</strong> to get started.
           </p>
         </div>
 
@@ -102,7 +149,7 @@ Deno.serve(async (req) => {
     const emailResponse = await resend.emails.send({
       from: "ClawOps <noreply@clawops.com>",
       to: [email],
-      subject: `${inviterDisplay} invited you to join their team on ClawOps`,
+      subject: `${sanitizedInviterName} invited you to join their team on ClawOps`,
       html: emailHtml,
     });
 
