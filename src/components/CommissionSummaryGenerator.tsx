@@ -263,6 +263,8 @@ export function CommissionSummaryGenerator() {
           commissionAmount: locationData.commissionAmount,
           machineCount: locationData.machineCount,
           notes: locationData.notes,
+          commissionPaid: false,
+          commissionPaidAt: null,
         })
         savedToLocation = !!result
       }

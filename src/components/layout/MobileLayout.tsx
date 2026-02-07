@@ -14,7 +14,12 @@ function MobileLayoutInner({ children }: MobileLayoutProps) {
   const { isRefreshing, triggerRefresh } = useMobileRefresh();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div 
+      className="min-h-screen bg-background flex flex-col"
+      style={{
+        minHeight: 'calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+      }}
+    >
       <MobileHeader onRefresh={triggerRefresh} isRefreshing={isRefreshing} />
       <UpdateNotification />
       <main 
