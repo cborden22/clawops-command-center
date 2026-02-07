@@ -40,6 +40,7 @@ export function useMaintenanceReports() {
     setError(null);
     try {
       // Use regular joins (not !inner) to handle orphaned reports gracefully
+      // RLS handles access control - owners see own data, team members see owner data via has_team_permission()
       const { data, error: fetchError } = await supabase
         .from("maintenance_reports")
         .select(`
@@ -50,7 +51,6 @@ export function useMaintenanceReports() {
             locations(name)
           )
         `)
-        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (fetchError) throw fetchError;

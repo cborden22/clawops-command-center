@@ -41,45 +41,42 @@ export function getDateRangeFromPreset(preset: DateRangePreset, customStart?: Da
 export function useReportsData(dateRange: DateRange) {
   const { user } = useAuth();
 
-  // Fetch all locations
+  // Fetch all locations - RLS handles access control
   const { data: locations = [] } = useQuery({
     queryKey: ["reports-locations", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from("locations")
-        .select("*")
-        .eq("user_id", user.id);
+        .select("*");
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
 
-  // Fetch all revenue entries
+  // Fetch all revenue entries - RLS handles access control
   const { data: revenueEntries = [] } = useQuery({
     queryKey: ["reports-revenue", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from("revenue_entries")
-        .select("*")
-        .eq("user_id", user.id);
+        .select("*");
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
 
-  // Fetch all machines
+  // Fetch all machines - RLS handles access control via location relationship
   const { data: machines = [] } = useQuery({
     queryKey: ["reports-machines", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from("location_machines")
-        .select("*, locations!inner(user_id)")
-        .eq("locations.user_id", user.id);
+        .select("*");
       if (error) throw error;
       return data;
     },
@@ -101,15 +98,14 @@ export function useReportsData(dateRange: DateRange) {
     enabled: !!user,
   });
 
-  // Fetch inventory items
+  // Fetch inventory items - RLS handles access control
   const { data: inventoryItems = [] } = useQuery({
     queryKey: ["reports-inventory", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from("inventory_items")
-        .select("*")
-        .eq("user_id", user.id);
+        .select("*");
       if (error) throw error;
       return data;
     },
@@ -161,15 +157,14 @@ export function useReportsData(dateRange: DateRange) {
     enabled: !!user,
   });
 
-  // Fetch commission summaries
+  // Fetch commission summaries - RLS handles access control via location relationship
   const { data: commissionSummaries = [] } = useQuery({
     queryKey: ["reports-commissions", user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from("commission_summaries")
-        .select("*, locations!inner(user_id)")
-        .eq("locations.user_id", user.id);
+        .select("*");
       if (error) throw error;
       return data;
     },
