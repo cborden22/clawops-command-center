@@ -1,113 +1,164 @@
 
-## Fix Maintenance Email Links & Remove Lovable Branding
 
-### Problem Analysis
+## Fix Team Member Permission Visibility in Location Details
 
-**Issue 1: Email links not working**
-The maintenance report email at line 179 contains a hardcoded URL:
-```html
-<a href="https://clawops-command-center.lovable.app/maintenance">
-```
+### Problem Summary
 
-This is problematic because:
-- If you set up a custom domain (e.g., `clawops.com`), this link would bypass it
-- Email clients may have issues with the long subdomain format
+When a team member is granted access to view locations, they can currently see **all tabs** in the Location Detail Dialog:
+- Collections (should require `can_view_revenue` permission)
+- Agreements (should require `can_view_documents` permission)
+- Commissions (should require `can_view_documents` permission)
 
-**Issue 2: Lovable branding still present**
-Found in these locations:
-| File | Line(s) | Content |
-|------|---------|---------|
-| `index.html` | 23, 26-27 | Lovable OpenGraph images and Twitter @lovable_dev reference |
-| `submit-maintenance-report/index.ts` | 179 | `clawops-command-center.lovable.app` URL |
-| `send-team-invite/index.ts` | 131 | `clawops-command-center.lovable.app` URL |
-| `README.md` | All | Lovable project documentation (internal file) |
+The RLS policies correctly restrict data access at the database level, but the **frontend UI doesn't hide these tabs** based on the user's actual permissions.
 
----
+### Root Cause
+
+There's no mechanism in the frontend to:
+1. Detect if the current user is a team member (subuser) vs. account owner
+2. Fetch and check the current user's team permissions
+3. Conditionally show/hide UI elements based on those permissions
 
 ### Solution
 
-#### 1. Update Edge Functions to Use Dynamic Base URL
+Create a new hook `useMyTeamPermissions` that:
+1. Checks if the current user is a team member on any account
+2. Fetches their permissions from `team_member_permissions` table
+3. Provides permission flags that components can use
 
-The edge functions cannot use `window.location.origin` (no browser context). Instead, we'll:
-- Use an environment variable for the base URL
-- Fall back to the published URL if not set
-
-**submit-maintenance-report/index.ts** (line 179):
-```typescript
-// Before
-<a href="https://clawops-command-center.lovable.app/maintenance" ...>
-
-// After - use environment variable
-const baseUrl = Deno.env.get("APP_BASE_URL") || "https://clawops.com";
-// Then in the email HTML:
-<a href="${baseUrl}/maintenance" ...>
-```
-
-**send-team-invite/index.ts** (line 131):
-```typescript
-// Before
-<a href="https://clawops-command-center.lovable.app/auth" ...>
-
-// After
-const baseUrl = Deno.env.get("APP_BASE_URL") || "https://clawops.com";
-// Then in the email HTML:
-<a href="${baseUrl}/auth" ...>
-```
-
-#### 2. Add APP_BASE_URL Secret
-
-Add a new secret `APP_BASE_URL` with value:
-- If you have a custom domain: `https://your-custom-domain.com`
-- If not: `https://clawops-command-center.lovable.app`
-
-This allows you to change the domain later without modifying code.
-
-#### 3. Update index.html - Remove Lovable Meta Tags
-
-**Remove/update these lines (22-27)**:
-```html
-<!-- BEFORE -->
-<meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:site" content="@lovable_dev" />
-<meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
-<!-- AFTER - Use ClawOps branding -->
-<meta property="og:image" content="/icons/icon-512.png" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:site" content="@clawops" /> <!-- or remove if no Twitter -->
-<meta name="twitter:image" content="/icons/icon-512.png" />
-```
-
-#### 4. Update README.md
-
-Replace Lovable references with ClawOps documentation. This is primarily a developer file but good to clean up.
+Then modify `LocationDetailDialog.tsx` to conditionally render tabs based on permissions.
 
 ---
 
-### Files to Modify
+### Technical Implementation
 
-| File | Change |
-|------|--------|
-| `supabase/functions/submit-maintenance-report/index.ts` | Add `baseUrl` variable from env, use in email link |
-| `supabase/functions/send-team-invite/index.ts` | Add `baseUrl` variable from env, use in email link |
-| `index.html` | Replace Lovable OpenGraph/Twitter images with ClawOps icons |
-| `README.md` | Replace Lovable references with ClawOps branding |
+#### 1. New Hook: `useMyTeamPermissions.ts`
 
-### Secret to Add
+Creates a hook that fetches the current user's team membership and permissions:
 
-| Secret Name | Value | Purpose |
-|-------------|-------|---------|
-| `APP_BASE_URL` | `https://clawops.com` (or your domain) | Base URL for email links |
+```typescript
+// src/hooks/useMyTeamPermissions.ts
+export interface MyPermissions {
+  isOwner: boolean;              // true if viewing own data
+  isTeamMember: boolean;         // true if viewing as team member
+  canViewRevenue: boolean;       // can see collections
+  canViewDocuments: boolean;     // can see agreements/commissions
+  canViewLocations: boolean;
+  canViewMaintenance: boolean;
+  canManageMaintenance: boolean;
+  canViewInventory: boolean;
+  canViewLeads: boolean;
+  canViewReports: boolean;
+}
+
+export function useMyTeamPermissions() {
+  // Query team_members where member_user_id = auth.uid()
+  // If found, fetch corresponding team_member_permissions
+  // If not found, user is owner with full permissions
+  // Return permissions object
+}
+```
+
+**Key Logic:**
+- If no team membership exists for current user → they're an owner → all permissions = true
+- If team membership exists → fetch permissions from `team_member_permissions`
+- Permissions map:
+  - Collections tab → `canViewRevenue` 
+  - Agreements tab → `canViewDocuments`
+  - Commissions tab → `canViewDocuments`
+
+#### 2. Modify `LocationDetailDialog.tsx`
+
+Update the dialog to conditionally render tabs:
+
+**Before:**
+```tsx
+<TabsList className="grid w-full grid-cols-4">
+  <TabsTrigger value="details">Details</TabsTrigger>
+  <TabsTrigger value="collections">Collections</TabsTrigger>
+  <TabsTrigger value="agreements">Agreements</TabsTrigger>
+  <TabsTrigger value="commissions">Commissions</TabsTrigger>
+</TabsList>
+```
+
+**After:**
+```tsx
+const { canViewRevenue, canViewDocuments, isOwner } = useMyTeamPermissions();
+
+// Calculate visible tab count for grid layout
+const visibleTabCount = 1 + 
+  (isOwner || canViewRevenue ? 1 : 0) + 
+  (isOwner || canViewDocuments ? 2 : 0);
+
+<TabsList className={`grid w-full grid-cols-${visibleTabCount}`}>
+  <TabsTrigger value="details">Details</TabsTrigger>
+  
+  {/* Collections - requires revenue permission */}
+  {(isOwner || canViewRevenue) && (
+    <TabsTrigger value="collections">Collections</TabsTrigger>
+  )}
+  
+  {/* Agreements - requires documents permission */}
+  {(isOwner || canViewDocuments) && (
+    <TabsTrigger value="agreements">Agreements</TabsTrigger>
+  )}
+  
+  {/* Commissions - requires documents permission */}
+  {(isOwner || canViewDocuments) && (
+    <TabsTrigger value="commissions">Commissions</TabsTrigger>
+  )}
+</TabsList>
+```
+
+Also conditionally render the corresponding `TabsContent` components to prevent rendering hidden data.
 
 ---
 
-### Implementation Notes
+### Files to Create/Modify
 
-1. **Edge function changes**: The `baseUrl` will be defined at the top of the handler function, making it easy to update centrally if needed.
+| File | Action | Purpose |
+|------|--------|---------|
+| `src/hooks/useMyTeamPermissions.ts` | Create | Hook to fetch current user's team permissions |
+| `src/components/LocationDetailDialog.tsx` | Modify | Conditionally show/hide tabs based on permissions |
 
-2. **Fallback behavior**: If `APP_BASE_URL` is not set, the functions will use `https://clawops.com` as the default (assuming you own this domain). If not, we can set a different fallback.
+### Permission Mapping
 
-3. **Testing**: After deployment, trigger a maintenance report submission and verify the email link opens correctly.
+| UI Element | Required Permission |
+|------------|---------------------|
+| Collections tab | `can_view_revenue` |
+| Agreements tab | `can_view_documents` |
+| Commissions tab | `can_view_documents` |
+| Details tab | Always visible (if `can_view_locations` is true, they have access) |
 
-4. **No QRCodeGenerator changes needed**: That file already uses `window.location.origin` dynamically, which is correct for client-side code.
+### Edge Cases
+
+1. **Owner viewing own data**: All permissions = true (bypass checks)
+2. **Team member with no permissions record**: Treat as restricted (default false)
+3. **User is both owner AND team member on different accounts**: Check context - are they viewing their own data or someone else's?
+
+### Data Flow
+
+```
+User opens Location Detail Dialog
+        ↓
+useMyTeamPermissions() hook runs
+        ↓
+Query: SELECT * FROM team_members WHERE member_user_id = auth.uid()
+        ↓
+If found → Fetch team_member_permissions
+If not found → User is owner (full access)
+        ↓
+Return permissions object
+        ↓
+LocationDetailDialog uses permissions to conditionally render tabs
+```
+
+---
+
+### Testing Checklist
+
+After implementation:
+1. As **owner**: Verify all 4 tabs visible in Location Detail Dialog
+2. As **team member with `can_view_documents=false`**: Verify Agreements and Commissions tabs are hidden
+3. As **team member with `can_view_revenue=false`**: Verify Collections tab is hidden
+4. As **team member with both permissions disabled**: Verify only Details tab is visible
+
