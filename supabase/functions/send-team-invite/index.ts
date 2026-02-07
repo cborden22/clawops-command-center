@@ -92,6 +92,7 @@ Deno.serve(async (req) => {
       });
     }
 
+    const baseUrl = Deno.env.get("APP_BASE_URL") || "https://clawops-command-center.lovable.app";
     const roleLabel = role === "manager" ? "Manager" : "Technician";
     // Sanitize inviter_name to prevent XSS in emails
     const sanitizedInviterName = (inviter_name || "A ClawOps user")
@@ -128,7 +129,7 @@ Deno.serve(async (req) => {
           </div>
 
           <div style="text-align: center; margin-top: 32px;">
-            <a href="https://clawops-command-center.lovable.app/auth" 
+            <a href="${baseUrl}/auth" 
                style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #000; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
               Accept Invitation
             </a>

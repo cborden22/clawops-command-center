@@ -112,6 +112,7 @@ async function sendEmailNotification(
   machineInfo: { machine_type: string; custom_label: string; location_name: string },
   reportData: Record<string, unknown>
 ): Promise<void> {
+  const baseUrl = Deno.env.get("APP_BASE_URL") || "https://clawops-command-center.lovable.app";
   const issueLabel = ISSUE_TYPE_LABELS[reportData.issue_type as string] || reportData.issue_type;
   const severityInfo = SEVERITY_LABELS[reportData.severity as string] || { label: reportData.severity, color: "#6b7280" };
   
@@ -176,7 +177,7 @@ async function sendEmailNotification(
           <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 14px;">
             View and manage this report in ClawOps
           </p>
-          <a href="https://clawops-command-center.lovable.app/maintenance" 
+          <a href="${baseUrl}/maintenance" 
              style="display: inline-block; background: #f59e0b; color: #000; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 500;">
             Open Maintenance Dashboard
           </a>
