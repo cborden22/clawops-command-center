@@ -10,7 +10,7 @@ interface PDFOptions {
 
 /**
  * Generate a PDF from HTML content string
- * Uses jspdf + html2canvas as a secure alternative to html2pdf.js
+ * Uses jspdf + html2canvas for secure PDF generation
  */
 export async function generatePDFFromHTML(
   htmlContent: string,
