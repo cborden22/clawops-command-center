@@ -1,58 +1,45 @@
 import { useEffect, useState, useCallback } from "react";
+import { registerSW } from "virtual:pwa-register";
 
 export function useServiceWorkerUpdate() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
+  const [updateSW, setUpdateSW] = useState<((reload?: boolean) => Promise<void>) | null>(null);
 
   useEffect(() => {
-    if (!('serviceWorker' in navigator)) return;
-
-    const handleUpdate = async () => {
-      const registration = await navigator.serviceWorker.getRegistration();
-      
-      if (!registration) return;
-
-      // Check if there's a waiting worker
-      if (registration.waiting) {
-        setWaitingWorker(registration.waiting);
+    // Register the service worker using vite-plugin-pwa
+    const updateFunction = registerSW({
+      onNeedRefresh() {
+        // New content available - show update prompt
+        console.log("PWA: New content available, update ready");
         setUpdateAvailable(true);
-        return;
-      }
-
-      // Listen for new service worker installing
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
-        if (!newWorker) return;
-
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            setWaitingWorker(newWorker);
-            setUpdateAvailable(true);
-          }
-        });
-      });
-    };
-
-    handleUpdate();
-
-    // Also check for updates periodically (every 30 minutes)
-    const interval = setInterval(async () => {
-      const registration = await navigator.serviceWorker.getRegistration();
-      registration?.update();
-    }, 30 * 60 * 1000);
-
-    return () => clearInterval(interval);
+      },
+      onOfflineReady() {
+        console.log("PWA: App ready to work offline");
+      },
+      onRegisteredSW(swUrl, registration) {
+        console.log("PWA: Service worker registered:", swUrl);
+        // Check for updates every 30 minutes
+        if (registration) {
+          setInterval(() => {
+            console.log("PWA: Checking for updates...");
+            registration.update();
+          }, 30 * 60 * 1000);
+        }
+      },
+      onRegisterError(error) {
+        console.error("PWA: Service worker registration error:", error);
+      },
+    });
+    
+    setUpdateSW(() => updateFunction);
   }, []);
 
   const applyUpdate = useCallback(() => {
-    if (waitingWorker) {
-      waitingWorker.postMessage({ type: 'SKIP_WAITING' });
-      // Reload page when new service worker takes control
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
-      });
+    if (updateSW) {
+      console.log("PWA: Applying update and reloading...");
+      updateSW(true); // true = reload after update
     }
-  }, [waitingWorker]);
+  }, [updateSW]);
 
   const dismissUpdate = useCallback(() => {
     setUpdateAvailable(false);

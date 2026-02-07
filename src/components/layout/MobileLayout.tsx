@@ -3,7 +3,7 @@ import { MobileHeader } from "./MobileHeader";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { QuickAddSheet } from "../mobile/QuickAddSheet";
 import { MobileRefreshProvider, useMobileRefresh } from "@/contexts/MobileRefreshContext";
-import { UpdateNotification } from "../mobile/UpdateNotification";
+import { UpdateNotification } from "@/components/shared/UpdateNotification";
 
 interface MobileLayoutProps {
   children: ReactNode;
