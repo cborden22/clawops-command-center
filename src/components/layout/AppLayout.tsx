@@ -3,6 +3,7 @@ import { AppSidebar } from "./AppSidebar"
 import { MobileLayout } from "./MobileLayout"
 import { ReactNode } from "react"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { UpdateNotification } from "@/components/shared/UpdateNotification"
 
 interface AppLayoutProps {
   children: ReactNode
@@ -28,6 +29,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         <AppSidebar />
+        <UpdateNotification />
         
         <div className="flex-1 flex flex-col relative z-10">
           <header className="h-16 flex items-center justify-between px-6 glass-header">
