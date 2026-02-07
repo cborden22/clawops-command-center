@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +32,13 @@ export function MemberPermissionsDialog({
   );
   const [isSaving, setIsSaving] = useState(false);
 
+  // Sync state when dialog opens or member changes
+  useEffect(() => {
+    if (open && member.permissions) {
+      setPermissions({ ...member.permissions });
+    }
+  }, [open, member.permissions]);
+
   const togglePermission = (key: keyof TeamMemberPermissions) => {
     setPermissions((prev) => ({
       ...prev,
@@ -61,7 +68,7 @@ export function MemberPermissionsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
           <div className="flex items-center justify-between">
             <div>
               <Label className="text-sm font-medium">Locations</Label>
@@ -160,6 +167,32 @@ export function MemberPermissionsDialog({
             <Switch
               checked={permissions.can_view_documents}
               onCheckedChange={() => togglePermission("can_view_documents")}
+            />
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-sm font-medium">Mileage</Label>
+              <p className="text-xs text-muted-foreground">View routes and mileage entries</p>
+            </div>
+            <Switch
+              checked={permissions.can_view_mileage}
+              onCheckedChange={() => togglePermission("can_view_mileage")}
+            />
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-sm font-medium">Task Assignment</Label>
+              <p className="text-xs text-muted-foreground">Assign tasks to other team members</p>
+            </div>
+            <Switch
+              checked={permissions.can_assign_tasks}
+              onCheckedChange={() => togglePermission("can_assign_tasks")}
             />
           </div>
         </div>

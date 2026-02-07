@@ -217,21 +217,127 @@ export function useTeamMembers() {
     }
   };
 
+  // Role presets for permission defaults
+  const ROLE_PRESETS: Record<TeamRole, Partial<TeamMemberPermissions>> = {
+    owner: {
+      can_view_locations: true,
+      can_view_maintenance: true,
+      can_manage_maintenance: true,
+      can_view_inventory: true,
+      can_view_revenue: true,
+      can_view_leads: true,
+      can_view_reports: true,
+      can_view_documents: true,
+      can_view_mileage: true,
+      can_assign_tasks: true,
+    },
+    manager: {
+      can_view_locations: true,
+      can_view_maintenance: true,
+      can_manage_maintenance: true,
+      can_view_inventory: true,
+      can_view_revenue: true,
+      can_view_leads: true,
+      can_view_reports: true,
+      can_view_documents: true,
+      can_view_mileage: true,
+      can_assign_tasks: false,
+    },
+    technician: {
+      can_view_locations: true,
+      can_view_maintenance: true,
+      can_manage_maintenance: true,
+      can_view_inventory: true,
+      can_view_revenue: false,
+      can_view_leads: false,
+      can_view_reports: false,
+      can_view_documents: false,
+      can_view_mileage: false,
+      can_assign_tasks: false,
+    },
+    supervisor: {
+      can_view_locations: true,
+      can_view_maintenance: true,
+      can_manage_maintenance: true,
+      can_view_inventory: true,
+      can_view_revenue: true,
+      can_view_leads: true,
+      can_view_reports: true,
+      can_view_documents: true,
+      can_view_mileage: true,
+      can_assign_tasks: true,
+    },
+    route_driver: {
+      can_view_locations: true,
+      can_view_maintenance: false,
+      can_manage_maintenance: false,
+      can_view_inventory: false,
+      can_view_revenue: false,
+      can_view_leads: false,
+      can_view_reports: false,
+      can_view_documents: false,
+      can_view_mileage: true,
+      can_assign_tasks: false,
+    },
+    inventory_clerk: {
+      can_view_locations: false,
+      can_view_maintenance: false,
+      can_manage_maintenance: false,
+      can_view_inventory: true,
+      can_view_revenue: false,
+      can_view_leads: false,
+      can_view_reports: false,
+      can_view_documents: false,
+      can_view_mileage: false,
+      can_assign_tasks: false,
+    },
+    sales_manager: {
+      can_view_locations: true,
+      can_view_maintenance: false,
+      can_manage_maintenance: false,
+      can_view_inventory: false,
+      can_view_revenue: false,
+      can_view_leads: true,
+      can_view_reports: true,
+      can_view_documents: true,
+      can_view_mileage: false,
+      can_assign_tasks: false,
+    },
+  };
+
   const updateMemberRole = async (
     memberId: string,
-    role: TeamRole
+    role: TeamRole,
+    applyPreset: boolean = false
   ): Promise<boolean> => {
     try {
-      const { error } = await supabase
+      // Update the role
+      const { error: roleError } = await supabase
         .from("team_members")
         .update({ role, updated_at: new Date().toISOString() })
         .eq("id", memberId);
 
-      if (error) throw error;
+      if (roleError) throw roleError;
+
+      // If applyPreset is true, update permissions based on role
+      if (applyPreset) {
+        const presetPermissions = ROLE_PRESETS[role];
+        const { error: permError } = await supabase
+          .from("team_member_permissions")
+          .update({
+            ...presetPermissions,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("team_member_id", memberId);
+
+        if (permError) throw permError;
+      }
 
       toast({
         title: "Role Updated",
-        description: "Team member role has been updated.",
+        description: applyPreset 
+          ? "Team member role and permissions have been updated."
+          : "Team member role has been updated.",
       });
 
       await fetchTeamMembers();

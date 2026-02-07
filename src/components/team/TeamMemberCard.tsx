@@ -29,14 +29,15 @@ import {
   Clock,
   CheckCircle2,
 } from "lucide-react";
-import { TeamMember } from "@/hooks/useTeamMembers";
+import { TeamMember, TeamRole, TeamMemberPermissions } from "@/hooks/useTeamMembers";
 import { format } from "date-fns";
 import { MemberPermissionsDialog } from "./MemberPermissionsDialog";
+import { ChangeRoleDialog } from "./ChangeRoleDialog";
 
 interface TeamMemberCardProps {
   member: TeamMember;
-  onUpdatePermissions: (memberId: string, permissions: any) => Promise<boolean>;
-  onUpdateRole: (memberId: string, role: "manager" | "technician") => Promise<boolean>;
+  onUpdatePermissions: (memberId: string, permissions: Partial<TeamMemberPermissions>) => Promise<boolean>;
+  onUpdateRole: (memberId: string, role: TeamRole, applyPreset?: boolean) => Promise<boolean>;
   onRemove: (memberId: string) => Promise<boolean>;
   onResendInvite: (memberId: string, email: string) => Promise<boolean>;
 }
@@ -49,6 +50,7 @@ export function TeamMemberCard({
   onResendInvite,
 }: TeamMemberCardProps) {
   const [showPermissionsDialog, setShowPermissionsDialog] = useState(false);
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
 
@@ -62,6 +64,10 @@ export function TeamMemberCard({
     await onRemove(member.id);
     setIsRemoving(false);
     setShowRemoveDialog(false);
+  };
+
+  const handleRoleChange = async (role: TeamRole, applyPreset: boolean) => {
+    return onUpdateRole(member.id, role, applyPreset);
   };
 
   const statusConfig = {
@@ -85,10 +91,21 @@ export function TeamMemberCard({
   const status = statusConfig[member.status];
   const StatusIcon = status.icon;
 
-  const roleColors = {
+  const roleColors: Record<TeamRole, string> = {
     owner: "bg-primary text-primary-foreground",
-    manager: "bg-blue-500/20 text-blue-600",
-    technician: "bg-green-500/20 text-green-600",
+    manager: "bg-blue-500/20 text-blue-600 dark:text-blue-400",
+    technician: "bg-green-500/20 text-green-600 dark:text-green-400",
+    supervisor: "bg-purple-500/20 text-purple-600 dark:text-purple-400",
+    route_driver: "bg-orange-500/20 text-orange-600 dark:text-orange-400",
+    inventory_clerk: "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400",
+    sales_manager: "bg-pink-500/20 text-pink-600 dark:text-pink-400",
+  };
+
+  const formatRoleLabel = (role: string) => {
+    return role
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
 
   return (
@@ -106,7 +123,7 @@ export function TeamMemberCard({
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="font-medium truncate">{member.invited_email}</p>
                 <Badge className={roleColors[member.role]} variant="secondary">
-                  {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                  {formatRoleLabel(member.role)}
                 </Badge>
                 <Badge variant={status.variant} className="gap-1">
                   <StatusIcon className="h-3 w-3" />
@@ -138,6 +155,12 @@ export function TeamMemberCard({
                   {member.permissions.can_view_leads && (
                     <Badge variant="outline" className="text-xs">Leads</Badge>
                   )}
+                  {member.permissions.can_view_mileage && (
+                    <Badge variant="outline" className="text-xs">Mileage</Badge>
+                  )}
+                  {member.permissions.can_assign_tasks && (
+                    <Badge variant="outline" className="text-xs">Tasks</Badge>
+                  )}
                 </div>
               )}
             </div>
@@ -153,16 +176,9 @@ export function TeamMemberCard({
                   <Shield className="h-4 w-4 mr-2" />
                   Edit Permissions
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    onUpdateRole(
-                      member.id,
-                      member.role === "manager" ? "technician" : "manager"
-                    )
-                  }
-                >
+                <DropdownMenuItem onClick={() => setShowRoleDialog(true)}>
                   <UserCog className="h-4 w-4 mr-2" />
-                  Change to {member.role === "manager" ? "Technician" : "Manager"}
+                  Change Role
                 </DropdownMenuItem>
                 {member.status === "pending" && (
                   <DropdownMenuItem
@@ -194,6 +210,13 @@ export function TeamMemberCard({
           onSave={(permissions) => onUpdatePermissions(member.id, permissions)}
         />
       )}
+
+      <ChangeRoleDialog
+        open={showRoleDialog}
+        onOpenChange={setShowRoleDialog}
+        member={member}
+        onSave={handleRoleChange}
+      />
 
       <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
         <AlertDialogContent>
