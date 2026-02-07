@@ -36,7 +36,12 @@ export function MobileHeader({ onRefresh, isRefreshing }: MobileHeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border">
+    <header 
+      className="sticky top-0 z-40 bg-background/95 backdrop-blur-lg border-b border-border"
+      style={{ 
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+      }}
+    >
       <div className="flex items-center justify-between h-14 px-4">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />

@@ -21,6 +21,8 @@ export interface CommissionSummaryRecord {
   machineCount: number;
   notes: string;
   createdAt: string;
+  commissionPaid: boolean;
+  commissionPaidAt: string | null;
 }
 
 export interface LocationAgreementRecord {
@@ -174,6 +176,8 @@ export function useLocations() {
             machineCount: s.machine_count || 0,
             notes: s.notes || "",
             createdAt: s.created_at,
+            commissionPaid: s.commission_paid || false,
+            commissionPaidAt: s.commission_paid_at || null,
           }));
 
         const agreements = agreementsData
@@ -542,6 +546,33 @@ export function useLocations() {
     }
   };
 
+  const toggleCommissionPaid = async (summaryId: string, paid: boolean): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from("commission_summaries")
+        .update({
+          commission_paid: paid,
+          commission_paid_at: paid ? new Date().toISOString() : null,
+        })
+        .eq("id", summaryId);
+
+      if (error) throw error;
+
+      await fetchLocations();
+      return true;
+    } catch (error: any) {
+      console.error("Error updating commission paid status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update payment status.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   const activeLocations = locations.filter((loc) => loc.isActive);
 
   return {
@@ -554,6 +585,7 @@ export function useLocations() {
     getLocationById,
     addCommissionSummary,
     deleteCommissionSummary,
+    toggleCommissionPaid,
     addAgreement,
     refetch: fetchLocations,
   };

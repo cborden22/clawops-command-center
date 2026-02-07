@@ -49,6 +49,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Location, MACHINE_TYPE_OPTIONS, CommissionSummaryRecord, LocationAgreementRecord, useLocations } from "@/hooks/useLocationsDB";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { generatePDFFromHTML } from "@/utils/pdfGenerator";
 import { sanitizeForHTML } from "@/utils/htmlSanitize";
@@ -73,8 +74,9 @@ export function LocationDetailDialog({
   onOpenChange,
 }: LocationDetailDialogProps) {
   const { toast } = useToast();
-  const { deleteCommissionSummary } = useLocations();
+  const { deleteCommissionSummary, toggleCommissionPaid } = useLocations();
   const [deletingCommissionId, setDeletingCommissionId] = useState<string | null>(null);
+  const [togglingPaidId, setTogglingPaidId] = useState<string | null>(null);
   const {
     getCollectionsForLocation,
     calculateMachineStats,
@@ -121,6 +123,20 @@ export function LocationDetailDialog({
       toast({
         title: "Commission Deleted",
         description: "The commission summary and related expense have been removed.",
+      });
+    }
+  };
+
+  const handleToggleCommissionPaid = async (summaryId: string, currentPaid: boolean) => {
+    setTogglingPaidId(summaryId);
+    const success = await toggleCommissionPaid(summaryId, !currentPaid);
+    setTogglingPaidId(null);
+    if (success) {
+      toast({
+        title: !currentPaid ? "Marked as Paid" : "Marked as Unpaid",
+        description: !currentPaid 
+          ? "Commission payment has been recorded." 
+          : "Commission payment status has been cleared.",
       });
     }
   };
@@ -913,18 +929,40 @@ export function LocationDetailDialog({
                 </div>
               ) : (
                 location.commissionSummaries.map((summary) => (
-                  <Card key={summary.id} className="hover:shadow-md transition-shadow">
+                  <Card key={summary.id} className={`hover:shadow-md transition-shadow ${summary.commissionPaid ? 'border-l-4 border-l-emerald-500' : ''}`}>
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <p className="font-medium flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            {format(parseDateOnly(summary.startDate), "MMM d")} -{" "}
-                            {format(parseDateOnly(summary.endDate), "MMM d, yyyy")}
-                          </p>
+                        <div className="flex items-center gap-3">
+                          {/* Paid Checkbox */}
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={`paid-${summary.id}`}
+                              checked={summary.commissionPaid}
+                              disabled={togglingPaidId === summary.id}
+                              onCheckedChange={() => handleToggleCommissionPaid(summary.id, summary.commissionPaid)}
+                            />
+                            <label
+                              htmlFor={`paid-${summary.id}`}
+                              className={`text-sm cursor-pointer ${summary.commissionPaid ? 'text-emerald-600 font-medium' : 'text-muted-foreground'}`}
+                            >
+                              {summary.commissionPaid ? 'Paid' : 'Unpaid'}
+                            </label>
+                          </div>
+                          <div>
+                            <p className="font-medium flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              {format(parseDateOnly(summary.startDate), "MMM d")} -{" "}
+                              {format(parseDateOnly(summary.endDate), "MMM d, yyyy")}
+                            </p>
+                            {summary.commissionPaidAt && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Paid on {format(new Date(summary.commissionPaidAt), "MMM d, yyyy")}
+                              </p>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge className="bg-primary/20 text-primary hover:bg-primary/30">
+                          <Badge className={summary.commissionPaid ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-primary/20 text-primary hover:bg-primary/30'}>
                             ${summary.commissionAmount.toFixed(2)}
                           </Badge>
                           <Button

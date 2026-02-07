@@ -17,6 +17,8 @@ export type Database = {
       commission_summaries: {
         Row: {
           commission_amount: number | null
+          commission_paid: boolean | null
+          commission_paid_at: string | null
           commission_percentage: number | null
           created_at: string | null
           end_date: string
@@ -29,6 +31,8 @@ export type Database = {
         }
         Insert: {
           commission_amount?: number | null
+          commission_paid?: boolean | null
+          commission_paid_at?: string | null
           commission_percentage?: number | null
           created_at?: string | null
           end_date: string
@@ -41,6 +45,8 @@ export type Database = {
         }
         Update: {
           commission_amount?: number | null
+          commission_paid?: boolean | null
+          commission_paid_at?: string | null
           commission_percentage?: number | null
           created_at?: string | null
           end_date?: string
@@ -64,6 +70,7 @@ export type Database = {
       inventory_items: {
         Row: {
           category: string | null
+          created_by_user_id: string | null
           id: string
           last_price: number | null
           last_updated: string | null
@@ -81,6 +88,7 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          created_by_user_id?: string | null
           id?: string
           last_price?: number | null
           last_updated?: string | null
@@ -98,6 +106,7 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          created_by_user_id?: string | null
           id?: string
           last_price?: number | null
           last_updated?: string | null
@@ -119,6 +128,7 @@ export type Database = {
         Row: {
           activity_type: string
           created_at: string
+          created_by_user_id: string | null
           description: string
           id: string
           lead_id: string
@@ -127,6 +137,7 @@ export type Database = {
         Insert: {
           activity_type?: string
           created_at?: string
+          created_by_user_id?: string | null
           description: string
           id?: string
           lead_id: string
@@ -135,6 +146,7 @@ export type Database = {
         Update: {
           activity_type?: string
           created_at?: string
+          created_by_user_id?: string | null
           description?: string
           id?: string
           lead_id?: string
@@ -159,6 +171,7 @@ export type Database = {
           contact_phone: string | null
           converted_location_id: string | null
           created_at: string
+          created_by_user_id: string | null
           estimated_machines: number | null
           estimated_revenue: number | null
           id: string
@@ -178,6 +191,7 @@ export type Database = {
           contact_phone?: string | null
           converted_location_id?: string | null
           created_at?: string
+          created_by_user_id?: string | null
           estimated_machines?: number | null
           estimated_revenue?: number | null
           id?: string
@@ -197,6 +211,7 @@ export type Database = {
           contact_phone?: string | null
           converted_location_id?: string | null
           created_at?: string
+          created_by_user_id?: string | null
           estimated_machines?: number | null
           estimated_revenue?: number | null
           id?: string
@@ -462,6 +477,7 @@ export type Database = {
           reporter_name: string | null
           resolution_notes: string | null
           resolved_at: string | null
+          resolved_by_user_id: string | null
           severity: string
           status: string
           user_id: string
@@ -476,6 +492,7 @@ export type Database = {
           reporter_name?: string | null
           resolution_notes?: string | null
           resolved_at?: string | null
+          resolved_by_user_id?: string | null
           severity?: string
           status?: string
           user_id: string
@@ -490,6 +507,7 @@ export type Database = {
           reporter_name?: string | null
           resolution_notes?: string | null
           resolved_at?: string | null
+          resolved_by_user_id?: string | null
           severity?: string
           status?: string
           user_id?: string
@@ -508,6 +526,7 @@ export type Database = {
         Row: {
           completed_at: string | null
           created_at: string
+          created_by_user_id: string | null
           date: string
           end_location: string
           gps_distance_meters: number | null
@@ -534,6 +553,7 @@ export type Database = {
         Insert: {
           completed_at?: string | null
           created_at?: string
+          created_by_user_id?: string | null
           date?: string
           end_location: string
           gps_distance_meters?: number | null
@@ -560,6 +580,7 @@ export type Database = {
         Update: {
           completed_at?: string | null
           created_at?: string
+          created_by_user_id?: string | null
           date?: string
           end_location?: string
           gps_distance_meters?: number | null
@@ -816,6 +837,7 @@ export type Database = {
           amount: number
           category: string | null
           created_at: string | null
+          created_by_user_id: string | null
           date: string
           id: string
           location_id: string | null
@@ -829,6 +851,7 @@ export type Database = {
           amount: number
           category?: string | null
           created_at?: string | null
+          created_by_user_id?: string | null
           date: string
           id?: string
           location_id?: string | null
@@ -842,6 +865,7 @@ export type Database = {
           amount?: number
           category?: string | null
           created_at?: string | null
+          created_by_user_id?: string | null
           date?: string
           id?: string
           location_id?: string | null
@@ -946,12 +970,14 @@ export type Database = {
       }
       team_member_permissions: {
         Row: {
+          can_assign_tasks: boolean | null
           can_manage_maintenance: boolean | null
           can_view_documents: boolean | null
           can_view_inventory: boolean | null
           can_view_leads: boolean | null
           can_view_locations: boolean | null
           can_view_maintenance: boolean | null
+          can_view_mileage: boolean | null
           can_view_reports: boolean | null
           can_view_revenue: boolean | null
           created_at: string | null
@@ -960,12 +986,14 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          can_assign_tasks?: boolean | null
           can_manage_maintenance?: boolean | null
           can_view_documents?: boolean | null
           can_view_inventory?: boolean | null
           can_view_leads?: boolean | null
           can_view_locations?: boolean | null
           can_view_maintenance?: boolean | null
+          can_view_mileage?: boolean | null
           can_view_reports?: boolean | null
           can_view_revenue?: boolean | null
           created_at?: string | null
@@ -974,12 +1002,14 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          can_assign_tasks?: boolean | null
           can_manage_maintenance?: boolean | null
           can_view_documents?: boolean | null
           can_view_inventory?: boolean | null
           can_view_leads?: boolean | null
           can_view_locations?: boolean | null
           can_view_maintenance?: boolean | null
+          can_view_mileage?: boolean | null
           can_view_reports?: boolean | null
           can_view_revenue?: boolean | null
           created_at?: string | null
@@ -1173,6 +1203,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_effective_owner_id: {
+        Args: { current_user_id: string }
+        Returns: string
+      }
       get_machine_by_slug: {
         Args: { location_slug: string; machine_unit_code: string }
         Returns: {
@@ -1205,7 +1239,14 @@ export type Database = {
       }
     }
     Enums: {
-      team_role: "owner" | "manager" | "technician"
+      team_role:
+        | "owner"
+        | "manager"
+        | "technician"
+        | "supervisor"
+        | "route_driver"
+        | "inventory_clerk"
+        | "sales_manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1333,7 +1374,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      team_role: ["owner", "manager", "technician"],
+      team_role: [
+        "owner",
+        "manager",
+        "technician",
+        "supervisor",
+        "route_driver",
+        "inventory_clerk",
+        "sales_manager",
+      ],
     },
   },
 } as const

@@ -23,16 +23,99 @@ interface InviteMemberDialogProps {
   isInviting: boolean;
 }
 
-const DEFAULT_PERMISSIONS: Partial<TeamMemberPermissions> = {
-  can_view_revenue: false,
-  can_view_inventory: true,
-  can_view_locations: true,
-  can_view_maintenance: true,
-  can_manage_maintenance: true,
-  can_view_leads: false,
-  can_view_reports: false,
-  can_view_documents: false,
+type TeamRole = "manager" | "technician" | "supervisor" | "route_driver" | "inventory_clerk" | "sales_manager";
+
+const ROLE_INFO: Record<TeamRole, { label: string; description: string }> = {
+  technician: {
+    label: "Technician",
+    description: "Field work, maintenance, inventory",
+  },
+  manager: {
+    label: "Manager",
+    description: "Full access to most features",
+  },
+  supervisor: {
+    label: "Supervisor",
+    description: "Manager access + assign tasks",
+  },
+  route_driver: {
+    label: "Route Driver",
+    description: "Mileage and routes only",
+  },
+  inventory_clerk: {
+    label: "Inventory Clerk",
+    description: "Inventory management only",
+  },
+  sales_manager: {
+    label: "Sales Manager",
+    description: "Leads and locations focus",
+  },
 };
+
+const ROLE_PRESETS: Record<TeamRole, Partial<TeamMemberPermissions>> = {
+  technician: {
+    can_view_revenue: false,
+    can_view_inventory: true,
+    can_view_locations: true,
+    can_view_maintenance: true,
+    can_manage_maintenance: true,
+    can_view_leads: false,
+    can_view_reports: false,
+    can_view_documents: false,
+  },
+  manager: {
+    can_view_revenue: true,
+    can_view_inventory: true,
+    can_view_locations: true,
+    can_view_maintenance: true,
+    can_manage_maintenance: true,
+    can_view_leads: true,
+    can_view_reports: true,
+    can_view_documents: true,
+  },
+  supervisor: {
+    can_view_revenue: true,
+    can_view_inventory: true,
+    can_view_locations: true,
+    can_view_maintenance: true,
+    can_manage_maintenance: true,
+    can_view_leads: true,
+    can_view_reports: true,
+    can_view_documents: true,
+  },
+  route_driver: {
+    can_view_revenue: false,
+    can_view_inventory: false,
+    can_view_locations: true,
+    can_view_maintenance: false,
+    can_manage_maintenance: false,
+    can_view_leads: false,
+    can_view_reports: false,
+    can_view_documents: false,
+  },
+  inventory_clerk: {
+    can_view_revenue: false,
+    can_view_inventory: true,
+    can_view_locations: false,
+    can_view_maintenance: false,
+    can_manage_maintenance: false,
+    can_view_leads: false,
+    can_view_reports: false,
+    can_view_documents: false,
+  },
+  sales_manager: {
+    can_view_revenue: false,
+    can_view_inventory: false,
+    can_view_locations: true,
+    can_view_maintenance: false,
+    can_manage_maintenance: false,
+    can_view_leads: true,
+    can_view_reports: true,
+    can_view_documents: true,
+  },
+};
+
+const DEFAULT_PERMISSIONS = ROLE_PRESETS.technician;
 
 export function InviteMemberDialog({
   open,
@@ -41,7 +124,7 @@ export function InviteMemberDialog({
   isInviting,
 }: InviteMemberDialogProps) {
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"manager" | "technician">("technician");
+  const [role, setRole] = useState<TeamRole>("technician");
   const [permissions, setPermissions] = useState<Partial<TeamMemberPermissions>>(DEFAULT_PERMISSIONS);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,7 +134,7 @@ export function InviteMemberDialog({
 
     const success = await onInvite({
       email: email.trim(),
-      role,
+      role: role as "manager" | "technician",
       permissions,
     });
 
@@ -70,20 +153,10 @@ export function InviteMemberDialog({
     }));
   };
 
-  // When role changes, apply default permissions
-  const handleRoleChange = (newRole: "manager" | "technician") => {
+  // When role changes, apply preset permissions
+  const handleRoleChange = (newRole: TeamRole) => {
     setRole(newRole);
-    if (newRole === "manager") {
-      setPermissions({
-        ...DEFAULT_PERMISSIONS,
-        can_view_revenue: true,
-        can_view_leads: true,
-        can_view_reports: true,
-        can_view_documents: true,
-      });
-    } else {
-      setPermissions(DEFAULT_PERMISSIONS);
-    }
+    setPermissions(ROLE_PRESETS[newRole]);
   };
 
   return (
@@ -118,27 +191,23 @@ export function InviteMemberDialog({
 
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Select value={role} onValueChange={handleRoleChange}>
+              <Select value={role} onValueChange={(value) => handleRoleChange(value as TeamRole)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="technician">
-                    <div className="flex flex-col items-start">
-                      <span>Technician</span>
-                      <span className="text-xs text-muted-foreground">
-                        Field work, maintenance, inventory
-                      </span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="manager">
-                    <div className="flex flex-col items-start">
-                      <span>Manager</span>
-                      <span className="text-xs text-muted-foreground">
-                        Full access to most features
-                      </span>
-                    </div>
-                  </SelectItem>
+                  {(Object.entries(ROLE_INFO) as [TeamRole, { label: string; description: string }][]).map(
+                    ([roleKey, info]) => (
+                      <SelectItem key={roleKey} value={roleKey}>
+                        <div className="flex flex-col items-start">
+                          <span>{info.label}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {info.description}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    )
+                  )}
                 </SelectContent>
               </Select>
             </div>

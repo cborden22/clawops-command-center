@@ -3,11 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
+export type TeamRole = "owner" | "manager" | "technician" | "supervisor" | "route_driver" | "inventory_clerk" | "sales_manager";
+
 export interface TeamMember {
   id: string;
   owner_user_id: string;
   member_user_id: string | null;
-  role: "owner" | "manager" | "technician";
+  role: TeamRole;
   status: "pending" | "active" | "deactivated";
   invited_email: string;
   invited_at: string;
@@ -27,11 +29,13 @@ export interface TeamMemberPermissions {
   can_view_leads: boolean;
   can_view_reports: boolean;
   can_view_documents: boolean;
+  can_view_mileage?: boolean;
+  can_assign_tasks?: boolean;
 }
 
 export interface InviteData {
   email: string;
-  role: "manager" | "technician";
+  role: TeamRole;
   permissions: Partial<TeamMemberPermissions>;
 }
 
@@ -68,7 +72,7 @@ export function useTeamMembers() {
 
         membersWithPermissions.push({
           ...member,
-          role: member.role as "owner" | "manager" | "technician",
+          role: member.role as TeamRole,
           status: member.status as "pending" | "active" | "deactivated",
           permissions: permissions || undefined,
         });
@@ -140,6 +144,8 @@ export function useTeamMembers() {
           can_view_leads: inviteData.permissions.can_view_leads ?? false,
           can_view_reports: inviteData.permissions.can_view_reports ?? false,
           can_view_documents: inviteData.permissions.can_view_documents ?? false,
+          can_view_mileage: (inviteData.permissions as any).can_view_mileage ?? false,
+          can_assign_tasks: (inviteData.permissions as any).can_assign_tasks ?? false,
         });
 
       if (permError) throw permError;
@@ -213,7 +219,7 @@ export function useTeamMembers() {
 
   const updateMemberRole = async (
     memberId: string,
-    role: "manager" | "technician"
+    role: TeamRole
   ): Promise<boolean> => {
     try {
       const { error } = await supabase
