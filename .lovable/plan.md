@@ -1,169 +1,225 @@
 
+## Comprehensive Feature Enhancement Plan
 
-## Hide Navigation Menu Items Based on Team Member Permissions
-
-### Problem Summary
-
-When an account owner restricts a team member's access to certain features (e.g., Revenue, Leads, Reports), the corresponding **navigation menu items still appear** in both:
-1. **Desktop Sidebar** (`AppSidebar.tsx`)
-2. **Mobile Bottom Nav** (`MobileBottomNav.tsx`)
-
-Team members can still see all menu options even if they don't have permission to access those pages. While RLS protects the data at the database level, the UI should also hide inaccessible options for a better user experience.
-
-### Solution
-
-Integrate the existing `useMyTeamPermissions` hook into both navigation components to:
-1. Filter menu items based on the user's permissions
-2. Hide entire menu sections if no items within are accessible
-3. Keep the "Team" section hidden for team members (only owners manage teams)
+This plan addresses your top priority features with a focus on commission tracking, mobile UI fixes, team data sharing, and the supporting infrastructure needed.
 
 ---
 
-### Permission to Route Mapping
+### Phase 1: Mobile UI Fix (Top Cutoff Issue)
 
-| Route | Permission Required |
-|-------|---------------------|
-| `/` (Dashboard) | Always visible |
-| `/leads` | `canViewLeads` |
-| `/locations` | `canViewLocations` |
-| `/maintenance` | `canViewMaintenance` |
-| `/mileage` | Always visible (mileage is personal tracking) |
-| `/inventory` | `canViewInventory` |
-| `/revenue` | `canViewRevenue` |
-| `/reports` | `canViewReports` |
-| `/commission-summary` | `canViewDocuments` |
-| `/documents` | `canViewDocuments` |
-| `/receipts` | `canViewRevenue` (receipts are tied to revenue) |
-| `/team` | `isOwner` only |
-| `/settings` | Always visible |
+**Problem**: The mobile header overlaps with the device status bar, making the "Dashboard" title partially obscured by the system clock/battery indicator.
+
+**Root Cause**: While `viewport-fit=cover` is set and `apple-mobile-web-app-status-bar-style` is `black-translucent`, the `MobileHeader` component doesn't account for the safe area inset at the top.
+
+**Solution**:
+
+1. **Update `MobileHeader.tsx`**:
+   - Add `pt-[env(safe-area-inset-top)]` to the header to push content below the notch/status bar
+   - Adjust the sticky positioning to account for safe area
+
+2. **Update `MobileLayout.tsx`**:
+   - Ensure the overall layout respects the top safe area inset
+
+3. **Update `index.css`**:
+   - Add CSS custom properties for safe area values to use consistently
+
+**Files to modify**:
+- `src/components/layout/MobileHeader.tsx`
+- `src/components/layout/MobileLayout.tsx`
+- `src/index.css`
 
 ---
 
-### Technical Implementation
+### Phase 2: Commission Paid Tracking
 
-#### 1. Modify `AppSidebar.tsx`
+**Problem**: No way to mark when commission has been paid to a location.
 
-Add permission-based filtering to the sidebar navigation:
+**Solution**: Add a `commission_paid` boolean field and `commission_paid_at` timestamp to the `commission_summaries` table.
 
-```typescript
-import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions";
-
-export function AppSidebar() {
-  const permissions = useMyTeamPermissions();
-  
-  // Filter operations items based on permissions
-  const filteredOperationsItems = operationsItems.filter(item => {
-    if (item.url === "/leads") return permissions.isOwner || permissions.canViewLeads;
-    if (item.url === "/locations") return permissions.isOwner || permissions.canViewLocations;
-    if (item.url === "/maintenance") return permissions.isOwner || permissions.canViewMaintenance;
-    if (item.url === "/inventory") return permissions.isOwner || permissions.canViewInventory;
-    if (item.url === "/mileage") return true; // Always visible
-    return true;
-  });
-  
-  // Filter financials items based on permissions
-  const filteredFinancialsItems = financialsItems.filter(item => {
-    if (item.url === "/revenue") return permissions.isOwner || permissions.canViewRevenue;
-    if (item.url === "/reports") return permissions.isOwner || permissions.canViewReports;
-    if (item.url === "/commission-summary") return permissions.isOwner || permissions.canViewDocuments;
-    if (item.url === "/documents") return permissions.isOwner || permissions.canViewDocuments;
-    return true;
-  });
-  
-  // Management section only visible to owners
-  const showManagement = permissions.isOwner;
-  
-  // Only render sections if they have items
-  const showOperations = filteredOperationsItems.length > 0;
-  const showFinancials = filteredFinancialsItems.length > 0;
-  
-  // ... render filtered items instead of full lists
-}
+**Database Changes**:
+```sql
+ALTER TABLE commission_summaries 
+ADD COLUMN commission_paid boolean DEFAULT false,
+ADD COLUMN commission_paid_at timestamptz;
 ```
 
-#### 2. Modify `MobileBottomNav.tsx`
+**UI Changes**:
+- Add a checkbox/toggle on each commission summary row showing "Paid" status
+- When checked, record the timestamp
+- Visual indicator (green checkmark badge) for paid commissions
+- Filter option to show "Unpaid Only" commissions
 
-Apply the same filtering logic to mobile navigation:
-
-```typescript
-import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions";
-
-export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
-  const permissions = useMyTeamPermissions();
-  
-  // Filter main tabs (bottom bar)
-  const filteredMainTabs = mainTabs.filter(tab => {
-    if (tab.path === "/revenue") return permissions.isOwner || permissions.canViewRevenue;
-    if (tab.path === "/inventory") return permissions.isOwner || permissions.canViewInventory;
-    return true; // Dashboard, Add, More always visible
-  });
-  
-  // Filter operations items in More menu
-  const filteredOperationsItems = operationsItems.filter(item => {
-    if (item.path === "/leads") return permissions.isOwner || permissions.canViewLeads;
-    if (item.path === "/locations") return permissions.isOwner || permissions.canViewLocations;
-    if (item.path === "/maintenance") return permissions.isOwner || permissions.canViewMaintenance;
-    if (item.path === "/inventory") return permissions.isOwner || permissions.canViewInventory;
-    if (item.path === "/mileage") return true;
-    return true;
-  });
-  
-  // Filter financials items in More menu
-  const filteredFinancialsItems = financialsItems.filter(item => {
-    if (item.path === "/revenue") return permissions.isOwner || permissions.canViewRevenue;
-    if (item.path === "/reports") return permissions.isOwner || permissions.canViewReports;
-    if (item.path === "/receipts") return permissions.isOwner || permissions.canViewRevenue;
-    if (item.isDocuments) return permissions.isOwner || permissions.canViewDocuments;
-    return true;
-  });
-  
-  // Conditionally hide entire sections in More menu
-  const showOperationsSection = filteredOperationsItems.length > 0;
-  const showFinancialsSection = filteredFinancialsItems.length > 0;
-  
-  // ... render filtered items
-}
-```
-
-#### 3. Handle Loading State
-
-While permissions are loading, show a minimal skeleton or the full menu (to prevent flash of content). Use `permissions.isLoading` to handle this gracefully:
-
-```typescript
-// Option: Show loading skeleton for nav items while permissions load
-if (permissions.isLoading) {
-  return <SidebarSkeleton />;
-}
-```
-
-Or simply wait until permissions are loaded before filtering.
+**Files to modify**:
+- Database migration for new columns
+- `src/components/CommissionSummaryGenerator.tsx` (or location details commission tab)
+- Update types in `src/integrations/supabase/types.ts` (auto-generated)
 
 ---
 
-### Files to Modify
+### Phase 3: Team Data Sharing (Two-Way Visibility)
 
-| File | Changes |
-|------|---------|
-| `src/components/layout/AppSidebar.tsx` | Add `useMyTeamPermissions` hook, filter nav items based on permissions |
-| `src/components/layout/MobileBottomNav.tsx` | Add `useMyTeamPermissions` hook, filter main tabs and More menu items |
+**Problem**: When team members add data (revenue, leads, etc.), it uses their own `user_id`, so the owner cannot see it. Data flows one direction only.
+
+**Root Cause**: 
+- INSERT operations use `user_id = auth.uid()` (the team member's ID)
+- RLS SELECT policies check `user_id = auth.uid() OR has_team_permission()` but team members insert with their own ID, not the owner's
+
+**Solution**: When a team member is active, their data should be attributed to the **owner's account** they're working under.
+
+**Implementation**:
+
+1. **Create a helper function** `get_effective_owner_id()`:
+   ```sql
+   CREATE FUNCTION get_effective_owner_id(current_user_id uuid)
+   RETURNS uuid AS $$
+     SELECT COALESCE(
+       (SELECT owner_user_id FROM team_members 
+        WHERE member_user_id = current_user_id 
+        AND status = 'active' LIMIT 1),
+       current_user_id
+     )
+   $$ LANGUAGE sql STABLE SECURITY DEFINER;
+   ```
+
+2. **Add `created_by_user_id` column** to track who actually created the record:
+   - Add to: `revenue_entries`, `leads`, `lead_activities`, `inventory_items`, `maintenance_reports` (resolution), `mileage_entries`
+   - This provides the attribution you requested
+
+3. **Update INSERT logic** in hooks:
+   - When inserting, use the owner's ID for `user_id` column (for RLS)
+   - Store the actual user's ID in `created_by_user_id` (for attribution display)
+
+4. **UI Attribution Display**:
+   - Show "Added by: [initials or name]" on data entries
+   - Query the `profiles` table to get display name
+   - Show in tables, cards, and detail views
+
+**Files to modify**:
+- Database migration (add columns + function)
+- `src/hooks/useRevenueEntriesDB.ts`
+- `src/hooks/useLeadsDB.ts`
+- `src/hooks/useInventoryDB.ts`
+- `src/hooks/useMileageDB.ts`
+- Create `src/hooks/useTeamContext.ts` to provide owner context
+- UI components to display attribution badges
 
 ---
 
-### Edge Cases
+### Phase 4: Enhanced Team Roles
 
-1. **Loading state**: While permissions load, show all items or a skeleton to prevent layout shift
-2. **Empty sections**: If a filtered section has zero items, hide the section header entirely
-3. **Active route on hidden item**: If user is on a restricted route and gets permissions revoked, they see the page but navigation doesn't highlight it (data is still protected by RLS)
+**Current State**: Two roles (Manager, Technician) with custom permissions toggle.
+
+**New Roles to Add**:
+| Role | Description | Default Permissions |
+|------|-------------|---------------------|
+| **Supervisor** | Manages technicians, assigns tasks | All Manager permissions + task assignment |
+| **Route Driver** | Handles routes and mileage only | Mileage, assigned routes, view-only locations |
+| **Inventory Clerk** | Inventory management only | Inventory only, no locations/revenue/leads |
+| **Sales Manager** | Leads and locations focus | Leads, locations, no revenue/inventory |
+
+**Implementation**:
+
+1. **Update database enum**:
+   ```sql
+   ALTER TYPE team_role ADD VALUE 'supervisor';
+   ALTER TYPE team_role ADD VALUE 'route_driver';
+   ALTER TYPE team_role ADD VALUE 'inventory_clerk';
+   ALTER TYPE team_role ADD VALUE 'sales_manager';
+   ```
+
+2. **Add role presets in UI**:
+   - When selecting a role, auto-populate the permission toggles
+   - User can still customize after selection
+
+3. **Update `InviteMemberDialog.tsx`**:
+   - Add new role options with descriptions
+   - Apply preset permissions per role
+
+4. **Extend permissions table** (if needed for future capabilities):
+   - `can_assign_tasks` for Supervisor role
+
+**Files to modify**:
+- Database migration for enum + optional permissions column
+- `src/components/team/InviteMemberDialog.tsx`
+- `src/hooks/useTeamMembers.ts`
 
 ---
 
-### Expected Behavior After Implementation
+### Phase 5: Attribution Display System
 
-| Scenario | Result |
-|----------|--------|
-| Owner views navigation | All items visible, including Team management |
-| Team member with no `canViewRevenue` | Revenue Tracker, Receipts hidden from nav |
-| Team member with no `canViewDocuments` | Agreement Generator, Commission Summary hidden |
-| Team member with no `canViewLeads` | Leads hidden from nav |
-| Team member with full permissions | All items visible EXCEPT Team management |
+**Goal**: Show who submitted data across all modules.
 
+**Implementation**:
+
+1. **Create `AttributionBadge` component**:
+   ```tsx
+   // Shows "JD" initials or "John Doe" with tooltip
+   interface Props {
+     userId: string;
+     showFullName?: boolean;
+   }
+   ```
+
+2. **Create `useUserDisplay` hook**:
+   - Caches user display info (name, initials) from profiles table
+   - Provides helper to format attribution text
+
+3. **Integrate into UI**:
+   - Revenue entry rows: "Added by JD"
+   - Lead cards: "Created by JD"
+   - Maintenance reports: "Resolved by JD"
+   - Inventory adjustments: "Updated by JD"
+
+**Files to create/modify**:
+- `src/components/shared/AttributionBadge.tsx` (new)
+- `src/hooks/useUserDisplay.ts` (new)
+- Various list/card components to show attribution
+
+---
+
+### Technical Summary
+
+#### Database Migrations Required:
+1. Add `commission_paid` and `commission_paid_at` to `commission_summaries`
+2. Add `created_by_user_id` to revenue_entries, leads, lead_activities, inventory_items, mileage_entries
+3. Create `get_effective_owner_id()` function
+4. Add new role values to `team_role` enum
+
+#### New Files:
+- `src/hooks/useTeamContext.ts` - Provides owner context for data entry
+- `src/hooks/useUserDisplay.ts` - User name/initials lookup
+- `src/components/shared/AttributionBadge.tsx` - Displays who created data
+
+#### Modified Files:
+- `src/components/layout/MobileHeader.tsx` - Safe area fix
+- `src/components/layout/MobileLayout.tsx` - Safe area fix
+- `src/index.css` - Safe area CSS variables
+- `src/hooks/useRevenueEntriesDB.ts` - Use owner context + created_by
+- `src/hooks/useLeadsDB.ts` - Use owner context + created_by
+- `src/hooks/useInventoryDB.ts` - Use owner context + created_by
+- `src/hooks/useMileageDB.ts` - Use owner context + created_by
+- `src/components/team/InviteMemberDialog.tsx` - New roles + presets
+- `src/hooks/useTeamMembers.ts` - New role types
+- Commission-related components for paid tracking
+
+---
+
+### Implementation Order
+
+1. **Mobile UI Fix** - Quick win, improves UX immediately
+2. **Commission Paid Tracking** - Simple feature, adds value
+3. **Team Data Sharing + Attribution** - Core infrastructure (largest effort)
+4. **Enhanced Team Roles** - Builds on team infrastructure
+
+---
+
+### Future Features (Not in This Plan)
+
+The following features from your list require separate planning:
+- Knowledge base / onboarding
+- Pagination for lists
+- Bulk QR code printing
+- Calendar month/week views
+- Push notifications for maintenance
+
+I recommend tackling these after the team infrastructure is solid.
