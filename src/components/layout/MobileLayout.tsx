@@ -15,18 +15,19 @@ function MobileLayoutInner({ children }: MobileLayoutProps) {
 
   return (
     <div 
-      className="min-h-screen bg-background flex flex-col"
+      className="h-screen bg-background flex flex-col overflow-hidden"
       style={{
-        minHeight: 'calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+        height: '100dvh',
       }}
     >
       <MobileHeader onRefresh={triggerRefresh} isRefreshing={isRefreshing} />
       <UpdateNotification />
       <main 
-        className="flex-1 overflow-y-auto overscroll-contain mobile-scroll-optimized"
+        className="flex-1 overflow-y-auto overflow-x-hidden"
         style={{ 
           WebkitOverflowScrolling: 'touch',
-          paddingBottom: 'max(80px, calc(64px + env(safe-area-inset-bottom)))'
+          paddingBottom: 'max(80px, calc(64px + env(safe-area-inset-bottom)))',
+          minHeight: 0,
         }}
       >
         {children}
