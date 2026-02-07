@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -53,6 +53,7 @@ import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { generatePDFFromHTML } from "@/utils/pdfGenerator";
 import { sanitizeForHTML } from "@/utils/htmlSanitize";
 import { useToast } from "@/hooks/use-toast";
+import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions";
 
 // Parse date-only strings (YYYY-MM-DD) as local dates to avoid timezone shifts
 const parseDateOnly = (dateStr: string): Date => {
@@ -85,6 +86,24 @@ export function LocationDetailDialog({
     compareToExpected,
     deleteCollection,
   } = useMachineCollections();
+  
+  // Get team permissions for conditional tab rendering
+  // Must be called before any early returns to maintain hooks order
+  const { isOwner, canViewRevenue, canViewDocuments } = useMyTeamPermissions();
+  
+  // Check which tabs should be visible
+  const showCollections = isOwner || canViewRevenue;
+  const showAgreements = isOwner || canViewDocuments;
+  const showCommissions = isOwner || canViewDocuments;
+  
+  // Calculate visible tab count for dynamic grid layout
+  const visibleTabCount = useMemo(() => {
+    let count = 1; // Details tab is always visible
+    if (showCollections) count++;
+    if (showAgreements) count++;
+    if (showCommissions) count++;
+    return count;
+  }, [showCollections, showAgreements, showCommissions]);
   
   if (!location) return null;
 
@@ -521,38 +540,55 @@ export function LocationDetailDialog({
         </DialogHeader>
 
         <Tabs defaultValue="details" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className={`grid w-full ${
+            visibleTabCount === 1 ? 'grid-cols-1' :
+            visibleTabCount === 2 ? 'grid-cols-2' :
+            visibleTabCount === 3 ? 'grid-cols-3' :
+            'grid-cols-4'
+          }`}>
             <TabsTrigger value="details" className="flex items-center gap-1 text-xs px-2">
               <Building2 className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Details</span>
             </TabsTrigger>
-            <TabsTrigger value="collections" className="flex items-center gap-1 text-xs px-2">
-              <Target className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Collections</span>
-              {collectionCount > 0 && (
-                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
-                  {collectionCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="agreements" className="flex items-center gap-1 text-xs px-2">
-              <FileText className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Agreements</span>
-              {agreementCount > 0 && (
-                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
-                  {agreementCount}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="commissions" className="flex items-center gap-1 text-xs px-2">
-              <DollarSign className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Commissions</span>
-              {commissionCount > 0 && (
-                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
-                  {commissionCount}
-                </Badge>
-              )}
-            </TabsTrigger>
+            
+            {/* Collections - requires revenue permission */}
+            {showCollections && (
+              <TabsTrigger value="collections" className="flex items-center gap-1 text-xs px-2">
+                <Target className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Collections</span>
+                {collectionCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                    {collectionCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            )}
+            
+            {/* Agreements - requires documents permission */}
+            {showAgreements && (
+              <TabsTrigger value="agreements" className="flex items-center gap-1 text-xs px-2">
+                <FileText className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Agreements</span>
+                {agreementCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                    {agreementCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            )}
+            
+            {/* Commissions - requires documents permission */}
+            {showCommissions && (
+              <TabsTrigger value="commissions" className="flex items-center gap-1 text-xs px-2">
+                <DollarSign className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Commissions</span>
+                {commissionCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                    {commissionCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <ScrollArea className="flex-1 mt-4">
@@ -639,7 +675,8 @@ export function LocationDetailDialog({
               </Card>
             </TabsContent>
 
-            {/* Collections Tab */}
+            {/* Collections Tab - requires revenue permission */}
+            {showCollections && (
             <TabsContent value="collections" className="mt-0 space-y-4">
               {collectionCount === 0 ? (
                 <div className="text-center py-12">
@@ -781,8 +818,10 @@ export function LocationDetailDialog({
                 </>
               )}
             </TabsContent>
+            )}
 
-            {/* Agreements Tab */}
+            {/* Agreements Tab - requires documents permission */}
+            {showAgreements && (
             <TabsContent value="agreements" className="mt-0 space-y-3">
               {agreementCount === 0 ? (
                 <div className="text-center py-12">
@@ -855,8 +894,10 @@ export function LocationDetailDialog({
                 ))
               )}
             </TabsContent>
+            )}
 
-            {/* Commission Summaries Tab */}
+            {/* Commission Summaries Tab - requires documents permission */}
+            {showCommissions && (
             <TabsContent value="commissions" className="mt-0 space-y-3">
               {commissionCount === 0 ? (
                 <div className="text-center py-12">
@@ -976,6 +1017,7 @@ export function LocationDetailDialog({
                 ))
               )}
             </TabsContent>
+            )}
           </ScrollArea>
         </Tabs>
       </DialogContent>
