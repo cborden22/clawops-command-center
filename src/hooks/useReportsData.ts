@@ -208,7 +208,7 @@ export function useReportsData(dateRange: DateRange) {
         .filter(e => e.type === "income")
         .reduce((sum, e) => sum + Number(e.amount), 0);
       const expenses = locRevenue
-        .filter(e => e.type === "expense")
+        .filter(e => e.type === "expense" && e.category !== "Commission Payout")
         .reduce((sum, e) => sum + Number(e.amount), 0);
       const commissions = filteredData.commissionSummaries
         .filter(c => c.location_id === loc.id)
