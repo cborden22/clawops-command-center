@@ -33,7 +33,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Textarea } from "@/components/ui/textarea";
 import { useReceiptViewer } from "@/hooks/useReceiptViewer";
 import { ReceiptModal } from "@/components/shared/ReceiptModal";
-import { ListSizeSelector, useListSize, applyListLimit, ListSize } from "@/components/shared/ListSizeSelector";
+import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
+import { PaginationControls } from "@/components/shared/PaginationControls";
 
 type FilterPeriod = 
   | "past7days" 
@@ -123,6 +124,7 @@ export function RevenueTrackerComponent() {
   
   // List size state for pagination
   const [entriesListSize, setEntriesListSize] = useListSize("revenue-entries-list-size", 20);
+  const [entriesPage, setEntriesPage] = useState(1);
 
   // Get expense categories based on whether it's a business expense or location expense
   const expenseCategories = isBusinessExpense ? BUSINESS_EXPENSE_CATEGORIES : LOCATION_EXPENSE_CATEGORIES;
@@ -904,7 +906,7 @@ export function RevenueTrackerComponent() {
               <div className="flex flex-wrap gap-4">
                 <div className="flex-1 min-w-[140px]">
                   <Label className="text-xs font-medium text-muted-foreground mb-2 block">Time Period</Label>
-                  <Select value={filterPeriod} onValueChange={(v: FilterPeriod) => setFilterPeriod(v)}>
+                  <Select value={filterPeriod} onValueChange={(v: FilterPeriod) => { setFilterPeriod(v); setEntriesPage(1); }}>
                     <SelectTrigger className="h-10 bg-background/50">
                       <SelectValue />
                     </SelectTrigger>
@@ -925,7 +927,7 @@ export function RevenueTrackerComponent() {
                 </div>
                 <div className="flex-1 min-w-[140px]">
                   <Label className="text-xs font-medium text-muted-foreground mb-2 block">Location</Label>
-                  <Select value={filterLocation} onValueChange={setFilterLocation}>
+                  <Select value={filterLocation} onValueChange={(v) => { setFilterLocation(v); setEntriesPage(1); }}>
                     <SelectTrigger className="h-10 bg-background/50">
                       <SelectValue />
                     </SelectTrigger>
@@ -940,7 +942,7 @@ export function RevenueTrackerComponent() {
                 </div>
                 <div className="flex-1 min-w-[120px]">
                   <Label className="text-xs font-medium text-muted-foreground mb-2 block">Type</Label>
-                  <Select value={filterType} onValueChange={(v: "all" | EntryType | "business") => setFilterType(v)}>
+                  <Select value={filterType} onValueChange={(v: "all" | EntryType | "business") => { setFilterType(v); setEntriesPage(1); }}>
                     <SelectTrigger className="h-10 bg-background/50">
                       <SelectValue />
                     </SelectTrigger>
@@ -1138,7 +1140,7 @@ export function RevenueTrackerComponent() {
                   <ListSizeSelector
                     storageKey="revenue-entries-list-size"
                     value={entriesListSize}
-                    onChange={setEntriesListSize}
+                    onChange={(size) => { setEntriesListSize(size); setEntriesPage(1); }}
                     totalCount={filteredEntries.length}
                   />
                 </div>
@@ -1151,6 +1153,7 @@ export function RevenueTrackerComponent() {
                   <p className="text-muted-foreground">No entries recorded yet</p>
                 </div>
               ) : (
+                <>
                 <div className="rounded-xl border overflow-hidden">
                   <Table>
                     <TableHeader>
@@ -1164,7 +1167,11 @@ export function RevenueTrackerComponent() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {applyListLimit(filteredEntries, entriesListSize).map((entry) => (
+                      {(() => {
+                        if (entriesListSize === "all") return filteredEntries;
+                        const start = (entriesPage - 1) * entriesListSize;
+                        return filteredEntries.slice(start, start + entriesListSize);
+                      })().map((entry) => (
                         <TableRow key={entry.id} className="group">
                           <TableCell className="text-muted-foreground">{format(entry.date, "MMM d, yyyy")}</TableCell>
                           <TableCell>
@@ -1243,6 +1250,17 @@ export function RevenueTrackerComponent() {
                     </TableBody>
                   </Table>
                 </div>
+                  {entriesListSize !== "all" && filteredEntries.length > (entriesListSize as number) && (
+                    <PaginationControls
+                      currentPage={entriesPage}
+                      totalPages={Math.max(1, Math.ceil(filteredEntries.length / (entriesListSize as number)))}
+                      onPageChange={setEntriesPage}
+                      startIndex={(entriesPage - 1) * (entriesListSize as number)}
+                      endIndex={Math.min(entriesPage * (entriesListSize as number), filteredEntries.length)}
+                      totalItems={filteredEntries.length}
+                    />
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
