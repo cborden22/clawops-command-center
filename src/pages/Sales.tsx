@@ -1,3 +1,4 @@
+```jsx
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import {
   Shield,
   Star,
   QrCode,
+  PhoneCall,
 } from "lucide-react";
 
 const features = [
@@ -206,6 +208,69 @@ export default function Sales() {
         </div>
       </section>
 
+      {/* Free Onboarding Call */}
+      <section className="py-20 sm:py-28">
+        <div className="container mx-auto px-4">
+          <Card className="border-primary/40 bg-primary/5">
+            <CardContent className="flex flex-col items-center gap-6 p-10 text-center sm:p-14">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <PhoneCall className="h-6 w-6" />
+              </div>
+
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                Free Onboarding Call Included
+              </h2>
+
+              <Badge className="bg-primary/10 text-primary border-primary/20">
+                Priority onboarding for Pro members
+              </Badge>
+
+              <p className="max-w-2xl text-muted-foreground">
+                Every new ClawOps user gets a free 1-on-1 onboarding call. I’ll personally help you set up your
+                locations, organize your machines, and show you how to get the most out of the system from day one.
+              </p>
+
+              <ul className="grid max-w-xl gap-3 text-left text-sm sm:grid-cols-2">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
+                  Personalized dashboard setup
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
+                  Import your first locations
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
+                  Revenue + commission tracking walkthrough
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 text-primary" />
+                  Q&A about growing your route
+                </li>
+              </ul>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button size="lg" asChild>
+                  <Link to="/auth">
+                    Get Started & Book Your Call
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button size="lg" variant="outline" asChild>
+                  <a href="https://calendly.com/camborden/clawops" target="_blank" rel="noreferrer">
+                    Schedule Now
+                  </a>
+                </Button>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                No pressure. Just a quick call to help you get fully set up and moving faster.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
       {/* Pricing */}
       <section id="pricing" className="py-20 sm:py-28">
         <div className="container mx-auto px-4 text-center">
@@ -305,3 +370,4 @@ export default function Sales() {
     </div>
   );
 }
+```
