@@ -1,67 +1,112 @@
 
 
-## QR Code Logo Customization
+## Calendar Overhaul: Full Task Management
 
-Add the ability to upload a business logo that appears as a ghost/watermark image in the center of all QR codes -- both single prints and batch prints. The logo uses the built-in `imageSettings` prop of `qrcode.react`, which safely embeds the image without breaking scannability (the QR codes already use high error correction).
+### Problems
 
----
-
-### How It Works
-
-**Upload**: In Settings > App tab, a new "QR Code Branding" card lets users upload a logo image (PNG, JPG, or SVG, max 2MB). A live preview shows what it looks like on a sample QR code.
-
-**Storage**: The logo is uploaded to a new `qr-logos` storage bucket in Lovable Cloud. The URL is saved to the user's profile row in the database.
-
-**Usage**: Both `QRCodeGenerator` and `BatchQRPrintDialog` read the logo URL and pass it to `QRCodeSVG` via `imageSettings`. The logo renders at ~20% of the QR code size, centered, with the `excavate` option to clear QR cells behind it for a clean look.
-
-**No logo uploaded?** Everything works exactly as it does today -- no logo, no change.
+1. **No delete** -- Once a task is added, there's no way to remove it
+2. **No edit** -- Can't change the title, description, date, or type of an existing task
+3. **No move/reschedule** -- Can't drag or reassign a task to a different date
+4. **Side panel is passive** -- The selected-day detail panel only shows tasks with a checkmark; no contextual actions
+5. **Agenda view has no actions** -- Same issue: checkmark only, no edit/delete
 
 ---
 
-### What Users See
+### What Changes
 
-- **Settings page**: New "QR Code Branding" section with upload button, preview, and remove option
-- **QR Code dialog**: Logo automatically appears centered in the QR code
-- **Print stickers**: Logo appears on printed stickers too (single and batch)
-- **Downloads**: Downloaded QR PNGs include the logo
+#### 1. New "Edit Task" Dialog
+
+A reusable `EditTaskDialog` component (similar to `AddTaskDialog`) that:
+
+- Pre-fills title, description, date, and type from the existing task
+- Has "Save Changes" and "Delete Task" buttons
+- Delete shows a confirmation before removing
+- On save, calls `updateTask()` from the hook
+- On delete, calls `deleteTask()` from the hook
+
+#### 2. Task Action Menu on Every Custom Task
+
+In both the **selected-day side panel** and **agenda view**, each custom task gets a small actions area:
+
+- **Edit** (pencil icon) -- opens the EditTaskDialog
+- **Delete** (trash icon) -- confirms then deletes
+- **Toggle complete** (checkmark) -- existing behavior, kept
+
+System-generated tasks (restocks, routes, maintenance, follow-ups) remain read-only since they're driven by schedules, not manual entries.
+
+#### 3. Quick Reschedule
+
+In the EditTaskDialog, changing the date effectively "moves" the task. This is simpler and more reliable than drag-and-drop for a calendar that mixes read-only system tasks with editable custom tasks.
+
+#### 4. Click-to-Add on Empty Days
+
+When clicking an empty day in the month/week grid, automatically open the Add Task dialog with that date pre-selected (currently it shows a static "Add Task" button in the side panel).
+
+#### 5. Agenda View Gets Full Actions
+
+The `AgendaView` component will receive `onEditTask` and `onDeleteTask` callbacks so custom tasks in agenda mode also have edit and delete.
+
+---
+
+### User Flow
+
+```text
+Calendar Page
+  |
+  +-- Click a day cell
+  |     |
+  |     +-- If day has no tasks: AddTaskDialog opens with that date pre-filled
+  |     +-- If day has tasks: Side panel shows task list
+  |           |
+  |           +-- Each custom task shows:
+  |                 [checkmark] [edit pencil] [trash]
+  |                 |
+  |                 +-- Edit: Opens EditTaskDialog (change title/date/type/notes)
+  |                 +-- Delete: Confirm dialog -> removes task
+  |                 +-- Checkmark: Toggles completed (existing)
+  |
+  +-- Agenda View
+        |
+        +-- Each custom task shows same [checkmark] [edit] [delete] controls
+```
 
 ---
 
 ### Technical Details
 
-**Database migration:**
-- Create `qr-logos` storage bucket (public, so logo URLs work in print windows)
-- Add `qr_logo_url` column to `profiles` table
-- RLS policy: users can upload/delete their own logos
+**New file: `src/components/calendar/EditTaskDialog.tsx`**
 
-**Modified files:**
+- Controlled dialog (open/onOpenChange props) receiving a `CalendarTask` object
+- Form fields: title (input), date (date picker), type (select), description (textarea)
+- "Save" button calls `updateTask(task.id, { title, taskDate, taskType, description })`
+- "Delete" button with `AlertDialog` confirmation calls `deleteTask(task.id)`
+- Closes on success
 
-| File | Changes |
-|------|---------|
-| `src/contexts/AppSettingsContext.tsx` | No change -- logo lives in DB (profiles), not localStorage |
-| `src/pages/Settings.tsx` | Add "QR Code Branding" card with upload, preview, and remove |
-| `src/components/maintenance/QRCodeGenerator.tsx` | Read logo URL from profiles, pass as `imageSettings` to `QRCodeSVG`, include logo in print/download output |
-| `src/components/maintenance/BatchQRPrintDialog.tsx` | Same -- read logo URL, pass to `QRCodeSVG`, include in batch print HTML |
+**Modified file: `src/pages/Calendar.tsx`**
 
-**New hook:**
-| File | Purpose |
-|------|---------|
-| `src/hooks/useQRLogo.ts` | Fetches and caches the user's `qr_logo_url` from profiles; provides `uploadLogo` and `removeLogo` functions |
+- Import `EditTaskDialog` and track `editingTask` state
+- In the selected-day side panel (lines 497-543), add edit and delete icon buttons next to each custom task
+- Wire edit button to open `EditTaskDialog` with the task data
+- Wire delete button to call `deleteTask` with confirmation
+- On day cell click: if the day has no tasks, open AddTaskDialog with that date (currently just selects the day)
+- Add state: `const [editingTask, setEditingTask] = useState<CalendarTask | null>(null)`
+- Render `<EditTaskDialog task={editingTask} ... />` at root level
 
-**Key implementation detail -- `imageSettings` prop:**
-```tsx
-<QRCodeSVG
-  value={reportUrl}
-  size={200}
-  level="H"
-  imageSettings={logoUrl ? {
-    src: logoUrl,
-    height: 40,
-    width: 40,
-    excavate: true,  // clears QR cells behind logo
-  } : undefined}
-/>
-```
+**Modified file: `src/components/calendar/AgendaView.tsx`**
 
-For the print sticker, the logo is embedded as an `<img>` tag positioned absolutely over the QR SVG in the print HTML, maintaining the same centered positioning.
+- Add `onEditTask` and `onDeleteTask` props
+- For custom task items, render edit (pencil) and delete (trash) icon buttons alongside the existing checkmark
+- Wire to parent callbacks
+
+**No database changes needed** -- the `calendar_tasks` table already supports all CRUD operations, and the `useCalendarTasks` hook already has `updateTask` and `deleteTask` functions that are just not being used in the UI.
+
+---
+
+### Files to Create/Modify
+
+| File | Action |
+|------|--------|
+| `src/components/calendar/EditTaskDialog.tsx` | **Create** -- edit/delete dialog for custom tasks |
+| `src/pages/Calendar.tsx` | **Modify** -- add edit/delete actions to side panel, wire up EditTaskDialog, improve empty-day click behavior |
+| `src/components/calendar/AgendaView.tsx` | **Modify** -- add edit/delete action buttons for custom tasks |
 
