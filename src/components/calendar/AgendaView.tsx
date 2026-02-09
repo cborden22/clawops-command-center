@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { CalendarTask } from "@/hooks/useCalendarTasks";
 
 type TaskType = "restock" | "route" | "maintenance" | "followup" | "custom";
 
@@ -16,13 +15,16 @@ interface DisplayTask {
   title: string;
   subtitle?: string;
   dueDate: Date;
+  metadata?: {
+    isCustom?: boolean;
+    completed?: boolean;
+  };
 }
 
 interface AgendaViewProps {
   scheduledTasks: DisplayTask[];
-  customTasks: CalendarTask[];
   onToggleCustomTask?: (taskId: string) => void;
-  onEditTask?: (task: CalendarTask) => void;
+  onEditTask?: (taskId: string) => void;
   onDeleteTask?: (taskId: string) => void;
   daysToShow?: number;
 }
@@ -45,14 +47,12 @@ interface AgendaItem {
   isCustomTask?: boolean;
 }
 
-export function AgendaView({ scheduledTasks, customTasks, onToggleCustomTask, onEditTask, onDeleteTask, daysToShow = 14 }: AgendaViewProps) {
-  // Combine and sort all tasks
+export function AgendaView({ scheduledTasks, onToggleCustomTask, onEditTask, onDeleteTask, daysToShow = 14 }: AgendaViewProps) {
   const agendaItems = useMemo(() => {
     const items: AgendaItem[] = [];
     const today = startOfDay(new Date());
     const endDate = addDays(today, daysToShow);
 
-    // Add scheduled tasks
     scheduledTasks.forEach((task) => {
       if (task.dueDate >= today && task.dueDate <= endDate) {
         items.push({
@@ -61,31 +61,15 @@ export function AgendaView({ scheduledTasks, customTasks, onToggleCustomTask, on
           title: task.title,
           subtitle: task.subtitle,
           date: task.dueDate,
+          completed: task.metadata?.completed,
+          isCustomTask: task.metadata?.isCustom,
         });
       }
     });
 
-    // Add custom tasks
-    customTasks.forEach((task) => {
-      const taskDate = new Date(task.taskDate + "T00:00:00");
-      if (taskDate >= today && taskDate <= endDate) {
-        items.push({
-          id: task.id,
-          type: "custom",
-          title: task.title,
-          subtitle: task.description || undefined,
-          date: taskDate,
-          completed: task.completed,
-          isCustomTask: true,
-        });
-      }
-    });
-
-    // Sort by date
     return items.sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [scheduledTasks, customTasks, daysToShow]);
+  }, [scheduledTasks, daysToShow]);
 
-  // Group items by date
   const groupedItems = useMemo(() => {
     const groups: { date: Date; items: AgendaItem[] }[] = [];
     
@@ -144,7 +128,7 @@ export function AgendaView({ scheduledTasks, customTasks, onToggleCustomTask, on
                   <Card 
                     key={item.id} 
                     className={cn(
-                      "border transition-all",
+                      "border transition-all hover:shadow-md",
                       config.color,
                       item.completed && "opacity-50"
                     )}
@@ -190,10 +174,7 @@ export function AgendaView({ scheduledTasks, customTasks, onToggleCustomTask, on
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
-                                onClick={() => {
-                                  const ct = customTasks.find(t => t.id === item.id);
-                                  if (ct) onEditTask(ct);
-                                }}
+                                onClick={() => onEditTask(item.id)}
                               >
                                 <Pencil className="h-4 w-4 text-muted-foreground" />
                               </Button>
@@ -202,10 +183,10 @@ export function AgendaView({ scheduledTasks, customTasks, onToggleCustomTask, on
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8"
+                                className="h-8 w-8 text-destructive/70 hover:text-destructive"
                                 onClick={() => onDeleteTask(item.id)}
                               >
-                                <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             )}
                           </div>
