@@ -103,6 +103,33 @@ export type Database = {
           },
         ]
       }
+      custom_machine_types: {
+        Row: {
+          created_at: string | null
+          id: string
+          label: string
+          sort_order: number
+          type_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          label: string
+          sort_order?: number
+          type_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          label?: string
+          sort_order?: number
+          type_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       inventory_items: {
         Row: {
           category: string | null

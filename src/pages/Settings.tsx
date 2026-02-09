@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { VehicleManager } from "@/components/settings/VehicleManager";
+import { MachineTypeManager } from "@/components/settings/MachineTypeManager";
 import { FeedbackDialog } from "@/components/shared/FeedbackDialog";
 import { useQRLogo } from "@/hooks/useQRLogo";
 
@@ -743,6 +744,9 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Machine Types */}
+          <MachineTypeManager />
 
           {/* Vehicles Section */}
           <VehicleManager />

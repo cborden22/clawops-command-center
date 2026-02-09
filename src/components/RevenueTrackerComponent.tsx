@@ -23,7 +23,8 @@ import {
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { toast } from "@/hooks/use-toast";
-import { useLocations, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocationsDB";
+import { useLocations } from "@/hooks/useLocationsDB";
+import { useMachineTypesDB } from "@/hooks/useMachineTypesDB";
 import { useRevenueEntries, EntryType, RevenueEntry } from "@/hooks/useRevenueEntriesDB";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { Link } from "react-router-dom";
@@ -75,6 +76,7 @@ const BUSINESS_EXPENSE_CATEGORIES = [
 export function RevenueTrackerComponent() {
   const { user } = useAuth();
   const { activeLocations, getLocationById, isLoaded } = useLocations();
+  const { machineTypeOptions } = useMachineTypesDB();
   const { entries, addEntry, updateEntry, deleteEntry, isLoaded: entriesLoaded } = useRevenueEntries();
   const { addCollection, calculateCollectionWinRate, formatWinRate, formatOdds, formatPlays, compareToExpected, QUARTER_VALUE } = useMachineCollections();
   
@@ -463,7 +465,7 @@ export function RevenueTrackerComponent() {
   }).sort((a, b) => b.net - a.net).slice(0, 8); // Limit to top 8 locations
 
   const getLocationName = (id: string) => getLocationById(id)?.name || "Unknown";
-  const getMachineLabel = (type: string) => MACHINE_TYPE_OPTIONS.find(m => m.value === type)?.label || type;
+  const getMachineLabel = (type: string) => machineTypeOptions.find(m => m.value === type)?.label || type;
   
   // Calculate business expenses total
   const businessExpenses = filteredEntries.filter(e => e.type === "expense" && !e.locationId);
@@ -1383,7 +1385,7 @@ export function RevenueTrackerComponent() {
                   </SelectTrigger>
                   <SelectContent className="bg-background">
                     <SelectItem value="all">All Machines</SelectItem>
-                    {MACHINE_TYPE_OPTIONS.map((machine) => (
+                    {machineTypeOptions.map((machine) => (
                       <SelectItem key={machine.value} value={machine.value}>
                         {machine.label}
                       </SelectItem>

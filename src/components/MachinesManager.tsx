@@ -49,7 +49,8 @@ import {
 import { QRCodeGenerator } from "@/components/maintenance/QRCodeGenerator";
 import { BatchQRPrintDialog } from "@/components/maintenance/BatchQRPrintDialog";
 import { toast } from "@/hooks/use-toast";
-import { useLocations, Location, MachineType, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocationsDB";
+import { useLocations, Location, MachineType } from "@/hooks/useLocationsDB";
+import { useMachineTypesDB } from "@/hooks/useMachineTypesDB";
 import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { cn } from "@/lib/utils";
@@ -62,6 +63,7 @@ interface MachineWithLocation {
 
 export function MachinesManager() {
   const { locations, updateLocation, isLoaded } = useLocations();
+  const { machineTypeOptions } = useMachineTypesDB();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingMachine, setEditingMachine] = useState<MachineWithLocation | null>(null);
@@ -102,7 +104,7 @@ export function MachinesManager() {
 
   // Stats
   const totalMachines = allMachines.reduce((sum, m) => sum + m.machineType.count, 0);
-  const machinesByType = MACHINE_TYPE_OPTIONS.map((opt) => ({
+  const machinesByType = machineTypeOptions.map((opt) => ({
     ...opt,
     count: allMachines
       .filter((m) => m.machineType.type === opt.value)
@@ -122,7 +124,7 @@ export function MachinesManager() {
     const location = locations.find((l) => l.id === formData.locationId);
     if (!location) return;
 
-    const option = MACHINE_TYPE_OPTIONS.find((o) => o.value === formData.type);
+    const option = machineTypeOptions.find((o) => o.value === formData.type);
     const label = formData.customLabel.trim() || option?.label || "Other";
 
     if (editingMachine) {
@@ -166,7 +168,7 @@ export function MachinesManager() {
       type: machine.machineType.type,
       count: machine.machineType.count,
       customLabel:
-        MACHINE_TYPE_OPTIONS.find((o) => o.value === machine.machineType.type)?.label ===
+        machineTypeOptions.find((o) => o.value === machine.machineType.type)?.label ===
         machine.machineType.label
           ? ""
           : machine.machineType.label,
@@ -312,7 +314,7 @@ export function MachinesManager() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-background z-50">
-                      {MACHINE_TYPE_OPTIONS.map((option) => (
+                      {machineTypeOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -519,7 +521,7 @@ export function MachinesManager() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
-                          {MACHINE_TYPE_OPTIONS.find((o) => o.value === machine.machineType.type)
+                          {machineTypeOptions.find((o) => o.value === machine.machineType.type)
                             ?.label || machine.machineType.type}
                         </Badge>
                       </TableCell>

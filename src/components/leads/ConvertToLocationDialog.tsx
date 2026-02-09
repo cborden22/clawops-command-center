@@ -21,7 +21,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { slugify, generateUnitCode } from '@/utils/slugify';
-import { MachineType, MACHINE_TYPE_OPTIONS } from '@/hooks/useLocationsDB';
+import { MachineType } from '@/hooks/useLocationsDB';
+import { useMachineTypesDB } from '@/hooks/useMachineTypesDB';
 
 interface ConvertToLocationDialogProps {
   lead: Lead | null;
@@ -66,7 +67,7 @@ export function ConvertToLocationDialog({ lead, open, onOpenChange, onSuccess }:
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  
+  const { machineTypeOptions } = useMachineTypesDB();
   const [formData, setFormData] = useState(emptyFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -95,7 +96,7 @@ export function ConvertToLocationDialog({ lead, open, onOpenChange, onSuccess }:
   const handleAddMachineType = () => {
     setFormData((prev) => ({
       ...prev,
-      machines: [...prev.machines, { type: "claw" as const, label: "Claw Machine", count: 1, customLabel: "", winProbability: undefined }],
+      machines: [...prev.machines, { type: machineTypeOptions[0]?.value || "claw", label: machineTypeOptions[0]?.label || "Claw Machine", count: 1, customLabel: "", winProbability: undefined }],
     }));
   };
 
@@ -112,7 +113,7 @@ export function ConvertToLocationDialog({ lead, open, onOpenChange, onSuccess }:
       machines: prev.machines.map((m, i) => {
         if (i !== index) return m;
         if (field === "type") {
-          const option = MACHINE_TYPE_OPTIONS.find((o) => o.value === value);
+          const option = machineTypeOptions.find((o) => o.value === value);
           const defaultLabel = option?.label || "Other";
           return { 
             ...m, 
@@ -122,7 +123,7 @@ export function ConvertToLocationDialog({ lead, open, onOpenChange, onSuccess }:
           };
         }
         if (field === "customLabel") {
-          const option = MACHINE_TYPE_OPTIONS.find((o) => o.value === m.type);
+          const option = machineTypeOptions.find((o) => o.value === m.type);
           const defaultLabel = option?.label || "Other";
           const customLabel = String(value).trim();
           return { 
@@ -185,7 +186,7 @@ export function ConvertToLocationDialog({ lead, open, onOpenChange, onSuccess }:
         const typeCounters: Record<string, number> = {};
         
         const machinesInsert = formData.machines.map(m => {
-          const defaultLabel = MACHINE_TYPE_OPTIONS.find(opt => opt.value === m.type)?.label || "";
+          const defaultLabel = machineTypeOptions.find(opt => opt.value === m.type)?.label || "";
           const customLabel = m.customLabel || (m.label !== defaultLabel ? m.label : "");
           
           typeCounters[m.type] = (typeCounters[m.type] || 0) + 1;
@@ -398,7 +399,7 @@ export function ConvertToLocationDialog({ lead, open, onOpenChange, onSuccess }:
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-background z-[100]">
-                              {MACHINE_TYPE_OPTIONS.map((option) => (
+                              {machineTypeOptions.map((option) => (
                                 <SelectItem key={option.value} value={option.value}>
                                   {option.label}
                                 </SelectItem>
