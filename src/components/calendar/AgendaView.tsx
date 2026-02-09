@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { format, isSameDay, isToday, isTomorrow, addDays, startOfDay } from "date-fns";
-import { Package, Car, Wrench, Users, CheckSquare, MapPin, Check } from "lucide-react";
+import { Package, Car, Wrench, Users, CheckSquare, MapPin, Check, Pencil, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,8 @@ interface AgendaViewProps {
   scheduledTasks: DisplayTask[];
   customTasks: CalendarTask[];
   onToggleCustomTask?: (taskId: string) => void;
+  onEditTask?: (task: CalendarTask) => void;
+  onDeleteTask?: (taskId: string) => void;
   daysToShow?: number;
 }
 
@@ -43,7 +45,7 @@ interface AgendaItem {
   isCustomTask?: boolean;
 }
 
-export function AgendaView({ scheduledTasks, customTasks, onToggleCustomTask, daysToShow = 14 }: AgendaViewProps) {
+export function AgendaView({ scheduledTasks, customTasks, onToggleCustomTask, onEditTask, onDeleteTask, daysToShow = 14 }: AgendaViewProps) {
   // Combine and sort all tasks
   const agendaItems = useMemo(() => {
     const items: AgendaItem[] = [];
@@ -168,18 +170,45 @@ export function AgendaView({ scheduledTasks, customTasks, onToggleCustomTask, da
                             {config.label}
                           </Badge>
                         </div>
-                        {item.isCustomTask && onToggleCustomTask && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 shrink-0"
-                            onClick={() => onToggleCustomTask(item.id)}
-                          >
-                            <Check className={cn(
-                              "h-4 w-4",
-                              item.completed ? "text-green-500" : "text-muted-foreground"
-                            )} />
-                          </Button>
+                        {item.isCustomTask && (
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            {onToggleCustomTask && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => onToggleCustomTask(item.id)}
+                              >
+                                <Check className={cn(
+                                  "h-4 w-4",
+                                  item.completed ? "text-green-500" : "text-muted-foreground"
+                                )} />
+                              </Button>
+                            )}
+                            {onEditTask && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => {
+                                  const ct = customTasks.find(t => t.id === item.id);
+                                  if (ct) onEditTask(ct);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            )}
+                            {onDeleteTask && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => onDeleteTask(item.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </CardContent>

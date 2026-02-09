@@ -12,7 +12,7 @@ import {
   endOfWeek,
   addDays,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Package, Car, Wrench, Users, MapPin, CheckSquare, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Package, Car, Wrench, Users, MapPin, CheckSquare, Check, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,9 +23,10 @@ import { useRoutes } from "@/hooks/useRoutesDB";
 import { useLeadsDB } from "@/hooks/useLeadsDB";
 import { useMaintenanceReports } from "@/hooks/useMaintenanceReports";
 import { useSmartScheduler, ScheduledTask } from "@/hooks/useSmartScheduler";
-import { useCalendarTasks } from "@/hooks/useCalendarTasks";
+import { useCalendarTasks, CalendarTask } from "@/hooks/useCalendarTasks";
 import { CalendarFilters, TaskTypeFilter } from "@/components/calendar/CalendarFilters";
 import { AddTaskDialog } from "@/components/calendar/AddTaskDialog";
+import { EditTaskDialog } from "@/components/calendar/EditTaskDialog";
 import { AgendaView } from "@/components/calendar/AgendaView";
 import { cn } from "@/lib/utils";
 
@@ -72,7 +73,8 @@ export default function Calendar() {
   const { routes } = useRoutes();
   const { leads } = useLeadsDB();
   const { reports } = useMaintenanceReports();
-  const { tasks: customTasks, toggleCompleted } = useCalendarTasks();
+  const { tasks: customTasks, toggleCompleted, updateTask, deleteTask } = useCalendarTasks();
+  const [editingTask, setEditingTask] = useState<CalendarTask | null>(null);
 
   // Get scheduled tasks from smart scheduler
   const { restockStatuses, routeScheduleStatuses } = useSmartScheduler({
@@ -339,6 +341,10 @@ export default function Calendar() {
               scheduledTasks={monthlyTasks as ScheduledTask[]} 
               customTasks={activeFilters.includes("custom") ? customTasks : []}
               onToggleCustomTask={toggleCompleted}
+              onEditTask={setEditingTask}
+              onDeleteTask={async (id) => {
+                if (confirm("Delete this task?")) await deleteTask(id);
+              }}
               daysToShow={30}
             />
           </CardContent>
@@ -525,17 +531,42 @@ export default function Calendar() {
                                   </Badge>
                                 </div>
                                 {isCustom && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 shrink-0"
-                                    onClick={() => toggleCompleted(task.id)}
-                                  >
-                                    <Check className={cn(
-                                      "h-4 w-4",
-                                      isCompleted ? "text-green-500" : "text-muted-foreground"
-                                    )} />
-                                  </Button>
+                                  <div className="flex items-center gap-0.5 shrink-0">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => toggleCompleted(task.id)}
+                                    >
+                                      <Check className={cn(
+                                        "h-4 w-4",
+                                        isCompleted ? "text-green-500" : "text-muted-foreground"
+                                      )} />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => {
+                                        const ct = customTasks.find(t => t.id === task.id);
+                                        if (ct) setEditingTask(ct);
+                                      }}
+                                    >
+                                      <Pencil className="h-4 w-4 text-muted-foreground" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={async () => {
+                                        if (confirm("Delete this task?")) {
+                                          await deleteTask(task.id);
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                    </Button>
+                                  </div>
                                 )}
                               </div>
                             </CardContent>
@@ -580,6 +611,20 @@ export default function Calendar() {
           </div>
         </CardContent>
       </Card>
+
+
+      {/* Edit Task Dialog */}
+      <EditTaskDialog
+        task={editingTask}
+        open={!!editingTask}
+        onOpenChange={(open) => { if (!open) setEditingTask(null); }}
+        onSave={async (id, updates) => {
+          await updateTask(id, updates);
+        }}
+        onDelete={async (id) => {
+          await deleteTask(id);
+        }}
+      />
     </div>
   );
 }
