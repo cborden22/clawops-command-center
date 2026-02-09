@@ -242,106 +242,137 @@ export default function Dashboard() {
   }).sort((a, b) => b.totalIncome - a.totalIncome).slice(0, 3);
 
   // Widget render functions
-  const renderPrimaryStats = () => (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-      <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-        <CardContent className="pt-4 sm:pt-6 relative">
-          <div className="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-          <div className="flex items-center gap-3 sm:gap-4 relative">
-            <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg group-hover:scale-110 transition-transform duration-300">
-              <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+  const renderPrimaryStats = () => {
+    const showLocations = permissions.isOwner || permissions.canViewLocations;
+    const showRevenue = permissions.isOwner || permissions.canViewRevenue;
+    const showInventory = permissions.isOwner || permissions.canViewInventory;
+    
+    const cards = [];
+    
+    if (showLocations) {
+      cards.push(
+        <Card key="locations" className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
+          <CardContent className="pt-4 sm:pt-6 relative">
+            <div className="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+            <div className="flex items-center gap-3 sm:gap-4 relative">
+              <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Active Locations</p>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{activeLocations.length}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{totalMachines} machines</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Active Locations</p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{activeLocations.length}</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">{totalMachines} machines</p>
+          </CardContent>
+        </Card>
+      );
+    }
+    
+    if (showRevenue) {
+      cards.push(
+        <Card key="income" className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
+          <CardContent className="pt-4 sm:pt-6 relative">
+            <div className="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-green-500/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+            <div className="flex items-center gap-3 sm:gap-4 relative">
+              <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Month Income</p>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">${totalIncome.toLocaleString()}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{format(now, "MMMM")}</p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-        <CardContent className="pt-4 sm:pt-6 relative">
-          <div className="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-green-500/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-          <div className="flex items-center gap-3 sm:gap-4 relative">
-            <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
-              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Month Income</p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">${totalIncome.toLocaleString()}</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">{format(now, "MMMM")}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className={cn(
-        "glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden",
-        netProfit < 0 && "border-destructive/30"
-      )}>
-        <CardContent className="pt-4 sm:pt-6 relative">
-          <div className={cn(
-            "absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500",
-            netProfit >= 0 ? "bg-primary/10" : "bg-destructive/10"
-          )} />
-          <div className="flex items-center gap-3 sm:gap-4 relative">
+          </CardContent>
+        </Card>
+      );
+      cards.push(
+        <Card key="profit" className={cn(
+          "glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden",
+          netProfit < 0 && "border-destructive/30"
+        )}>
+          <CardContent className="pt-4 sm:pt-6 relative">
             <div className={cn(
-              "p-2 sm:p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300",
-              netProfit >= 0 
-                ? "bg-gradient-to-br from-primary to-primary/80" 
-                : "bg-gradient-to-br from-destructive to-destructive/80"
-            )}>
-              <Wallet className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-            </div>
-            <div>
-              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Net Profit</p>
-              <p className={cn(
-                "text-2xl sm:text-3xl font-bold tracking-tight",
-                netProfit >= 0 ? "text-foreground" : "text-destructive"
+              "absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500",
+              netProfit >= 0 ? "bg-primary/10" : "bg-destructive/10"
+            )} />
+            <div className="flex items-center gap-3 sm:gap-4 relative">
+              <div className={cn(
+                "p-2 sm:p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300",
+                netProfit >= 0 
+                  ? "bg-gradient-to-br from-primary to-primary/80" 
+                  : "bg-gradient-to-br from-destructive to-destructive/80"
               )}>
-                ${Math.abs(netProfit).toLocaleString()}
-              </p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">
-                {netProfit >= 0 ? "Profit" : "Loss"} this month
-              </p>
+                <Wallet className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Net Profit</p>
+                <p className={cn(
+                  "text-2xl sm:text-3xl font-bold tracking-tight",
+                  netProfit >= 0 ? "text-foreground" : "text-destructive"
+                )}>
+                  ${Math.abs(netProfit).toLocaleString()}
+                </p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
+                  {netProfit >= 0 ? "Profit" : "Loss"} this month
+                </p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className={cn(
-        "glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden",
-        lowStockItems.length > 0 && "border-amber-500/30 bg-amber-500/5"
-      )}>
-        <CardContent className="pt-4 sm:pt-6 relative">
-          <div className={cn(
-            "absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500",
-            lowStockItems.length > 0 ? "bg-amber-500/10" : "bg-accent/50"
-          )} />
-          <div className="flex items-center gap-3 sm:gap-4 relative">
+          </CardContent>
+        </Card>
+      );
+    }
+    
+    if (showInventory) {
+      cards.push(
+        <Card key="inventory" className={cn(
+          "glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden",
+          lowStockItems.length > 0 && "border-amber-500/30 bg-amber-500/5"
+        )}>
+          <CardContent className="pt-4 sm:pt-6 relative">
             <div className={cn(
-              "p-2 sm:p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300",
-              lowStockItems.length > 0 
-                ? "bg-gradient-to-br from-amber-500 to-amber-600" 
-                : "bg-gradient-to-br from-muted-foreground/80 to-muted-foreground/60"
-            )}>
-              <Package className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              "absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500",
+              lowStockItems.length > 0 ? "bg-amber-500/10" : "bg-accent/50"
+            )} />
+            <div className="flex items-center gap-3 sm:gap-4 relative">
+              <div className={cn(
+                "p-2 sm:p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300",
+                lowStockItems.length > 0 
+                  ? "bg-gradient-to-br from-amber-500 to-amber-600" 
+                  : "bg-gradient-to-br from-muted-foreground/80 to-muted-foreground/60"
+              )}>
+                <Package className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              </div>
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Inventory</p>
+                <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{totalInventoryItems}</p>
+                {lowStockItems.length > 0 ? (
+                  <p className="text-[10px] sm:text-xs text-amber-600 font-medium">{lowStockItems.length} low stock</p>
+                ) : (
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">All stocked</p>
+                )}
+              </div>
             </div>
-            <div>
-              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Inventory</p>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{totalInventoryItems}</p>
-              {lowStockItems.length > 0 ? (
-                <p className="text-[10px] sm:text-xs text-amber-600 font-medium">{lowStockItems.length} low stock</p>
-              ) : (
-                <p className="text-[10px] sm:text-xs text-muted-foreground">All stocked</p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+          </CardContent>
+        </Card>
+      );
+    }
+    
+    if (cards.length === 0) return null;
+    
+    return (
+      <div className={cn(
+        "grid gap-3 sm:gap-4",
+        cards.length === 1 && "grid-cols-1",
+        cards.length === 2 && "grid-cols-2",
+        cards.length === 3 && "grid-cols-2 lg:grid-cols-3",
+        cards.length >= 4 && "grid-cols-2 lg:grid-cols-4",
+      )}>
+        {cards}
+      </div>
+    );
+  };
 
   const renderAllTimeSummary = () => (
     <Card className="glass-card h-full">
@@ -586,50 +617,80 @@ export default function Dashboard() {
     </Card>
   );
 
-  const renderQuickActions = () => (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-      <Link to="/locations">
-        <Card className="glass-card hover:shadow-hover transition-all duration-300 cursor-pointer group">
-          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-              <MapPin className="h-5 w-5 text-primary" />
-            </div>
-            <span className="font-medium text-sm">Add Location</span>
-          </CardContent>
-        </Card>
-      </Link>
-      <Link to="/revenue">
-        <Card className="glass-card hover:shadow-hover transition-all duration-300 cursor-pointer group">
-          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
-              <DollarSign className="h-5 w-5 text-green-600" />
-            </div>
-            <span className="font-medium text-sm">Log Revenue</span>
-          </CardContent>
-        </Card>
-      </Link>
-      <Link to="/commission-summary">
-        <Card className="glass-card hover:shadow-hover transition-all duration-300 cursor-pointer group">
-          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
-              <BarChart3 className="h-5 w-5 text-amber-600" />
-            </div>
-            <span className="font-medium text-sm">Commission</span>
-          </CardContent>
-        </Card>
-      </Link>
-      <Link to="/inventory">
-        <Card className="glass-card hover:shadow-hover transition-all duration-300 cursor-pointer group">
-          <CardContent className="p-3 sm:p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
-              <Package className="h-5 w-5 text-purple-600" />
-            </div>
-            <span className="font-medium text-sm">Inventory</span>
-          </CardContent>
-        </Card>
-      </Link>
-    </div>
-  );
+  const renderQuickActions = () => {
+    const actions = [];
+    
+    if (permissions.isOwner || permissions.canViewLocations) {
+      actions.push(
+        <Link key="locations" to="/locations">
+          <Card className="glass-card hover:shadow-hover transition-all duration-300 cursor-pointer group">
+            <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                <MapPin className="h-5 w-5 text-primary" />
+              </div>
+              <span className="font-medium text-sm">Add Location</span>
+            </CardContent>
+          </Card>
+        </Link>
+      );
+    }
+    
+    if (permissions.isOwner || permissions.canViewRevenue) {
+      actions.push(
+        <Link key="revenue" to="/revenue">
+          <Card className="glass-card hover:shadow-hover transition-all duration-300 cursor-pointer group">
+            <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+                <DollarSign className="h-5 w-5 text-green-600" />
+              </div>
+              <span className="font-medium text-sm">Log Revenue</span>
+            </CardContent>
+          </Card>
+        </Link>
+      );
+    }
+    
+    if (permissions.isOwner || permissions.canViewDocuments) {
+      actions.push(
+        <Link key="commission" to="/commission-summary">
+          <Card className="glass-card hover:shadow-hover transition-all duration-300 cursor-pointer group">
+            <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
+                <BarChart3 className="h-5 w-5 text-amber-600" />
+              </div>
+              <span className="font-medium text-sm">Commission</span>
+            </CardContent>
+          </Card>
+        </Link>
+      );
+    }
+    
+    if (permissions.isOwner || permissions.canViewInventory) {
+      actions.push(
+        <Link key="inventory" to="/inventory">
+          <Card className="glass-card hover:shadow-hover transition-all duration-300 cursor-pointer group">
+            <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
+                <Package className="h-5 w-5 text-purple-600" />
+              </div>
+              <span className="font-medium text-sm">Inventory</span>
+            </CardContent>
+          </Card>
+        </Link>
+      );
+    }
+    
+    if (actions.length === 0) return null;
+    
+    return (
+      <div className={cn(
+        "grid gap-3 sm:gap-4",
+        actions.length <= 2 ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4"
+      )}>
+        {actions}
+      </div>
+    );
+  };
 
   const renderMaintenance = () => <MaintenanceWidget />;
 

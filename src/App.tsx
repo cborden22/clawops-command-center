@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppSettingsProvider } from "@/contexts/AppSettingsContext";
 import { TeamContextProvider } from "@/contexts/TeamContext";
+import { PermissionGuard } from "@/components/auth/PermissionGuard";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Documents from "./pages/Documents";
@@ -100,7 +101,9 @@ function ProtectedAppRoutes() {
           element={
             <ProtectedRoute>
               <AppLayout>
-                <Locations />
+                <PermissionGuard requiredPermission="canViewLocations">
+                  <Locations />
+                </PermissionGuard>
               </AppLayout>
             </ProtectedRoute>
           }
@@ -110,7 +113,9 @@ function ProtectedAppRoutes() {
           element={
             <ProtectedRoute>
               <AppLayout>
-                <Leads />
+                <PermissionGuard requiredPermission="canViewLeads">
+                  <Leads />
+                </PermissionGuard>
               </AppLayout>
             </ProtectedRoute>
           }
@@ -120,7 +125,9 @@ function ProtectedAppRoutes() {
           element={
             <ProtectedRoute>
               <AppLayout>
-                <Maintenance />
+                <PermissionGuard requiredPermission="canViewMaintenance">
+                  <Maintenance />
+                </PermissionGuard>
               </AppLayout>
             </ProtectedRoute>
           }
@@ -130,7 +137,9 @@ function ProtectedAppRoutes() {
           element={
             <ProtectedRoute>
               <AppLayout>
-                <Documents />
+                <PermissionGuard requiredPermission="canViewDocuments">
+                  <Documents />
+                </PermissionGuard>
               </AppLayout>
             </ProtectedRoute>
           }
@@ -140,7 +149,9 @@ function ProtectedAppRoutes() {
           element={
             <ProtectedRoute>
               <AppLayout>
-                <CommissionSummary />
+                <PermissionGuard requiredPermission="canViewDocuments">
+                  <CommissionSummary />
+                </PermissionGuard>
               </AppLayout>
             </ProtectedRoute>
           }
@@ -150,7 +161,9 @@ function ProtectedAppRoutes() {
           element={
             <ProtectedRoute>
               <AppLayout>
-                <InventoryTracker />
+                <PermissionGuard requiredPermission="canViewInventory">
+                  <InventoryTracker />
+                </PermissionGuard>
               </AppLayout>
             </ProtectedRoute>
           }
@@ -160,7 +173,9 @@ function ProtectedAppRoutes() {
           element={
             <ProtectedRoute>
               <AppLayout>
-                <RevenueTracker />
+                <PermissionGuard requiredPermission="canViewRevenue">
+                  <RevenueTracker />
+                </PermissionGuard>
               </AppLayout>
             </ProtectedRoute>
           }
@@ -170,7 +185,9 @@ function ProtectedAppRoutes() {
           element={
             <ProtectedRoute>
               <AppLayout>
-                <MileageTracker />
+                <PermissionGuard requiredPermission="canViewMileage">
+                  <MileageTracker />
+                </PermissionGuard>
               </AppLayout>
             </ProtectedRoute>
           }
@@ -180,7 +197,9 @@ function ProtectedAppRoutes() {
           element={
             <ProtectedRoute>
               <AppLayout>
-                <Receipts />
+                <PermissionGuard requiredPermission="canViewRevenue">
+                  <Receipts />
+                </PermissionGuard>
               </AppLayout>
             </ProtectedRoute>
           }
@@ -190,7 +209,9 @@ function ProtectedAppRoutes() {
           element={
             <ProtectedRoute>
               <AppLayout>
-                <Reports />
+                <PermissionGuard requiredPermission="canViewReports">
+                  <Reports />
+                </PermissionGuard>
               </AppLayout>
             </ProtectedRoute>
           }
@@ -210,7 +231,9 @@ function ProtectedAppRoutes() {
           element={
             <ProtectedRoute>
               <AppLayout>
-                <Team />
+                <PermissionGuard requiredPermission="isOwner">
+                  <Team />
+                </PermissionGuard>
               </AppLayout>
             </ProtectedRoute>
           }
