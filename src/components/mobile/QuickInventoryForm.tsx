@@ -7,6 +7,7 @@ import { useInventory } from "@/hooks/useInventoryDB";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Plus, Minus, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAppSettings } from "@/contexts/AppSettingsContext";
 
 interface QuickInventoryFormProps {
   onSuccess: () => void;
@@ -14,6 +15,7 @@ interface QuickInventoryFormProps {
 
 export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
   const { items, updateQuantity, addItem } = useInventory();
+  const { settings: appSettings } = useAppSettings();
   const [mode, setMode] = useState<"adjust" | "add">("adjust");
   const [selectedItemId, setSelectedItemId] = useState("");
   const [adjustmentType, setAdjustmentType] = useState<"add" | "remove">("remove");
@@ -63,7 +65,7 @@ export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
         name: newItemName.trim(),
         category: "General",
         quantity: parseInt(newItemQty) || 10,
-        minStock: 10,
+        minStock: appSettings.lowStockThreshold,
         location: "",
         packageType: newPackageType,
         packageQuantity: pkgQty,

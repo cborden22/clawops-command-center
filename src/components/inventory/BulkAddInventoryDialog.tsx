@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFo
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAppSettings } from "@/contexts/AppSettingsContext";
 
 interface BulkAddRow {
   name: string;
@@ -179,6 +180,7 @@ function BulkAddTable({
 
 export function BulkAddInventoryDialog({ open, onOpenChange, addItem }: BulkAddInventoryDialogProps) {
   const isMobile = useIsMobile();
+  const { settings: appSettings } = useAppSettings();
   const [rows, setRows] = useState<BulkAddRow[]>([emptyRow(), emptyRow(), emptyRow()]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -195,7 +197,7 @@ export function BulkAddInventoryDialog({ open, onOpenChange, addItem }: BulkAddI
         name: row.name.trim(),
         category: "General",
         quantity: parseInt(row.quantity) || 0,
-        minStock: 10,
+        minStock: appSettings.lowStockThreshold,
         location: "",
         packageType: row.packageType,
         packageQuantity: pkgQty,

@@ -40,6 +40,7 @@ import { toast } from "@/hooks/use-toast";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { cn } from "@/lib/utils";
 import { useLocations, Location, MachineType } from "@/hooks/useLocationsDB";
+import { useAppSettings } from "@/contexts/AppSettingsContext";
 import { useMachineTypesDB } from "@/hooks/useMachineTypesDB";
 import { LocationDetailDialog } from "./LocationDetailDialog";
 import {
@@ -96,10 +97,11 @@ export function LocationTrackerComponent() {
   } = useLocations();
   const { machineTypeOptions } = useMachineTypesDB();
   const { canAddLocation, isPro } = useFeatureAccess();
+  const { settings: appSettings } = useAppSettings();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
-  const [formData, setFormData] = useState(emptyFormData);
+  const [formData, setFormData] = useState({ ...emptyFormData, commissionRate: appSettings.defaultCommissionRate });
   const [viewLocation, setViewLocation] = useState<Location | null>(null);
   const [locationsListSize, setLocationsListSize] = useListSize("locations-list-size", 20);
   const [locationsPage, setLocationsPage] = useState(1);
@@ -158,7 +160,7 @@ export function LocationTrackerComponent() {
       });
     }
 
-    setFormData(emptyFormData);
+    setFormData({ ...emptyFormData, commissionRate: appSettings.defaultCommissionRate });
     setShowAddDialog(false);
   };
 
@@ -252,7 +254,7 @@ export function LocationTrackerComponent() {
   const handleDialogClose = () => {
     setShowAddDialog(false);
     setEditingLocation(null);
-    setFormData(emptyFormData);
+    setFormData({ ...emptyFormData, commissionRate: appSettings.defaultCommissionRate });
   };
 
   const totalMachines = locations.reduce((sum, loc) => sum + loc.machineCount, 0);
