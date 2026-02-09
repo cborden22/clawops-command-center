@@ -7,7 +7,8 @@ import { Users, UserPlus, Shield, Info } from "lucide-react";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { InviteMemberDialog } from "@/components/team/InviteMemberDialog";
 import { TeamMemberCard } from "@/components/team/TeamMemberCard";
-
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { toast } from "@/hooks/use-toast";
 export default function Team() {
   const {
     teamMembers,
@@ -21,6 +22,19 @@ export default function Team() {
   } = useTeamMembers();
 
   const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const { canAddTeamMember } = useFeatureAccess();
+
+  const handleInviteClick = () => {
+    if (!canAddTeamMember(teamMembers.length)) {
+      toast({
+        title: "Team Member Limit Reached",
+        description: "Upgrade to Pro to invite more team members.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setShowInviteDialog(true);
+  };
 
   const activeCount = teamMembers.filter((m) => m.status === "active").length;
   const pendingCount = teamMembers.filter((m) => m.status === "pending").length;
@@ -36,7 +50,7 @@ export default function Team() {
             Invite and manage team members with custom permissions
           </p>
         </div>
-        <Button onClick={() => setShowInviteDialog(true)} className="gap-2">
+        <Button onClick={handleInviteClick} className="gap-2">
           <UserPlus className="h-4 w-4" />
           Invite Member
         </Button>
@@ -128,7 +142,7 @@ export default function Team() {
               <p className="text-muted-foreground mt-1 mb-4">
                 Invite technicians or managers to help run your operations
               </p>
-              <Button onClick={() => setShowInviteDialog(true)} className="gap-2">
+              <Button onClick={handleInviteClick} className="gap-2">
                 <UserPlus className="h-4 w-4" />
                 Invite Your First Member
               </Button>

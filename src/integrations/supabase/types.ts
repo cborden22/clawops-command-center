@@ -103,6 +103,33 @@ export type Database = {
           },
         ]
       }
+      complimentary_access: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          granted_by: string | null
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          granted_by?: string | null
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       custom_machine_types: {
         Row: {
           created_at: string | null
