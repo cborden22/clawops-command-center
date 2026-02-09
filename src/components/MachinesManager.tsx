@@ -44,8 +44,10 @@ import {
   MapPin,
   QrCode,
   CalendarIcon,
+  Printer,
 } from "lucide-react";
 import { QRCodeGenerator } from "@/components/maintenance/QRCodeGenerator";
+import { BatchQRPrintDialog } from "@/components/maintenance/BatchQRPrintDialog";
 import { toast } from "@/hooks/use-toast";
 import { useLocations, Location, MachineType, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocationsDB";
 import { ListSizeSelector, useListSize, applyListLimit, ListSize } from "@/components/shared/ListSizeSelector";
@@ -79,6 +81,7 @@ export function MachinesManager() {
     installedAt: new Date().toISOString().split('T')[0],
   });
   const [machinesListSize, setMachinesListSize] = useListSize("machines-list-size", 20);
+  const [showBatchQR, setShowBatchQR] = useState(false);
 
   // Flatten all machines from all locations
   const allMachines: MachineWithLocation[] = locations.flatMap((location) =>
@@ -242,13 +245,20 @@ export function MachinesManager() {
             </div>
             All Machines
           </CardTitle>
-          <Dialog open={showAddDialog} onOpenChange={(open) => !open && handleDialogClose()}>
-            <DialogTrigger asChild>
-              <Button className="premium-button" onClick={() => setShowAddDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Machine
+          <div className="flex items-center gap-2 flex-wrap">
+            {allMachines.length > 0 && (
+              <Button variant="outline" onClick={() => setShowBatchQR(true)} className="gap-2">
+                <Printer className="h-4 w-4" />
+                <span className="hidden sm:inline">Print QR Sheet</span>
               </Button>
-            </DialogTrigger>
+            )}
+            <Dialog open={showAddDialog} onOpenChange={(open) => !open && handleDialogClose()}>
+              <DialogTrigger asChild>
+                <Button className="premium-button" onClick={() => setShowAddDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Machine
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
@@ -441,6 +451,7 @@ export function MachinesManager() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </CardHeader>
 
         <CardContent className="p-6">
@@ -572,6 +583,22 @@ export function MachinesManager() {
           unitCode={qrMachine.unitCode}
         />
       )}
+
+      {/* Batch QR Print Dialog */}
+      <BatchQRPrintDialog
+        open={showBatchQR}
+        onOpenChange={setShowBatchQR}
+        machines={allMachines
+          .filter((m) => !!m.machineType.id)
+          .map((m) => ({
+            id: m.machineType.id!,
+            machineId: m.machineType.id!,
+            name: m.machineType.label,
+            locationName: m.location.name,
+            locationSlug: m.location.slug,
+            unitCode: m.machineType.unitCode,
+          }))}
+      />
     </div>
   );
 }
