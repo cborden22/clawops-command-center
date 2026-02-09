@@ -1,112 +1,82 @@
 
+## Calendar Overhaul: UI Polish, Bug Fixes, and Proper Delete Warnings
 
-## Calendar Overhaul: Full Task Management
+### Problems Found
 
-### Problems
-
-1. **No delete** -- Once a task is added, there's no way to remove it
-2. **No edit** -- Can't change the title, description, date, or type of an existing task
-3. **No move/reschedule** -- Can't drag or reassign a task to a different date
-4. **Side panel is passive** -- The selected-day detail panel only shows tasks with a checkmark; no contextual actions
-5. **Agenda view has no actions** -- Same issue: checkmark only, no edit/delete
-
----
-
-### What Changes
-
-#### 1. New "Edit Task" Dialog
-
-A reusable `EditTaskDialog` component (similar to `AddTaskDialog`) that:
-
-- Pre-fills title, description, date, and type from the existing task
-- Has "Save Changes" and "Delete Task" buttons
-- Delete shows a confirmation before removing
-- On save, calls `updateTask()` from the hook
-- On delete, calls `deleteTask()` from the hook
-
-#### 2. Task Action Menu on Every Custom Task
-
-In both the **selected-day side panel** and **agenda view**, each custom task gets a small actions area:
-
-- **Edit** (pencil icon) -- opens the EditTaskDialog
-- **Delete** (trash icon) -- confirms then deletes
-- **Toggle complete** (checkmark) -- existing behavior, kept
-
-System-generated tasks (restocks, routes, maintenance, follow-ups) remain read-only since they're driven by schedules, not manual entries.
-
-#### 3. Quick Reschedule
-
-In the EditTaskDialog, changing the date effectively "moves" the task. This is simpler and more reliable than drag-and-drop for a calendar that mixes read-only system tasks with editable custom tasks.
-
-#### 4. Click-to-Add on Empty Days
-
-When clicking an empty day in the month/week grid, automatically open the Add Task dialog with that date pre-selected (currently it shows a static "Add Task" button in the side panel).
-
-#### 5. Agenda View Gets Full Actions
-
-The `AgendaView` component will receive `onEditTask` and `onDeleteTask` callbacks so custom tasks in agenda mode also have edit and delete.
+1. **Duplicate task bug** -- Custom tasks appear twice in Agenda view because they're passed both inside `scheduledTasks` (merged from `monthlyTasks`) AND as a separate `customTasks` prop. This causes the React "duplicate key" console warning.
+2. **`confirm()` used for delete** -- The side panel and agenda view use the browser's ugly native `confirm()` dialog instead of the styled `AlertDialog` used elsewhere in the app (e.g., commission summary deletion).
+3. **AddTaskDialog creates its own hook instance** -- `AddTaskDialog` internally calls `useCalendarTasks()`, creating a separate data fetch. It should receive `createTask` as a prop from the parent instead.
+4. **No "Add Task" button in side panel when tasks exist** -- You can only add a task from the header button or the empty-day state; when a day already has tasks, there's no quick-add option.
+5. **Calendar grid cells too small on mobile** -- 80px min-height doesn't show enough content.
+6. **Legend takes up space at the bottom unnecessarily** -- The filter chips already serve as a legend.
 
 ---
 
-### User Flow
+### Changes
+
+#### 1. Fix Duplicate Task Bug (AgendaView)
+
+Stop passing `customTasks` separately to `AgendaView`. Since custom tasks are already included in `monthlyTasks` (which becomes `scheduledTasks`), the agenda view should identify custom tasks by checking for a `metadata.isCustom` flag instead of merging a second list. This eliminates the duplicate key error.
+
+#### 2. Proper AlertDialog Delete Warnings Everywhere
+
+Replace all `confirm()` calls and the inline trash buttons with a proper `AlertDialog` matching the commission summary delete pattern:
+- AlertTriangle icon in the title
+- Bold task name in the description
+- Red "This action cannot be undone" text
+- Styled destructive action button
+
+This applies to:
+- Side panel delete button (Calendar.tsx lines 557-568)
+- Agenda view delete button (AgendaView.tsx lines 203-209)
+
+#### 3. Refactor AddTaskDialog to Accept Props
+
+Change `AddTaskDialog` to accept `createTask` and `onCreated` as props instead of internally instantiating `useCalendarTasks()`. This prevents duplicate hook instances and makes the calendar data refresh cleanly after adding a task.
+
+#### 4. Add "Add Task" Button in Side Panel Header
+
+When a day is selected and already has tasks, show a small "+" button in the side panel header so users can quickly add more tasks to that day.
+
+#### 5. Visual Polish
+
+- Remove the bottom legend card (filters already serve this purpose)
+- Improve month grid cell sizing with better responsive breakpoints
+- Add subtle hover states to task items in the side panel
+- Make the "no tasks" empty state more inviting with an inline add button
+
+#### 6. Side Panel Delete Uses AlertDialog State
+
+Instead of inline `AlertDialog` per task (which nests poorly), manage a single `deletingTask` state at the Calendar page level, similar to how `editingTask` works. One `AlertDialog` renders at root level and opens when any delete button is clicked.
+
+---
+
+### User Flow After Changes
 
 ```text
-Calendar Page
+Side Panel (selected day)
   |
-  +-- Click a day cell
+  +-- Header shows date + small "+" add button
+  +-- Task list with action icons per custom task:
+  |     [checkmark] [edit] [delete]
   |     |
-  |     +-- If day has no tasks: AddTaskDialog opens with that date pre-filled
-  |     +-- If day has tasks: Side panel shows task list
-  |           |
-  |           +-- Each custom task shows:
-  |                 [checkmark] [edit pencil] [trash]
-  |                 |
-  |                 +-- Edit: Opens EditTaskDialog (change title/date/type/notes)
-  |                 +-- Delete: Confirm dialog -> removes task
-  |                 +-- Checkmark: Toggles completed (existing)
+  |     +-- Delete: Opens styled AlertDialog with:
+  |           "Delete Task?"
+  |           AlertTriangle icon
+  |           "Are you sure you want to delete 'Task Name'?"
+  |           "This action cannot be undone."
+  |           [Cancel] [Delete Task]
   |
-  +-- Agenda View
-        |
-        +-- Each custom task shows same [checkmark] [edit] [delete] controls
+  +-- Empty state: "No tasks scheduled" + [Add Task] button
 ```
 
 ---
 
 ### Technical Details
 
-**New file: `src/components/calendar/EditTaskDialog.tsx`**
-
-- Controlled dialog (open/onOpenChange props) receiving a `CalendarTask` object
-- Form fields: title (input), date (date picker), type (select), description (textarea)
-- "Save" button calls `updateTask(task.id, { title, taskDate, taskType, description })`
-- "Delete" button with `AlertDialog` confirmation calls `deleteTask(task.id)`
-- Closes on success
-
-**Modified file: `src/pages/Calendar.tsx`**
-
-- Import `EditTaskDialog` and track `editingTask` state
-- In the selected-day side panel (lines 497-543), add edit and delete icon buttons next to each custom task
-- Wire edit button to open `EditTaskDialog` with the task data
-- Wire delete button to call `deleteTask` with confirmation
-- On day cell click: if the day has no tasks, open AddTaskDialog with that date (currently just selects the day)
-- Add state: `const [editingTask, setEditingTask] = useState<CalendarTask | null>(null)`
-- Render `<EditTaskDialog task={editingTask} ... />` at root level
-
-**Modified file: `src/components/calendar/AgendaView.tsx`**
-
-- Add `onEditTask` and `onDeleteTask` props
-- For custom task items, render edit (pencil) and delete (trash) icon buttons alongside the existing checkmark
-- Wire to parent callbacks
-
-**No database changes needed** -- the `calendar_tasks` table already supports all CRUD operations, and the `useCalendarTasks` hook already has `updateTask` and `deleteTask` functions that are just not being used in the UI.
-
----
-
-### Files to Create/Modify
-
-| File | Action |
-|------|--------|
-| `src/components/calendar/EditTaskDialog.tsx` | **Create** -- edit/delete dialog for custom tasks |
-| `src/pages/Calendar.tsx` | **Modify** -- add edit/delete actions to side panel, wire up EditTaskDialog, improve empty-day click behavior |
-| `src/components/calendar/AgendaView.tsx` | **Modify** -- add edit/delete action buttons for custom tasks |
-
+| File | Changes |
+|------|---------|
+| `src/pages/Calendar.tsx` | Add `deletingTask` state; replace `confirm()` with root-level `AlertDialog`; add "+" button to side panel header; remove bottom legend card; pass `createTask` prop to `AddTaskDialog`; stop passing `customTasks` separately to `AgendaView`; pass `customTasks` reference for edit lookups only |
+| `src/components/calendar/AgendaView.tsx` | Remove separate `customTasks` merging logic; identify custom tasks from the main task list using metadata; replace inline delete with `onDeleteTask` callback (parent handles confirmation); improve item layout and hover states |
+| `src/components/calendar/AddTaskDialog.tsx` | Accept `createTask` and `onCreated` as props instead of using internal `useCalendarTasks()` hook; keep controlled open state |
+| `src/components/calendar/EditTaskDialog.tsx` | Minor polish -- consistent styling with the app's AlertDialog pattern (AlertTriangle icon in delete confirmation title) |
