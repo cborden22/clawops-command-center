@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Printer, Search, MapPin } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useQRLogo } from "@/hooks/useQRLogo";
 
 interface BatchMachine {
   id: string;
@@ -38,6 +39,7 @@ export function BatchQRPrintDialog({ open, onOpenChange, machines }: BatchQRPrin
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const qrContainerRef = useRef<HTMLDivElement>(null);
+  const { logoUrl } = useQRLogo();
 
   // Reset selection when dialog opens
   useEffect(() => {
@@ -323,6 +325,12 @@ export function BatchQRPrintDialog({ open, onOpenChange, machines }: BatchQRPrin
                     includeMargin
                     bgColor="#ffffff"
                     fgColor="#000000"
+                    imageSettings={logoUrl ? {
+                      src: logoUrl,
+                      height: 40,
+                      width: 40,
+                      excavate: true,
+                    } : undefined}
                   />
                 </div>
               );

@@ -848,6 +848,7 @@ export type Database = {
           email_notifications_enabled: boolean | null
           full_name: string | null
           id: string
+          qr_logo_url: string | null
           updated_at: string | null
           user_id: string
         }
@@ -857,6 +858,7 @@ export type Database = {
           email_notifications_enabled?: boolean | null
           full_name?: string | null
           id?: string
+          qr_logo_url?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -866,6 +868,7 @@ export type Database = {
           email_notifications_enabled?: boolean | null
           full_name?: string | null
           id?: string
+          qr_logo_url?: string | null
           updated_at?: string | null
           user_id?: string
         }
