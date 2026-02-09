@@ -1,41 +1,81 @@
 
 
-## Fix: Show Custom Calendar Tasks in Dashboard "This Week" Widget
+## Add Custom Machine Types in Settings
 
-### The Problem
+### What This Does
 
-The dashboard's "This Week" widget only shows system-generated tasks (restocks, routes, maintenance, follow-ups) from `useSmartScheduler`. Custom tasks created in the Management Calendar are stored in the `calendar_tasks` table but are never fetched or displayed on the dashboard.
+Adds a new "Machine Types" section in Settings where you can manage which machine types appear as options throughout the app (when adding machines to locations, filtering revenue, etc.). You'll be able to add, rename, and remove machine types to match your exact business setup.
 
-### The Fix
+### How It Works
 
-Import `useCalendarTasks` in the Dashboard page, filter tasks to the current week, convert them into the `ScheduledTask` format, and merge them into `tasksByDate` before passing to `WeeklyCalendarWidget`.
+- A new card in the Settings "App" tab lets you manage your machine type list
+- You can add new types with a custom name (e.g., "Prize Locker", "Candy Crane")
+- You can remove types you don't use
+- The default types (Claw, Mini Claw, Bulk, Clip, Sticker, Other) come pre-loaded but can be removed
+- Your custom list is saved to the database so it persists across devices and sessions
 
 ---
 
 ### Technical Details
 
-**Modified file: `src/pages/Dashboard.tsx`**
+**New database table: `custom_machine_types`**
 
-1. Import `useCalendarTasks` hook
-2. Call the hook to get all custom tasks
-3. Filter tasks to the current 7-day window
-4. Convert each matching `CalendarTask` into a `ScheduledTask` (type: `"custom"` or mapped from `taskType`)
-5. Merge them into the `tasksByDate` Map alongside the smart scheduler tasks
+Stores user-defined machine types with columns: `id`, `user_id`, `type_key` (slug), `label` (display name), `sort_order`, `created_at`. RLS policy restricts access to the owning user. Seeded with default types on first use.
 
-**Modified file: `src/hooks/useSmartScheduler.ts`**
+**New component: `src/components/settings/MachineTypeManager.tsx`**
 
-- Extend `TaskType` to include `"custom"` so the type system allows custom tasks in the weekly view
+A settings card with:
+- List of current machine types with delete buttons
+- Input + "Add" button for new types
+- Auto-generates a `type_key` slug from the label
+- Drag reorder via sort_order (stretch goal)
 
-**Modified file: `src/components/dashboard/WeeklyCalendarWidget.tsx`**
+**New hook: `src/hooks/useMachineTypesDB.ts`**
 
-- Add a "custom" entry to `TASK_ICONS` and `TASK_COLORS` (purple styling, matching the calendar page)
-- Add a "Custom" legend dot
+- Fetches custom types from the database (falls back to defaults if none exist)
+- CRUD operations: add, remove, reorder
+- Seeds defaults on first load if table is empty
 
-This is a minimal, targeted fix -- no structural changes needed.
+**Modified files:**
 
-| File | Changes |
-|------|---------|
-| `src/hooks/useSmartScheduler.ts` | Add `"custom"` to `TaskType` union |
-| `src/pages/Dashboard.tsx` | Import `useCalendarTasks`, merge custom tasks into `tasksByDate` |
-| `src/components/dashboard/WeeklyCalendarWidget.tsx` | Add purple "custom" task styling and legend entry |
+| File | Change |
+|------|--------|
+| `src/hooks/useLocationsDB.ts` | Replace hardcoded `MACHINE_TYPE_OPTIONS` with dynamic list from `useMachineTypesDB`; keep the export but source it from the hook |
+| `src/components/LocationTrackerComponent.tsx` | Use dynamic machine types instead of hardcoded options |
+| `src/components/MachinesManager.tsx` | Use dynamic machine types |
+| `src/components/leads/ConvertToLocationDialog.tsx` | Use dynamic machine types |
+| `src/components/RevenueTrackerComponent.tsx` | Use dynamic machine types |
+| `src/components/mobile/QuickRevenueForm.tsx` | Use dynamic machine types |
+| `src/components/mobile/QuickInventoryForm.tsx` | Use dynamic machine types (if applicable) |
+| `src/pages/Settings.tsx` | Add MachineTypeManager card to the App tab |
+| `src/hooks/useLocationsDB.ts` | Update `MachineType["type"]` to accept `string` instead of a fixed union, since types are now user-defined |
+
+**Database migration:**
+
+```sql
+CREATE TABLE public.custom_machine_types (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  type_key text NOT NULL,
+  label text NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(user_id, type_key)
+);
+
+ALTER TABLE public.custom_machine_types ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their own machine types"
+  ON public.custom_machine_types
+  FOR ALL
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+```
+
+**Key design decisions:**
+- The `MachineType["type"]` union changes from a fixed set to `string` to support custom types
+- Default types are seeded client-side on first use (not via migration) so each user gets their own copy they can customize
+- Team members inherit the owner's machine types via the existing `get_effective_owner_id` pattern
+- "Other" is always kept as a fallback option
 
