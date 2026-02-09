@@ -37,6 +37,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { cn } from "@/lib/utils";
 import { useLocations, Location, MachineType } from "@/hooks/useLocationsDB";
 import { useMachineTypesDB } from "@/hooks/useMachineTypesDB";
@@ -94,6 +95,7 @@ export function LocationTrackerComponent() {
     deleteLocation,
   } = useLocations();
   const { machineTypeOptions } = useMachineTypesDB();
+  const { canAddLocation, isPro } = useFeatureAccess();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
@@ -127,6 +129,15 @@ export function LocationTrackerComponent() {
       toast({
         title: "Missing Information",
         description: "Please enter a location name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!editingLocation && !canAddLocation(locations.length)) {
+      toast({
+        title: "Location Limit Reached",
+        description: "Upgrade to Pro to add more locations.",
         variant: "destructive",
       });
       return;

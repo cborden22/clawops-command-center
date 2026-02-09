@@ -36,6 +36,7 @@ import { VehicleManager } from "@/components/settings/VehicleManager";
 import { MachineTypeManager } from "@/components/settings/MachineTypeManager";
 import { FeedbackDialog } from "@/components/shared/FeedbackDialog";
 import { useQRLogo } from "@/hooks/useQRLogo";
+import { SubscriptionManager } from "@/components/settings/SubscriptionManager";
 
 
 export default function Settings() {
@@ -350,6 +351,8 @@ export default function Settings() {
           Manage your account, business settings, and integrations
         </p>
       </div>
+
+      <SubscriptionManager />
 
       <Tabs defaultValue="app" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
