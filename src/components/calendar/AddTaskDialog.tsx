@@ -27,10 +27,12 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { useCalendarTasks } from "@/hooks/useCalendarTasks";
+import { CreateCalendarTaskInput } from "@/hooks/useCalendarTasks";
 
 interface AddTaskDialogProps {
   defaultDate?: Date;
+  createTask: (input: CreateCalendarTaskInput) => Promise<any>;
+  trigger?: React.ReactNode;
 }
 
 const TASK_TYPES = [
@@ -40,8 +42,7 @@ const TASK_TYPES = [
   { value: "other", label: "Other" },
 ];
 
-export function AddTaskDialog({ defaultDate }: AddTaskDialogProps) {
-  const { createTask } = useCalendarTasks();
+export function AddTaskDialog({ defaultDate, createTask, trigger }: AddTaskDialogProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -80,13 +81,19 @@ export function AddTaskDialog({ defaultDate }: AddTaskDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
+      if (isOpen) {
+        // Reset date to defaultDate when opening
+        setDate(defaultDate || new Date());
+      }
       if (!isOpen) resetForm();
     }}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5">
-          <Plus className="h-4 w-4" />
-          Add Task
-        </Button>
+        {trigger || (
+          <Button size="sm" className="gap-1.5">
+            <Plus className="h-4 w-4" />
+            Add Task
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>

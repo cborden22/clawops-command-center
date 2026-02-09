@@ -12,17 +12,27 @@ import {
   endOfWeek,
   addDays,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Package, Car, Wrench, Users, MapPin, CheckSquare, Check, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Package, Car, Wrench, Users, MapPin, CheckSquare, Check, Pencil, Trash2, Plus, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useLocations } from "@/hooks/useLocationsDB";
 import { useRoutes } from "@/hooks/useRoutesDB";
 import { useLeadsDB } from "@/hooks/useLeadsDB";
 import { useMaintenanceReports } from "@/hooks/useMaintenanceReports";
-import { useSmartScheduler, ScheduledTask } from "@/hooks/useSmartScheduler";
+import { useSmartScheduler } from "@/hooks/useSmartScheduler";
 import { useCalendarTasks, CalendarTask } from "@/hooks/useCalendarTasks";
 import { CalendarFilters, TaskTypeFilter } from "@/components/calendar/CalendarFilters";
 import { AddTaskDialog } from "@/components/calendar/AddTaskDialog";
@@ -67,14 +77,16 @@ export default function Calendar() {
   const [activeFilters, setActiveFilters] = useState<TaskTypeFilter[]>([
     "restock", "route", "maintenance", "followup", "custom"
   ]);
+  const [editingTask, setEditingTask] = useState<CalendarTask | null>(null);
+  const [deletingTask, setDeletingTask] = useState<{ id: string; title: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch data from existing hooks
   const { locations } = useLocations();
   const { routes } = useRoutes();
   const { leads } = useLeadsDB();
   const { reports } = useMaintenanceReports();
-  const { tasks: customTasks, toggleCompleted, updateTask, deleteTask } = useCalendarTasks();
-  const [editingTask, setEditingTask] = useState<CalendarTask | null>(null);
+  const { tasks: customTasks, toggleCompleted, createTask, updateTask, deleteTask } = useCalendarTasks();
 
   // Get scheduled tasks from smart scheduler
   const { restockStatuses, routeScheduleStatuses } = useSmartScheduler({
@@ -96,13 +108,12 @@ export default function Calendar() {
     })),
   });
 
-  // Generate all tasks for the current month view (extend beyond just 7 days)
+  // Generate all tasks for the current month view
   const monthlyTasks = useMemo(() => {
     const tasks: CalendarDisplayTask[] = [];
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(currentDate);
 
-    // Add restock tasks for the month
     if (activeFilters.includes("restock")) {
       restockStatuses.forEach((status) => {
         if (status.status !== "no_schedule") {
@@ -127,7 +138,6 @@ export default function Calendar() {
       });
     }
 
-    // Add route tasks for the month
     if (activeFilters.includes("route")) {
       routeScheduleStatuses.forEach((status) => {
         let nextDate = status.nextScheduledDate;
@@ -145,12 +155,11 @@ export default function Calendar() {
               metadata: { routeId: status.routeId },
             });
           }
-          nextDate = addDays(nextDate, 7); // Weekly routes
+          nextDate = addDays(nextDate, 7);
         }
       });
     }
 
-    // Add maintenance tasks (these are urgent, shown on today)
     if (activeFilters.includes("maintenance")) {
       reports
         .filter((r) => r.status === "open" || r.status === "in_progress")
@@ -169,7 +178,6 @@ export default function Calendar() {
         });
     }
 
-    // Add lead follow-ups
     if (activeFilters.includes("followup")) {
       leads
         .filter((l) => l.next_follow_up && l.status !== "won" && l.status !== "lost")
@@ -191,7 +199,6 @@ export default function Calendar() {
         });
     }
 
-    // Add custom tasks
     if (activeFilters.includes("custom")) {
       customTasks.forEach((ct) => {
         const taskDate = new Date(ct.taskDate + "T00:00:00");
@@ -276,10 +283,21 @@ export default function Calendar() {
   };
 
   const selectedDateTasks = selectedDate ? getTasksForDate(selectedDate) : [];
-
-  // Task summary
   const todayTasks = getTasksForDate(new Date());
   const weekTasks = weekDays.reduce((acc, day) => acc + getTasksForDate(day).length, 0);
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingTask) return;
+    setIsDeleting(true);
+    await deleteTask(deletingTask.id);
+    setIsDeleting(false);
+    setDeletingTask(null);
+  };
+
+  const handleEditFromId = (taskId: string) => {
+    const ct = customTasks.find(t => t.id === taskId);
+    if (ct) setEditingTask(ct);
+  };
 
   return (
     <div className="space-y-6">
@@ -304,7 +322,7 @@ export default function Calendar() {
               <TabsTrigger value="agenda">Agenda</TabsTrigger>
             </TabsList>
           </Tabs>
-          <AddTaskDialog defaultDate={selectedDate || new Date()} />
+          <AddTaskDialog defaultDate={selectedDate || new Date()} createTask={createTask} />
         </div>
       </div>
 
@@ -338,12 +356,12 @@ export default function Calendar() {
         <Card>
           <CardContent className="p-6">
             <AgendaView 
-              scheduledTasks={monthlyTasks as ScheduledTask[]} 
-              customTasks={activeFilters.includes("custom") ? customTasks : []}
+              scheduledTasks={monthlyTasks}
               onToggleCustomTask={toggleCompleted}
-              onEditTask={setEditingTask}
-              onDeleteTask={async (id) => {
-                if (confirm("Delete this task?")) await deleteTask(id);
+              onEditTask={handleEditFromId}
+              onDeleteTask={(id) => {
+                const task = monthlyTasks.find(t => t.id === id);
+                if (task) setDeletingTask({ id, title: task.title });
               }}
               daysToShow={30}
             />
@@ -377,7 +395,7 @@ export default function Calendar() {
                           key={day.toISOString()}
                           onClick={() => setSelectedDate(day)}
                           className={cn(
-                            "min-h-[80px] p-1 text-left border rounded-lg transition-all hover:bg-accent/50",
+                            "min-h-[90px] sm:min-h-[100px] p-1.5 text-left border rounded-lg transition-all hover:bg-accent/50",
                             !isCurrentMonth && "opacity-40",
                             isToday && "border-gold-500 bg-gold-500/10",
                             isSelected && "ring-2 ring-gold-500"
@@ -491,16 +509,29 @@ export default function Calendar() {
           {/* Selected Day Details */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5 text-gold-500" />
-                {selectedDate ? format(selectedDate, "MMMM d, yyyy") : "Select a day"}
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CalendarIcon className="h-5 w-5 text-gold-500" />
+                  {selectedDate ? format(selectedDate, "MMM d, yyyy") : "Select a day"}
+                </CardTitle>
+                {selectedDate && selectedDateTasks.length > 0 && (
+                  <AddTaskDialog
+                    defaultDate={selectedDate}
+                    createTask={createTask}
+                    trigger={
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    }
+                  />
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px]">
                 {selectedDate ? (
                   selectedDateTasks.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {selectedDateTasks.map((task) => {
                         const config = taskTypeConfig[task.type as ExtendedTaskType];
                         const Icon = config.icon;
@@ -508,77 +539,78 @@ export default function Calendar() {
                         const isCompleted = task.metadata?.completed;
                         
                         return (
-                          <Card key={task.id} className={cn("border", config.color, isCompleted && "opacity-50")}>
-                            <CardContent className="p-3">
-                              <div className="flex items-start gap-2">
-                                <div className={cn("p-1.5 rounded", config.color)}>
-                                  <Icon className="h-4 w-4" />
+                          <div
+                            key={task.id}
+                            className={cn(
+                              "p-3 rounded-lg border transition-all hover:shadow-md group",
+                              config.color,
+                              isCompleted && "opacity-50"
+                            )}
+                          >
+                            <div className="flex items-start gap-2">
+                              <div className={cn("p-1.5 rounded shrink-0", config.color)}>
+                                <Icon className="h-4 w-4" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className={cn(
+                                  "font-medium text-sm",
+                                  isCompleted && "line-through"
+                                )}>
+                                  {task.title}
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className={cn(
-                                    "font-medium text-sm",
-                                    isCompleted && "line-through"
-                                  )}>
-                                    {task.title}
-                                  </div>
-                                  {task.subtitle && (
-                                    <div className="text-xs text-muted-foreground mt-0.5">
-                                      {task.subtitle}
-                                    </div>
-                                  )}
-                                  <Badge variant="outline" className="mt-2 text-xs">
-                                    {config.label}
-                                  </Badge>
-                                </div>
-                                {isCustom && (
-                                  <div className="flex items-center gap-0.5 shrink-0">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                      onClick={() => toggleCompleted(task.id)}
-                                    >
-                                      <Check className={cn(
-                                        "h-4 w-4",
-                                        isCompleted ? "text-green-500" : "text-muted-foreground"
-                                      )} />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                      onClick={() => {
-                                        const ct = customTasks.find(t => t.id === task.id);
-                                        if (ct) setEditingTask(ct);
-                                      }}
-                                    >
-                                      <Pencil className="h-4 w-4 text-muted-foreground" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                      onClick={async () => {
-                                        if (confirm("Delete this task?")) {
-                                          await deleteTask(task.id);
-                                        }
-                                      }}
-                                    >
-                                      <Trash2 className="h-4 w-4 text-muted-foreground" />
-                                    </Button>
+                                {task.subtitle && (
+                                  <div className="text-xs text-muted-foreground mt-0.5">
+                                    {task.subtitle}
                                   </div>
                                 )}
+                                <Badge variant="outline" className="mt-1.5 text-xs">
+                                  {config.label}
+                                </Badge>
                               </div>
-                            </CardContent>
-                          </Card>
+                              {isCustom && (
+                                <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => toggleCompleted(task.id)}
+                                  >
+                                    <Check className={cn(
+                                      "h-3.5 w-3.5",
+                                      isCompleted ? "text-green-500" : "text-muted-foreground"
+                                    )} />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={() => {
+                                      const ct = customTasks.find(t => t.id === task.id);
+                                      if (ct) setEditingTask(ct);
+                                    }}
+                                  >
+                                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-destructive/70 hover:text-destructive"
+                                    onClick={() => setDeletingTask({ id: task.id, title: task.title })}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         );
                       })}
                     </div>
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
                       <CalendarIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                      <p className="text-sm">No tasks scheduled</p>
-                      <AddTaskDialog defaultDate={selectedDate} />
+                      <p className="text-sm mb-3">No tasks scheduled</p>
+                      <AddTaskDialog defaultDate={selectedDate} createTask={createTask} />
                     </div>
                   )
                 ) : (
@@ -593,25 +625,35 @@ export default function Calendar() {
         </div>
       )}
 
-      {/* Legend */}
-      <Card>
-        <CardContent className="py-3">
-          <div className="flex flex-wrap items-center gap-4 justify-center">
-            {Object.entries(taskTypeConfig).map(([type, config]) => {
-              const Icon = config.icon;
-              return (
-                <div key={type} className="flex items-center gap-2 text-sm">
-                  <div className={cn("p-1 rounded", config.color)}>
-                    <Icon className="h-3 w-3" />
-                  </div>
-                  <span>{config.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
+      {/* Root-level Delete AlertDialog */}
+      <AlertDialog open={!!deletingTask} onOpenChange={(open) => { if (!open) setDeletingTask(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete Task?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Are you sure you want to delete <strong>"{deletingTask?.title}"</strong>?
+              </p>
+              <p className="text-destructive font-medium text-xs">
+                This action cannot be undone.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete Task"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Edit Task Dialog */}
       <EditTaskDialog

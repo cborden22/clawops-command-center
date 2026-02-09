@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Trash2 } from "lucide-react";
+import { CalendarIcon, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -178,21 +178,32 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave, onDelete }: E
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="icon" disabled={isDeleting}>
-                  <Trash2 className="h-4 w-4" />
+                <Button variant="destructive" disabled={isDeleting} className="gap-1.5">
+                  {isDeleting ? "Deleting..." : "Delete"}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Task</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete "{task?.title}"? This action cannot be undone.
+                  <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                    Delete Task?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-2">
+                    <p>
+                      Are you sure you want to delete <strong>"{task?.title}"</strong>?
+                    </p>
+                    <p className="text-destructive font-medium text-xs">
+                      This action cannot be undone.
+                    </p>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Delete
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete Task
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
