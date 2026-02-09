@@ -27,6 +27,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import ReportIssue from "./pages/ReportIssue";
 import ResetPassword from "./pages/ResetPassword";
+import Sales from "./pages/Sales";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -272,6 +273,8 @@ const App: React.FC = () => {
                 <Route path="/m/:machineId" element={<ReportIssue />} />
                {/* Password reset route - public, handles recovery token */}
                <Route path="/reset-password" element={<ResetPassword />} />
+                {/* Public sales/landing page */}
+                <Route path="/sales" element={<Sales />} />
                 {/* All other routes go through AuthProvider */}
                 <Route path="/*" element={<ProtectedAppRoutes />} />
               </Routes>
