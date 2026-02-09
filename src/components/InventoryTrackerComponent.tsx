@@ -454,7 +454,7 @@ export function InventoryTrackerComponent() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Stock</p>
-              <p className="text-2xl font-bold">{totalItems}</p>
+              <p className="text-2xl font-bold tabular-nums">{totalItems}</p>
             </div>
           </div>
         </Card>
@@ -641,10 +641,11 @@ export function InventoryTrackerComponent() {
                   isReturnMode && wasInLastRun && !isInReturnCart && "border-emerald-200"
                 )}
               >
-                <div className="flex items-center gap-3">
-                  {/* Name & Status */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                  {/* Info section */}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    {/* Name + badges */}
+                    <div className="flex items-center gap-2 min-w-0">
                       <span className="font-medium truncate">{item.name}</span>
                       {item.quantity <= item.minStock && !isReturnMode && (
                         <Badge variant="destructive" className="text-xs shrink-0">
@@ -671,7 +672,7 @@ export function InventoryTrackerComponent() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 text-muted-foreground hover:text-primary"
+                            className="h-6 w-6 text-muted-foreground hover:text-primary shrink-0"
                             onClick={() => handleEditItem(item)}
                           >
                             <Edit2 className="h-3 w-3" />
@@ -679,7 +680,7 @@ export function InventoryTrackerComponent() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 text-muted-foreground"
+                            className="h-6 w-6 text-muted-foreground shrink-0"
                             onClick={() => setExpandedItemId(expandedItemId === item.id ? null : item.id)}
                           >
                             {expandedItemId === item.id ? (
@@ -691,21 +692,25 @@ export function InventoryTrackerComponent() {
                         </>
                       )}
                     </div>
+                    {/* Subtitle */}
                     {isStockRunMode || isReturnMode ? (
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p className="text-xs text-muted-foreground">
                         {item.quantity} in inventory
                       </p>
                     ) : (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Buys in: {item.packageType} of {item.packageQuantity}
+                      <div className="flex flex-col sm:flex-row sm:items-center text-xs text-muted-foreground gap-0.5 sm:gap-0">
+                        <span>Buys in: {item.packageType} of {item.packageQuantity}</span>
                         {item.lastPrice && (
-                          <span className="ml-2">
-                            • Last cost: ${item.lastPrice.toFixed(2)}/{item.packageType.toLowerCase()} (${item.pricePerItem?.toFixed(2)}/ea)
+                          <span className="sm:before:content-['_•_']">
+                            Last cost: ${item.lastPrice.toFixed(2)}/{item.packageType.toLowerCase()} (${item.pricePerItem?.toFixed(2)}/ea)
                           </span>
                         )}
-                      </p>
+                      </div>
                     )}
                   </div>
+
+                  {/* Controls */}
+                  <div className="shrink-0 flex justify-end">
 
                   {/* Stock Run Mode Controls */}
                   {isStockRunMode ? (
@@ -882,38 +887,36 @@ export function InventoryTrackerComponent() {
                       )}
                     </div>
                   ) : (
-                    <>
+                    <div className="flex items-center gap-1 shrink-0">
                       {/* Normal Mode Controls */}
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8 shrink-0"
-                          onClick={() => handleUpdateQuantity(item.id, -1)}
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        
-                        <Input
-                          type="number"
-                          min="0"
-                          value={item.quantity}
-                          onChange={(e) => handleSetQuantity(item.id, parseInt(e.target.value) || 0)}
-                          className={cn(
-                            "w-16 h-8 text-center font-bold",
-                            item.quantity <= item.minStock && "text-destructive"
-                          )}
-                        />
-                        
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-8 w-8 shrink-0"
-                          onClick={() => handleUpdateQuantity(item.id, 1)}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </div>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 shrink-0"
+                        onClick={() => handleUpdateQuantity(item.id, -1)}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      
+                      <Input
+                        type="number"
+                        min="0"
+                        value={item.quantity}
+                        onChange={(e) => handleSetQuantity(item.id, parseInt(e.target.value) || 0)}
+                        className={cn(
+                          "w-20 h-8 text-right font-bold tabular-nums",
+                          item.quantity <= item.minStock && "text-destructive"
+                        )}
+                      />
+                      
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 shrink-0"
+                        onClick={() => handleUpdateQuantity(item.id, 1)}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
 
                       {/* Delete */}
                       <Button
@@ -924,8 +927,9 @@ export function InventoryTrackerComponent() {
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                    </>
+                    </div>
                   )}
+                </div>
                 </div>
                 
                 {/* Expanded Details Section */}
