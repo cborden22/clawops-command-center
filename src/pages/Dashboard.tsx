@@ -3,10 +3,11 @@ import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
 import { useInventory } from "@/hooks/useInventoryDB";
 import { useRoutes } from "@/hooks/useRoutesDB";
 import { useUserSchedules } from "@/hooks/useUserSchedules";
-import { useSmartScheduler } from "@/hooks/useSmartScheduler";
+import { useSmartScheduler, ScheduledTask } from "@/hooks/useSmartScheduler";
 import { useMaintenanceReports } from "@/hooks/useMaintenanceReports";
 import { useLeadsDB } from "@/hooks/useLeadsDB";
 import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions";
+import { useCalendarTasks } from "@/hooks/useCalendarTasks";
 import { LeadsWidget } from "@/components/dashboard/LeadsWidget";
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +33,7 @@ import { WeeklyCalendarWidget } from "@/components/dashboard/WeeklyCalendarWidge
 import { RestockDueWidget } from "@/components/dashboard/RestockDueWidget";
  import { DashboardCustomizer } from "@/components/dashboard/DashboardCustomizer";
 import { Link } from "react-router-dom";
-import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { format, startOfMonth, endOfMonth, isWithinInterval, startOfDay, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -78,10 +79,11 @@ export default function Dashboard() {
   const { reports: maintenanceReports, isLoaded: maintenanceLoaded } = useMaintenanceReports();
   const { leads } = useLeadsDB();
   const permissions = useMyTeamPermissions();
+  const { tasks: calendarTasks, isLoaded: calendarTasksLoaded } = useCalendarTasks();
   
   // Smart scheduler for calendar and reminders - now includes leads
   const { 
-    tasksByDate, 
+    tasksByDate: schedulerTasksByDate, 
     overdueRestocks, 
     dueTodayRestocks 
   } = useSmartScheduler({
@@ -102,6 +104,41 @@ export default function Dashboard() {
       priority: l.priority,
     })),
   });
+
+  // Merge custom calendar tasks into tasksByDate
+  const tasksByDate = useMemo(() => {
+    const merged = new Map<string, ScheduledTask[]>();
+    // Copy scheduler tasks
+    schedulerTasksByDate.forEach((tasks, dateKey) => {
+      merged.set(dateKey, [...tasks]);
+    });
+    // Add custom calendar tasks for the current week
+    const today = startOfDay(new Date());
+    const weekEnd = addDays(today, 6);
+    calendarTasks
+      .filter(ct => !ct.completed)
+      .forEach(ct => {
+        const taskDate = new Date(ct.taskDate);
+        if (taskDate >= today && taskDate <= weekEnd) {
+          const dateKey = ct.taskDate;
+          const scheduled: ScheduledTask = {
+            id: `custom-${ct.id}`,
+            type: "custom",
+            title: ct.title,
+            subtitle: ct.description || undefined,
+            dueDate: taskDate,
+            status: "upcoming",
+            priority: "medium",
+            link: "/calendar",
+            metadata: { isCustom: true },
+          };
+          const existing = merged.get(dateKey) || [];
+          existing.push(scheduled);
+          merged.set(dateKey, existing);
+        }
+      });
+    return merged;
+  }, [schedulerTasksByDate, calendarTasks]);
 
   const [widgets, setWidgets] = useState<WidgetConfig[]>(DEFAULT_WIDGET_ORDER);
   const [layoutLoaded, setLayoutLoaded] = useState(false);

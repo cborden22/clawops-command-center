@@ -4,7 +4,7 @@ import { MileageRoute } from "@/hooks/useRoutesDB";
 import { UserSchedule } from "@/hooks/useUserSchedules";
 import { startOfDay, addDays, isSameDay, isAfter, isBefore, differenceInDays } from "date-fns";
 
-export type TaskType = "restock" | "route" | "maintenance" | "followup";
+export type TaskType = "restock" | "route" | "maintenance" | "followup" | "custom";
 export type TaskStatus = "overdue" | "due_today" | "due_soon" | "upcoming";
 
 export interface ScheduledTask {
@@ -21,6 +21,7 @@ export interface ScheduledTask {
     routeId?: string;
     scheduleType?: string;
     leadId?: string;
+    isCustom?: boolean;
   };
 }
 
