@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Route, Package, Wrench, ChevronRight, Users } from "lucide-react";
+import { Calendar, MapPin, Route, Package, Wrench, ChevronRight, Users, CalendarCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format, addDays, startOfDay, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ const TASK_ICONS: Record<TaskType, React.ReactNode> = {
   route: <Route className="h-3 w-3" />,
   maintenance: <Wrench className="h-3 w-3" />,
   followup: <Users className="h-3 w-3" />,
+  custom: <CalendarCheck className="h-3 w-3" />,
 };
 
 const TASK_COLORS: Record<TaskType, string> = {
@@ -23,6 +24,7 @@ const TASK_COLORS: Record<TaskType, string> = {
   route: "bg-purple-500/10 text-purple-600 border-purple-500/20",
   maintenance: "bg-red-500/10 text-red-600 border-red-500/20",
   followup: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+  custom: "bg-violet-500/10 text-violet-600 border-violet-500/20",
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -65,6 +67,10 @@ export function WeeklyCalendarWidget({ tasksByDate }: WeeklyCalendarWidgetProps)
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-full bg-amber-500" />
             <span>Follow-up</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-violet-500" />
+            <span>Custom</span>
           </div>
         </div>
       </CardHeader>
