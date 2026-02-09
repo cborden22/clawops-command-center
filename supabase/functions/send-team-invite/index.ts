@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const baseUrl = Deno.env.get("APP_BASE_URL") || "https://clawops-command-center.lovable.app";
+    const baseUrl = Deno.env.get("APP_BASE_URL") || "https://clawops.com";
     const roleLabel = role === "manager" ? "Manager" : "Technician";
     // Sanitize inviter_name to prevent XSS in emails
     const sanitizedInviterName = (inviter_name || "A ClawOps user")
