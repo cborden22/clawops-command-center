@@ -45,7 +45,7 @@ export interface LocationAgreementRecord {
 
 export interface MachineType {
   id?: string; // Database ID for the machine entry
-  type: "claw" | "mini_claw" | "bulk" | "clip" | "sticker" | "other";
+  type: string; // Dynamic - user-defined machine types
   label: string;
   count: number;
   customLabel?: string;

@@ -49,6 +49,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Location, MACHINE_TYPE_OPTIONS, CommissionSummaryRecord, LocationAgreementRecord, useLocations } from "@/hooks/useLocationsDB";
+import { useMachineTypesDB } from "@/hooks/useMachineTypesDB";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { generatePDFFromHTML } from "@/utils/pdfGenerator";
