@@ -112,7 +112,7 @@ async function sendEmailNotification(
   machineInfo: { machine_type: string; custom_label: string; location_name: string },
   reportData: Record<string, unknown>
 ): Promise<void> {
-  const baseUrl = Deno.env.get("APP_BASE_URL") || "https://clawops-command-center.lovable.app";
+  const baseUrl = Deno.env.get("APP_BASE_URL") || "https://clawops.com";
   const issueLabel = ISSUE_TYPE_LABELS[reportData.issue_type as string] || reportData.issue_type;
   const severityInfo = SEVERITY_LABELS[reportData.severity as string] || { label: reportData.severity, color: "#6b7280" };
   

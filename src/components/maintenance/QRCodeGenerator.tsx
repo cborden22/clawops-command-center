@@ -38,7 +38,7 @@ export function QRCodeGenerator({
   const { logoUrl } = useQRLogo();
 
   // Build URL dynamically from current origin so it works on any domain (production, preview, custom)
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://clawops-command-center.lovable.app';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://clawops.com';
   
   // Use pretty URL if slug and unit code are available, otherwise fall back to legacy UUID
   const reportUrl = locationSlug && unitCode
