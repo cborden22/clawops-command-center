@@ -50,8 +50,7 @@ const features = [
   {
     icon: Car,
     title: "Mileage Tracker",
-    description:
-      "Log trips with GPS tracking, build reusable routes, and calculate IRS tax deductions automatically.",
+    description: "Log trips with GPS tracking, build reusable routes, and calculate IRS tax deductions automatically.",
   },
   {
     icon: Target,
@@ -68,8 +67,7 @@ const features = [
   {
     icon: Users,
     title: "Team Management",
-    description:
-      "Invite technicians, drivers, and managers with role-based permissions to help run your operation.",
+    description: "Invite technicians, drivers, and managers with role-based permissions to help run your operation.",
   },
 ];
 
@@ -82,14 +80,12 @@ const steps = [
   {
     number: "2",
     title: "Add Your Locations",
-    description:
-      "Enter your claw machine locations, machines, and start tracking.",
+    description: "Enter your claw machine locations, machines, and start tracking.",
   },
   {
     number: "3",
     title: "Grow Your Business",
-    description:
-      "Use data-driven insights to optimize revenue and expand your empire.",
+    description: "Use data-driven insights to optimize revenue and expand your empire.",
   },
 ];
 
@@ -144,13 +140,11 @@ export default function Sales() {
             <Zap className="mr-1 h-3 w-3" /> Built for Claw Machine Operators
           </Badge>
           <h1 className="mx-auto max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-            Run Your Claw Machine Empire from{" "}
-            <span className="text-primary">One Dashboard</span>
+            Run Your Claw Machine Empire from <span className="text-primary">One Dashboard</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            Track locations, revenue, inventory, maintenance, mileage, and
-            leads — all in one place. Stop juggling spreadsheets and start
-            growing your business.
+            Track locations, revenue, inventory, maintenance, mileage, and leads — all in one place. Stop juggling
+            spreadsheets and start growing your business.
           </p>
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button size="lg" asChild>
@@ -173,16 +167,12 @@ export default function Sales() {
               Everything You Need to Operate &amp; Scale
             </h2>
             <p className="mt-4 text-muted-foreground">
-              Eight powerful modules designed specifically for claw machine
-              businesses.
+              Eight powerful modules designed specifically for claw machine businesses.
             </p>
           </div>
           <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((f) => (
-              <Card
-                key={f.title}
-                className="group border-border/60 transition-shadow hover:shadow-hover"
-              >
+              <Card key={f.title} className="group border-border/60 transition-shadow hover:shadow-hover">
                 <CardHeader className="pb-2">
                   <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                     <f.icon className="h-5 w-5" />
@@ -190,9 +180,7 @@ export default function Sales() {
                   <CardTitle className="text-base">{f.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    {f.description}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{f.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -203,9 +191,7 @@ export default function Sales() {
       {/* How it works */}
       <section className="border-y border-border bg-muted/40 py-20 sm:py-28">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Up &amp; Running in Minutes
-          </h2>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Up &amp; Running in Minutes</h2>
           <div className="mt-14 grid gap-10 sm:grid-cols-3">
             {steps.map((s) => (
               <div key={s.number} className="flex flex-col items-center gap-4">
@@ -213,9 +199,7 @@ export default function Sales() {
                   {s.number}
                 </div>
                 <h3 className="text-lg font-semibold">{s.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {s.description}
-                </p>
+                <p className="text-sm text-muted-foreground">{s.description}</p>
               </div>
             ))}
           </div>
@@ -225,23 +209,15 @@ export default function Sales() {
       {/* Pricing */}
       <section id="pricing" className="py-20 sm:py-28">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Simple, Transparent Pricing
-          </h2>
-          <p className="mt-4 text-muted-foreground">
-            Start free. Upgrade when you're ready.
-          </p>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Simple, Transparent Pricing</h2>
+          <p className="mt-4 text-muted-foreground">Start free. Upgrade when you're ready.</p>
 
           <div className="mt-8 flex items-center justify-center gap-3">
-            <span
-              className={`text-sm font-medium ${!annual ? "text-foreground" : "text-muted-foreground"}`}
-            >
+            <span className={`text-sm font-medium ${!annual ? "text-foreground" : "text-muted-foreground"}`}>
               Monthly
             </span>
             <Switch checked={annual} onCheckedChange={setAnnual} />
-            <span
-              className={`text-sm font-medium ${annual ? "text-foreground" : "text-muted-foreground"}`}
-            >
+            <span className={`text-sm font-medium ${annual ? "text-foreground" : "text-muted-foreground"}`}>
               Annual{" "}
               <Badge variant="secondary" className="ml-1 text-xs">
                 Save 2 months
@@ -256,9 +232,7 @@ export default function Sales() {
                 <CardTitle className="text-xl">Free</CardTitle>
                 <p className="mt-2 text-4xl font-extrabold">
                   $0
-                  <span className="text-base font-normal text-muted-foreground">
-                    /mo
-                  </span>
+                  <span className="text-base font-normal text-muted-foreground">/mo</span>
                 </p>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col">
@@ -285,9 +259,7 @@ export default function Sales() {
                 <CardTitle className="text-xl">Pro</CardTitle>
                 <p className="mt-2 text-4xl font-extrabold">
                   ${proPrice}
-                  <span className="text-base font-normal text-muted-foreground">
-                    {proPeriod}
-                  </span>
+                  <span className="text-base font-normal text-muted-foreground">{proPeriod}</span>
                 </p>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col">
@@ -308,48 +280,13 @@ export default function Sales() {
         </div>
       </section>
 
-      {/* Social proof placeholder */}
-      <section className="border-y border-border bg-muted/40 py-20 sm:py-28">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Trusted by Operators Nationwide
-          </h2>
-          <div className="mt-12 grid gap-8 sm:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="border-border/60">
-                <CardContent className="pt-6">
-                  <div className="mb-3 flex justify-center gap-1">
-                    {[...Array(5)].map((_, j) => (
-                      <Star
-                        key={j}
-                        className="h-4 w-4 fill-primary text-primary"
-                      />
-                    ))}
-                  </div>
-                  <p className="text-sm italic text-muted-foreground">
-                    "ClawOps transformed how I manage my {i * 10}+ machines.
-                    Revenue is up and headaches are down."
-                  </p>
-                  <p className="mt-4 text-sm font-semibold">
-                    — Coming Soon
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Footer */}
       <section className="py-20 sm:py-28">
         <div className="container mx-auto px-4 text-center">
           <Shield className="mx-auto mb-6 h-10 w-10 text-primary" />
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Ready to Level Up Your Operation?
-          </h2>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Ready to Level Up Your Operation?</h2>
           <p className="mx-auto mt-4 max-w-lg text-muted-foreground">
-            Join operators who are saving hours every week and growing revenue
-            with ClawOps.
+            Join operators who are saving hours every week and growing revenue with ClawOps.
           </p>
           <Button size="lg" className="mt-8" asChild>
             <Link to="/auth">
