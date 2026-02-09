@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { QRCodeSVG } from "qrcode.react";
 import { 
   User, 
   Settings as SettingsIcon, 
@@ -25,11 +26,15 @@ import {
   Eye,
   EyeOff,
   Bell,
-  MessageSquare
+  MessageSquare,
+  QrCode,
+  Upload,
+  Trash2
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { VehicleManager } from "@/components/settings/VehicleManager";
 import { FeedbackDialog } from "@/components/shared/FeedbackDialog";
+import { useQRLogo } from "@/hooks/useQRLogo";
 
 
 export default function Settings() {
@@ -57,6 +62,10 @@ export default function Settings() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
+  // QR Logo
+  const { logoUrl: qrLogoUrl, isUploading: isUploadingLogo, uploadLogo, removeLogo } = useQRLogo();
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
   // Feedback dialog state
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
@@ -632,6 +641,105 @@ export default function Settings() {
                   onCheckedChange={handleToggleEmailNotifications}
                   disabled={isLoadingNotificationPref}
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* QR Code Branding */}
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <QrCode className="h-5 w-5 text-primary" />
+                QR Code Branding
+              </CardTitle>
+              <CardDescription>
+                Upload a logo to display in the center of all generated QR codes
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-6 items-start">
+                {/* Preview */}
+                <div className="flex flex-col items-center gap-2">
+                  <div className="p-3 bg-white rounded-xl border">
+                    <QRCodeSVG
+                      value="https://example.com/preview"
+                      size={120}
+                      level="H"
+                      includeMargin
+                      bgColor="#ffffff"
+                      fgColor="#000000"
+                      imageSettings={qrLogoUrl ? {
+                        src: qrLogoUrl,
+                        height: 24,
+                        width: 24,
+                        excavate: true,
+                      } : undefined}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">Preview</span>
+                </div>
+
+                {/* Upload controls */}
+                <div className="flex-1 space-y-3">
+                  {qrLogoUrl ? (
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={qrLogoUrl}
+                        alt="Current QR logo"
+                        className="h-12 w-12 object-contain rounded border bg-white p-1"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Logo uploaded</p>
+                        <p className="text-xs text-muted-foreground">
+                          Appears on all QR codes automatically
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No logo uploaded. QR codes will display without a logo.
+                    </p>
+                  )}
+
+                  <div className="flex gap-2">
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/svg+xml"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadLogo(file);
+                        e.target.value = "";
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      disabled={isUploadingLogo}
+                      onClick={() => logoInputRef.current?.click()}
+                    >
+                      <Upload className="h-4 w-4" />
+                      {isUploadingLogo ? "Uploading..." : qrLogoUrl ? "Replace Logo" : "Upload Logo"}
+                    </Button>
+                    {qrLogoUrl && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-2 text-destructive hover:text-destructive"
+                        disabled={isUploadingLogo}
+                        onClick={removeLogo}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    PNG, JPG, or SVG — max 2MB. Works best with a square image.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

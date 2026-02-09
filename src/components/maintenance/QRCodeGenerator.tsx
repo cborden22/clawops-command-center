@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Download, Printer, Copy, Check, QrCode } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useQRLogo } from "@/hooks/useQRLogo";
 
 interface QRCodeGeneratorProps {
   open: boolean;
@@ -34,6 +35,7 @@ export function QRCodeGenerator({
 }: QRCodeGeneratorProps) {
   const [copied, setCopied] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
+  const { logoUrl } = useQRLogo();
 
   // Build URL dynamically from current origin so it works on any domain (production, preview, custom)
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://clawops-command-center.lovable.app';
@@ -261,6 +263,12 @@ export function QRCodeGenerator({
               includeMargin
               bgColor="#ffffff"
               fgColor="#000000"
+              imageSettings={logoUrl ? {
+                src: logoUrl,
+                height: 40,
+                width: 40,
+                excavate: true,
+              } : undefined}
             />
           </div>
 
