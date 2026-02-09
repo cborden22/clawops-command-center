@@ -47,7 +47,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ListSizeSelector, useListSize, applyListLimit, ListSize } from "@/components/shared/ListSizeSelector";
+import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
+import { PaginationControls } from "@/components/shared/PaginationControls";
 
 const RESTOCK_FREQUENCY_OPTIONS = [
   { value: "none", label: "No Schedule", days: null },
@@ -97,6 +98,7 @@ export function LocationTrackerComponent() {
   const [formData, setFormData] = useState(emptyFormData);
   const [viewLocation, setViewLocation] = useState<Location | null>(null);
   const [locationsListSize, setLocationsListSize] = useListSize("locations-list-size", 20);
+  const [locationsPage, setLocationsPage] = useState(1);
 
   // Sync viewLocation with locations array to reflect updates after deletion/modification
   useEffect(() => {
@@ -696,14 +698,14 @@ export function LocationTrackerComponent() {
                 <Input
                   placeholder="Search locations..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => { setSearchQuery(e.target.value); setLocationsPage(1); }}
                   className="pl-9 h-10 bg-background/50"
                 />
               </div>
               <ListSizeSelector
                 storageKey="locations-list-size"
                 value={locationsListSize}
-                onChange={setLocationsListSize}
+                onChange={(size) => { setLocationsListSize(size); setLocationsPage(1); }}
                 totalCount={filteredLocations.length}
               />
             </div>
@@ -726,6 +728,7 @@ export function LocationTrackerComponent() {
               <p className="text-muted-foreground">No locations match your search</p>
             </div>
           ) : (
+            <>
             <div className="rounded-xl border overflow-hidden">
               <Table>
                 <TableHeader>
@@ -741,7 +744,11 @@ export function LocationTrackerComponent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {applyListLimit(filteredLocations, locationsListSize).map((location) => (
+                  {(() => {
+                    if (locationsListSize === "all") return filteredLocations;
+                    const start = (locationsPage - 1) * locationsListSize;
+                    return filteredLocations.slice(start, start + locationsListSize);
+                  })().map((location) => (
                     <TableRow key={location.id} className="group transition-colors">
                       <TableCell>
                         <div>
@@ -824,6 +831,17 @@ export function LocationTrackerComponent() {
                 </TableBody>
               </Table>
             </div>
+              {locationsListSize !== "all" && filteredLocations.length > (locationsListSize as number) && (
+                <PaginationControls
+                  currentPage={locationsPage}
+                  totalPages={Math.max(1, Math.ceil(filteredLocations.length / (locationsListSize as number)))}
+                  onPageChange={setLocationsPage}
+                  startIndex={(locationsPage - 1) * (locationsListSize as number)}
+                  endIndex={Math.min(locationsPage * (locationsListSize as number), filteredLocations.length)}
+                  totalItems={filteredLocations.length}
+                />
+              )}
+            </>
           )}
         </CardContent>
       </Card>

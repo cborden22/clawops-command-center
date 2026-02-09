@@ -37,7 +37,8 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { ListSizeSelector, useListSize, applyListLimit, ListSize } from "@/components/shared/ListSizeSelector";
+import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
+import { PaginationControls } from "@/components/shared/PaginationControls";
 
 interface CartItem {
   id: string;
@@ -100,6 +101,7 @@ export function InventoryTrackerComponent() {
   
   // List size state
   const [inventoryListSize, setInventoryListSize] = useListSize("inventory-list-size", 40);
+  const [inventoryPage, setInventoryPage] = useState(1);
 
   // Load last stock run from localStorage
   useEffect(() => {
@@ -553,14 +555,14 @@ export function InventoryTrackerComponent() {
             <Input
               placeholder="Search items..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setInventoryPage(1); }}
               className="pl-9"
             />
           </div>
           <ListSizeSelector
             storageKey="inventory-list-size"
             value={inventoryListSize}
-            onChange={setInventoryListSize}
+            onChange={(size) => { setInventoryListSize(size); setInventoryPage(1); }}
             totalCount={filteredItems.length}
           />
         </div>
@@ -579,8 +581,13 @@ export function InventoryTrackerComponent() {
           <p className="text-muted-foreground">No matching items</p>
         </Card>
       ) : (
+        <>
         <div className="space-y-2">
-          {applyListLimit(filteredItems, inventoryListSize).map((item) => {
+          {(() => {
+            if (inventoryListSize === "all") return filteredItems;
+            const start = (inventoryPage - 1) * inventoryListSize;
+            return filteredItems.slice(start, start + inventoryListSize);
+          })().map((item) => {
             const cartQty = getCartQuantity(item.id);
             const isInCart = cartQty > 0;
             const returnQty = getReturnCartQuantity(item.id);
@@ -935,6 +942,17 @@ export function InventoryTrackerComponent() {
             );
           })}
         </div>
+          {inventoryListSize !== "all" && filteredItems.length > (inventoryListSize as number) && (
+            <PaginationControls
+              currentPage={inventoryPage}
+              totalPages={Math.max(1, Math.ceil(filteredItems.length / (inventoryListSize as number)))}
+              onPageChange={setInventoryPage}
+              startIndex={(inventoryPage - 1) * (inventoryListSize as number)}
+              endIndex={Math.min(inventoryPage * (inventoryListSize as number), filteredItems.length)}
+              totalItems={filteredItems.length}
+            />
+          )}
+        </>
       )}
 
       {/* Low Stock Summary - Only show when not in any mode */}

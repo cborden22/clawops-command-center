@@ -74,3 +74,60 @@ export function applyListLimit<T>(items: T[], size: ListSize): T[] {
   if (size === "all") return items;
   return items.slice(0, size);
 }
+
+// Paginated list hook - combines useListSize with page state
+export function usePaginatedList<T>(
+  storageKey: string,
+  items: T[],
+  defaultSize: ListSize = 20
+): {
+  pageSize: ListSize;
+  setPageSize: (size: ListSize) => void;
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  totalPages: number;
+  paginatedItems: T[];
+  totalItems: number;
+  startIndex: number;
+  endIndex: number;
+} {
+  const [pageSize, setPageSize] = useListSize(storageKey, defaultSize);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset to page 1 when items change length or page size changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [items.length, pageSize]);
+
+  if (pageSize === "all") {
+    return {
+      pageSize,
+      setPageSize,
+      currentPage: 1,
+      setCurrentPage,
+      totalPages: 1,
+      paginatedItems: items,
+      totalItems: items.length,
+      startIndex: 0,
+      endIndex: items.length,
+    };
+  }
+
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, items.length);
+  const paginatedItems = items.slice(startIndex, endIndex);
+
+  return {
+    pageSize,
+    setPageSize,
+    currentPage: safePage,
+    setCurrentPage,
+    totalPages,
+    paginatedItems,
+    totalItems: items.length,
+    startIndex,
+    endIndex,
+  };
+}

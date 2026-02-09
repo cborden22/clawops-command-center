@@ -50,7 +50,8 @@ import { QRCodeGenerator } from "@/components/maintenance/QRCodeGenerator";
 import { BatchQRPrintDialog } from "@/components/maintenance/BatchQRPrintDialog";
 import { toast } from "@/hooks/use-toast";
 import { useLocations, Location, MachineType, MACHINE_TYPE_OPTIONS } from "@/hooks/useLocationsDB";
-import { ListSizeSelector, useListSize, applyListLimit, ListSize } from "@/components/shared/ListSizeSelector";
+import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
+import { PaginationControls } from "@/components/shared/PaginationControls";
 import { cn } from "@/lib/utils";
 
 interface MachineWithLocation {
@@ -81,6 +82,7 @@ export function MachinesManager() {
     installedAt: new Date().toISOString().split('T')[0],
   });
   const [machinesListSize, setMachinesListSize] = useListSize("machines-list-size", 20);
+  const [machinesPage, setMachinesPage] = useState(1);
   const [showBatchQR, setShowBatchQR] = useState(false);
 
   // Flatten all machines from all locations
@@ -463,14 +465,14 @@ export function MachinesManager() {
                 <Input
                   placeholder="Search machines or locations..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => { setSearchQuery(e.target.value); setMachinesPage(1); }}
                   className="pl-9 h-10 bg-background/50"
                 />
               </div>
               <ListSizeSelector
                 storageKey="machines-list-size"
                 value={machinesListSize}
-                onChange={setMachinesListSize}
+                onChange={(size) => { setMachinesListSize(size); setMachinesPage(1); }}
                 totalCount={filteredMachines.length}
               />
             </div>
@@ -493,6 +495,7 @@ export function MachinesManager() {
               <p className="text-muted-foreground">No machines match your search</p>
             </div>
           ) : (
+            <>
             <div className="rounded-xl border overflow-hidden">
               <Table>
                 <TableHeader>
@@ -505,7 +508,11 @@ export function MachinesManager() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {applyListLimit(filteredMachines, machinesListSize).map((machine, idx) => (
+                  {(() => {
+                    if (machinesListSize === "all") return filteredMachines;
+                    const start = (machinesPage - 1) * machinesListSize;
+                    return filteredMachines.slice(start, start + machinesListSize);
+                  })().map((machine, idx) => (
                     <TableRow key={`${machine.location.id}-${machine.index}-${idx}`} className="group transition-colors">
                       <TableCell>
                         <p className="font-medium">{machine.machineType.label}</p>
@@ -567,6 +574,17 @@ export function MachinesManager() {
                 </TableBody>
               </Table>
             </div>
+              {machinesListSize !== "all" && filteredMachines.length > (machinesListSize as number) && (
+                <PaginationControls
+                  currentPage={machinesPage}
+                  totalPages={Math.max(1, Math.ceil(filteredMachines.length / (machinesListSize as number)))}
+                  onPageChange={setMachinesPage}
+                  startIndex={(machinesPage - 1) * (machinesListSize as number)}
+                  endIndex={Math.min(machinesPage * (machinesListSize as number), filteredMachines.length)}
+                  totalItems={filteredMachines.length}
+                />
+              )}
+            </>
           )}
         </CardContent>
       </Card>
