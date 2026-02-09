@@ -39,6 +39,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
 import { PaginationControls } from "@/components/shared/PaginationControls";
+import { BulkAddInventoryDialog } from "@/components/inventory/BulkAddInventoryDialog";
 
 interface CartItem {
   id: string;
@@ -102,6 +103,9 @@ export function InventoryTrackerComponent() {
   // List size state
   const [inventoryListSize, setInventoryListSize] = useListSize("inventory-list-size", 40);
   const [inventoryPage, setInventoryPage] = useState(1);
+
+  // Bulk add dialog state
+  const [showBulkAdd, setShowBulkAdd] = useState(false);
 
   // Load last stock run from localStorage
   useEffect(() => {
@@ -523,7 +527,7 @@ export function InventoryTrackerComponent() {
           </div>
           {/* Price & Low Stock Config */}
           <div className="flex gap-2 items-center flex-wrap">
-            <span className="text-xs text-muted-foreground whitespace-nowrap">Last price:</span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Cost per {newItemPackageType}:</span>
             <div className="relative w-24">
               <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
               <Input
@@ -536,6 +540,11 @@ export function InventoryTrackerComponent() {
                 className="h-8 text-sm pl-6"
               />
             </div>
+            {newItemLastPrice && parseFloat(newItemLastPrice) > 0 && newItemPackageQty > 0 && (
+              <span className="text-xs text-muted-foreground">
+                = ${(parseFloat(newItemLastPrice) / newItemPackageQty).toFixed(2)}/ea
+              </span>
+            )}
             <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">Alert at:</span>
             <NumberInput
               min="0"
@@ -544,8 +553,35 @@ export function InventoryTrackerComponent() {
               className="w-16 h-8 text-center text-sm"
             />
           </div>
+          {/* Summary line */}
+          {newItemName.trim() && (
+            <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
+              Adding {newItemQty} {newItemName.trim()} • {newItemPackageType} of {newItemPackageQty}
+              {newItemLastPrice && parseFloat(newItemLastPrice) > 0 && (
+                <span> • ${parseFloat(newItemLastPrice).toFixed(2)}/{newItemPackageType.toLowerCase()} (${(parseFloat(newItemLastPrice) / newItemPackageQty).toFixed(2)}/ea)</span>
+              )}
+            </p>
+          )}
         </Card>
       )}
+
+      {/* Bulk Add Button */}
+      {!isStockRunMode && !isReturnMode && (
+        <Button
+          variant="outline"
+          onClick={() => setShowBulkAdd(true)}
+          className="w-full"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Bulk Add Items
+        </Button>
+      )}
+
+      <BulkAddInventoryDialog
+        open={showBulkAdd}
+        onOpenChange={setShowBulkAdd}
+        addItem={addItem}
+      />
 
       {/* Search and List Size */}
       {items.length > 0 && (
@@ -661,10 +697,10 @@ export function InventoryTrackerComponent() {
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {item.packageType} of {item.packageQuantity}
+                        Buys in: {item.packageType} of {item.packageQuantity}
                         {item.lastPrice && (
                           <span className="ml-2">
-                            • ${item.lastPrice.toFixed(2)} (${item.pricePerItem?.toFixed(2)}/ea)
+                            • Last cost: ${item.lastPrice.toFixed(2)}/{item.packageType.toLowerCase()} (${item.pricePerItem?.toFixed(2)}/ea)
                           </span>
                         )}
                       </p>

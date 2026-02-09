@@ -20,6 +20,9 @@ export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
   const [quantity, setQuantity] = useState("");
   const [newItemName, setNewItemName] = useState("");
   const [newItemQty, setNewItemQty] = useState("10");
+  const [newPackageType, setNewPackageType] = useState("Case");
+  const [newPackageQty, setNewPackageQty] = useState("24");
+  const [newCostPerPkg, setNewCostPerPkg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedItem = items.find((i) => i.id === selectedItemId);
@@ -54,18 +57,20 @@ export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
 
     setIsSubmitting(true);
     try {
+      const pkgQty = parseInt(newPackageQty) || 24;
+      const cost = newCostPerPkg ? parseFloat(newCostPerPkg) : null;
       await addItem({
         name: newItemName.trim(),
         category: "General",
         quantity: parseInt(newItemQty) || 10,
         minStock: 10,
         location: "",
-        packageType: "Case",
-        packageQuantity: 24,
+        packageType: newPackageType,
+        packageQuantity: pkgQty,
         supplierUrl: null,
         supplierName: null,
-        lastPrice: null,
-        pricePerItem: null,
+        lastPrice: cost,
+        pricePerItem: cost && pkgQty ? cost / pkgQty : null,
         notes: null,
       });
       toast({ title: "Item added!", description: `${newItemName} added to inventory.` });
@@ -186,9 +191,10 @@ export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
             />
           </div>
 
-          {/* Initial Quantity */}
+          {/* Total Individual Items */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Initial Quantity</Label>
+            <Label className="text-sm font-medium">Total Individual Items</Label>
+            <p className="text-xs text-muted-foreground -mt-1">How many individual pieces you have in total</p>
             <Input
               type="number"
               inputMode="numeric"
@@ -198,6 +204,53 @@ export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
               className="h-14 text-2xl font-semibold text-center"
               onFocus={(e) => e.target.select()}
             />
+          </div>
+
+          {/* Packaging */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Packaging</Label>
+            <div className="flex gap-2 items-center">
+              <Select value={newPackageType} onValueChange={setNewPackageType}>
+                <SelectTrigger className="flex-1 h-12">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Case">Case</SelectItem>
+                  <SelectItem value="Bag">Bag</SelectItem>
+                  <SelectItem value="Box">Box</SelectItem>
+                  <SelectItem value="Pack">Pack</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-muted-foreground">of</span>
+              <Input
+                type="number"
+                inputMode="numeric"
+                value={newPackageQty}
+                onChange={(e) => setNewPackageQty(e.target.value)}
+                className="w-20 h-12 text-center"
+                onFocus={(e) => e.target.select()}
+              />
+            </div>
+          </div>
+
+          {/* Cost per Package */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Cost per {newPackageType}</Label>
+            <Input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              placeholder="0.00"
+              value={newCostPerPkg}
+              onChange={(e) => setNewCostPerPkg(e.target.value)}
+              className="h-12"
+              onFocus={(e) => e.target.select()}
+            />
+            {newCostPerPkg && parseFloat(newCostPerPkg) > 0 && parseInt(newPackageQty) > 0 && (
+              <p className="text-xs text-muted-foreground">
+                = ${(parseFloat(newCostPerPkg) / parseInt(newPackageQty)).toFixed(2)}/ea
+              </p>
+            )}
           </div>
 
           <Button
