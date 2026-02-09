@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useInventory, InventoryItem, saveStockRunHistory, updateStockRunReturns } from "@/hooks/useInventoryDB";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAppSettings } from "@/contexts/AppSettingsContext";
 import {
   Sheet,
   SheetContent,
@@ -60,12 +61,13 @@ const LAST_STOCK_RUN_KEY = "clawops_last_stock_run";
 export function InventoryTrackerComponent() {
   const { user } = useAuth();
   const { items, isLoaded, addItem, updateItem, deleteItem, updateQuantity, bulkDeductQuantities, bulkAddQuantities } = useInventory();
+  const { settings: appSettings } = useAppSettings();
   const [searchQuery, setSearchQuery] = useState("");
   const [newItemName, setNewItemName] = useState("");
   const [newItemQty, setNewItemQty] = useState(10);
   const [newItemPackageType, setNewItemPackageType] = useState("Case");
   const [newItemPackageQty, setNewItemPackageQty] = useState(24);
-  const [newItemMinStock, setNewItemMinStock] = useState(10);
+  const [newItemMinStock, setNewItemMinStock] = useState(appSettings.lowStockThreshold);
   const [newItemLastPrice, setNewItemLastPrice] = useState<string>("");
   
   // Stock Run state
@@ -157,7 +159,7 @@ export function InventoryTrackerComponent() {
       setNewItemQty(10);
       setNewItemPackageType("Case");
       setNewItemPackageQty(24);
-      setNewItemMinStock(10);
+      setNewItemMinStock(appSettings.lowStockThreshold);
       setNewItemLastPrice("");
       toast({
         title: "Added!",

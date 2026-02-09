@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { slugify, generateUnitCode } from '@/utils/slugify';
 import { MachineType } from '@/hooks/useLocationsDB';
 import { useMachineTypesDB } from '@/hooks/useMachineTypesDB';
+import { useAppSettings } from '@/contexts/AppSettingsContext';
 
 interface ConvertToLocationDialogProps {
   lead: Lead | null;
@@ -68,7 +69,8 @@ export function ConvertToLocationDialog({ lead, open, onOpenChange, onSuccess }:
   const { user } = useAuth();
   const { toast } = useToast();
   const { machineTypeOptions } = useMachineTypesDB();
-  const [formData, setFormData] = useState(emptyFormData);
+  const { settings: appSettings } = useAppSettings();
+  const [formData, setFormData] = useState({ ...emptyFormData, commissionRate: appSettings.defaultCommissionRate });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -83,7 +85,7 @@ export function ConvertToLocationDialog({ lead, open, onOpenChange, onSuccess }:
         contact_email: lead.contact_email || '',
         notes: lead.notes || '',
         machines: [],
-        commissionRate: 0,
+        commissionRate: appSettings.defaultCommissionRate,
         isActive: true,
         collectionFrequencyDays: undefined,
         restockDayOfWeek: undefined,
