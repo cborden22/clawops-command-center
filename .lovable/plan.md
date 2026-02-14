@@ -1,67 +1,59 @@
 
 
-## Share Owner's Subscription with Team Members
+## Add Password Strength Requirements Display
 
 ### What This Does
 
-Currently, when a team member logs in, the system checks **their own** Stripe account for a subscription -- which they won't have. This change makes team members automatically inherit their owner's subscription status, so only the account owner needs to pay.
+When a user is creating or resetting a password, they will see a live checklist showing which requirements their password meets. This gives clear, real-time feedback instead of only showing an error after submission.
 
-### How It Works
+### Password Requirements
 
-The `check-subscription` edge function will be updated with one additional step:
+The following rules will be checked and displayed:
+- At least 8 characters
+- At least 1 uppercase letter
+- At least 1 lowercase letter
+- At least 1 number
+- At least 1 special character (!@#$%^&* etc.)
 
-1. Authenticate the user (existing)
-2. Check the user's own complimentary access (existing)
-3. **NEW: If no personal subscription found, check if the user is a team member and look up the owner's subscription instead**
-4. Check the user's own Stripe subscription (existing)
+### Where It Appears
+
+1. **Sign Up page** (`src/pages/Auth.tsx`) -- below the password field
+2. **Reset Password page** (`src/pages/ResetPassword.tsx`) -- below the new password field
+
+### What It Looks Like
+
+A small list of requirements below the password input, each with a colored icon:
+- Grey circle when not yet met
+- Green checkmark when met
+
+The submit button validation (zod schema) will also be updated to enforce all five rules, not just the 8-character minimum.
 
 ### Changes
 
-**File Modified: `supabase/functions/check-subscription/index.ts`**
+**New file: `src/components/shared/PasswordRequirements.tsx`**
+- A reusable component that takes the current password string as a prop
+- Renders a list of 5 requirements with live check/uncheck icons
+- Uses `Check` and `Circle` icons from lucide-react with green/muted colors
 
-After the complimentary access check and before checking Stripe for the current user, add logic to:
+**Modified: `src/pages/Auth.tsx`**
+- Import and render `PasswordRequirements` below the signup password field
+- Update `passwordSchema` to enforce uppercase, lowercase, number, and special character in addition to min length
 
-1. Query `team_members` table for an active membership where `member_user_id = user.id`
-2. If found, get the `owner_user_id`
-3. Check complimentary access for the owner
-4. Look up the owner's email from the `profiles` table
-5. Check Stripe subscription using the **owner's email** instead of the team member's email
-6. Return the subscription status with an `is_team_member: true` flag so the frontend knows
-
-This means:
-- Owner subscribes to Pro --> all their team members automatically get Pro access
-- Owner cancels --> team members lose Pro access too
-- No frontend changes needed -- `useSubscription` already consumes the `subscribed` boolean from this function
-
-**No other files need to change.** The `useSubscription` hook, `useFeatureAccess` hook, and all UI components already work off the `subscribed` response from this function.
+**Modified: `src/pages/ResetPassword.tsx`**
+- Import and render `PasswordRequirements` below the new password field
+- Update `passwordSchema` to match the same stricter rules
 
 ### Technical Detail
 
-```text
-check-subscription flow:
-
-User logs in
-    |
-    v
-Check own complimentary_access --> found & valid? --> return subscribed=true
-    |
-    v (not found)
-Query team_members for active membership
-    |
-    +--> IS team member --> get owner_user_id
-    |       |
-    |       v
-    |    Check owner's complimentary_access --> found? --> return subscribed=true
-    |       |
-    |       v (not found)
-    |    Get owner email from profiles table
-    |       |
-    |       v
-    |    Check Stripe for owner's email --> active sub? --> return subscribed=true
-    |       |
-    |       v
-    |    return subscribed=false
-    |
-    +--> NOT team member --> Check own Stripe (existing logic)
+The updated zod schema:
+```typescript
+const passwordSchema = z.string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Must contain an uppercase letter")
+  .regex(/[a-z]/, "Must contain a lowercase letter")
+  .regex(/[0-9]/, "Must contain a number")
+  .regex(/[^A-Za-z0-9]/, "Must contain a special character");
 ```
+
+The `PasswordRequirements` component checks each rule independently against the current input value and renders the checklist with immediate visual feedback as the user types.
 
