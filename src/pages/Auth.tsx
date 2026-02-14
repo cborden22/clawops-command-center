@@ -10,9 +10,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, Mail, Lock, User, Eye, EyeOff, ArrowLeft, RefreshCw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
+import PasswordRequirements from "@/components/shared/PasswordRequirements";
 
 const emailSchema = z.string().email("Please enter a valid email address");
-const passwordSchema = z.string().min(8, "Password must be at least 8 characters");
+const passwordSchema = z.string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Must contain an uppercase letter")
+  .regex(/[a-z]/, "Must contain a lowercase letter")
+  .regex(/[0-9]/, "Must contain a number")
+  .regex(/[^A-Za-z0-9]/, "Must contain a special character");
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -441,6 +447,7 @@ export default function Auth() {
                        </button>
                     </div>
                   </div>
+                  <PasswordRequirements password={signupPassword} />
 
                   <div className="space-y-2">
                     <Label htmlFor="signup-confirm-password">Confirm Password</Label>
