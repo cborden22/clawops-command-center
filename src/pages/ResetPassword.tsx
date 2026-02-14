@@ -8,9 +8,15 @@
  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
  import { Sparkles, Lock, Eye, EyeOff, CheckCircle2 } from "lucide-react";
  import { toast } from "@/hooks/use-toast";
- import { z } from "zod";
- 
- const passwordSchema = z.string().min(8, "Password must be at least 8 characters");
+import { z } from "zod";
+import PasswordRequirements from "@/components/shared/PasswordRequirements";
+
+const passwordSchema = z.string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Must contain an uppercase letter")
+  .regex(/[a-z]/, "Must contain a lowercase letter")
+  .regex(/[0-9]/, "Must contain a number")
+  .regex(/[^A-Za-z0-9]/, "Must contain a special character");
  
  export default function ResetPassword() {
    const navigate = useNavigate();
@@ -208,11 +214,12 @@
                    >
                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                    </button>
-                 </div>
-               </div>
- 
-               <div className="space-y-2">
-                 <Label htmlFor="confirm-password">Confirm New Password</Label>
+                  </div>
+                </div>
+                <PasswordRequirements password={newPassword} />
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm New Password</Label>
                  <div className="relative">
                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                    <Input
