@@ -1,5 +1,23 @@
 project_id = "qzvcbegrygblyrldfdyz"
 
+[auth]
+site_url = "https://clawops.lovable.app"
+additional_redirect_urls = ["https://clawops.lovable.app/reset-password"]
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+sender_name = "ClawOps"
+
+[auth.email.template.recovery]
+subject = "Reset Your ClawOps Password"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.confirmation]
+subject = "Confirm Your ClawOps Account"
+content_path = "./supabase/templates/confirmation.html"
+
 [functions.submit-maintenance-report]
 verify_jwt = false
 
