@@ -1,59 +1,41 @@
 
+## Fix Password Reset Flow and ClawOps Email Branding
 
-## Add Password Strength Requirements Display
+### Problem 1: Password Reset Page Crashes
+The `/reset-password` route in `App.tsx` is rendered **outside** the `AuthProvider` wrapper. But the `ResetPassword` component calls `useAuth()`, which throws an error because there is no `AuthProvider` ancestor. This means clicking the reset link from the email leads to a broken page.
 
-### What This Does
+**Fix:** Wrap the `/reset-password` route with `AuthProvider` in `App.tsx`.
 
-When a user is creating or resetting a password, they will see a live checklist showing which requirements their password meets. This gives clear, real-time feedback instead of only showing an error after submission.
+### Problem 2: Reset Emails Say "Loveable"
+The password reset emails are sent using the default backend email template, which still has "Loveable" branding. The email template needs to be updated to say "ClawOps" with proper branding and the correct redirect URL pointing to the production domain.
 
-### Password Requirements
+**Fix:** Update the backend auth email templates (password recovery, email confirmation, magic link) to use ClawOps branding.
 
-The following rules will be checked and displayed:
-- At least 8 characters
-- At least 1 uppercase letter
-- At least 1 lowercase letter
-- At least 1 number
-- At least 1 special character (!@#$%^&* etc.)
-
-### Where It Appears
-
-1. **Sign Up page** (`src/pages/Auth.tsx`) -- below the password field
-2. **Reset Password page** (`src/pages/ResetPassword.tsx`) -- below the new password field
-
-### What It Looks Like
-
-A small list of requirements below the password input, each with a colored icon:
-- Grey circle when not yet met
-- Green checkmark when met
-
-The submit button validation (zod schema) will also be updated to enforce all five rules, not just the 8-character minimum.
+---
 
 ### Changes
 
-**New file: `src/components/shared/PasswordRequirements.tsx`**
-- A reusable component that takes the current password string as a prop
-- Renders a list of 5 requirements with live check/uncheck icons
-- Uses `Check` and `Circle` icons from lucide-react with green/muted colors
+**1. `src/App.tsx`**
+- Wrap the `/reset-password` route with `AuthProvider` so `useAuth()` works on that page.
 
-**Modified: `src/pages/Auth.tsx`**
-- Import and render `PasswordRequirements` below the signup password field
-- Update `passwordSchema` to enforce uppercase, lowercase, number, and special character in addition to min length
+```text
+Before:
+  <Route path="/reset-password" element={<ResetPassword />} />
 
-**Modified: `src/pages/ResetPassword.tsx`**
-- Import and render `PasswordRequirements` below the new password field
-- Update `passwordSchema` to match the same stricter rules
-
-### Technical Detail
-
-The updated zod schema:
-```typescript
-const passwordSchema = z.string()
-  .min(8, "Password must be at least 8 characters")
-  .regex(/[A-Z]/, "Must contain an uppercase letter")
-  .regex(/[a-z]/, "Must contain a lowercase letter")
-  .regex(/[0-9]/, "Must contain a number")
-  .regex(/[^A-Za-z0-9]/, "Must contain a special character");
+After:
+  <Route path="/reset-password" element={
+    <AuthProvider>
+      <ResetPassword />
+    </AuthProvider>
+  } />
 ```
 
-The `PasswordRequirements` component checks each rule independently against the current input value and renders the checklist with immediate visual feedback as the user types.
+**2. Backend Auth Email Templates**
+Update the password recovery email template to use ClawOps branding:
+- **From name**: ClawOps
+- **Subject**: "Reset Your ClawOps Password"
+- **Body**: ClawOps-branded HTML with the app logo styling and a clear call-to-action button
+- Also update the email confirmation template subject/body to reference ClawOps instead of the default
 
+**3. `src/contexts/AuthContext.tsx`**
+- Update the `resetPasswordForEmail` redirect URL to use the published production domain (`https://clawops.lovable.app/reset-password`) instead of `window.location.origin`, so the link in the email always points to the correct production site regardless of which environment triggered the reset.
