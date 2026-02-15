@@ -272,7 +272,11 @@ const App: React.FC = () => {
                 {/* Legacy UUID route for existing QR codes - e.g., /m/77ad0e7c-8304-4dbf-9506-6085d8148255 */}
                 <Route path="/m/:machineId" element={<ReportIssue />} />
                {/* Password reset route - public, handles recovery token */}
-               <Route path="/reset-password" element={<ResetPassword />} />
+               <Route path="/reset-password" element={
+                 <AuthProvider>
+                   <ResetPassword />
+                 </AuthProvider>
+               } />
                 {/* Public sales/landing page */}
                 <Route path="/sales" element={<Sales />} />
                 {/* All other routes go through AuthProvider */}
