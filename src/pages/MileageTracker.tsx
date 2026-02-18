@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,9 @@ import { useRoutes } from "@/hooks/useRoutesDB";
 import { useVehicles } from "@/hooks/useVehiclesDB";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
 import { useActiveTrip } from "@/hooks/useActiveTrip";
+import { useRouteRun } from "@/hooks/useRouteRun";
 import { RouteManager } from "@/components/mileage/RouteManager";
+import { RouteRunPage } from "@/components/mileage/RouteRunPage";
 import { LocationSelector, LocationSelection, getLocationDisplayString } from "@/components/mileage/LocationSelector";
 import { TrackingModeSelector, TrackingMode } from "@/components/mileage/TrackingModeSelector";
 import { ActiveTripCard } from "@/components/mileage/ActiveTripCard";
@@ -76,6 +78,17 @@ const MileageTracker = () => {
     discardTrip,
     refetch: refetchActiveTrip 
   } = useActiveTrip();
+  const {
+    activeRun,
+    isLoading: routeRunLoading,
+    startRouteRun,
+    completeStop,
+    completeRouteRun,
+    discardRouteRun,
+  } = useRouteRun();
+  
+  // Route run state
+  const [routeRunRoute, setRouteRunRoute] = useState<MileageRoute | null>(null);
   
   // Tracking mode state
   const [trackingMode, setTrackingMode] = useState<TrackingMode>("odometer");
@@ -665,6 +678,15 @@ const MileageTracker = () => {
     handleRouteSelect(route);
   };
 
+  const handleRunRoute = (route: MileageRoute) => {
+    setRouteRunRoute(route);
+    setActiveTab("routes");
+  };
+
+  const handleExitRouteRun = () => {
+    setRouteRunRoute(null);
+  };
+
   if (!locationsLoaded || !mileageLoaded || !routesLoaded || !vehiclesLoaded) {
     return (
       <div className="bg-background">
@@ -1068,13 +1090,29 @@ const MileageTracker = () => {
 
             {/* Routes Tab */}
             <TabsContent value="routes">
-              <RouteManager
-                routes={routes}
-                onAddRoute={addRoute}
-                onUpdateRoute={updateRoute}
-                onDeleteRoute={deleteRoute}
-                onUseRoute={handleUseRoute}
-              />
+              {(routeRunRoute || activeRun) && (routeRunRoute || routes.find(r => r.id === activeRun?.routeId)) ? (
+                <RouteRunPage
+                  route={(routeRunRoute || routes.find(r => r.id === activeRun?.routeId))!}
+                  vehicles={vehicles}
+                  activeRun={activeRun}
+                  onStartRun={startRouteRun}
+                  onCompleteStop={completeStop}
+                  onCompleteRun={completeRouteRun}
+                  onDiscardRun={discardRouteRun}
+                  onExit={handleExitRouteRun}
+                  refetchMileage={refetchMileage}
+                />
+              ) : (
+                <RouteManager
+                  routes={routes}
+                  onAddRoute={addRoute}
+                  onUpdateRoute={updateRoute}
+                  onDeleteRoute={deleteRoute}
+                  onUseRoute={handleUseRoute}
+                  onRunRoute={handleRunRoute}
+                  hasActiveRun={!!activeRun}
+                />
+              )}
             </TabsContent>
 
             {/* History Tab */}

@@ -50,6 +50,8 @@ interface RouteManagerProps {
   ) => Promise<boolean>;
   onDeleteRoute: (id: string) => Promise<boolean>;
   onUseRoute: (route: MileageRoute) => void;
+  onRunRoute: (route: MileageRoute) => void;
+  hasActiveRun?: boolean;
 }
 
 export function RouteManager({
@@ -58,6 +60,8 @@ export function RouteManager({
   onUpdateRoute,
   onDeleteRoute,
   onUseRoute,
+  onRunRoute,
+  hasActiveRun,
 }: RouteManagerProps) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingRoute, setEditingRoute] = useState<MileageRoute | undefined>();
@@ -163,9 +167,13 @@ export function RouteManager({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onRunRoute(route)}>
+                        <Play className="h-4 w-4 mr-2" />
+                        Run Route
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onUseRoute(route)}>
                         <Play className="h-4 w-4 mr-2" />
-                        Log Trip
+                        Quick Log Trip
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleEdit(route)}>
                         <Pencil className="h-4 w-4 mr-2" />
@@ -217,13 +225,14 @@ export function RouteManager({
                 <RoutePreview route={route} compact />
 
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   className="w-full mt-3 gap-2"
-                  onClick={() => onUseRoute(route)}
+                  onClick={() => onRunRoute(route)}
+                  disabled={hasActiveRun}
                 >
                   <Play className="h-3.5 w-3.5" />
-                  Use This Route
+                  Run Route
                 </Button>
               </CardContent>
             </Card>

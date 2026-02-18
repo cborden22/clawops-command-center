@@ -981,6 +981,60 @@ export type Database = {
           },
         ]
       }
+      route_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_stop_index: number
+          id: string
+          mileage_entry_id: string | null
+          route_id: string
+          started_at: string
+          status: string
+          stop_data: Json | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_stop_index?: number
+          id?: string
+          mileage_entry_id?: string | null
+          route_id: string
+          started_at?: string
+          status?: string
+          stop_data?: Json | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_stop_index?: number
+          id?: string
+          mileage_entry_id?: string | null
+          route_id?: string
+          started_at?: string
+          status?: string
+          stop_data?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_runs_mileage_entry_id_fkey"
+            columns: ["mileage_entry_id"]
+            isOneToOne: false
+            referencedRelation: "mileage_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_runs_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "mileage_routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_run_history: {
         Row: {
           created_at: string
