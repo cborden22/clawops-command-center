@@ -20,6 +20,7 @@ interface RouteRunPageProps {
     vehicleId: string;
     trackingMode: "gps" | "odometer";
     odometerStart?: number;
+    customStops?: import("@/hooks/useRoutesDB").RouteStop[];
   }) => Promise<RouteRun | null>;
   onCompleteStop: (result: StopResult) => Promise<boolean>;
   onCompleteRun: (params?: {
@@ -45,21 +46,27 @@ export function RouteRunPage({
   const [isStarting, setIsStarting] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+  // Custom stops set during setup (filtered/reordered)
+  const [runStops, setRunStops] = useState<import("@/hooks/useRoutesDB").RouteStop[] | null>(null);
+
+  // The effective stops list for the active run
+  const effectiveStops = runStops || route.stops;
 
   // Determine phase
   const phase: Phase = useMemo(() => {
     if (!activeRun) return "setup";
-    if (activeRun.currentStopIndex >= route.stops.length) return "summary";
+    if (activeRun.currentStopIndex >= effectiveStops.length) return "summary";
     return "running";
-  }, [activeRun, route.stops.length]);
+  }, [activeRun, effectiveStops.length]);
 
   const currentStop = phase === "running" && activeRun
-    ? route.stops[activeRun.currentStopIndex]
+    ? effectiveStops[activeRun.currentStopIndex]
     : null;
 
-  const handleStart = async (vehicleId: string, trackingMode: TrackingMode, odometerStart?: number) => {
+  const handleStart = async (vehicleId: string, trackingMode: TrackingMode, odometerStart?: number, customStops?: import("@/hooks/useRoutesDB").RouteStop[]) => {
     setIsStarting(true);
-    await onStartRun({ route, vehicleId, trackingMode, odometerStart });
+    if (customStops) setRunStops(customStops);
+    await onStartRun({ route, vehicleId, trackingMode, odometerStart, customStops });
     setIsStarting(false);
   };
 
@@ -108,7 +115,7 @@ export function RouteRunPage({
         <RouteRunStopView
           stop={currentStop}
           stopIndex={activeRun.currentStopIndex}
-          totalStops={route.stops.length}
+          totalStops={effectiveStops.length}
           onComplete={handleCompleteStop}
           isCompleting={isCompleting}
         />

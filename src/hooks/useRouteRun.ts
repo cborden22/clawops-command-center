@@ -92,12 +92,14 @@ export function useRouteRun() {
     vehicleId: string;
     trackingMode: "gps" | "odometer";
     odometerStart?: number;
+    customStops?: RouteStop[];
   }): Promise<RouteRun | null> => {
     if (!user) return null;
 
-    const { route, vehicleId, trackingMode, odometerStart } = params;
-    const firstStop = route.stops[0];
-    const lastStop = route.stops[route.stops.length - 1];
+    const { route, vehicleId, trackingMode, odometerStart, customStops } = params;
+    const stops = customStops || route.stops;
+    const firstStop = stops[0];
+    const lastStop = stops[stops.length - 1];
 
     const startLocation = firstStop?.customLocationName || "Route Start";
     const endLocation = lastStop?.customLocationName || route.name;
