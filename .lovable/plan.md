@@ -1,118 +1,46 @@
 
 
-## Route Run Mode: Guided Stop-by-Stop Workflow
+## Route Preview, Skip, and Reorder Before Starting a Run
 
-### Overview
+### What Changes
 
-This feature transforms the existing "Use This Route" button into a full guided workflow that walks the operator through each stop on their route, one at a time. It handles mileage tracking, machine collections, notes, and commission payments -- all in a single streamlined flow optimized for both mobile and desktop.
+The **Route Run Setup** screen (the page shown before you tap "Start Route") will be enhanced with an interactive stop list that shows:
 
-### How It Works (User Flow)
+- The **full location name** for each stop (resolved from the database, not just IDs)
+- A **skip toggle** on each stop so you can exclude locations you don't need to visit today
+- **Move up / Move down buttons** on each stop so you can rearrange the order before starting
 
-1. **Start Route Run** -- User taps "Run Route" on a saved route. A setup screen asks:
-   - Select vehicle
-   - Choose tracking mode (GPS or Odometer)
-   - If odometer: enter starting odometer reading
-   - Tap "Start Route"
+The route run will then only cycle through the stops you kept enabled, in the order you set.
 
-2. **Stop-by-Stop Workflow** -- For each stop in the route:
-   - Show the current stop name, address, and stop number (e.g., "Stop 2 of 5")
-   - **Machine Collection**: List all machines at that location (fetched from `location_machines`). For each machine, the user can enter coins inserted and prizes won (same fields as existing `machine_collections`)
-   - **Location Notes**: A text field to add notes about this stop
-   - **Commission Prompt**: If the location has unpaid commission summaries, show a prompt: "This location has a pending commission of $X. Mark as paid?" with a checkbox
-   - **Mark Complete**: Button to finalize the stop and advance to the next one
+### User Experience
 
-3. **Route Complete** -- After the last stop:
-   - If odometer mode: prompt for ending odometer reading
-   - If GPS mode: automatically stop tracking
-   - Show a summary: total stops completed, total collections, miles traveled
-   - Save the mileage entry and all collection data
-   - Return to the mileage tracker
+1. Tap "Run Route" on a saved route
+2. The setup screen appears with vehicle/tracking mode selection AND a full list of stops with names
+3. Each stop shows the location name, with buttons to move it up/down and a toggle to skip it
+4. After customizing, tap "Start Route" -- only the active, reordered stops are used for the run
 
-### New Database Table
+### Technical Details
 
-A new table `route_runs` to persist the state of an in-progress route run, so it survives page refreshes and app restarts:
+**Modified Files:**
 
-```
-route_runs
-- id (uuid, PK)
-- user_id (uuid, NOT NULL)
-- route_id (uuid, NOT NULL, FK to mileage_routes)
-- mileage_entry_id (uuid, FK to mileage_entries) -- the associated trip
-- current_stop_index (integer, default 0)
-- status (text, default 'in_progress') -- in_progress, completed, discarded
-- stop_data (jsonb) -- array of per-stop results (collections, notes, commission actions)
-- started_at (timestamptz, default now())
-- completed_at (timestamptz)
-- created_at (timestamptz, default now())
-```
+1. **`src/components/mileage/RouteRunSetup.tsx`**
+   - Add state for a mutable stops list (cloned from `route.stops`) with `enabled` and resolved `displayName` fields
+   - Use the `useLocations` hook to resolve `locationId` to actual location names
+   - Render an interactive list with each stop showing:
+     - Location name (resolved or custom)
+     - Move up / move down icon buttons (swap with adjacent stop)
+     - A switch/checkbox to skip the stop
+   - Pass only the enabled, reordered stops list to `onStart`
 
-RLS: Users can only CRUD their own rows (`auth.uid() = user_id`).
+2. **`src/components/mileage/RouteRunSetup.tsx` (props change)**
+   - `onStart` signature updated to also accept a `customStops: RouteStop[]` parameter (the filtered/reordered list)
 
-### New Files
+3. **`src/components/mileage/RouteRunPage.tsx`**
+   - Accept the custom stops from setup and use them (instead of `route.stops`) for the running phase
+   - Store the custom stops in local state so the stop view iterates over the right list
 
-1. **`src/hooks/useRouteRun.ts`** -- Hook to manage route run state:
-   - `startRouteRun(routeId, vehicleId, trackingMode, odometerStart?)` -- creates route_run row + mileage_entry
-   - `getCurrentStop()` -- returns current stop info
-   - `completeStop(stopData)` -- saves collection data, notes, commission actions; advances index
-   - `completeRouteRun(odometerEnd?)` -- finalizes the mileage entry and route run
-   - `discardRouteRun()` -- deletes both records
-   - `activeRouteRun` -- current in-progress run (fetched on mount)
+4. **`src/hooks/useRouteRun.ts`**
+   - `startRouteRun` updated to accept an optional `customStops` override so the run uses the reordered/filtered stops
+   - The start/end location names on the mileage entry are derived from the custom stops list
 
-2. **`src/components/mileage/RouteRunSetup.tsx`** -- The initial setup dialog/sheet:
-   - Vehicle selector, tracking mode toggle, odometer input
-   - "Start Route" button
-
-3. **`src/components/mileage/RouteRunStopView.tsx`** -- The per-stop view:
-   - Stop header with progress indicator
-   - Machine collection cards (coins, prizes per machine)
-   - Notes textarea
-   - Commission prompt (if applicable)
-   - "Mark Complete" / "Next Stop" button
-
-4. **`src/components/mileage/RouteRunSummary.tsx`** -- End-of-route summary:
-   - Final odometer input (if odometer mode)
-   - Stats: stops visited, total coins collected, miles driven
-   - "Finish Route" button
-
-5. **`src/components/mileage/RouteRunPage.tsx`** -- Container component that orchestrates the three phases (setup, stops, summary) and renders the correct view based on state
-
-### Modified Files
-
-1. **`src/pages/MileageTracker.tsx`** -- Add route run state; when a route run is active, show `RouteRunPage` instead of the normal log form
-2. **`src/components/mileage/RouteManager.tsx`** -- Change "Use This Route" / "Log Trip" to "Run Route" with a play icon; wire up to start the route run flow
-3. **`src/hooks/useActiveTrip.ts`** -- Minor: ensure route runs create trips with `route_id` set so they link properly
-
-### Mobile Optimization
-
-- All new views use full-width card layouts with large touch targets (min 48px)
-- Machine collection inputs use `inputMode="numeric"` with large font sizes
-- Progress indicator is a horizontal stepper bar showing current stop
-- "Mark Complete" button is sticky at the bottom of the viewport on mobile
-- The stop view is scrollable with the action button always visible
-- Commission prompt uses a bottom sheet on mobile, dialog on desktop
-
-### Data Flow
-
-```text
-User taps "Run Route"
-  --> RouteRunSetup (select vehicle, tracking mode)
-  --> Creates route_run + mileage_entry (in_progress)
-  --> RouteRunStopView (stop 1)
-    --> User collects machines, adds notes
-    --> Saves to machine_collections + updates stop_data jsonb
-    --> Optionally marks commission as paid
-    --> Advances to stop 2... repeat
-  --> RouteRunSummary (after last stop)
-    --> Enter end odometer (if applicable)
-    --> Completes mileage_entry + route_run
-    --> Refetch mileage entries
-```
-
-### Edge Cases Handled
-
-- **App refresh mid-run**: `useRouteRun` fetches any `in_progress` route_run on mount, restoring the exact stop
-- **Location with no machines**: Skip the collection section, show only notes
-- **Location not in system** (custom stop name): Show notes only, no machine/commission features
-- **Already has active trip**: Prevent starting a route run if there's already a standalone active trip
-- **Empty route** (< 2 stops): Disable the "Run Route" button
-
+No database changes needed -- the stop customization is ephemeral (per-run) and the `stop_data` JSONB already captures what actually happened during the run.
