@@ -82,7 +82,7 @@ export function RouteRunSetup({ route, vehicles, onStart, onCancel, isStarting }
     const odoStart = trackingMode === "odometer" ? parseFloat(odometerStart) || undefined : undefined;
     const activeStops: RouteStop[] = customStops
       .filter((s) => s.enabled)
-      .map(({ enabled, displayName, ...stop }, idx) => ({ ...stop, stopOrder: idx }));
+      .map(({ enabled, displayName, ...stop }, idx) => ({ ...stop, stopOrder: idx, customLocationName: displayName }));
     await onStart(vehicleId, trackingMode, odoStart, activeStops);
   };
 

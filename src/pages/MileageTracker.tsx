@@ -37,7 +37,7 @@ import { ActiveTripCard } from "@/components/mileage/ActiveTripCard";
 import { GpsTracker } from "@/components/mileage/GpsTracker";
 import { RouteQuickSelector } from "@/components/mileage/RouteQuickSelector";
 import { MileageRoute, RouteStop } from "@/hooks/useRoutesDB";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 type FilterPeriod = 
   | "past7days" 
@@ -63,6 +63,7 @@ const tripPurposes = [
 ];
 
 const MileageTracker = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { activeLocations, isLoaded: locationsLoaded } = useLocations();
   const { entries, addEntry, updateEntry, deleteEntry, calculateTotals, isLoaded: mileageLoaded, refetch: refetchMileage } = useMileage();
@@ -127,6 +128,22 @@ const MileageTracker = () => {
   
   // Expandable row state
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  
+  // Auto-start route run from query param (e.g. from Quick Add menu)
+  useEffect(() => {
+    if (!routesLoaded) return;
+    const runRouteId = searchParams.get("runRoute");
+    if (runRouteId) {
+      const matchedRoute = routes.find(r => r.id === runRouteId);
+      if (matchedRoute) {
+        setRouteRunRoute(matchedRoute);
+        setActiveTab("routes");
+      }
+      // Clear the param
+      searchParams.delete("runRoute");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [routesLoaded, searchParams]);
   
   // Calculate miles from odometer
   const startNum = parseFloat(odometerStart) || 0;
