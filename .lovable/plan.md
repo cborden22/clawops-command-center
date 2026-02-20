@@ -1,46 +1,45 @@
 
+## Fix Location Names in Route Run + Add Quick Route Start to Mobile Menu
 
-## Route Preview, Skip, and Reorder Before Starting a Run
+### Problem 1: "Location Stop" instead of actual names
 
-### What Changes
+The bug is in `RouteRunSetup.tsx` line 85. When the setup passes stops to the running phase, it strips the resolved `displayName` field and does NOT write it into `customLocationName`:
 
-The **Route Run Setup** screen (the page shown before you tap "Start Route") will be enhanced with an interactive stop list that shows:
+```typescript
+// Current (broken):
+.map(({ enabled, displayName, ...stop }, idx) => ({ ...stop, stopOrder: idx }));
+```
 
-- The **full location name** for each stop (resolved from the database, not just IDs)
-- A **skip toggle** on each stop so you can exclude locations you don't need to visit today
-- **Move up / Move down buttons** on each stop so you can rearrange the order before starting
+Since `customLocationName` is null for location-linked stops, `RouteRunStopView.tsx` line 52 falls back to `"Location Stop"`.
 
-The route run will then only cycle through the stops you kept enabled, in the order you set.
+**Fix:** When building the active stops list, copy the resolved `displayName` into `customLocationName` so it carries through to the stop view:
 
-### User Experience
+```typescript
+.map(({ enabled, displayName, ...stop }, idx) => ({
+  ...stop,
+  stopOrder: idx,
+  customLocationName: displayName,  // Carry the resolved name
+}));
+```
 
-1. Tap "Run Route" on a saved route
-2. The setup screen appears with vehicle/tracking mode selection AND a full list of stops with names
-3. Each stop shows the location name, with buttons to move it up/down and a toggle to skip it
-4. After customizing, tap "Start Route" -- only the active, reordered stops are used for the run
+**File:** `src/components/mileage/RouteRunSetup.tsx` (line 85, one-line change)
 
-### Technical Details
+---
 
-**Modified Files:**
+### Problem 2: Quick action to start a route from mobile
 
-1. **`src/components/mileage/RouteRunSetup.tsx`**
-   - Add state for a mutable stops list (cloned from `route.stops`) with `enabled` and resolved `displayName` fields
-   - Use the `useLocations` hook to resolve `locationId` to actual location names
-   - Render an interactive list with each stop showing:
-     - Location name (resolved or custom)
-     - Move up / move down icon buttons (swap with adjacent stop)
-     - A switch/checkbox to skip the stop
-   - Pass only the enabled, reordered stops list to `onStart`
+Add a "Run Route" tab/option to the Quick Add bottom sheet so mobile users can pick a saved route and jump straight to the mileage tracker with that route selected.
 
-2. **`src/components/mileage/RouteRunSetup.tsx` (props change)**
-   - `onStart` signature updated to also accept a `customStops: RouteStop[]` parameter (the filtered/reordered list)
+**Changes:**
 
-3. **`src/components/mileage/RouteRunPage.tsx`**
-   - Accept the custom stops from setup and use them (instead of `route.stops`) for the running phase
-   - Store the custom stops in local state so the stop view iterates over the right list
+1. **`src/components/mobile/QuickAddSheet.tsx`**
+   - Add a 4th tab called "Route" with a Route/Play icon
+   - The tab shows a list of the user's saved routes (fetched via `useRoutes`)
+   - Tapping a route navigates to `/mileage?runRoute=ROUTE_ID` and closes the sheet
 
-4. **`src/hooks/useRouteRun.ts`**
-   - `startRouteRun` updated to accept an optional `customStops` override so the run uses the reordered/filtered stops
-   - The start/end location names on the mileage entry are derived from the custom stops list
+2. **`src/pages/MileageTracker.tsx`**
+   - Read `runRoute` query parameter on mount
+   - If present, find the matching route and automatically open the Route Run flow (set `routeRunRoute` and switch to the routes tab)
+   - Clear the query param after consuming it
 
-No database changes needed -- the stop customization is ephemeral (per-run) and the `stop_data` JSONB already captures what actually happened during the run.
+No database changes needed.
