@@ -50,8 +50,9 @@ export function RouteRunStopView({
   const [pendingCommission, setPendingCommission] = useState<PendingCommission | null>(null);
   const [payCommission, setPayCommission] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
+  const [resolvedLocationName, setResolvedLocationName] = useState<string | null>(null);
 
-  const locationName = stop.customLocationName || "Location Stop";
+  const locationName = resolvedLocationName || stop.customLocationName || `Stop ${stopIndex + 1}`;
   const isLastStop = stopIndex === totalStops - 1;
   const progressPercent = ((stopIndex + 1) / totalStops) * 100;
 
@@ -63,6 +64,7 @@ export function RouteRunStopView({
       setNotes("");
       setPayCommission(false);
       setPendingCommission(null);
+      setResolvedLocationName(null);
 
       if (!stop.locationId) {
         setMachines([]);
@@ -71,6 +73,16 @@ export function RouteRunStopView({
       }
 
       try {
+        // Fetch location name
+        const { data: locData } = await supabase
+          .from("locations")
+          .select("name")
+          .eq("id", stop.locationId)
+          .maybeSingle();
+        if (locData?.name) {
+          setResolvedLocationName(locData.name);
+        }
+
         // Fetch machines
         const { data: machineData } = await supabase
           .from("location_machines")
