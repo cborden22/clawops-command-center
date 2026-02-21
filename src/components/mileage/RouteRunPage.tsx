@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { MileageRoute } from "@/hooks/useRoutesDB";
 import { Vehicle } from "@/hooks/useVehiclesDB";
 import { RouteRun, useRouteRun, StopResult } from "@/hooks/useRouteRun";
+import { supabase } from "@/integrations/supabase/client";
 import { RouteRunSetup } from "./RouteRunSetup";
 import { RouteRunStopView } from "./RouteRunStopView";
 import { RouteRunSummary } from "./RouteRunSummary";
@@ -28,6 +29,7 @@ interface RouteRunPageProps {
     gpsDistanceMeters?: number;
   }) => Promise<boolean>;
   onDiscardRun: () => Promise<boolean>;
+  onGoToStop: (index: number) => Promise<boolean>;
   onExit: () => void;
   refetchMileage: () => void;
 }
@@ -40,6 +42,7 @@ export function RouteRunPage({
   onCompleteStop,
   onCompleteRun,
   onDiscardRun,
+  onGoToStop,
   onExit,
   refetchMileage,
 }: RouteRunPageProps) {
@@ -93,6 +96,12 @@ export function RouteRunPage({
     onExit();
   };
 
+  const handleGoBack = async () => {
+    if (activeRun && activeRun.currentStopIndex > 0) {
+      await onGoToStop(activeRun.currentStopIndex - 1);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Back button */}
@@ -117,6 +126,7 @@ export function RouteRunPage({
           stopIndex={activeRun.currentStopIndex}
           totalStops={effectiveStops.length}
           onComplete={handleCompleteStop}
+          onGoBack={activeRun.currentStopIndex > 0 ? handleGoBack : undefined}
           isCompleting={isCompleting}
         />
       )}
