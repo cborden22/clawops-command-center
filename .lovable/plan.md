@@ -1,45 +1,45 @@
 
-## Fix Location Names in Route Run + Add Quick Route Start to Mobile Menu
 
-### Problem 1: "Location Stop" instead of actual names
+## Fix Location Names + Add Navigation + Rename Tab
 
-The bug is in `RouteRunSetup.tsx` line 85. When the setup passes stops to the running phase, it strips the resolved `displayName` field and does NOT write it into `customLocationName`:
+### 1. Fix "Location Stop" name bug (Root Cause)
 
-```typescript
-// Current (broken):
-.map(({ enabled, displayName, ...stop }, idx) => ({ ...stop, stopOrder: idx }));
-```
+The `RouteRunSetup` component initializes `customStops` state in a `useState` callback, but `locations` from `useLocationsDB` loads asynchronously, so on first render `locations` is empty and all stops get fallback names like "Stop 1". The `useMemo` block that re-resolves names is **misused** (it calls `setCustomStops` as a side effect inside `useMemo`, which is unreliable). This must be changed to a proper `useEffect`.
 
-Since `customLocationName` is null for location-linked stops, `RouteRunStopView.tsx` line 52 falls back to `"Location Stop"`.
+Additionally, `RouteRunStopView` independently reads `stop.customLocationName` but never resolves `locationId` itself. Since the setup phase now writes resolved names into `customLocationName`, this works IF the setup resolution actually fires. The fix is:
 
-**Fix:** When building the active stops list, copy the resolved `displayName` into `customLocationName` so it carries through to the stop view:
+**File: `src/components/mileage/RouteRunSetup.tsx`**
+- Change the `useMemo` on lines 47-59 to a `useEffect` so it reliably re-resolves location names when `locations` loads
+- Also re-initialize stops when `route` changes
 
-```typescript
-.map(({ enabled, displayName, ...stop }, idx) => ({
-  ...stop,
-  stopOrder: idx,
-  customLocationName: displayName,  // Carry the resolved name
-}));
-```
+### 2. Add Previous/Next stop navigation
 
-**File:** `src/components/mileage/RouteRunSetup.tsx` (line 85, one-line change)
+Currently there is no way to go back to a previous stop or skip forward. The stop view only has a "Next Stop" button.
 
----
+**File: `src/components/mileage/RouteRunStopView.tsx`**
+- Add a "Previous Stop" button (left arrow) next to the progress bar
+- Add an `onGoBack` callback prop so the parent can decrement the stop index
 
-### Problem 2: Quick action to start a route from mobile
+**File: `src/components/mileage/RouteRunPage.tsx`**
+- Add a `handleGoBack` function that decrements `activeRun.currentStopIndex` (in both local state and the database)
+- Pass it to `RouteRunStopView` as `onGoBack`
 
-Add a "Run Route" tab/option to the Quick Add bottom sheet so mobile users can pick a saved route and jump straight to the mileage tracker with that route selected.
+**File: `src/hooks/useRouteRun.ts`**
+- Add a `goToStop(index)` function that updates `current_stop_index` in the database and local state (without adding/removing stop data)
 
-**Changes:**
+### 3. Rename "Templates" tab to "Routes"
 
-1. **`src/components/mobile/QuickAddSheet.tsx`**
-   - Add a 4th tab called "Route" with a Route/Play icon
-   - The tab shows a list of the user's saved routes (fetched via `useRoutes`)
-   - Tapping a route navigates to `/mileage?runRoute=ROUTE_ID` and closes the sheet
+**File: `src/pages/MileageTracker.tsx`** (line 785)
+- Change the tab label from "Templates" to "Routes"
 
-2. **`src/pages/MileageTracker.tsx`**
-   - Read `runRoute` query parameter on mount
-   - If present, find the matching route and automatically open the Route Run flow (set `routeRunRoute` and switch to the routes tab)
-   - Clear the query param after consuming it
+### Summary of file changes
+
+| File | Change |
+|------|--------|
+| `src/components/mileage/RouteRunSetup.tsx` | Fix `useMemo` to `useEffect` for reliable name resolution |
+| `src/components/mileage/RouteRunStopView.tsx` | Add Previous Stop button, accept `onGoBack` prop |
+| `src/components/mileage/RouteRunPage.tsx` | Wire up `handleGoBack` using new `goToStop` |
+| `src/hooks/useRouteRun.ts` | Add `goToStop(index)` method |
+| `src/pages/MileageTracker.tsx` | Rename "Templates" to "Routes" |
 
 No database changes needed.
