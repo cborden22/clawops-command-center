@@ -328,6 +328,32 @@ export function useRouteRun() {
     }
   };
 
+  const goToStop = async (index: number): Promise<boolean> => {
+    if (!user || !activeRun) return false;
+
+    try {
+      const { error } = await supabase
+        .from("route_runs")
+        .update({ current_stop_index: index })
+        .eq("id", activeRun.id);
+
+      if (error) throw error;
+
+      setActiveRun((prev) =>
+        prev ? { ...prev, currentStopIndex: index } : null
+      );
+      return true;
+    } catch (error: any) {
+      console.error("Error navigating to stop:", error);
+      toast({
+        title: "Error",
+        description: "Failed to navigate to stop.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   return {
     activeRun,
     isLoading,
@@ -335,6 +361,7 @@ export function useRouteRun() {
     completeStop,
     completeRouteRun,
     discardRouteRun,
+    goToStop,
     refetch: fetchActiveRun,
   };
 }

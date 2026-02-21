@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  MapPin, ChevronRight, DollarSign, StickyNote, Coins
+  MapPin, ChevronRight, ChevronLeft, DollarSign, StickyNote, Coins
 } from "lucide-react";
 import { RouteStop } from "@/hooks/useRoutesDB";
 import { StopCollectionData, StopResult } from "@/hooks/useRouteRun";
@@ -32,6 +32,7 @@ interface RouteRunStopViewProps {
   stopIndex: number;
   totalStops: number;
   onComplete: (result: StopResult) => Promise<void>;
+  onGoBack?: () => void;
   isCompleting: boolean;
 }
 
@@ -40,6 +41,7 @@ export function RouteRunStopView({
   stopIndex,
   totalStops,
   onComplete,
+  onGoBack,
   isCompleting,
 }: RouteRunStopViewProps) {
   const [machines, setMachines] = useState<LocationMachine[]>([]);
@@ -276,12 +278,23 @@ export function RouteRunStopView({
         </Card>
       )}
 
-      {/* Action Button - sticky on mobile */}
-      <div className="sticky bottom-4 z-10 pt-2">
+      {/* Navigation Buttons - sticky on mobile */}
+      <div className="sticky bottom-4 z-10 pt-2 flex gap-3">
+        {stopIndex > 0 && onGoBack && (
+          <Button
+            variant="outline"
+            onClick={onGoBack}
+            disabled={isCompleting || loadingData}
+            className="h-14 px-4 gap-1 shadow-lg"
+          >
+            <ChevronLeft className="h-5 w-5" />
+            Back
+          </Button>
+        )}
         <Button
           onClick={handleComplete}
           disabled={isCompleting || loadingData}
-          className="w-full h-14 text-base gap-2 shadow-lg"
+          className="flex-1 h-14 text-base gap-2 shadow-lg"
         >
           {isCompleting ? (
             "Saving..."

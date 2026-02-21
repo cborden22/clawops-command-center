@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -43,8 +43,8 @@ export function RouteRunSetup({ route, vehicles, onStart, onCancel, isStarting }
     })
   );
 
-  // Re-resolve names when locations load
-  useMemo(() => {
+  // Re-resolve names when locations load asynchronously
+  useEffect(() => {
     if (locations.length > 0) {
       setCustomStops((prev) =>
         prev.map((s) => {
@@ -57,6 +57,20 @@ export function RouteRunSetup({ route, vehicles, onStart, onCancel, isStarting }
       );
     }
   }, [locations]);
+
+  // Re-initialize stops when route changes
+  useEffect(() => {
+    setCustomStops(
+      route.stops.map((stop) => {
+        const loc = locations.find((l) => l.id === stop.locationId);
+        return {
+          ...stop,
+          enabled: true,
+          displayName: loc?.name || stop.customLocationName || `Stop ${stop.stopOrder + 1}`,
+        };
+      })
+    );
+  }, [route.id]);
 
   const selectedVehicle = vehicles.find((v) => v.id === vehicleId);
   const enabledCount = customStops.filter((s) => s.enabled).length;

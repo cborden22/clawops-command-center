@@ -86,6 +86,7 @@ const MileageTracker = () => {
     completeStop,
     completeRouteRun,
     discardRouteRun,
+    goToStop,
   } = useRouteRun();
   
   // Route run state
@@ -782,7 +783,7 @@ const MileageTracker = () => {
               </TabsTrigger>
               <TabsTrigger value="routes" className="gap-2">
                 <Route className="h-4 w-4" />
-                Templates
+                Routes
               </TabsTrigger>
               <TabsTrigger value="history" className="gap-2">
                 <TrendingUp className="h-4 w-4" />
@@ -1116,6 +1117,7 @@ const MileageTracker = () => {
                   onCompleteStop={completeStop}
                   onCompleteRun={completeRouteRun}
                   onDiscardRun={discardRouteRun}
+                  onGoToStop={goToStop}
                   onExit={handleExitRouteRun}
                   refetchMileage={refetchMileage}
                 />
