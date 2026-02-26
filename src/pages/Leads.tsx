@@ -79,8 +79,8 @@ export default function Leads() {
     });
   }, [leads, searchQuery, priorityFilter, sourceFilter]);
 
-  // Stats
-  const stats = getLeadStats();
+  // Stats - memoized to prevent expensive recalculation on every render
+  const stats = useMemo(() => getLeadStats(), [leads]);
 
   // Handle lead click - fetch activities and show detail
   const handleLeadClick = async (lead: Lead) => {
@@ -277,7 +277,13 @@ export default function Leads() {
       <LeadDetailDialog
         lead={selectedLead}
         open={showDetailDialog}
-        onOpenChange={setShowDetailDialog}
+        onOpenChange={(open) => {
+          setShowDetailDialog(open);
+          if (!open) {
+            // Clear stale reference after dialog animation completes
+            setTimeout(() => setSelectedLead(null), 200);
+          }
+        }}
         activities={selectedActivities}
         isLoadingActivities={isLoadingActivities}
         onUpdate={updateLead}

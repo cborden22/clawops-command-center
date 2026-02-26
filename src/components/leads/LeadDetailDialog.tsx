@@ -85,11 +85,13 @@ export function LeadDetailDialog({
   };
 
   const handleDelete = async () => {
-    const success = await onDelete(lead.id);
-    if (success) {
-      onOpenChange(false);
-    }
     setShowDeleteConfirm(false);
+    // Close dialog first to prevent stale render during state update
+    onOpenChange(false);
+    // Use setTimeout to let the dialog unmount before triggering the state update
+    setTimeout(async () => {
+      await onDelete(lead.id);
+    }, 0);
   };
 
   const getFollowUpStatus = () => {
