@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  MapPin, ChevronRight, ChevronLeft, DollarSign, StickyNote, Coins
+  MapPin, ChevronRight, ChevronLeft, DollarSign, StickyNote, Coins, Locate, CheckCircle2
 } from "lucide-react";
 import { RouteStop } from "@/hooks/useRoutesDB";
 import { StopCollectionData, StopResult } from "@/hooks/useRouteRun";
@@ -51,10 +51,49 @@ export function RouteRunStopView({
   const [payCommission, setPayCommission] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [resolvedLocationName, setResolvedLocationName] = useState<string | null>(null);
+  const [gpsPosition, setGpsPosition] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
 
   const locationName = resolvedLocationName || stop.customLocationName || `Stop ${stopIndex + 1}`;
   const isLastStop = stopIndex === totalStops - 1;
   const progressPercent = ((stopIndex + 1) / totalStops) * 100;
+
+  // Reset GPS state when stop changes
+  useEffect(() => {
+    setGpsPosition(null);
+    setGpsError(null);
+    setGpsLoading(false);
+  }, [stopIndex]);
+
+  const captureCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setGpsError("Geolocation not supported by your browser");
+      return;
+    }
+    setGpsLoading(true);
+    setGpsError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setGpsPosition({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+        });
+        setGpsLoading(false);
+      },
+      (err) => {
+        const msg = err.code === err.PERMISSION_DENIED
+          ? "Location permission denied. Enable it in browser settings."
+          : err.code === err.POSITION_UNAVAILABLE
+          ? "Location unavailable. Check GPS signal."
+          : "Location request timed out.";
+        setGpsError(msg);
+        setGpsLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+    );
+  };
 
   // Fetch machines and pending commissions for this location
   useEffect(() => {
@@ -147,6 +186,9 @@ export function RouteRunStopView({
       commissionPaid: payCommission,
       commissionSummaryId: payCommission ? pendingCommission?.id : undefined,
       completedAt: new Date().toISOString(),
+      gpsLat: gpsPosition?.lat,
+      gpsLng: gpsPosition?.lng,
+      gpsAccuracy: gpsPosition?.accuracy,
     };
 
     await onComplete(result);
@@ -195,6 +237,65 @@ export function RouteRunStopView({
               {stopIndex + 1}/{totalStops}
             </Badge>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Current Location GPS */}
+      <Card className="glass-card">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Locate className="h-4 w-4 text-primary" />
+              Current Location
+            </div>
+            {gpsPosition && (
+              <Badge variant="secondary" className="text-xs gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                Captured
+              </Badge>
+            )}
+          </div>
+
+          {gpsPosition ? (
+            <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1">
+              <p className="text-sm text-foreground font-mono">
+                {gpsPosition.lat.toFixed(6)}, {gpsPosition.lng.toFixed(6)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Accuracy: ±{Math.round(gpsPosition.accuracy)}m
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="mt-1 h-8 text-xs"
+                onClick={captureCurrentLocation}
+                disabled={gpsLoading}
+              >
+                <Locate className="h-3.5 w-3.5 mr-1" />
+                Recapture
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-11 gap-2"
+                onClick={captureCurrentLocation}
+                disabled={gpsLoading}
+              >
+                <Locate className="h-4 w-4" />
+                {gpsLoading ? "Getting Location..." : "Use Current Location"}
+              </Button>
+              {gpsError && (
+                <p className="text-xs text-destructive">{gpsError}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Optional – captures your GPS coordinates at this stop
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

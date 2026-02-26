@@ -19,6 +19,9 @@ export interface StopResult {
   commissionPaid: boolean;
   commissionSummaryId?: string;
   completedAt: string;
+  gpsLat?: number;
+  gpsLng?: number;
+  gpsAccuracy?: number;
 }
 
 export interface RouteRun {
