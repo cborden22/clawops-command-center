@@ -6,7 +6,7 @@
  import { cn } from "@/lib/utils";
  import { WidgetSize } from "@/hooks/useUserPreferences";
  
- type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance' | 'leads';
+ type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance' | 'leads' | 'businessHealth' | 'budgetTracking';
  
  interface WidgetConfig {
    id: WidgetId;

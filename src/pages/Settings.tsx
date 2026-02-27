@@ -34,6 +34,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { VehicleManager } from "@/components/settings/VehicleManager";
 import { MachineTypeManager } from "@/components/settings/MachineTypeManager";
+import { BudgetManager } from "@/components/settings/BudgetManager";
 import { FeedbackDialog } from "@/components/shared/FeedbackDialog";
 import { useQRLogo } from "@/hooks/useQRLogo";
 import { SubscriptionManager } from "@/components/settings/SubscriptionManager";
@@ -559,6 +560,9 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Budget Management */}
+          <BudgetManager />
 
           {/* Display Preferences */}
           <Card className="glass-card">

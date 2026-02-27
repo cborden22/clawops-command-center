@@ -9,6 +9,8 @@ import { useLeadsDB } from "@/hooks/useLeadsDB";
 import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions";
 import { useCalendarTasks } from "@/hooks/useCalendarTasks";
 import { LeadsWidget } from "@/components/dashboard/LeadsWidget";
+import { BusinessHealthWidget } from "@/components/dashboard/BusinessHealthWidget";
+import { BudgetTrackingWidget } from "@/components/dashboard/BudgetTrackingWidget";
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,8 +40,11 @@ import { cn } from "@/lib/utils";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WidgetSize } from "@/hooks/useUserPreferences";
+import { useBusinessHealth } from "@/hooks/useBusinessHealth";
+import { useExpenseBudgets } from "@/hooks/useExpenseBudgets";
+import { useMachineCollections } from "@/hooks/useMachineCollections";
 
-type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance' | 'leads';
+type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance' | 'leads' | 'businessHealth' | 'budgetTracking';
 
 interface WidgetConfig {
   id: WidgetId;
@@ -51,6 +56,8 @@ interface WidgetConfig {
 const DEFAULT_WIDGET_ORDER: WidgetConfig[] = [
   { id: 'primaryStats', label: 'Primary Stats', visible: true, size: 'full' },
   { id: 'weeklyCalendar', label: 'Weekly Calendar', visible: true, size: 'full' },
+  { id: 'businessHealth', label: 'Business Health', visible: true, size: 'md' },
+  { id: 'budgetTracking', label: 'Expense Budgets', visible: true, size: 'md' },
   { id: 'collectionDue', label: 'Restock Reminders', visible: true, size: 'md' },
   { id: 'maintenance', label: 'Maintenance', visible: true, size: 'md' },
   { id: 'leads', label: 'Leads Pipeline', visible: true, size: 'md' },
@@ -79,6 +86,14 @@ export default function Dashboard() {
   const { reports: maintenanceReports, isLoaded: maintenanceLoaded } = useMaintenanceReports();
   const { leads } = useLeadsDB();
   const permissions = useMyTeamPermissions();
+  const { collections } = useMachineCollections();
+  const { budgets } = useExpenseBudgets();
+  
+  const businessHealth = useBusinessHealth({
+    entries: entries.map(e => ({ id: e.id, type: e.type, locationId: e.locationId, date: e.date instanceof Date ? e.date : new Date(e.date), amount: e.amount })),
+    locations: activeLocations,
+    collections: collections.map(c => ({ id: c.id, locationId: c.locationId, machineId: c.machineId, collectionDate: c.collectionDate, coinsInserted: c.coinsInserted, prizesWon: c.prizesWon })),
+  });
   const { tasks: calendarTasks, isLoaded: calendarTasksLoaded } = useCalendarTasks();
   
   // Smart scheduler for calendar and reminders - now includes leads
@@ -742,9 +757,30 @@ export default function Dashboard() {
     />
   );
 
+  const renderBusinessHealth = () => (
+    <BusinessHealthWidget
+      revenuePerMachineThisWeek={businessHealth.revenuePerMachineThisWeek}
+      weekOverWeekChange={businessHealth.weekOverWeekChange}
+      collectionStreak={businessHealth.collectionStreak}
+      overallGrowth={businessHealth.overallGrowth}
+      totalThisMonth={businessHealth.totalThisMonth}
+      underperformers={businessHealth.underperformers}
+      locationGrowth={businessHealth.locationGrowth}
+    />
+  );
+
+  const renderBudgetTracking = () => (
+    <BudgetTrackingWidget
+      budgets={budgets}
+      expenses={entries.map(e => ({ category: e.category, amount: e.amount, date: e.date instanceof Date ? e.date : new Date(e.date), type: e.type }))}
+    />
+  );
+
   const widgetRenderers: Record<WidgetId, () => JSX.Element> = {
     primaryStats: renderPrimaryStats,
     weeklyCalendar: renderWeeklyCalendar,
+    businessHealth: renderBusinessHealth,
+    budgetTracking: renderBudgetTracking,
     collectionDue: renderCollectionDue,
     maintenance: renderMaintenance,
     leads: renderLeads,
