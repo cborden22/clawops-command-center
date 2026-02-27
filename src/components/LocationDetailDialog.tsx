@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { PhotoGallery } from "@/components/locations/PhotoGallery";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -716,6 +717,13 @@ export function LocationDetailDialog({
                       Created: {format(new Date(location.createdAt), "MMM d, yyyy")}
                     </p>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Photo Gallery */}
+              <Card>
+                <CardContent className="pt-4">
+                  <PhotoGallery locationId={location.id} />
                 </CardContent>
               </Card>
             </TabsContent>
