@@ -1,45 +1,65 @@
 
 
-## Fix Location Names + Add Navigation + Rename Tab
+## Feature Improvement Ideas for ClawOps
 
-### 1. Fix "Location Stop" name bug (Root Cause)
+After analyzing the full codebase, here are high-impact features that would make ClawOps significantly better:
 
-The `RouteRunSetup` component initializes `customStops` state in a `useState` callback, but `locations` from `useLocationsDB` loads asynchronously, so on first render `locations` is empty and all stops get fallback names like "Stop 1". The `useMemo` block that re-resolves names is **misused** (it calls `setCustomStops` as a side effect inside `useMemo`, which is unreliable). This must be changed to a proper `useEffect`.
+---
 
-Additionally, `RouteRunStopView` independently reads `stop.customLocationName` but never resolves `locationId` itself. Since the setup phase now writes resolved names into `customLocationName`, this works IF the setup resolution actually fires. The fix is:
+### 1. Photo Documentation per Location/Machine
+Add the ability to attach photos to locations, machines, and maintenance reports. Operators could snap a photo of each machine during collections to document condition, prize display quality, or issues. Photos stored in backend file storage, viewable in location detail and maintenance views.
 
-**File: `src/components/mileage/RouteRunSetup.tsx`**
-- Change the `useMemo` on lines 47-59 to a `useEffect` so it reliably re-resolves location names when `locations` loads
-- Also re-initialize stops when `route` changes
+---
 
-### 2. Add Previous/Next stop navigation
+### 2. Collection Streak & Performance Insights
+Add a "Business Health" widget to the dashboard showing:
+- Revenue per machine per week (identify underperformers)
+- Collection streak tracking (days since last missed collection)
+- Month-over-month growth percentage per location
+- Average revenue per play calculation using coin count + cost per play data already in `machine_collections`
 
-Currently there is no way to go back to a previous stop or skip forward. The stop view only has a "Next Stop" button.
+---
 
-**File: `src/components/mileage/RouteRunStopView.tsx`**
-- Add a "Previous Stop" button (left arrow) next to the progress bar
-- Add an `onGoBack` callback prop so the parent can decrement the stop index
+### 3. Expense Categories with Budget Tracking
+The revenue tracker logs expenses but has no budgeting. Add monthly budget targets per expense category (prizes, fuel, repairs, rent) with progress bars on the dashboard. Alert when a category is approaching or exceeds budget. Uses existing `revenue_entries` data with a new `expense_budgets` table.
 
-**File: `src/components/mileage/RouteRunPage.tsx`**
-- Add a `handleGoBack` function that decrements `activeRun.currentStopIndex` (in both local state and the database)
-- Pass it to `RouteRunStopView` as `onGoBack`
+---
 
-**File: `src/hooks/useRouteRun.ts`**
-- Add a `goToStop(index)` function that updates `current_stop_index` in the database and local state (without adding/removing stop data)
+### 4. Location Map View
+Add a map visualization showing all locations as pins, color-coded by performance (green = above average revenue, yellow = needs attention, red = overdue collection). Uses location addresses to geocode. Provides a spatial overview of the business territory.
 
-### 3. Rename "Templates" tab to "Routes"
+---
 
-**File: `src/pages/MileageTracker.tsx`** (line 785)
-- Change the tab label from "Templates" to "Routes"
+### 5. Recurring Revenue Automation
+Allow users to set up recurring revenue entries for locations with predictable income (e.g., flat-fee locations). Auto-generate entries on a schedule so operators don't need to manually log every collection for fixed-rate agreements. Ties into existing `location_agreements` data.
 
-### Summary of file changes
+---
 
-| File | Change |
-|------|--------|
-| `src/components/mileage/RouteRunSetup.tsx` | Fix `useMemo` to `useEffect` for reliable name resolution |
-| `src/components/mileage/RouteRunStopView.tsx` | Add Previous Stop button, accept `onGoBack` prop |
-| `src/components/mileage/RouteRunPage.tsx` | Wire up `handleGoBack` using new `goToStop` |
-| `src/hooks/useRouteRun.ts` | Add `goToStop(index)` method |
-| `src/pages/MileageTracker.tsx` | Rename "Templates" to "Routes" |
+### 6. Export & Sharing Improvements
+- One-tap PDF export of any report period for accountants
+- Shareable read-only dashboard link for business partners/investors
+- Automated weekly email summary of key metrics (revenue, maintenance alerts, low stock)
 
-No database changes needed.
+---
+
+### 7. Prize Win Rate Analytics
+The app already tracks `coins_inserted` and `prizes_won` in `machine_collections`. Build a dedicated analytics view showing:
+- Win rate trends over time per machine
+- Cost-per-prize analysis
+- Optimal win rate recommendations based on revenue data
+- Comparison across machine types
+
+---
+
+### 8. Dark/Light Mode Toggle
+The app appears to use a dark glass-card theme. Adding an explicit dark/light mode toggle in Settings (and respecting system preference) would improve usability in different environments, especially for operators working in bright locations.
+
+---
+
+### Recommended Priority Order
+1. **Photo Documentation** - Operators photograph machines constantly; this saves them from using a separate app
+2. **Collection Streak & Performance Insights** - Turns raw data into actionable business intelligence
+3. **Location Map View** - Visual spatial awareness is huge for route planning
+4. **Expense Budget Tracking** - Helps profitability management
+5. **Win Rate Analytics** - Leverages data already being collected
+
