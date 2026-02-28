@@ -1,65 +1,43 @@
 
 
-## Feature Improvement Ideas for ClawOps
+## Remaining Features to Implement
 
-After analyzing the full codebase, here are high-impact features that would make ClawOps significantly better:
+Based on analysis, 3 features from the plan are not yet implemented:
 
----
+### Already Complete
+- Photo Documentation (PhotoGallery.tsx, useLocationPhotos.ts)
+- Business Health / Performance Insights (BusinessHealthWidget, useBusinessHealth)
+- Expense Budget Tracking (BudgetManager, BudgetTrackingWidget, useExpenseBudgets)
+- Win Rate Analytics (WinRateReports.tsx)
+- Dark/Light Mode Toggle (AppSettingsContext darkMode in Settings)
 
-### 1. Photo Documentation per Location/Machine
-Add the ability to attach photos to locations, machines, and maintenance reports. Operators could snap a photo of each machine during collections to document condition, prize display quality, or issues. Photos stored in backend file storage, viewable in location detail and maintenance views.
+### Feature 4: Location Map View
+- Create `src/pages/LocationMap.tsx` with an interactive map using **Leaflet + OpenStreetMap** (free, no API key)
+- Install `leaflet` and `react-leaflet` packages
+- Color-code location pins: green (above avg revenue), yellow (needs attention), red (overdue collection)
+- Clicking a pin shows location name, machine count, last collection date, and revenue
+- Add "Map" link to sidebar under Operations
+- Add route `/map` in App.tsx
 
----
+### Feature 5: Recurring Revenue Automation
+- Create `recurring_revenue` database table: `id, user_id, location_id, amount, frequency (weekly/biweekly/monthly), category, next_due_date, is_active, notes, created_at`
+- RLS policies matching existing user-owned table pattern
+- Create `src/hooks/useRecurringRevenue.ts` for CRUD operations
+- Add UI in Revenue Tracker page: a "Recurring" tab or section to manage recurring entries
+- Add a "Generate Due Entries" button that creates revenue entries for all past-due recurring items
+- Link to location agreements' flat_fee data when available
 
-### 2. Collection Streak & Performance Insights
-Add a "Business Health" widget to the dashboard showing:
-- Revenue per machine per week (identify underperformers)
-- Collection streak tracking (days since last missed collection)
-- Month-over-month growth percentage per location
-- Average revenue per play calculation using coin count + cost per play data already in `machine_collections`
+### Feature 6: One-Tap PDF Export for Reports
+- Add a "Export PDF" button next to the existing "Export CSV" and "Print" buttons in `DateRangeFilter.tsx`
+- Use existing `pdfGenerator.ts` utility (jspdf + html2canvas) to capture the current report tab content
+- Capture the visible report content as a PDF with proper formatting and date range in filename
 
----
-
-### 3. Expense Categories with Budget Tracking
-The revenue tracker logs expenses but has no budgeting. Add monthly budget targets per expense category (prizes, fuel, repairs, rent) with progress bars on the dashboard. Alert when a category is approaching or exceeds budget. Uses existing `revenue_entries` data with a new `expense_budgets` table.
-
----
-
-### 4. Location Map View
-Add a map visualization showing all locations as pins, color-coded by performance (green = above average revenue, yellow = needs attention, red = overdue collection). Uses location addresses to geocode. Provides a spatial overview of the business territory.
-
----
-
-### 5. Recurring Revenue Automation
-Allow users to set up recurring revenue entries for locations with predictable income (e.g., flat-fee locations). Auto-generate entries on a schedule so operators don't need to manually log every collection for fixed-rate agreements. Ties into existing `location_agreements` data.
-
----
-
-### 6. Export & Sharing Improvements
-- One-tap PDF export of any report period for accountants
-- Shareable read-only dashboard link for business partners/investors
-- Automated weekly email summary of key metrics (revenue, maintenance alerts, low stock)
-
----
-
-### 7. Prize Win Rate Analytics
-The app already tracks `coins_inserted` and `prizes_won` in `machine_collections`. Build a dedicated analytics view showing:
-- Win rate trends over time per machine
-- Cost-per-prize analysis
-- Optimal win rate recommendations based on revenue data
-- Comparison across machine types
-
----
-
-### 8. Dark/Light Mode Toggle
-The app appears to use a dark glass-card theme. Adding an explicit dark/light mode toggle in Settings (and respecting system preference) would improve usability in different environments, especially for operators working in bright locations.
-
----
-
-### Recommended Priority Order
-1. **Photo Documentation** - Operators photograph machines constantly; this saves them from using a separate app
-2. **Collection Streak & Performance Insights** - Turns raw data into actionable business intelligence
-3. **Location Map View** - Visual spatial awareness is huge for route planning
-4. **Expense Budget Tracking** - Helps profitability management
-5. **Win Rate Analytics** - Leverages data already being collected
+### Implementation Steps
+1. Add `leaflet` and `react-leaflet` dependencies
+2. Create DB migration for `recurring_revenue` table with RLS
+3. Create LocationMap page component with Leaflet integration
+4. Create useRecurringRevenue hook
+5. Add recurring revenue UI section in Revenue Tracker
+6. Add PDF export button to DateRangeFilter
+7. Wire up routes and sidebar navigation
 
