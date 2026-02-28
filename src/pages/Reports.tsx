@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { format } from "date-fns";
 import { BarChart3, MapPin, Cpu, DollarSign, Package, Car, Target } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,13 +11,15 @@ import { RoutesReports } from "@/components/reports/RoutesReports";
 import { WinRateReports } from "@/components/reports/WinRateReports";
 import { useReportsData, DateRange, getDateRangeFromPreset } from "@/hooks/useReportsData";
 import { handleExport, ExportType } from "@/utils/csvExport";
+import { generatePDFFromHTML } from "@/utils/pdfGenerator";
+import { toast } from "@/hooks/use-toast";
 
 export default function Reports() {
   const [dateRange, setDateRange] = useState<DateRange>(() => 
     getDateRangeFromPreset("this_month")
   );
   const [activeTab, setActiveTab] = useState("locations");
-
+  const reportContentRef = useRef<HTMLDivElement>(null);
   const reportData = useReportsData(dateRange);
 
   const handleExportCSV = (exportType: ExportType) => {
@@ -28,6 +30,20 @@ export default function Reports() {
   const handlePrint = () => {
     window.print();
   };
+
+  const handleExportPDF = useCallback(async () => {
+    if (!reportContentRef.current) return;
+    const dateStr = format(dateRange.start, "MMM-d-yyyy") + "_to_" + format(dateRange.end, "MMM-d-yyyy");
+    try {
+      await generatePDFFromHTML(reportContentRef.current.innerHTML, {
+        filename: `ClawOps-Report-${activeTab}-${dateStr}.pdf`,
+        orientation: "landscape",
+      });
+      toast({ title: "PDF Exported", description: "Report saved as PDF." });
+    } catch {
+      toast({ title: "Export Failed", description: "Could not generate PDF.", variant: "destructive" });
+    }
+  }, [dateRange, activeTab]);
 
   const tabs = [
     { value: "locations", label: "Locations", icon: MapPin },
@@ -59,6 +75,7 @@ export default function Reports() {
         onDateRangeChange={setDateRange}
         onExportCSV={handleExportCSV}
         onPrint={handlePrint}
+        onExportPDF={handleExportPDF}
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -77,6 +94,8 @@ export default function Reports() {
             );
           })}
         </TabsList>
+
+        <div ref={reportContentRef}>
 
         <TabsContent value="locations" className="mt-6">
           <LocationReports data={reportData} />
@@ -101,6 +120,7 @@ export default function Reports() {
         <TabsContent value="winrate" className="mt-6">
           <WinRateReports data={reportData} />
         </TabsContent>
+        </div>
       </Tabs>
     </div>
   );

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { RevenueTrackerComponent } from "@/components/RevenueTrackerComponent";
+import { RecurringRevenueManager } from "@/components/revenue/RecurringRevenueManager";
 import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -26,7 +27,10 @@ const RevenueTracker = () => {
             Track collections and revenue across your claw machine locations
           </p>
         </div>
-        <RevenueTrackerComponent />
+        <div className="space-y-6">
+          <RecurringRevenueManager />
+          <RevenueTrackerComponent />
+        </div>
       </div>
     </div>
   );
