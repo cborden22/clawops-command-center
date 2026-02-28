@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, ChevronDown, Car, BarChart3, Wrench, Users, UsersRound, Calendar } from "lucide-react"
+import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, ChevronDown, Car, BarChart3, Wrench, Users, UsersRound, Calendar, Map } from "lucide-react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions"
@@ -33,6 +33,7 @@ import {
 const operationsItems = [
   { title: "Leads", url: "/leads", icon: Users },
   { title: "Locations", url: "/locations", icon: MapPin },
+  { title: "Location Map", url: "/map", icon: Map },
   { title: "Maintenance", url: "/maintenance", icon: Wrench },
   { title: "Routes", url: "/mileage", icon: Car },
   { title: "Inventory Tracker", url: "/inventory", icon: Package },
@@ -62,6 +63,7 @@ export function AppSidebar() {
     return operationsItems.filter(item => {
       if (item.url === "/leads") return permissions.isOwner || permissions.canViewLeads
       if (item.url === "/locations") return permissions.isOwner || permissions.canViewLocations
+      if (item.url === "/map") return permissions.isOwner || permissions.canViewLocations
       if (item.url === "/maintenance") return permissions.isOwner || permissions.canViewMaintenance
       if (item.url === "/inventory") return permissions.isOwner || permissions.canViewInventory
       if (item.url === "/mileage") return permissions.isOwner || permissions.canViewMileage

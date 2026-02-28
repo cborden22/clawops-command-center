@@ -17,6 +17,7 @@ import InventoryTracker from "./pages/InventoryTracker";
 import RevenueTracker from "./pages/RevenueTracker";
 import MileageTracker from "./pages/MileageTracker";
 import Locations from "./pages/Locations";
+import LocationMap from "./pages/LocationMap";
 import Leads from "./pages/Leads";
 import Maintenance from "./pages/Maintenance";
 import Receipts from "./pages/Receipts";
@@ -104,6 +105,18 @@ function ProtectedAppRoutes() {
               <AppLayout>
                 <PermissionGuard requiredPermission="canViewLocations">
                   <Locations />
+                </PermissionGuard>
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/map"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <PermissionGuard requiredPermission="canViewLocations">
+                  <LocationMap />
                 </PermissionGuard>
               </AppLayout>
             </ProtectedRoute>

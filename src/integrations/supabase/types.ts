@@ -955,6 +955,56 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_revenue: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string
+          frequency: string
+          id: string
+          is_active: boolean
+          location_id: string | null
+          next_due_date: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category?: string | null
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          location_id?: string | null
+          next_due_date: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          location_id?: string | null
+          next_due_date?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_revenue_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       revenue_entries: {
         Row: {
           amount: number

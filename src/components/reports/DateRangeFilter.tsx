@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, ChevronDown, Download, Printer } from "lucide-react";
+import { CalendarIcon, ChevronDown, Download, Printer, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -33,6 +33,7 @@ interface DateRangeFilterProps {
   onDateRangeChange: (range: DateRange) => void;
   onExportCSV?: (exportType: ExportType) => void;
   onPrint?: () => void;
+  onExportPDF?: () => void;
 }
 
 const presetLabels: Record<DateRangePreset, string> = {
@@ -51,6 +52,7 @@ export function DateRangeFilter({
   onDateRangeChange,
   onExportCSV,
   onPrint,
+  onExportPDF,
 }: DateRangeFilterProps) {
   const [customStart, setCustomStart] = useState<Date | undefined>(dateRange.start);
   const [customEnd, setCustomEnd] = useState<Date | undefined>(dateRange.end);
@@ -234,6 +236,12 @@ export function DateRangeFilter({
               </ScrollArea>
             </DropdownMenuContent>
           </DropdownMenu>
+        )}
+        {onExportPDF && (
+          <Button variant="outline" size="sm" onClick={onExportPDF}>
+            <FileDown className="h-4 w-4 mr-2" />
+            PDF
+          </Button>
         )}
         {onPrint && (
           <Button variant="outline" size="sm" onClick={onPrint}>
