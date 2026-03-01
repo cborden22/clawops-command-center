@@ -1,12 +1,10 @@
-import { useEffect, useMemo } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { useEffect, useMemo, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useLocations } from "@/hooks/useLocationsDB";
 import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, AlertCircle } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { differenceInDays, subDays } from "date-fns";
 
 // Fix leaflet default marker icons
@@ -31,9 +29,7 @@ const yellowIcon = createColorIcon("#eab308");
 const redIcon = createColorIcon("#ef4444");
 const grayIcon = createColorIcon("#6b7280");
 
-// Simple geocoding: parse "lat, lng" from address or use hash-based default
 function estimateCoords(address: string, index: number): [number, number] | null {
-  // Try parsing comma-separated lat/lng
   const parts = address.split(",").map(s => s.trim());
   if (parts.length >= 2) {
     const lat = parseFloat(parts[parts.length - 2]);
@@ -42,7 +38,6 @@ function estimateCoords(address: string, index: number): [number, number] | null
       return [lat, lng];
     }
   }
-  // Use a simple hash to spread pins across the US map for demo purposes
   const hash = address.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   const lat = 35 + (hash % 15) - 7 + index * 0.01;
   const lng = -95 + ((hash * 7) % 30) - 15 + index * 0.01;
@@ -52,6 +47,8 @@ function estimateCoords(address: string, index: number): [number, number] | null
 const LocationMap = () => {
   const { locations, isLoaded } = useLocations();
   const { entries } = useRevenueEntries();
+  const mapRef = useRef<L.Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const locationStats = useMemo(() => {
     const now = new Date();
@@ -59,7 +56,7 @@ const LocationMap = () => {
 
     return locations
       .filter(l => l.isActive && l.address)
-      .map(loc => {
+      .map((loc, idx) => {
         const locRevenue = entries
           .filter(e => e.locationId === loc.id && e.type === "income" && e.date >= thirtyDaysAgo)
           .reduce((sum, e) => sum + e.amount, 0);
@@ -72,7 +69,7 @@ const LocationMap = () => {
           ? daysSinceCollection > loc.collectionFrequencyDays
           : false;
 
-        const coords = estimateCoords(loc.address, locations.indexOf(loc));
+        const coords = estimateCoords(loc.address, idx);
 
         return {
           ...loc,
@@ -96,9 +93,60 @@ const LocationMap = () => {
     return grayIcon;
   };
 
-  const center: [number, number] = locationStats.length > 0 && locationStats[0].coords
-    ? locationStats[0].coords
-    : [39.8283, -98.5795];
+  // Initialize and update map with plain Leaflet
+  useEffect(() => {
+    if (!isLoaded || !mapContainerRef.current || locationStats.length === 0) return;
+
+    // If map already exists, remove it
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
+
+    const center: [number, number] = locationStats[0]?.coords || [39.8283, -98.5795];
+    const map = L.map(mapContainerRef.current).setView(center, 7);
+    mapRef.current = map;
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    const bounds = L.latLngBounds([]);
+
+    locationStats.forEach(stat => {
+      if (!stat.coords) return;
+      const marker = L.marker(stat.coords, { icon: getIcon(stat) }).addTo(map);
+      bounds.extend(stat.coords);
+
+      const overdueHtml = stat.daysSinceCollection !== null
+        ? `<p class="${stat.isOverdue ? 'color: #dc2626; font-weight: 500;' : ''}">
+            ${stat.isOverdue ? '⚠ ' : ''}Last collected: ${stat.daysSinceCollection}d ago
+          </p>`
+        : '';
+
+      marker.bindPopup(`
+        <div style="min-width:180px;font-size:13px;line-height:1.5;">
+          <p style="font-weight:600;font-size:15px;margin:0 0 4px;">${stat.name}</p>
+          <p style="color:#6b7280;margin:0 0 4px;">${stat.address}</p>
+          <p style="margin:0;">Machines: <strong>${stat.machineCount}</strong></p>
+          <p style="margin:0;">30-day Revenue: <strong>$${stat.revenue30d.toFixed(2)}</strong></p>
+          ${overdueHtml}
+        </div>
+      `);
+    });
+
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }
+
+    // Fix tiles not rendering on first load
+    setTimeout(() => map.invalidateSize(), 100);
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, [isLoaded, locationStats, avgRevenue]);
 
   if (!isLoaded) {
     return (
@@ -118,7 +166,6 @@ const LocationMap = () => {
           </p>
         </div>
 
-        {/* Legend */}
         <div className="flex flex-wrap gap-4 mb-4">
           <div className="flex items-center gap-2 text-sm">
             <div className="w-3 h-3 rounded-full bg-green-500" /> Above average
@@ -143,31 +190,7 @@ const LocationMap = () => {
           </Card>
         ) : (
           <div className="rounded-xl overflow-hidden border border-border" style={{ height: "65vh" }}>
-            <MapContainer center={center} zoom={5} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {locationStats.map(stat =>
-                stat.coords ? (
-                  <Marker key={stat.id} position={stat.coords} icon={getIcon(stat)}>
-                    <Popup>
-                      <div className="text-sm space-y-1 min-w-[180px]">
-                        <p className="font-semibold text-base">{stat.name}</p>
-                        <p className="text-muted-foreground">{stat.address}</p>
-                        <p>Machines: <strong>{stat.machineCount}</strong></p>
-                        <p>30-day Revenue: <strong>${stat.revenue30d.toFixed(2)}</strong></p>
-                        {stat.daysSinceCollection !== null && (
-                          <p className={stat.isOverdue ? "text-red-600 font-medium" : ""}>
-                            {stat.isOverdue && "⚠ "}Last collected: {stat.daysSinceCollection}d ago
-                          </p>
-                        )}
-                      </div>
-                    </Popup>
-                  </Marker>
-                ) : null
-              )}
-            </MapContainer>
+            <div ref={mapContainerRef} style={{ height: "100%", width: "100%" }} />
           </div>
         )}
       </div>
