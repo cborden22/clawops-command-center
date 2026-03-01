@@ -17,7 +17,26 @@ import InventoryTracker from "./pages/InventoryTracker";
 import RevenueTracker from "./pages/RevenueTracker";
 import MileageTracker from "./pages/MileageTracker";
 import Locations from "./pages/Locations";
-import LocationMap from "./pages/LocationMap";
+const LocationMap = React.lazy(() => import("./pages/LocationMap"));
+
+class MapErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean}> {
+  constructor(props: {children: React.ReactNode}) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-muted-foreground">
+          <p>Failed to load the map. Please try refreshing the page.</p>
+          <button className="text-primary underline" onClick={() => this.setState({ hasError: false })}>Retry</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import Leads from "./pages/Leads";
 import Maintenance from "./pages/Maintenance";
 import Receipts from "./pages/Receipts";
@@ -116,7 +135,11 @@ function ProtectedAppRoutes() {
             <ProtectedRoute>
               <AppLayout>
                 <PermissionGuard requiredPermission="canViewLocations">
-                  <LocationMap />
+                  <MapErrorBoundary>
+                    <React.Suspense fallback={<div className="min-h-[60vh] flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading map...</div></div>}>
+                      <LocationMap />
+                    </React.Suspense>
+                  </MapErrorBoundary>
                 </PermissionGuard>
               </AppLayout>
             </ProtectedRoute>
