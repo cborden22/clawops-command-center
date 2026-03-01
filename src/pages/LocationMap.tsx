@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { useLocations } from "@/hooks/useLocationsDB";
@@ -6,6 +6,8 @@ import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin } from "lucide-react";
 import { differenceInDays, subDays } from "date-fns";
+
+const GEOCODE_CACHE_KEY = "location_map_geocode_cache_v1";
 
 // Fix leaflet default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -29,8 +31,8 @@ const yellowIcon = createColorIcon("#eab308");
 const redIcon = createColorIcon("#ef4444");
 const grayIcon = createColorIcon("#6b7280");
 
-function estimateCoords(address: string, index: number): [number, number] | null {
-  const parts = address.split(",").map(s => s.trim());
+function parseLatLng(address: string): [number, number] | null {
+  const parts = address.split(",").map((s) => s.trim());
   if (parts.length >= 2) {
     const lat = parseFloat(parts[parts.length - 2]);
     const lng = parseFloat(parts[parts.length - 1]);
@@ -38,10 +40,29 @@ function estimateCoords(address: string, index: number): [number, number] | null
       return [lat, lng];
     }
   }
-  const hash = address.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  const lat = 35 + (hash % 15) - 7 + index * 0.01;
-  const lng = -95 + ((hash * 7) % 30) - 15 + index * 0.01;
-  return [lat, lng];
+  return null;
+}
+
+async function geocodeAddress(address: string): Promise<[number, number] | null> {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=us&limit=1&q=${encodeURIComponent(address)}`,
+      { headers: { Accept: "application/json" } }
+    );
+
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as Array<{ lat: string; lon: string }>;
+    if (!Array.isArray(data) || data.length === 0) return null;
+
+    const lat = parseFloat(data[0].lat);
+    const lng = parseFloat(data[0].lon);
+    if (isNaN(lat) || isNaN(lng)) return null;
+
+    return [lat, lng];
+  } catch {
+    return null;
+  }
 }
 
 const LocationMap = () => {
@@ -49,40 +70,110 @@ const LocationMap = () => {
   const { entries } = useRevenueEntries();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const [coordsByLocationId, setCoordsByLocationId] = useState<Record<string, [number, number] | null>>({});
+  const [isGeocoding, setIsGeocoding] = useState(false);
+
+  const activeLocations = useMemo(
+    () => locations.filter((l) => l.isActive && l.address),
+    [locations]
+  );
+
+  useEffect(() => {
+    if (!isLoaded || activeLocations.length === 0) return;
+
+    let mounted = true;
+
+    const geocodeAll = async () => {
+      setIsGeocoding(true);
+
+      let cache: Record<string, [number, number] | null> = {};
+      try {
+        const raw = localStorage.getItem(GEOCODE_CACHE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as Record<string, [number, number] | null>;
+          if (parsed && typeof parsed === "object") cache = parsed;
+        }
+      } catch {
+        cache = {};
+      }
+
+      const nextCoords: Record<string, [number, number] | null> = {};
+
+      for (const loc of activeLocations) {
+        const address = loc.address?.trim() ?? "";
+        if (!address) {
+          nextCoords[loc.id] = null;
+          continue;
+        }
+
+        const parsedCoords = parseLatLng(address);
+        if (parsedCoords) {
+          nextCoords[loc.id] = parsedCoords;
+          cache[address.toLowerCase()] = parsedCoords;
+          continue;
+        }
+
+        const cacheKey = address.toLowerCase();
+        if (cacheKey in cache) {
+          nextCoords[loc.id] = cache[cacheKey];
+          continue;
+        }
+
+        const geocoded = await geocodeAddress(address);
+        cache[cacheKey] = geocoded;
+        nextCoords[loc.id] = geocoded;
+
+        // small delay to avoid geocoder rate limiting
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+
+      if (!mounted) return;
+      setCoordsByLocationId(nextCoords);
+      localStorage.setItem(GEOCODE_CACHE_KEY, JSON.stringify(cache));
+      setIsGeocoding(false);
+    };
+
+    geocodeAll();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isLoaded, activeLocations]);
 
   const locationStats = useMemo(() => {
     const now = new Date();
     const thirtyDaysAgo = subDays(now, 30);
 
-    return locations
-      .filter(l => l.isActive && l.address)
-      .map((loc, idx) => {
-        const locRevenue = entries
-          .filter(e => e.locationId === loc.id && e.type === "income" && e.date >= thirtyDaysAgo)
-          .reduce((sum, e) => sum + e.amount, 0);
+    return activeLocations.map((loc) => {
+      const locRevenue = entries
+        .filter((e) => e.locationId === loc.id && e.type === "income" && e.date >= thirtyDaysAgo)
+        .reduce((sum, e) => sum + e.amount, 0);
 
-        const daysSinceCollection = loc.lastCollectionDate
-          ? differenceInDays(now, new Date(loc.lastCollectionDate))
-          : null;
+      const daysSinceCollection = loc.lastCollectionDate
+        ? differenceInDays(now, new Date(loc.lastCollectionDate))
+        : null;
 
-        const isOverdue = loc.collectionFrequencyDays && daysSinceCollection
-          ? daysSinceCollection > loc.collectionFrequencyDays
-          : false;
+      const isOverdue = loc.collectionFrequencyDays && daysSinceCollection
+        ? daysSinceCollection > loc.collectionFrequencyDays
+        : false;
 
-        const coords = estimateCoords(loc.address, idx);
+      return {
+        ...loc,
+        revenue30d: locRevenue,
+        daysSinceCollection,
+        isOverdue,
+        coords: coordsByLocationId[loc.id] ?? null,
+      };
+    });
+  }, [activeLocations, entries, coordsByLocationId]);
 
-        return {
-          ...loc,
-          revenue30d: locRevenue,
-          daysSinceCollection,
-          isOverdue,
-          coords,
-        };
-      });
-  }, [locations, entries]);
+  const mappableStats = useMemo(
+    () => locationStats.filter((stat) => stat.coords),
+    [locationStats]
+  );
 
   const avgRevenue = useMemo(() => {
-    const revs = locationStats.map(l => l.revenue30d);
+    const revs = locationStats.map((l) => l.revenue30d);
     return revs.length ? revs.reduce((a, b) => a + b, 0) / revs.length : 0;
   }, [locationStats]);
 
@@ -93,18 +184,16 @@ const LocationMap = () => {
     return grayIcon;
   };
 
-  // Initialize and update map with plain Leaflet
   useEffect(() => {
-    if (!isLoaded || !mapContainerRef.current || locationStats.length === 0) return;
+    if (!isLoaded || !mapContainerRef.current || mappableStats.length === 0) return;
 
-    // If map already exists, remove it
     if (mapRef.current) {
       mapRef.current.remove();
       mapRef.current = null;
     }
 
-    const center: [number, number] = locationStats[0]?.coords || [39.8283, -98.5795];
-    const map = L.map(mapContainerRef.current).setView(center, 7);
+    const center: [number, number] = mappableStats[0].coords as [number, number];
+    const map = L.map(mapContainerRef.current).setView(center, 10);
     mapRef.current = map;
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -113,16 +202,11 @@ const LocationMap = () => {
 
     const bounds = L.latLngBounds([]);
 
-    locationStats.forEach(stat => {
+    mappableStats.forEach((stat) => {
       if (!stat.coords) return;
+
       const marker = L.marker(stat.coords, { icon: getIcon(stat) }).addTo(map);
       bounds.extend(stat.coords);
-
-      const overdueHtml = stat.daysSinceCollection !== null
-        ? `<p class="${stat.isOverdue ? 'color: #dc2626; font-weight: 500;' : ''}">
-            ${stat.isOverdue ? '⚠ ' : ''}Last collected: ${stat.daysSinceCollection}d ago
-          </p>`
-        : '';
 
       marker.bindPopup(`
         <div style="min-width:180px;font-size:13px;line-height:1.5;">
@@ -130,7 +214,10 @@ const LocationMap = () => {
           <p style="color:#6b7280;margin:0 0 4px;">${stat.address}</p>
           <p style="margin:0;">Machines: <strong>${stat.machineCount}</strong></p>
           <p style="margin:0;">30-day Revenue: <strong>$${stat.revenue30d.toFixed(2)}</strong></p>
-          ${overdueHtml}
+          ${stat.daysSinceCollection !== null
+            ? `<p style="margin:0;${stat.isOverdue ? "color:#dc2626;font-weight:600;" : ""}">${stat.isOverdue ? "⚠ " : ""}Last collected: ${stat.daysSinceCollection}d ago</p>`
+            : ""
+          }
         </div>
       `);
     });
@@ -139,14 +226,13 @@ const LocationMap = () => {
       map.fitBounds(bounds, { padding: [40, 40] });
     }
 
-    // Fix tiles not rendering on first load
     setTimeout(() => map.invalidateSize(), 100);
 
     return () => {
       map.remove();
       mapRef.current = null;
     };
-  }, [isLoaded, locationStats, avgRevenue]);
+  }, [isLoaded, mappableStats, avgRevenue]);
 
   if (!isLoaded) {
     return (
@@ -181,7 +267,7 @@ const LocationMap = () => {
           </div>
         </div>
 
-        {locationStats.length === 0 ? (
+        {activeLocations.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
               <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
@@ -190,7 +276,13 @@ const LocationMap = () => {
           </Card>
         ) : (
           <div className="rounded-xl overflow-hidden border border-border" style={{ height: "65vh" }}>
-            <div ref={mapContainerRef} style={{ height: "100%", width: "100%" }} />
+            {mappableStats.length === 0 && isGeocoding ? (
+              <div className="h-full flex items-center justify-center text-muted-foreground animate-pulse">
+                Locating addresses on the map...
+              </div>
+            ) : (
+              <div ref={mapContainerRef} style={{ height: "100%", width: "100%" }} />
+            )}
           </div>
         )}
       </div>
