@@ -351,7 +351,7 @@ export function RevenueTrackerComponent() {
       return;
     }
 
-    const headers = ["Date", "Type", "Location", "Machine Type", "Amount", "Category", "Notes"];
+    const headers = ["Date", "Type", "Location", "Machine Type", "Amount", "Category", "Notes", "Service Period Start", "Service Period End"];
     const csvRows = [headers.join(",")];
 
     dataToExport.forEach(entry => {
@@ -364,7 +364,9 @@ export function RevenueTrackerComponent() {
         `"${machineType.replace(/"/g, '""')}"`,
         entry.amount.toFixed(2),
         entry.category || "",
-        `"${(entry.notes || "").replace(/"/g, '""')}"`
+        `"${(entry.notes || "").replace(/"/g, '""')}"`,
+        entry.servicePeriodStart ? format(entry.servicePeriodStart, "yyyy-MM-dd") : "",
+        entry.servicePeriodEnd ? format(entry.servicePeriodEnd, "yyyy-MM-dd") : "",
       ];
       csvRows.push(row.join(","));
     });
