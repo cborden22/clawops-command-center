@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { startOfMonth, endOfMonth, subMonths, startOfWeek, endOfWeek, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subDays, parseISO, isWithinInterval } from "date-fns";
+import { spreadEntryAcrossDateRange } from "@/utils/revenueAccrual";
 
 export type DateRangePreset = "today" | "this_week" | "this_month" | "last_month" | "this_quarter" | "this_year" | "all_time" | "custom";
 
@@ -200,15 +201,26 @@ export function useReportsData(dateRange: DateRange) {
     };
   }, [revenueEntries, collections, stockRunHistory, mileageEntries, commissionSummaries, dateRange]);
 
-  // Location performance calculations
+  // Location performance calculations (uses accrual for income)
   const locationPerformance = useMemo(() => {
     return locations.map(loc => {
-      const locRevenue = filteredData.revenueEntries.filter(e => e.location_id === loc.id);
+      const locRevenue = revenueEntries.filter(e => e.location_id === loc.id);
+      // Use accrual: spread income entries across service period
       const income = locRevenue
         .filter(e => e.type === "income")
-        .reduce((sum, e) => sum + Number(e.amount), 0);
-      const expenses = locRevenue
-        .filter(e => e.type === "expense" && e.category !== "Commission Payout")
+        .reduce((sum, e) => sum + spreadEntryAcrossDateRange(
+          {
+            amount: Number(e.amount),
+            date: new Date(e.date),
+            type: e.type,
+            servicePeriodStart: e.service_period_start ? new Date(e.service_period_start) : null,
+            servicePeriodEnd: e.service_period_end ? new Date(e.service_period_end) : null,
+          },
+          dateRange.start,
+          dateRange.end
+        ), 0);
+      const expenses = filteredData.revenueEntries
+        .filter(e => e.type === "expense" && e.location_id === loc.id && e.category !== "Commission Payout")
         .reduce((sum, e) => sum + Number(e.amount), 0);
       const commissions = filteredData.commissionSummaries
         .filter(c => c.location_id === loc.id)
@@ -223,7 +235,7 @@ export function useReportsData(dateRange: DateRange) {
         machineCount: machines.filter(m => m.location_id === loc.id).length,
       };
     }).sort((a, b) => b.income - a.income);
-  }, [locations, filteredData, machines]);
+  }, [locations, revenueEntries, filteredData, machines, dateRange]);
 
   // Machine performance calculations
   const machinePerformance = useMemo(() => {
@@ -255,11 +267,21 @@ export function useReportsData(dateRange: DateRange) {
     }).sort((a, b) => b.totalCoins - a.totalCoins);
   }, [machines, filteredData.collections, locations]);
 
-  // Financial summary
+  // Financial summary (uses accrual for income)
   const financialSummary = useMemo(() => {
-    const income = filteredData.revenueEntries
+    const income = revenueEntries
       .filter(e => e.type === "income")
-      .reduce((sum, e) => sum + Number(e.amount), 0);
+      .reduce((sum, e) => sum + spreadEntryAcrossDateRange(
+        {
+          amount: Number(e.amount),
+          date: new Date(e.date),
+          type: e.type,
+          servicePeriodStart: e.service_period_start ? new Date(e.service_period_start) : null,
+          servicePeriodEnd: e.service_period_end ? new Date(e.service_period_end) : null,
+        },
+        dateRange.start,
+        dateRange.end
+      ), 0);
     const expenses = filteredData.revenueEntries
       .filter(e => e.type === "expense")
       .reduce((sum, e) => sum + Number(e.amount), 0);
