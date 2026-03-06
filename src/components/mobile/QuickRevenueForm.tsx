@@ -62,6 +62,9 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const selectedLocationData = locationId && locationId !== "business-expense"
     ? locations.find(loc => loc.id === locationId)
     : null;
+  const selectedLocationLastCollection = selectedLocationData?.lastCollectionDate 
+    ? new Date(selectedLocationData.lastCollectionDate) 
+    : null;
   const locationMachines = selectedLocationData?.machines || [];
 
   // Get selected machine data (includes costPerPlay)
@@ -134,7 +137,25 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
       const date = new Date();
 
       if (type === "income") {
-        await addIncome(locationId || "", finalAmount, notes || "", date);
+        // Calculate service period
+        let servicePeriodStart: Date | undefined;
+        let servicePeriodEnd: Date | undefined;
+        if (spreadRevenue && locationId) {
+          servicePeriodEnd = date;
+          servicePeriodStart = selectedLocationLastCollection && selectedLocationLastCollection < date
+            ? selectedLocationLastCollection
+            : date;
+        }
+        
+        await addEntry({
+          type: "income",
+          locationId: locationId || "",
+          amount: finalAmount,
+          notes: notes || "",
+          date,
+          servicePeriodStart,
+          servicePeriodEnd,
+        });
         
         // Add collection metrics if machine is selected
         if (machineId && selectedMachineData && (coinsInserted || prizesWon)) {
