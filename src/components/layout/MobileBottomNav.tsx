@@ -142,7 +142,8 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
                     </span>
                   </button>
                 </SheetTrigger>
-                <SheetContent side="bottom" className="rounded-t-2xl">
+                <SheetContent side="bottom" className="rounded-t-2xl overflow-hidden">
+                  <div className="mobile-sheet-scroll max-h-[70vh]">
                   {/* Operations Section */}
                   {filteredOperationsItems.length > 0 && (
                     <div className="space-y-3">
@@ -205,6 +206,7 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
                       <LogOut className="h-4 w-4 mr-2" />
                       Sign Out
                     </Button>
+                  </div>
                   </div>
                 </SheetContent>
               </Sheet>

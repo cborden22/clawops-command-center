@@ -311,6 +311,14 @@ All colors MUST be HSL.
     touch-action: pan-y;
     overscroll-behavior-y: contain;
   }
+
+  /* Mobile bottom sheet scroll container */
+  .mobile-sheet-scroll {
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
 }
 
 /* Mobile Touch Targets & Form Controls */

@@ -27,10 +27,11 @@ export function DocumentsSheet({ open, onOpenChange }: DocumentsSheetProps) {
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="rounded-t-2xl">
+        <SheetContent side="bottom" className="rounded-t-2xl overflow-hidden">
           <SheetHeader className="pb-4">
             <SheetTitle className="text-center">Documents & Reports</SheetTitle>
           </SheetHeader>
+          <div className="mobile-sheet-scroll">
           <div className="grid grid-cols-2 gap-4 pb-6">
             <Button
               variant="outline"
@@ -56,6 +57,7 @@ export function DocumentsSheet({ open, onOpenChange }: DocumentsSheetProps) {
               <Target className="h-8 w-8 text-primary" />
               <span>Collection Reports</span>
             </Button>
+          </div>
           </div>
         </SheetContent>
       </Sheet>
