@@ -1017,6 +1017,8 @@ export type Database = {
           machine_type: string | null
           notes: string | null
           receipt_url: string | null
+          service_period_end: string | null
+          service_period_start: string | null
           type: string
           user_id: string
         }
@@ -1031,6 +1033,8 @@ export type Database = {
           machine_type?: string | null
           notes?: string | null
           receipt_url?: string | null
+          service_period_end?: string | null
+          service_period_start?: string | null
           type: string
           user_id: string
         }
@@ -1045,6 +1049,8 @@ export type Database = {
           machine_type?: string | null
           notes?: string | null
           receipt_url?: string | null
+          service_period_end?: string | null
+          service_period_start?: string | null
           type?: string
           user_id?: string
         }

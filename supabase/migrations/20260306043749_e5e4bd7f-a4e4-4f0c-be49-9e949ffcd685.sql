@@ -1,0 +1,1 @@
+ALTER TABLE revenue_entries ADD COLUMN service_period_start date, ADD COLUMN service_period_end date;
