@@ -37,6 +37,7 @@ import { ReceiptModal } from "@/components/shared/ReceiptModal";
 import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { Switch } from "@/components/ui/switch";
+import { spreadEntryAcrossDateRange } from "@/utils/revenueAccrual";
 
 type FilterPeriod = 
   | "past7days" 
@@ -458,15 +459,7 @@ export function RevenueTrackerComponent() {
     return entries
       .filter(e => e.type === "income")
       .reduce((sum, e) => {
-        if (e.servicePeriodStart && e.servicePeriodEnd) {
-          const { spreadEntryAcrossDateRange } = require("@/utils/revenueAccrual");
-          return sum + spreadEntryAcrossDateRange(e, range.start, range.end);
-        }
-        // No service period - use standard date check
-        if (isWithinInterval(e.date, { start: range.start, end: range.end })) {
-          return sum + e.amount;
-        }
-        return sum;
+        return sum + spreadEntryAcrossDateRange(e, range.start, range.end);
       }, 0);
   }, [filteredEntries, entries, range?.start?.getTime(), range?.end?.getTime()]);
   
