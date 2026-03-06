@@ -18,7 +18,7 @@ import {
 import { 
   format, subDays, startOfMonth, endOfMonth, isWithinInterval, 
   startOfWeek, endOfWeek, subWeeks, startOfYear, endOfYear, subYears,
-  startOfQuarter, endOfQuarter, subQuarters
+  startOfQuarter, endOfQuarter, subQuarters, differenceInDays
 } from "date-fns";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
@@ -447,7 +447,29 @@ export function RevenueTrackerComponent() {
   };
 
   const filteredEntries = getFilteredEntries();
-  const totalIncome = filteredEntries.filter(e => e.type === "income").reduce((sum, e) => sum + e.amount, 0);
+  
+  // Use accrual-based income totals when a date range is active
+  const range = getDateRange(filterPeriod);
+  const totalIncome = useMemo(() => {
+    if (!range) {
+      return filteredEntries.filter(e => e.type === "income").reduce((sum, e) => sum + e.amount, 0);
+    }
+    // For entries with service periods, use pro-rata; for others use full amount if in range
+    return entries
+      .filter(e => e.type === "income")
+      .reduce((sum, e) => {
+        if (e.servicePeriodStart && e.servicePeriodEnd) {
+          const { spreadEntryAcrossDateRange } = require("@/utils/revenueAccrual");
+          return sum + spreadEntryAcrossDateRange(e, range.start, range.end);
+        }
+        // No service period - use standard date check
+        if (isWithinInterval(e.date, { start: range.start, end: range.end })) {
+          return sum + e.amount;
+        }
+        return sum;
+      }, 0);
+  }, [filteredEntries, entries, range?.start?.getTime(), range?.end?.getTime()]);
+  
   const totalExpenses = filteredEntries.filter(e => e.type === "expense").reduce((sum, e) => sum + e.amount, 0);
   const netProfit = totalIncome - totalExpenses;
   const incomeEntries = filteredEntries.filter(e => e.type === "income");
