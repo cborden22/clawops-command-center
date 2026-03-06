@@ -28,7 +28,6 @@ import {
   Wallet,
   Settings2,
   ExternalLink,
-   Settings
 } from "lucide-react";
 import { MaintenanceWidget } from "@/components/maintenance/MaintenanceWidget";
 import { WeeklyCalendarWidget } from "@/components/dashboard/WeeklyCalendarWidget";
