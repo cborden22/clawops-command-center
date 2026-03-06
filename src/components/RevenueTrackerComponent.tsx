@@ -795,6 +795,29 @@ export function RevenueTrackerComponent() {
                     />
                   </div>
 
+                  {/* Spread Revenue Toggle - Only for income */}
+                  {entryType === "income" && selectedLocation && (
+                    <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CalendarRange className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">Spread across service period</span>
+                        </div>
+                        <Switch
+                          checked={spreadRevenue}
+                          onCheckedChange={setSpreadRevenue}
+                        />
+                      </div>
+                      {spreadRevenue && (
+                        <p className="text-xs text-muted-foreground">
+                          {selectedLocationLastCollection 
+                            ? `Revenue will be spread from ${format(selectedLocationLastCollection, "MMM d")} to ${format(entryDate, "MMM d")} (${Math.max(1, Math.round((entryDate.getTime() - selectedLocationLastCollection.getTime()) / (1000 * 60 * 60 * 24)))} days)`
+                            : "No previous collection date found — revenue will be assigned to the entry date only"}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Receipt Upload - Only for expenses */}
                   {entryType === "expense" && (
                     <div className="space-y-2">
