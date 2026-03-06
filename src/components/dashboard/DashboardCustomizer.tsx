@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { GripVertical, X, Plus, Check, Pencil, RotateCcw, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WidgetSize } from "@/hooks/useUserPreferences";
-import { triggerHaptic } from "@/utils/haptics";
+import { triggerHaptic, hapticPatterns } from "@/utils/haptics";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance' | 'leads' | 'businessHealth' | 'budgetTracking';

@@ -16,11 +16,3 @@ export function triggerHaptic(pattern: number | number[] = 50) {
     }
   }
 }
-
-// Preset patterns
-export const hapticPatterns = {
-  light: 10,           // Quick tap
-  medium: 50,          // Normal feedback
-  success: [50, 30, 50], // Double pulse for success
-  refresh: 30,         // Subtle feedback for refresh trigger
-};
