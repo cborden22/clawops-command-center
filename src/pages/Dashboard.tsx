@@ -248,6 +248,60 @@ export default function Dashboard() {
     setWidgets(DEFAULT_WIDGET_ORDER);
   };
 
+  const hideWidget = (id: WidgetId) => {
+    setWidgets(w => w.map(widget => widget.id === id ? { ...widget, visible: false } : widget));
+  };
+
+  const restoreWidget = (id: WidgetId) => {
+    setWidgets(w => w.map(widget => widget.id === id ? { ...widget, visible: true } : widget));
+  };
+
+  const resizeWidget = (id: WidgetId, size: WidgetSize) => {
+    setWidgets(w => w.map(widget => widget.id === id ? { ...widget, size } : widget));
+  };
+
+  const handleDragStart = (e: React.DragEvent, id: WidgetId) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: WidgetId) => {
+    e.preventDefault();
+    if (draggedId && draggedId !== id) setDragOverId(id);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: WidgetId) => {
+    e.preventDefault();
+    if (!draggedId || draggedId === targetId) return;
+    const newWidgets = [...widgets];
+    const fromIdx = newWidgets.findIndex(w => w.id === draggedId);
+    const toIdx = newWidgets.findIndex(w => w.id === targetId);
+    const [removed] = newWidgets.splice(fromIdx, 1);
+    newWidgets.splice(toIdx, 0, removed);
+    setWidgets(newWidgets);
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const handleTouchDragStart = (id: WidgetId) => {
+    setTouchDragId(id);
+    // Simple: on mobile, move widget up by swapping with previous
+    const idx = widgets.findIndex(w => w.id === id);
+    if (idx > 0) {
+      const newWidgets = [...widgets];
+      [newWidgets[idx - 1], newWidgets[idx]] = [newWidgets[idx], newWidgets[idx - 1]];
+      setWidgets(newWidgets);
+    }
+    setTimeout(() => setTouchDragId(null), 300);
+  };
+
+  const hiddenWidgets = filteredWidgets.filter(w => !w.visible);
+
   const isLoaded = locationsLoaded && entriesLoaded && inventoryLoaded && layoutLoaded && routesLoaded && schedulesLoaded && maintenanceLoaded;
 
   // Calculate this month's revenue data
