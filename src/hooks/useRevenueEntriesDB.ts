@@ -52,6 +52,8 @@ export function useRevenueEntries() {
         category: e.category || undefined,
         notes: e.notes || "",
         receiptUrl: e.receipt_url || undefined,
+        servicePeriodStart: e.service_period_start ? new Date(e.service_period_start) : undefined,
+        servicePeriodEnd: e.service_period_end ? new Date(e.service_period_end) : undefined,
       }));
 
       setEntries(mappedEntries);
@@ -83,8 +85,8 @@ export function useRevenueEntries() {
       const { data, error } = await supabase
         .from("revenue_entries")
         .insert({
-          user_id: effectiveUserId,           // Owner's ID (for RLS visibility)
-          created_by_user_id: user.id,        // Actual creator (for attribution)
+          user_id: effectiveUserId,
+          created_by_user_id: user.id,
           type: entry.type,
           location_id: entry.locationId || null,
           machine_type: entry.machineType || null,
@@ -93,6 +95,8 @@ export function useRevenueEntries() {
           category: entry.category || null,
           notes: entry.notes,
           receipt_url: entry.receiptUrl || null,
+          service_period_start: entry.servicePeriodStart ? entry.servicePeriodStart.toISOString().split('T')[0] : null,
+          service_period_end: entry.servicePeriodEnd ? entry.servicePeriodEnd.toISOString().split('T')[0] : null,
         })
         .select()
         .single();
@@ -109,6 +113,8 @@ export function useRevenueEntries() {
         category: data.category || undefined,
         notes: data.notes || "",
         receiptUrl: data.receipt_url || undefined,
+        servicePeriodStart: data.service_period_start ? new Date(data.service_period_start) : undefined,
+        servicePeriodEnd: data.service_period_end ? new Date(data.service_period_end) : undefined,
       };
 
       setEntries(prev => [newEntry, ...prev]);
