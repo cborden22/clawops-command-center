@@ -16,6 +16,8 @@ export interface RevenueEntry {
   category?: string;
   notes: string;
   receiptUrl?: string;
+  servicePeriodStart?: Date;
+  servicePeriodEnd?: Date;
 }
 
 export function useRevenueEntries() {
