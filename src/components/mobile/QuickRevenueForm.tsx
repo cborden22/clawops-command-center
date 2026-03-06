@@ -5,13 +5,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
 import { useLocations } from "@/hooks/useLocationsDB";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, TrendingUp, TrendingDown, Camera, ImageIcon, X, Coins } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Camera, ImageIcon, X, Coins, CalendarRange } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
 
 interface QuickRevenueFormProps {
   onSuccess: () => void;
@@ -31,7 +33,7 @@ const expenseCategories = [
 ];
 
 export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
-  const { addIncome, addExpense } = useRevenueEntries();
+  const { addEntry, addExpense } = useRevenueEntries();
   const { locations } = useLocations();
   const { addCollection, calculateCollectionWinRate, formatWinRate, formatOdds, formatPlays, compareToExpected, QUARTER_VALUE } = useMachineCollections();
   const { user } = useAuth();
@@ -50,6 +52,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const [machineId, setMachineId] = useState("");
   const [coinsInserted, setCoinsInserted] = useState("");
   const [prizesWon, setPrizesWon] = useState("");
+  const [spreadRevenue, setSpreadRevenue] = useState(true);
   
   // No longer need inputMode - coins is always primary when machine selected
 
