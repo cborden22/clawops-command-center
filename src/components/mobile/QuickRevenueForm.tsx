@@ -5,13 +5,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
 import { useLocations } from "@/hooks/useLocationsDB";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, TrendingUp, TrendingDown, Camera, ImageIcon, X, Coins } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Camera, ImageIcon, X, Coins, CalendarRange } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
 
 interface QuickRevenueFormProps {
   onSuccess: () => void;
@@ -31,7 +33,7 @@ const expenseCategories = [
 ];
 
 export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
-  const { addIncome, addExpense } = useRevenueEntries();
+  const { addEntry, addExpense } = useRevenueEntries();
   const { locations } = useLocations();
   const { addCollection, calculateCollectionWinRate, formatWinRate, formatOdds, formatPlays, compareToExpected, QUARTER_VALUE } = useMachineCollections();
   const { user } = useAuth();
@@ -50,6 +52,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const [machineId, setMachineId] = useState("");
   const [coinsInserted, setCoinsInserted] = useState("");
   const [prizesWon, setPrizesWon] = useState("");
+  const [spreadRevenue, setSpreadRevenue] = useState(true);
   
   // No longer need inputMode - coins is always primary when machine selected
 
@@ -58,6 +61,9 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   // Get machines for selected location
   const selectedLocationData = locationId && locationId !== "business-expense"
     ? locations.find(loc => loc.id === locationId)
+    : null;
+  const selectedLocationLastCollection = selectedLocationData?.lastCollectionDate 
+    ? new Date(selectedLocationData.lastCollectionDate) 
     : null;
   const locationMachines = selectedLocationData?.machines || [];
 
@@ -131,7 +137,25 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
       const date = new Date();
 
       if (type === "income") {
-        await addIncome(locationId || "", finalAmount, notes || "", date);
+        // Calculate service period
+        let servicePeriodStart: Date | undefined;
+        let servicePeriodEnd: Date | undefined;
+        if (spreadRevenue && locationId) {
+          servicePeriodEnd = date;
+          servicePeriodStart = selectedLocationLastCollection && selectedLocationLastCollection < date
+            ? selectedLocationLastCollection
+            : date;
+        }
+        
+        await addEntry({
+          type: "income",
+          locationId: locationId || "",
+          amount: finalAmount,
+          notes: notes || "",
+          date,
+          servicePeriodStart,
+          servicePeriodEnd,
+        });
         
         // Add collection metrics if machine is selected
         if (machineId && selectedMachineData && (coinsInserted || prizesWon)) {
@@ -345,6 +369,29 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
           className="min-h-[80px] resize-none"
         />
       </div>
+
+      {/* Spread Revenue Toggle - Income only */}
+      {type === "income" && locationId && locationId !== "business-expense" && (
+        <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarRange className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Spread across service period</span>
+            </div>
+            <Switch
+              checked={spreadRevenue}
+              onCheckedChange={setSpreadRevenue}
+            />
+          </div>
+          {spreadRevenue && (
+            <p className="text-xs text-muted-foreground">
+              {selectedLocationLastCollection 
+                ? `Revenue spread from ${format(selectedLocationLastCollection, "MMM d")} to today (${Math.max(1, differenceInDays(new Date(), selectedLocationLastCollection))} days)`
+                : "No previous collection — assigned to today only"}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Receipt Section (Expense only) */}
       {type === "expense" && (
