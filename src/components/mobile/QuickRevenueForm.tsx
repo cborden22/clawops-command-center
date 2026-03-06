@@ -370,6 +370,29 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
         />
       </div>
 
+      {/* Spread Revenue Toggle - Income only */}
+      {type === "income" && locationId && locationId !== "business-expense" && (
+        <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CalendarRange className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Spread across service period</span>
+            </div>
+            <Switch
+              checked={spreadRevenue}
+              onCheckedChange={setSpreadRevenue}
+            />
+          </div>
+          {spreadRevenue && (
+            <p className="text-xs text-muted-foreground">
+              {selectedLocationLastCollection 
+                ? `Revenue spread from ${format(selectedLocationLastCollection, "MMM d")} to today (${Math.max(1, differenceInDays(new Date(), selectedLocationLastCollection))} days)`
+                : "No previous collection — assigned to today only"}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Receipt Section (Expense only) */}
       {type === "expense" && (
         <div className="space-y-2">
