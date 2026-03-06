@@ -97,6 +97,7 @@ export function RevenueTrackerComponent() {
   // Collection metrics state (for income entries)
   const [coinsInserted, setCoinsInserted] = useState("");
   const [prizesWon, setPrizesWon] = useState("");
+  const [spreadRevenue, setSpreadRevenue] = useState(true);
   
   const [selectedReceiptModal, setSelectedReceiptModal] = useState<{
     path: string;
