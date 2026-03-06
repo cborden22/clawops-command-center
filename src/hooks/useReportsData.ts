@@ -301,7 +301,7 @@ export function useReportsData(dateRange: DateRange) {
       expensesByCategory,
       entryCount: filteredData.revenueEntries.length,
     };
-  }, [filteredData.revenueEntries]);
+  }, [revenueEntries, filteredData.revenueEntries, dateRange]);
 
   // Inventory analysis
   const inventoryAnalysis = useMemo(() => {
