@@ -60,7 +60,7 @@ export function EditModeFAB({ isEditMode, onToggle, onReset }: EditModeFABProps)
             : "bg-primary hover:bg-primary/90 text-primary-foreground"
         )}
         onClick={() => {
-          triggerHaptic("medium");
+          triggerHaptic(hapticPatterns.medium);
           onToggle();
         }}
         title={isEditMode ? "Done editing" : "Customize dashboard"}
@@ -115,7 +115,7 @@ export function WidgetEditOverlay({
     const currentIdx = SIZE_CYCLE.indexOf(widget.size);
     const nextSize = SIZE_CYCLE[(currentIdx + 1) % SIZE_CYCLE.length];
     onResize(widget.id, nextSize);
-    triggerHaptic("light");
+    triggerHaptic(hapticPatterns.light);
     setSizeToast(SIZE_LABELS[nextSize]);
     setTimeout(() => setSizeToast(null), 1200);
   };
@@ -163,7 +163,7 @@ export function WidgetEditOverlay({
         {/* Hide button */}
         <button
           onClick={() => {
-            triggerHaptic("light");
+            triggerHaptic(hapticPatterns.light);
             onHide(widget.id);
           }}
           className="p-1.5 rounded-full bg-destructive/90 text-destructive-foreground shadow-md hover:bg-destructive transition-colors"
@@ -223,7 +223,7 @@ export function HiddenWidgetsTray({ hiddenWidgets, onRestore, isEditMode }: Hidd
             variant="outline"
             className="cursor-pointer hover:bg-primary/10 hover:border-primary transition-colors gap-1.5 py-1.5 px-3 text-sm"
             onClick={() => {
-              triggerHaptic("light");
+              triggerHaptic(hapticPatterns.light);
               onRestore(widget.id);
             }}
           >
