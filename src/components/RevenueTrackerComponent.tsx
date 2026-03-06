@@ -235,6 +235,16 @@ export function RevenueTrackerComponent() {
       setIsUploadingReceipt(false);
     }
     
+    // Calculate service period for income entries with spread enabled
+    let servicePeriodStart: Date | undefined;
+    let servicePeriodEnd: Date | undefined;
+    if (entryType === "income" && spreadRevenue && selectedLocation) {
+      servicePeriodEnd = entryDate;
+      servicePeriodStart = selectedLocationLastCollection && selectedLocationLastCollection < entryDate
+        ? selectedLocationLastCollection
+        : entryDate;
+    }
+    
     const newEntry = await addEntry({
       type: entryType,
       locationId,
@@ -244,6 +254,8 @@ export function RevenueTrackerComponent() {
       category: entryType === "expense" ? category : undefined,
       notes: notes.trim(),
       receiptUrl,
+      servicePeriodStart,
+      servicePeriodEnd,
     });
     
     // Save collection metrics if income entry with machine and metrics provided
