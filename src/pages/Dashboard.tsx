@@ -28,12 +28,12 @@ import {
   Wallet,
   Settings2,
   ExternalLink,
-   Settings
 } from "lucide-react";
 import { MaintenanceWidget } from "@/components/maintenance/MaintenanceWidget";
 import { WeeklyCalendarWidget } from "@/components/dashboard/WeeklyCalendarWidget";
 import { RestockDueWidget } from "@/components/dashboard/RestockDueWidget";
- import { DashboardCustomizer } from "@/components/dashboard/DashboardCustomizer";
+import { EditModeFAB, WidgetEditOverlay, HiddenWidgetsTray } from "@/components/dashboard/DashboardCustomizer";
+
 import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isWithinInterval, startOfDay, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -45,6 +45,7 @@ import { useExpenseBudgets } from "@/hooks/useExpenseBudgets";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 
 type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance' | 'leads' | 'businessHealth' | 'budgetTracking';
+
 
 interface WidgetConfig {
   id: WidgetId;
@@ -157,7 +158,10 @@ export default function Dashboard() {
 
   const [widgets, setWidgets] = useState<WidgetConfig[]>(DEFAULT_WIDGET_ORDER);
   const [layoutLoaded, setLayoutLoaded] = useState(false);
-   const [customizePanelOpen, setCustomizePanelOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [draggedId, setDraggedId] = useState<WidgetId | null>(null);
+  const [dragOverId, setDragOverId] = useState<WidgetId | null>(null);
+  const [touchDragId, setTouchDragId] = useState<WidgetId | null>(null);
   
   const isMobile = useIsMobile();
   const { registerRefresh, unregisterRefresh } = useMobileRefresh();
@@ -242,6 +246,60 @@ export default function Dashboard() {
   const resetLayout = () => {
     setWidgets(DEFAULT_WIDGET_ORDER);
   };
+
+  const hideWidget = (id: WidgetId) => {
+    setWidgets(w => w.map(widget => widget.id === id ? { ...widget, visible: false } : widget));
+  };
+
+  const restoreWidget = (id: WidgetId) => {
+    setWidgets(w => w.map(widget => widget.id === id ? { ...widget, visible: true } : widget));
+  };
+
+  const resizeWidget = (id: WidgetId, size: WidgetSize) => {
+    setWidgets(w => w.map(widget => widget.id === id ? { ...widget, size } : widget));
+  };
+
+  const handleDragStart = (e: React.DragEvent, id: WidgetId) => {
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: WidgetId) => {
+    e.preventDefault();
+    if (draggedId && draggedId !== id) setDragOverId(id);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: WidgetId) => {
+    e.preventDefault();
+    if (!draggedId || draggedId === targetId) return;
+    const newWidgets = [...widgets];
+    const fromIdx = newWidgets.findIndex(w => w.id === draggedId);
+    const toIdx = newWidgets.findIndex(w => w.id === targetId);
+    const [removed] = newWidgets.splice(fromIdx, 1);
+    newWidgets.splice(toIdx, 0, removed);
+    setWidgets(newWidgets);
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const handleTouchDragStart = (id: WidgetId) => {
+    setTouchDragId(id);
+    // Simple: on mobile, move widget up by swapping with previous
+    const idx = widgets.findIndex(w => w.id === id);
+    if (idx > 0) {
+      const newWidgets = [...widgets];
+      [newWidgets[idx - 1], newWidgets[idx]] = [newWidgets[idx], newWidgets[idx - 1]];
+      setWidgets(newWidgets);
+    }
+    setTimeout(() => setTouchDragId(null), 300);
+  };
+
+  const hiddenWidgets = filteredWidgets.filter(w => !w.visible);
 
   const isLoaded = locationsLoaded && entriesLoaded && inventoryLoaded && layoutLoaded && routesLoaded && schedulesLoaded && maintenanceLoaded;
 
@@ -808,35 +866,18 @@ export default function Dashboard() {
             Dashboard
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Welcome back! Here's your business overview for {format(now, "MMMM yyyy")}.
+            {isEditMode 
+              ? "Drag, resize, or hide widgets. Tap ✓ when done."
+              : `Welcome back! Here's your business overview for ${format(now, "MMMM yyyy")}.`
+            }
           </p>
         </div>
-        
-        <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              className="gap-2 shrink-0"
-               onClick={() => setCustomizePanelOpen(true)}
-            >
-              <Settings2 className="h-4 w-4" />
-              Customize
-            </Button>
-        </div>
       </div>
-
-       {/* Dashboard Customizer Panel */}
-       <DashboardCustomizer
-         open={customizePanelOpen}
-         onOpenChange={setCustomizePanelOpen}
-         widgets={widgets}
-         onWidgetsChange={setWidgets}
-         onReset={resetLayout}
-       />
 
       {/* Widgets Grid */}
       <div className="grid grid-cols-12 gap-4">
         {filteredWidgets.map((widget) => {
-           if (!widget.visible) return null;
+          if (!widget.visible) return null;
           
           return (
             <div
@@ -844,14 +885,43 @@ export default function Dashboard() {
               className={cn(
                 "col-span-12",
                 SIZE_TO_COLS[widget.size],
-                 "transition-all duration-200"
+                "transition-all duration-200"
               )}
             >
-               {widgetRenderers[widget.id]()}
+              <WidgetEditOverlay
+                widget={widget}
+                isEditMode={isEditMode}
+                onHide={hideWidget}
+                onResize={resizeWidget}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+                onDrop={handleDrop}
+                isDragOver={dragOverId === widget.id}
+                isDragging={draggedId === widget.id}
+                onTouchDragStart={handleTouchDragStart}
+                isTouchDragging={touchDragId === widget.id}
+              >
+                {widgetRenderers[widget.id]()}
+              </WidgetEditOverlay>
             </div>
           );
         })}
       </div>
+
+      {/* Hidden Widgets Tray */}
+      <HiddenWidgetsTray
+        hiddenWidgets={hiddenWidgets}
+        onRestore={restoreWidget}
+        isEditMode={isEditMode}
+      />
+
+      {/* Floating Action Button */}
+      <EditModeFAB
+        isEditMode={isEditMode}
+        onToggle={() => setIsEditMode(!isEditMode)}
+        onReset={resetLayout}
+      />
     </div>
   );
 }

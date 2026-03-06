@@ -1,68 +1,35 @@
 
 
-## Redesign: Inline Dashboard Customization (Nayax-style)
+## Fix: Location Map Breaking the App
 
-### Problem
-The current customizer opens a side panel where you can't see the dashboard while making changes. You're editing blind -- toggling visibility, changing sizes, and reordering without seeing the result.
+### Root Cause
+`react-leaflet` v5.0.0 requires **React 19**, but this project uses **React 18.3.1**. This version incompatibility causes the app to crash when the LocationMap component is loaded or even imported (since it's eagerly imported in App.tsx).
 
-### Solution: Edit-in-Place Mode
-Replace the side-panel approach with an **inline edit mode** that overlays controls directly on each widget, so you see changes live as you make them.
+### Fix Steps
 
-### How It Works
+1. **Downgrade `react-leaflet` to v4.x** (compatible with React 18)
+   - Change `react-leaflet` from `^5.0.0` to `4.2.1` in package.json
+   - Add `@react-leaflet/core` at `2.1.0` (required peer dep for v4)
+   - Keep `leaflet` at current version
 
-**1. Toggle Edit Mode**
-- A floating action button (FAB) in the bottom-right corner (like Nayax) toggles edit mode on/off
-- On desktop: circular button with a gear/pencil icon, always visible in the corner
-- On mobile: same FAB position, sized for touch (56px)
-- When edit mode is active, the FAB changes to a checkmark ("Done") button
+2. **Lazy-load the LocationMap page** to prevent leaflet from blocking the entire app bundle if there are any remaining issues
+   - Use `React.lazy()` + `Suspense` in App.tsx for the `/map` route
+   - This isolates any map-related crashes from the rest of the app
 
-**2. Widget Overlays in Edit Mode**
-When edit mode is active, each widget gets:
-- A **drag handle** bar at the top (grab to reorder)
-- A **resize handle** in the bottom-right corner (drag to cycle through sm/md/lg/full sizes)
-- A **hide button** (X icon) in the top-right corner to toggle visibility off
-- A subtle colored border/outline to indicate the widget is editable
-- The widget content remains fully visible underneath (slightly dimmed)
+3. **Add error boundary** around the map route as a safety net so map issues never break the full app again
 
-**3. Hidden Widgets Tray**
-- When widgets are hidden, a collapsible "Hidden Widgets" bar appears at the bottom of the dashboard
-- Shows chips/badges for each hidden widget with a "+" button to restore them
-- Only visible during edit mode
+### Technical Details
 
-**4. Resize Behavior**
-- **Desktop**: Drag the bottom-right corner handle to resize. Snaps to grid columns (sm=4, md=6, lg=8, full=12). Shows a ghost outline of the new size while dragging.
-- **Mobile**: Tap the resize handle to cycle through sizes (sm -> md -> lg -> full -> sm). Simpler than dragging on touch.
-- Size label tooltip appears briefly when size changes (e.g., "Half width")
-
-**5. Reorder Behavior**
-- **Desktop**: Drag widgets by their top handle bar to reorder within the grid
-- **Mobile**: Long-press the drag handle, then drag to reorder (with haptic feedback)
-
-### Files to Change
-
-- **`src/components/dashboard/DashboardCustomizer.tsx`** -- Complete rewrite: replace Sheet-based panel with an inline edit mode overlay system. New subcomponents: `WidgetEditOverlay` (per-widget controls), `HiddenWidgetsTray`, `EditModeFAB`
-- **`src/pages/Dashboard.tsx`** -- Replace the "Customize" button + Sheet with the FAB. Pass `isEditMode` state to the widget grid. Wrap each widget in the edit overlay when active. Remove the old `DashboardCustomizer` Sheet usage.
-- **`src/index.css`** -- Add resize handle cursor styles and edit-mode animations
-
-### Technical Approach
-
-```text
-Normal Mode:                    Edit Mode:
-+------------------+            +------------------+
-|   Widget Card    |            | ≡ DRAG      [X]  |
-|                  |            |   Widget Card     |
-|                  |            |              ⟋   |  <-- resize handle
-+------------------+            +------------------+
-
-                                [+ Calendar] [+ Leads]  <-- hidden widgets tray
-
-                          [✓]   <-- FAB (bottom-right)
+**package.json changes:**
+```json
+"react-leaflet": "4.2.1",
+"@react-leaflet/core": "2.1.0",
+"leaflet": "^1.9.4"
 ```
 
-- Edit mode is a boolean state in Dashboard.tsx
-- Each widget gets wrapped in a `<WidgetEditOverlay>` component that renders the drag handle, hide button, and resize handle
-- Reordering uses the existing drag-and-drop logic but applied inline
-- Resize handle on desktop uses `onMouseDown` + `mousemove` to calculate new column span based on cursor position relative to the grid
-- On mobile, resize handle is a tap-to-cycle button
-- Hidden widgets tray is a simple flex row of badge buttons
+**App.tsx** - lazy import:
+```tsx
+const LocationMap = React.lazy(() => import("./pages/LocationMap"));
+// In route: wrap with <Suspense fallback={<Loading/>}>
+```
 
