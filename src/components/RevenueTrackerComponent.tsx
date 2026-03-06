@@ -135,6 +135,9 @@ export function RevenueTrackerComponent() {
 
   // Get machines for selected location
   const selectedLocationData = selectedLocation ? getLocationById(selectedLocation) : null;
+  const selectedLocationLastCollection = selectedLocationData?.lastCollectionDate 
+    ? new Date(selectedLocationData.lastCollectionDate) 
+    : null;
   const locationMachines = selectedLocationData?.machines || [];
   
   // Get selected machine data for win rate comparison (includes costPerPlay)
