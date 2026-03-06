@@ -1,41 +1,35 @@
 
 
-## Fix: Mobile Scrolling in Sheets/Menus
+## Fix: Location Map Breaking the App
 
-### Problem
-Bottom sheets (More menu, Quick Add, Documents) get stuck or don't scroll properly on mobile. This is caused by conflicting scroll behaviors between the sheet overlay, the sheet content, and the inner scrollable areas.
+### Root Cause
+`react-leaflet` v5.0.0 requires **React 19**, but this project uses **React 18.3.1**. This version incompatibility causes the app to crash when the LocationMap component is loaded or even imported (since it's eagerly imported in App.tsx).
 
-### Root Causes
-1. **Sheet component has `overflow-y-auto` on the content wrapper** (line 64 of sheet.tsx) which competes with inner scroll containers
-2. **QuickAddSheet has nested scroll containers** — the SheetContent scrolls AND the inner `div` with `overflow-y-auto` scrolls, causing touch event conflicts
-3. **More menu sheet doesn't have explicit scroll handling** — when content overflows (many menu items), there's no proper scroll container
-4. **`touch-action` and `overscroll-behavior` conflicts** — the CSS classes `sheet-scroll-content` and the sheet's own scroll settings fight each other
+### Fix Steps
 
-### Fix Strategy
+1. **Downgrade `react-leaflet` to v4.x** (compatible with React 18)
+   - Change `react-leaflet` from `^5.0.0` to `4.2.1` in package.json
+   - Add `@react-leaflet/core` at `2.1.0` (required peer dep for v4)
+   - Keep `leaflet` at current version
 
-**1. Sheet component (`src/components/ui/sheet.tsx`)**
-- Remove `overflow-y-auto overscroll-contain` from the SheetContent base classes for `bottom` side sheets
-- Let individual sheet consumers control their own scrolling
-- Add `touch-action: manipulation` to prevent double-tap zoom delays
+2. **Lazy-load the LocationMap page** to prevent leaflet from blocking the entire app bundle if there are any remaining issues
+   - Use `React.lazy()` + `Suspense` in App.tsx for the `/map` route
+   - This isolates any map-related crashes from the rest of the app
 
-**2. QuickAddSheet (`src/components/mobile/QuickAddSheet.tsx`)**
-- Make SheetContent use `overflow-hidden` (no scroll on outer container)
-- Keep the single inner scroll div with proper `overflow-y-auto`, `overscroll-behavior-y: contain`, and `-webkit-overflow-scrolling: touch`
-- Add `pb-6` padding at bottom of scroll area for safe area clearance
+3. **Add error boundary** around the map route as a safety net so map issues never break the full app again
 
-**3. MobileBottomNav More menu (`src/components/layout/MobileBottomNav.tsx`)**
-- Wrap the More menu sheet content in a scrollable container with `max-h-[70vh] overflow-y-auto`
-- Add `overscroll-behavior-y: contain` to prevent scroll chaining to the body
+### Technical Details
 
-**4. DocumentsSheet (`src/components/mobile/DocumentsSheet.tsx`)**
-- Minor: ensure consistent scroll handling pattern
+**package.json changes:**
+```json
+"react-leaflet": "4.2.1",
+"@react-leaflet/core": "2.1.0",
+"leaflet": "^1.9.4"
+```
 
-**5. Global CSS (`src/index.css`)**
-- Add a utility class `.mobile-sheet-scroll` that combines the correct touch/scroll properties for use in all bottom sheets
-
-### Files to Change
-- `src/components/ui/sheet.tsx` — conditional overflow for bottom sheets
-- `src/components/mobile/QuickAddSheet.tsx` — fix nested scroll
-- `src/components/layout/MobileBottomNav.tsx` — add scroll wrapper to More menu
-- `src/index.css` — add `.mobile-sheet-scroll` utility
+**App.tsx** - lazy import:
+```tsx
+const LocationMap = React.lazy(() => import("./pages/LocationMap"));
+// In route: wrap with <Suspense fallback={<Loading/>}>
+```
 

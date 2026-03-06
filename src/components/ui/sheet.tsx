@@ -61,10 +61,13 @@ const SheetContent = React.forwardRef<
       ref={ref}
       className={cn(
         sheetVariants({ side }), 
-        "overflow-y-auto overscroll-contain",
+        side === "bottom" ? "overflow-hidden" : "overflow-y-auto overscroll-contain",
         className
       )}
-      style={{ WebkitOverflowScrolling: 'touch' }}
+      style={{ 
+        WebkitOverflowScrolling: 'touch',
+        touchAction: 'manipulation',
+      }}
       {...props}
     >
       {children}

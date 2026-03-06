@@ -30,9 +30,9 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent 
+        <SheetContent 
         side="bottom" 
-        className="h-[85vh] rounded-t-2xl flex flex-col"
+        className="h-[85vh] rounded-t-2xl flex flex-col overflow-hidden"
         style={{ 
           maxHeight: 'calc(85vh - env(safe-area-inset-bottom))',
           paddingBottom: 'env(safe-area-inset-bottom)'
@@ -63,8 +63,7 @@ export function QuickAddSheet({ open, onOpenChange }: QuickAddSheetProps) {
           </TabsList>
 
           <div 
-            className="mt-4 flex-1 overflow-y-auto overscroll-contain sheet-scroll-content"
-            style={{ WebkitOverflowScrolling: 'touch' }}
+            className="mt-4 flex-1 mobile-sheet-scroll"
           >
             <TabsContent value="revenue" className="mt-0">
               <QuickRevenueForm onSuccess={handleSuccess} />
