@@ -1,261 +1,237 @@
- import { useState, useRef, useCallback } from "react";
- import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
- import { Button } from "@/components/ui/button";
- import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
- import { GripVertical, Eye, EyeOff, RotateCcw, X } from "lucide-react";
- import { cn } from "@/lib/utils";
- import { WidgetSize } from "@/hooks/useUserPreferences";
- 
- type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance' | 'leads' | 'businessHealth' | 'budgetTracking';
- 
- interface WidgetConfig {
-   id: WidgetId;
-   label: string;
-   visible: boolean;
-   size: WidgetSize;
- }
- 
- interface DashboardCustomizerProps {
-   open: boolean;
-   onOpenChange: (open: boolean) => void;
-   widgets: WidgetConfig[];
-   onWidgetsChange: (widgets: WidgetConfig[]) => void;
-   onReset: () => void;
- }
- 
- const SIZE_OPTIONS: { value: WidgetSize; label: string; description: string }[] = [
-   { value: 'sm', label: '⅓ Small', description: 'Fits 3 per row' },
-   { value: 'md', label: '½ Half', description: 'Fits 2 per row' },
-   { value: 'lg', label: '⅔ Large', description: 'Fits 1.5 per row' },
-   { value: 'full', label: 'Full', description: 'Takes entire row' },
- ];
- 
- export function DashboardCustomizer({
-   open,
-   onOpenChange,
-   widgets,
-   onWidgetsChange,
-   onReset,
- }: DashboardCustomizerProps) {
-   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-   const containerRef = useRef<HTMLDivElement>(null);
- 
-   const toggleVisibility = (id: WidgetId) => {
-     onWidgetsChange(
-       widgets.map(w => w.id === id ? { ...w, visible: !w.visible } : w)
-     );
-   };
- 
-   const updateSize = (id: WidgetId, size: WidgetSize) => {
-     onWidgetsChange(
-       widgets.map(w => w.id === id ? { ...w, size } : w)
-     );
-   };
- 
-   const handleDragStart = (e: React.DragEvent, index: number) => {
-     setDraggedIndex(index);
-     e.dataTransfer.effectAllowed = 'move';
-     // Make the drag image slightly transparent
-     if (e.currentTarget instanceof HTMLElement) {
-       e.currentTarget.style.opacity = '0.5';
-     }
-   };
- 
-   const handleDragEnd = (e: React.DragEvent) => {
-     if (e.currentTarget instanceof HTMLElement) {
-       e.currentTarget.style.opacity = '1';
-     }
-     setDraggedIndex(null);
-     setDragOverIndex(null);
-   };
- 
-   const handleDragOver = (e: React.DragEvent, index: number) => {
-     e.preventDefault();
-     if (draggedIndex !== null && draggedIndex !== index) {
-       setDragOverIndex(index);
-     }
-   };
- 
-   const handleDragLeave = () => {
-     setDragOverIndex(null);
-   };
- 
-   const handleDrop = (e: React.DragEvent, targetIndex: number) => {
-     e.preventDefault();
-     if (draggedIndex === null || draggedIndex === targetIndex) return;
- 
-     const newWidgets = [...widgets];
-     const [removed] = newWidgets.splice(draggedIndex, 1);
-     newWidgets.splice(targetIndex, 0, removed);
-     onWidgetsChange(newWidgets);
- 
-     setDraggedIndex(null);
-     setDragOverIndex(null);
-   };
- 
-   // Touch support
-   const [touchDragIndex, setTouchDragIndex] = useState<number | null>(null);
-   const touchStartY = useRef<number>(0);
-   const touchCurrentY = useRef<number>(0);
- 
-   const handleTouchStart = (e: React.TouchEvent, index: number) => {
-     setTouchDragIndex(index);
-     touchStartY.current = e.touches[0].clientY;
-   };
- 
-   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-     if (touchDragIndex === null || !containerRef.current) return;
-     
-     touchCurrentY.current = e.touches[0].clientY;
-     const container = containerRef.current;
-     const items = container.querySelectorAll('[data-widget-item]');
-     
-     let newIndex = touchDragIndex;
-     items.forEach((item, index) => {
-       const rect = item.getBoundingClientRect();
-       const centerY = rect.top + rect.height / 2;
-       if (touchCurrentY.current > centerY && index > touchDragIndex) {
-         newIndex = index;
-       } else if (touchCurrentY.current < centerY && index < touchDragIndex) {
-         newIndex = index;
-       }
-     });
-     
-     if (newIndex !== dragOverIndex) {
-       setDragOverIndex(newIndex);
-     }
-   }, [touchDragIndex, dragOverIndex]);
- 
-   const handleTouchEnd = () => {
-     if (touchDragIndex !== null && dragOverIndex !== null && touchDragIndex !== dragOverIndex) {
-       const newWidgets = [...widgets];
-       const [removed] = newWidgets.splice(touchDragIndex, 1);
-       newWidgets.splice(dragOverIndex, 0, removed);
-       onWidgetsChange(newWidgets);
-     }
-     setTouchDragIndex(null);
-     setDragOverIndex(null);
-   };
- 
-   return (
-     <Sheet open={open} onOpenChange={onOpenChange}>
-       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
-         <SheetHeader className="mb-6">
-           <SheetTitle className="flex items-center gap-2">
-             <GripVertical className="h-5 w-5 text-primary" />
-             Customize Dashboard
-           </SheetTitle>
-           <SheetDescription>
-             Drag to reorder widgets, toggle visibility, and adjust sizes.
-           </SheetDescription>
-         </SheetHeader>
- 
-         <div 
-           ref={containerRef}
-           className="space-y-2"
-           onTouchMove={handleTouchMove}
-           onTouchEnd={handleTouchEnd}
-         >
-           {widgets.map((widget, index) => (
-             <div
-               key={widget.id}
-               data-widget-item
-               draggable
-               onDragStart={(e) => handleDragStart(e, index)}
-               onDragEnd={handleDragEnd}
-               onDragOver={(e) => handleDragOver(e, index)}
-               onDragLeave={handleDragLeave}
-               onDrop={(e) => handleDrop(e, index)}
-               onTouchStart={(e) => handleTouchStart(e, index)}
-               className={cn(
-                 "flex items-center gap-3 p-3 rounded-lg border bg-card transition-all duration-200",
-                 draggedIndex === index && "opacity-50 scale-[0.98]",
-                 dragOverIndex === index && "ring-2 ring-primary border-primary",
-                 touchDragIndex === index && "shadow-lg scale-[1.02]",
-                 !widget.visible && "opacity-60 bg-muted/50"
-               )}
-             >
-               {/* Drag Handle */}
-               <div 
-                 className="p-1 cursor-grab active:cursor-grabbing touch-none"
-                 title="Drag to reorder"
-               >
-                 <GripVertical className="h-5 w-5 text-muted-foreground" />
-               </div>
- 
-               {/* Widget Label */}
-               <div className={cn(
-                 "flex-1 font-medium text-sm",
-                 !widget.visible && "line-through text-muted-foreground"
-               )}>
-                 {widget.label}
-               </div>
- 
-               {/* Visibility Toggle */}
-               <button
-                 onClick={() => toggleVisibility(widget.id)}
-                 className={cn(
-                   "p-2 rounded-md transition-colors",
-                   widget.visible 
-                     ? "hover:bg-muted text-foreground" 
-                     : "hover:bg-muted text-muted-foreground"
-                 )}
-                 title={widget.visible ? "Hide widget" : "Show widget"}
-                 aria-label={widget.visible ? "Hide widget" : "Show widget"}
-               >
-                 {widget.visible ? (
-                   <Eye className="h-4 w-4" />
-                 ) : (
-                   <EyeOff className="h-4 w-4" />
-                 )}
-               </button>
- 
-               {/* Size Dropdown */}
-               <Select 
-                 value={widget.size} 
-                 onValueChange={(size: WidgetSize) => updateSize(widget.id, size)}
-               >
-                 <SelectTrigger className="w-24 h-9">
-                   <SelectValue />
-                 </SelectTrigger>
-                 <SelectContent>
-                   {SIZE_OPTIONS.map(option => (
-                     <SelectItem key={option.value} value={option.value}>
-                       <span className="font-medium">{option.label}</span>
-                     </SelectItem>
-                   ))}
-                 </SelectContent>
-               </Select>
-             </div>
-           ))}
-         </div>
- 
-         {/* Drop indicator helper text */}
-         <div className="mt-4 p-3 rounded-lg bg-muted/50 border border-dashed">
-           <p className="text-xs text-muted-foreground text-center">
-             💡 Tip: Hidden widgets won't show on your dashboard but can be restored anytime.
-           </p>
-         </div>
- 
-         {/* Actions */}
-         <div className="flex gap-3 mt-6">
-           <Button 
-             variant="outline" 
-             className="flex-1 gap-2"
-             onClick={onReset}
-           >
-             <RotateCcw className="h-4 w-4" />
-             Reset to Default
-           </Button>
-           <Button 
-             className="flex-1"
-             onClick={() => onOpenChange(false)}
-           >
-             Done
-           </Button>
-         </div>
-       </SheetContent>
-     </Sheet>
-   );
- }
+import { useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { GripVertical, X, Plus, Check, Pencil, RotateCcw, Maximize2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { WidgetSize } from "@/hooks/useUserPreferences";
+import { triggerHaptic } from "@/utils/haptics";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance' | 'leads' | 'businessHealth' | 'budgetTracking';
+
+export interface WidgetConfig {
+  id: WidgetId;
+  label: string;
+  visible: boolean;
+  size: WidgetSize;
+}
+
+const SIZE_CYCLE: WidgetSize[] = ['sm', 'md', 'lg', 'full'];
+const SIZE_LABELS: Record<WidgetSize, string> = {
+  sm: '⅓',
+  md: '½',
+  lg: '⅔',
+  full: 'Full',
+};
+
+// --- Edit Mode FAB ---
+interface EditModeFABProps {
+  isEditMode: boolean;
+  onToggle: () => void;
+  onReset: () => void;
+}
+
+export function EditModeFAB({ isEditMode, onToggle, onReset }: EditModeFABProps) {
+  const isMobile = useIsMobile();
+
+  return (
+    <div className={cn(
+      "fixed z-50 flex items-center gap-2",
+      isMobile ? "bottom-24 right-4" : "bottom-6 right-6"
+    )}>
+      {isEditMode && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-11 w-11 rounded-full shadow-lg bg-card border-border hover:bg-muted animate-in fade-in slide-in-from-right-2 duration-200"
+          onClick={onReset}
+          title="Reset to default"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+      )}
+      <Button
+        size="icon"
+        className={cn(
+          "rounded-full shadow-xl transition-all duration-300",
+          isMobile ? "h-14 w-14" : "h-12 w-12",
+          isEditMode
+            ? "bg-green-600 hover:bg-green-700 text-white"
+            : "bg-primary hover:bg-primary/90 text-primary-foreground"
+        )}
+        onClick={() => {
+          triggerHaptic("medium");
+          onToggle();
+        }}
+        title={isEditMode ? "Done editing" : "Customize dashboard"}
+      >
+        {isEditMode ? (
+          <Check className={cn(isMobile ? "h-6 w-6" : "h-5 w-5")} />
+        ) : (
+          <Pencil className={cn(isMobile ? "h-6 w-6" : "h-5 w-5")} />
+        )}
+      </Button>
+    </div>
+  );
+}
+
+// --- Widget Edit Overlay ---
+interface WidgetEditOverlayProps {
+  widget: WidgetConfig;
+  children: React.ReactNode;
+  isEditMode: boolean;
+  onHide: (id: WidgetId) => void;
+  onResize: (id: WidgetId, size: WidgetSize) => void;
+  onDragStart: (e: React.DragEvent, id: WidgetId) => void;
+  onDragOver: (e: React.DragEvent, id: WidgetId) => void;
+  onDragEnd: () => void;
+  onDrop: (e: React.DragEvent, id: WidgetId) => void;
+  isDragOver: boolean;
+  isDragging: boolean;
+  // Touch reorder
+  onTouchDragStart: (id: WidgetId) => void;
+  isTouchDragging: boolean;
+}
+
+export function WidgetEditOverlay({
+  widget,
+  children,
+  isEditMode,
+  onHide,
+  onResize,
+  onDragStart,
+  onDragOver,
+  onDragEnd,
+  onDrop,
+  isDragOver,
+  isDragging,
+  onTouchDragStart,
+  isTouchDragging,
+}: WidgetEditOverlayProps) {
+  const isMobile = useIsMobile();
+  const [sizeToast, setSizeToast] = useState<string | null>(null);
+
+  const cycleSize = () => {
+    const currentIdx = SIZE_CYCLE.indexOf(widget.size);
+    const nextSize = SIZE_CYCLE[(currentIdx + 1) % SIZE_CYCLE.length];
+    onResize(widget.id, nextSize);
+    triggerHaptic("light");
+    setSizeToast(SIZE_LABELS[nextSize]);
+    setTimeout(() => setSizeToast(null), 1200);
+  };
+
+  if (!isEditMode) return <>{children}</>;
+
+  return (
+    <div
+      draggable={!isMobile}
+      onDragStart={(e) => onDragStart(e, widget.id)}
+      onDragOver={(e) => onDragOver(e, widget.id)}
+      onDragEnd={onDragEnd}
+      onDrop={(e) => onDrop(e, widget.id)}
+      className={cn(
+        "relative rounded-xl transition-all duration-200 group/edit",
+        "ring-2 ring-primary/30 ring-offset-2 ring-offset-background",
+        isDragOver && "ring-primary ring-offset-4 scale-[1.01]",
+        isDragging && "opacity-40 scale-[0.97]",
+        isTouchDragging && "shadow-2xl scale-[1.03] z-50",
+      )}
+    >
+      {/* Top bar: drag handle + hide button */}
+      <div className={cn(
+        "absolute -top-3 left-0 right-0 flex items-center justify-between z-20 px-2",
+        "opacity-0 group-hover/edit:opacity-100 transition-opacity duration-150",
+        // Always show on mobile in edit mode
+        isMobile && "opacity-100"
+      )}>
+        {/* Drag handle */}
+        <div
+          className={cn(
+            "flex items-center gap-1 px-2 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium",
+            "cursor-grab active:cursor-grabbing shadow-md select-none"
+          )}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+            onTouchDragStart(widget.id);
+          }}
+          title="Drag to reorder"
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">{widget.label}</span>
+        </div>
+
+        {/* Hide button */}
+        <button
+          onClick={() => {
+            triggerHaptic("light");
+            onHide(widget.id);
+          }}
+          className="p-1.5 rounded-full bg-destructive/90 text-destructive-foreground shadow-md hover:bg-destructive transition-colors"
+          title="Hide widget"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {/* Resize handle (bottom-right) */}
+      <button
+        onClick={cycleSize}
+        className={cn(
+          "absolute -bottom-2 -right-2 z-20 p-1.5 rounded-full shadow-md transition-all",
+          "bg-accent text-accent-foreground border-2 border-background",
+          "hover:bg-primary hover:text-primary-foreground",
+          "opacity-0 group-hover/edit:opacity-100",
+          isMobile && "opacity-100"
+        )}
+        title={`Resize: currently ${SIZE_LABELS[widget.size]}`}
+      >
+        <Maximize2 className="h-3.5 w-3.5" />
+      </button>
+
+      {/* Size toast */}
+      {sizeToast && (
+        <div className="absolute bottom-4 right-4 z-30 px-3 py-1.5 rounded-full bg-foreground text-background text-xs font-bold shadow-lg animate-in fade-in zoom-in-95 duration-150">
+          {sizeToast}
+        </div>
+      )}
+
+      {/* Widget content - slightly dimmed */}
+      <div className="pointer-events-none opacity-80 select-none">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// --- Hidden Widgets Tray ---
+interface HiddenWidgetsTrayProps {
+  hiddenWidgets: WidgetConfig[];
+  onRestore: (id: WidgetId) => void;
+  isEditMode: boolean;
+}
+
+export function HiddenWidgetsTray({ hiddenWidgets, onRestore, isEditMode }: HiddenWidgetsTrayProps) {
+  if (!isEditMode || hiddenWidgets.length === 0) return null;
+
+  return (
+    <div className="rounded-xl border-2 border-dashed border-muted-foreground/30 bg-muted/30 p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <p className="text-xs font-medium text-muted-foreground mb-3">Hidden Widgets</p>
+      <div className="flex flex-wrap gap-2">
+        {hiddenWidgets.map((widget) => (
+          <Badge
+            key={widget.id}
+            variant="outline"
+            className="cursor-pointer hover:bg-primary/10 hover:border-primary transition-colors gap-1.5 py-1.5 px-3 text-sm"
+            onClick={() => {
+              triggerHaptic("light");
+              onRestore(widget.id);
+            }}
+          >
+            <Plus className="h-3 w-3" />
+            {widget.label}
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+}
