@@ -867,35 +867,18 @@ export default function Dashboard() {
             Dashboard
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            Welcome back! Here's your business overview for {format(now, "MMMM yyyy")}.
+            {isEditMode 
+              ? "Drag, resize, or hide widgets. Tap ✓ when done."
+              : `Welcome back! Here's your business overview for ${format(now, "MMMM yyyy")}.`
+            }
           </p>
         </div>
-        
-        <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              className="gap-2 shrink-0"
-               onClick={() => setCustomizePanelOpen(true)}
-            >
-              <Settings2 className="h-4 w-4" />
-              Customize
-            </Button>
-        </div>
       </div>
-
-       {/* Dashboard Customizer Panel */}
-       <DashboardCustomizer
-         open={customizePanelOpen}
-         onOpenChange={setCustomizePanelOpen}
-         widgets={widgets}
-         onWidgetsChange={setWidgets}
-         onReset={resetLayout}
-       />
 
       {/* Widgets Grid */}
       <div className="grid grid-cols-12 gap-4">
         {filteredWidgets.map((widget) => {
-           if (!widget.visible) return null;
+          if (!widget.visible) return null;
           
           return (
             <div
@@ -903,14 +886,43 @@ export default function Dashboard() {
               className={cn(
                 "col-span-12",
                 SIZE_TO_COLS[widget.size],
-                 "transition-all duration-200"
+                "transition-all duration-200"
               )}
             >
-               {widgetRenderers[widget.id]()}
+              <WidgetEditOverlay
+                widget={widget}
+                isEditMode={isEditMode}
+                onHide={hideWidget}
+                onResize={resizeWidget}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+                onDrop={handleDrop}
+                isDragOver={dragOverId === widget.id}
+                isDragging={draggedId === widget.id}
+                onTouchDragStart={handleTouchDragStart}
+                isTouchDragging={touchDragId === widget.id}
+              >
+                {widgetRenderers[widget.id]()}
+              </WidgetEditOverlay>
             </div>
           );
         })}
       </div>
+
+      {/* Hidden Widgets Tray */}
+      <HiddenWidgetsTray
+        hiddenWidgets={hiddenWidgets}
+        onRestore={restoreWidget}
+        isEditMode={isEditMode}
+      />
+
+      {/* Floating Action Button */}
+      <EditModeFAB
+        isEditMode={isEditMode}
+        onToggle={() => setIsEditMode(!isEditMode)}
+        onReset={resetLayout}
+      />
     </div>
   );
 }
