@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { GripVertical, X, Plus, Check, Pencil, RotateCcw, Maximize2 } from "lucide-react";
@@ -16,13 +16,28 @@ export interface WidgetConfig {
   size: WidgetSize;
 }
 
-const SIZE_CYCLE: WidgetSize[] = ['sm', 'md', 'lg', 'full'];
 const SIZE_LABELS: Record<WidgetSize, string> = {
-  sm: '⅓',
-  md: '½',
-  lg: '⅔',
-  full: 'Full',
+  sm: '⅓ width',
+  md: '½ width',
+  lg: '⅔ width',
+  full: 'Full width',
 };
+
+// Map a percentage (0-1) of grid width to the nearest size
+const BREAKPOINTS: { threshold: number; size: WidgetSize }[] = [
+  { threshold: 0.29, size: 'sm' },   // ~4/12
+  { threshold: 0.46, size: 'md' },   // ~6/12
+  { threshold: 0.62, size: 'lg' },   // ~8/12
+  { threshold: 0.85, size: 'full' }, // 12/12
+];
+
+function percentToSize(pct: number): WidgetSize {
+  if (pct < BREAKPOINTS[0].threshold) return 'sm';
+  if (pct < BREAKPOINTS[1].threshold) return 'sm';
+  if (pct < BREAKPOINTS[2].threshold) return 'md';
+  if (pct < BREAKPOINTS[3].threshold) return 'lg';
+  return 'full';
+}
 
 // --- Edit Mode FAB ---
 interface EditModeFABProps {
@@ -88,7 +103,6 @@ interface WidgetEditOverlayProps {
   onDrop: (e: React.DragEvent, id: WidgetId) => void;
   isDragOver: boolean;
   isDragging: boolean;
-  // Touch reorder
   onTouchDragStart: (id: WidgetId) => void;
   isTouchDragging: boolean;
 }
@@ -110,41 +124,86 @@ export function WidgetEditOverlay({
 }: WidgetEditOverlayProps) {
   const isMobile = useIsMobile();
   const [sizeToast, setSizeToast] = useState<string | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const lastSizeRef = useRef<WidgetSize>(widget.size);
 
-  const cycleSize = () => {
-    const currentIdx = SIZE_CYCLE.indexOf(widget.size);
-    const nextSize = SIZE_CYCLE[(currentIdx + 1) % SIZE_CYCLE.length];
-    onResize(widget.id, nextSize);
-    triggerHaptic(hapticPatterns.light);
-    setSizeToast(SIZE_LABELS[nextSize]);
-    setTimeout(() => setSizeToast(null), 1200);
-  };
+  // Drag-to-resize: find the grid parent width and map cursor X to a size
+  const handleResizeStart = useCallback((startX: number, startY: number) => {
+    setIsResizing(true);
+    lastSizeRef.current = widget.size;
+
+    const gridEl = containerRef.current?.parentElement?.parentElement;
+    if (!gridEl) return;
+    const gridRect = gridEl.getBoundingClientRect();
+
+    const onMove = (clientX: number) => {
+      const relativeX = clientX - gridRect.left;
+      const pct = Math.max(0, Math.min(1, relativeX / gridRect.width));
+      const newSize = percentToSize(pct);
+      if (newSize !== lastSizeRef.current) {
+        lastSizeRef.current = newSize;
+        onResize(widget.id, newSize);
+        triggerHaptic(hapticPatterns.light);
+        setSizeToast(SIZE_LABELS[newSize]);
+      }
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      e.preventDefault();
+      onMove(e.clientX);
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      onMove(e.touches[0].clientX);
+    };
+
+    const cleanup = () => {
+      setIsResizing(false);
+      setSizeToast(null);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', cleanup);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', cleanup);
+      document.removeEventListener('touchcancel', cleanup);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', cleanup);
+    document.addEventListener('touchmove', onTouchMove, { passive: true });
+    document.addEventListener('touchend', cleanup);
+    document.addEventListener('touchcancel', cleanup);
+  }, [widget.id, widget.size, onResize]);
 
   if (!isEditMode) return <>{children}</>;
 
   return (
     <div
-      draggable={!isMobile}
+      ref={containerRef}
+      draggable={!isMobile && !isResizing}
       onDragStart={(e) => onDragStart(e, widget.id)}
       onDragOver={(e) => onDragOver(e, widget.id)}
       onDragEnd={onDragEnd}
       onDrop={(e) => onDrop(e, widget.id)}
       className={cn(
-        "relative rounded-xl transition-all duration-200 group/edit",
+        "relative rounded-xl transition-all group/edit",
         "ring-2 ring-primary/30 ring-offset-2 ring-offset-background",
         isDragOver && "ring-primary ring-offset-4 scale-[1.01]",
         isDragging && "opacity-40 scale-[0.97]",
         isTouchDragging && "shadow-2xl scale-[1.03] z-50",
+        isResizing && "z-50 ring-primary",
+        !isResizing && "duration-200",
       )}
     >
       {/* Top bar: drag handle + hide button */}
       <div className={cn(
         "absolute -top-3 left-0 right-0 flex items-center justify-between z-20 px-2",
         "opacity-0 group-hover/edit:opacity-100 transition-opacity duration-150",
-        // Always show on mobile in edit mode
         isMobile && "opacity-100"
       )}>
-        {/* Drag handle */}
         <div
           className={cn(
             "flex items-center gap-1 px-2 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium",
@@ -160,7 +219,6 @@ export function WidgetEditOverlay({
           <span className="hidden sm:inline">{widget.label}</span>
         </div>
 
-        {/* Hide button */}
         <button
           onClick={() => {
             triggerHaptic(hapticPatterns.light);
@@ -173,22 +231,33 @@ export function WidgetEditOverlay({
         </button>
       </div>
 
-      {/* Resize handle (bottom-right) */}
-      <button
-        onClick={cycleSize}
+      {/* Drag-to-resize handle (bottom-right) */}
+      <div
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleResizeStart(e.clientX, e.clientY);
+        }}
+        onTouchStart={(e) => {
+          e.stopPropagation();
+          const touch = e.touches[0];
+          handleResizeStart(touch.clientX, touch.clientY);
+        }}
         className={cn(
-          "absolute -bottom-2 -right-2 z-20 p-1.5 rounded-full shadow-md transition-all",
+          "absolute -bottom-2 -right-2 z-20 p-2 rounded-full shadow-md transition-all",
           "bg-accent text-accent-foreground border-2 border-background",
           "hover:bg-primary hover:text-primary-foreground",
+          "cursor-ew-resize select-none touch-none",
           "opacity-0 group-hover/edit:opacity-100",
-          isMobile && "opacity-100"
+          isMobile && "opacity-100",
+          isResizing && "bg-primary text-primary-foreground scale-125 opacity-100"
         )}
-        title={`Resize: currently ${SIZE_LABELS[widget.size]}`}
+        title="Drag left/right to resize"
       >
         <Maximize2 className="h-3.5 w-3.5" />
-      </button>
+      </div>
 
-      {/* Size toast */}
+      {/* Live size indicator while dragging */}
       {sizeToast && (
         <div className="absolute bottom-4 right-4 z-30 px-3 py-1.5 rounded-full bg-foreground text-background text-xs font-bold shadow-lg animate-in fade-in zoom-in-95 duration-150">
           {sizeToast}
@@ -196,7 +265,10 @@ export function WidgetEditOverlay({
       )}
 
       {/* Widget content - slightly dimmed */}
-      <div className="pointer-events-none opacity-80 select-none">
+      <div className={cn(
+        "pointer-events-none opacity-80 select-none",
+        isResizing && "opacity-60"
+      )}>
         {children}
       </div>
     </div>
