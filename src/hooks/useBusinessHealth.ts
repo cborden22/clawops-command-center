@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths, differenceInDays } from "date-fns";
+import { getAccruedIncome } from "@/utils/revenueAccrual";
 
 interface HealthInput {
   entries: Array<{
@@ -8,6 +9,8 @@ interface HealthInput {
     locationId: string;
     date: Date;
     amount: number;
+    servicePeriodStart?: Date | null;
+    servicePeriodEnd?: Date | null;
   }>;
   locations: Array<{
     id: string;
@@ -51,13 +54,8 @@ export function useBusinessHealth({ entries, locations, collections }: HealthInp
     const lastWeekStart = subWeeks(thisWeekStart, 1);
     const lastWeekEnd = subWeeks(thisWeekEnd, 1);
 
-    const thisWeekIncome = entries
-      .filter(e => e.type === "income" && e.date >= thisWeekStart && e.date <= thisWeekEnd)
-      .reduce((sum, e) => sum + e.amount, 0);
-
-    const lastWeekIncome = entries
-      .filter(e => e.type === "income" && e.date >= lastWeekStart && e.date <= lastWeekEnd)
-      .reduce((sum, e) => sum + e.amount, 0);
+    const thisWeekIncome = getAccruedIncome(entries, thisWeekStart, thisWeekEnd);
+    const lastWeekIncome = getAccruedIncome(entries, lastWeekStart, lastWeekEnd);
 
     const totalMachines = locations.reduce((sum, loc) => 
       sum + (loc.machines?.reduce((ms, m) => ms + m.count, 0) || 0), 0
@@ -100,12 +98,9 @@ export function useBusinessHealth({ entries, locations, collections }: HealthInp
     const lastMonthEnd = endOfMonth(subMonths(now, 1));
 
     const locationGrowth: LocationGrowth[] = locations.map(loc => {
-      const currentMonth = entries
-        .filter(e => e.type === "income" && e.locationId === loc.id && e.date >= thisMonthStart && e.date <= thisMonthEnd)
-        .reduce((sum, e) => sum + e.amount, 0);
-      const previousMonth = entries
-        .filter(e => e.type === "income" && e.locationId === loc.id && e.date >= lastMonthStart && e.date <= lastMonthEnd)
-        .reduce((sum, e) => sum + e.amount, 0);
+      const locEntries = entries.filter(e => e.locationId === loc.id);
+      const currentMonth = getAccruedIncome(locEntries, thisMonthStart, thisMonthEnd);
+      const previousMonth = getAccruedIncome(locEntries, lastMonthStart, lastMonthEnd);
       const growthPercent = previousMonth > 0 ? ((currentMonth - previousMonth) / previousMonth) * 100 : 0;
       return { locationId: loc.id, locationName: loc.name, currentMonth, previousMonth, growthPercent };
     }).filter(lg => lg.currentMonth > 0 || lg.previousMonth > 0)
@@ -118,12 +113,8 @@ export function useBusinessHealth({ entries, locations, collections }: HealthInp
     const underperformers = locationGrowth.filter(lg => lg.currentMonth < avgRevenue * 0.5 && avgRevenue > 0);
 
     // Overall MoM growth
-    const totalThisMonth = entries
-      .filter(e => e.type === "income" && e.date >= thisMonthStart && e.date <= thisMonthEnd)
-      .reduce((sum, e) => sum + e.amount, 0);
-    const totalLastMonth = entries
-      .filter(e => e.type === "income" && e.date >= lastMonthStart && e.date <= lastMonthEnd)
-      .reduce((sum, e) => sum + e.amount, 0);
+    const totalThisMonth = getAccruedIncome(entries, thisMonthStart, thisMonthEnd);
+    const totalLastMonth = getAccruedIncome(entries, lastMonthStart, lastMonthEnd);
     const overallGrowth = totalLastMonth > 0 ? ((totalThisMonth - totalLastMonth) / totalLastMonth) * 100 : 0;
 
     return {

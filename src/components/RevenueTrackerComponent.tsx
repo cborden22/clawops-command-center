@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,12 +13,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   CalendarIcon, Plus, Trash2, TrendingUp, TrendingDown, DollarSign, 
   MapPin, Sparkles, AlertCircle, ArrowUpCircle, ArrowDownCircle, Wallet,
-  Download, Building2, Paperclip, FileImage, X, ExternalLink, Receipt, Eye, Loader2, Coins, Pencil
+  Download, Building2, Paperclip, FileImage, X, ExternalLink, Receipt, Eye, Loader2, Coins, Pencil, CalendarRange
 } from "lucide-react";
 import { 
   format, subDays, startOfMonth, endOfMonth, isWithinInterval, 
   startOfWeek, endOfWeek, subWeeks, startOfYear, endOfYear, subYears,
-  startOfQuarter, endOfQuarter, subQuarters
+  startOfQuarter, endOfQuarter, subQuarters, differenceInDays
 } from "date-fns";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
@@ -36,6 +36,8 @@ import { useReceiptViewer } from "@/hooks/useReceiptViewer";
 import { ReceiptModal } from "@/components/shared/ReceiptModal";
 import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
 import { PaginationControls } from "@/components/shared/PaginationControls";
+import { Switch } from "@/components/ui/switch";
+import { spreadEntryAcrossDateRange } from "@/utils/revenueAccrual";
 
 type FilterPeriod = 
   | "past7days" 
@@ -96,6 +98,7 @@ export function RevenueTrackerComponent() {
   // Collection metrics state (for income entries)
   const [coinsInserted, setCoinsInserted] = useState("");
   const [prizesWon, setPrizesWon] = useState("");
+  const [spreadRevenue, setSpreadRevenue] = useState(true);
   
   const [selectedReceiptModal, setSelectedReceiptModal] = useState<{
     path: string;
@@ -133,6 +136,9 @@ export function RevenueTrackerComponent() {
 
   // Get machines for selected location
   const selectedLocationData = selectedLocation ? getLocationById(selectedLocation) : null;
+  const selectedLocationLastCollection = selectedLocationData?.lastCollectionDate 
+    ? new Date(selectedLocationData.lastCollectionDate) 
+    : null;
   const locationMachines = selectedLocationData?.machines || [];
   
   // Get selected machine data for win rate comparison (includes costPerPlay)
@@ -230,6 +236,16 @@ export function RevenueTrackerComponent() {
       setIsUploadingReceipt(false);
     }
     
+    // Calculate service period for income entries with spread enabled
+    let servicePeriodStart: Date | undefined;
+    let servicePeriodEnd: Date | undefined;
+    if (entryType === "income" && spreadRevenue && selectedLocation) {
+      servicePeriodEnd = entryDate;
+      servicePeriodStart = selectedLocationLastCollection && selectedLocationLastCollection < entryDate
+        ? selectedLocationLastCollection
+        : entryDate;
+    }
+    
     const newEntry = await addEntry({
       type: entryType,
       locationId,
@@ -239,6 +255,8 @@ export function RevenueTrackerComponent() {
       category: entryType === "expense" ? category : undefined,
       notes: notes.trim(),
       receiptUrl,
+      servicePeriodStart,
+      servicePeriodEnd,
     });
     
     // Save collection metrics if income entry with machine and metrics provided
@@ -333,7 +351,7 @@ export function RevenueTrackerComponent() {
       return;
     }
 
-    const headers = ["Date", "Type", "Location", "Machine Type", "Amount", "Category", "Notes"];
+    const headers = ["Date", "Type", "Location", "Machine Type", "Amount", "Category", "Notes", "Service Period Start", "Service Period End"];
     const csvRows = [headers.join(",")];
 
     dataToExport.forEach(entry => {
@@ -346,7 +364,9 @@ export function RevenueTrackerComponent() {
         `"${machineType.replace(/"/g, '""')}"`,
         entry.amount.toFixed(2),
         entry.category || "",
-        `"${(entry.notes || "").replace(/"/g, '""')}"`
+        `"${(entry.notes || "").replace(/"/g, '""')}"`,
+        entry.servicePeriodStart ? format(entry.servicePeriodStart, "yyyy-MM-dd") : "",
+        entry.servicePeriodEnd ? format(entry.servicePeriodEnd, "yyyy-MM-dd") : "",
       ];
       csvRows.push(row.join(","));
     });
@@ -430,7 +450,21 @@ export function RevenueTrackerComponent() {
   };
 
   const filteredEntries = getFilteredEntries();
-  const totalIncome = filteredEntries.filter(e => e.type === "income").reduce((sum, e) => sum + e.amount, 0);
+  
+  // Use accrual-based income totals when a date range is active
+  const range = getDateRange(filterPeriod);
+  const totalIncome = useMemo(() => {
+    if (!range) {
+      return filteredEntries.filter(e => e.type === "income").reduce((sum, e) => sum + e.amount, 0);
+    }
+    // For entries with service periods, use pro-rata; for others use full amount if in range
+    return entries
+      .filter(e => e.type === "income")
+      .reduce((sum, e) => {
+        return sum + spreadEntryAcrossDateRange(e, range.start, range.end);
+      }, 0);
+  }, [filteredEntries, entries, range?.start?.getTime(), range?.end?.getTime()]);
+  
   const totalExpenses = filteredEntries.filter(e => e.type === "expense").reduce((sum, e) => sum + e.amount, 0);
   const netProfit = totalIncome - totalExpenses;
   const incomeEntries = filteredEntries.filter(e => e.type === "income");
@@ -777,6 +811,29 @@ export function RevenueTrackerComponent() {
                       className="h-11 bg-background/50 hover:bg-background transition-colors"
                     />
                   </div>
+
+                  {/* Spread Revenue Toggle - Only for income */}
+                  {entryType === "income" && selectedLocation && (
+                    <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CalendarRange className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">Spread across service period</span>
+                        </div>
+                        <Switch
+                          checked={spreadRevenue}
+                          onCheckedChange={setSpreadRevenue}
+                        />
+                      </div>
+                      {spreadRevenue && (
+                        <p className="text-xs text-muted-foreground">
+                          {selectedLocationLastCollection 
+                            ? `Revenue will be spread from ${format(selectedLocationLastCollection, "MMM d")} to ${format(entryDate, "MMM d")} (${Math.max(1, Math.round((entryDate.getTime() - selectedLocationLastCollection.getTime()) / (1000 * 60 * 60 * 24)))} days)`
+                            : "No previous collection date found — revenue will be assigned to the entry date only"}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Receipt Upload - Only for expenses */}
                   {entryType === "expense" && (

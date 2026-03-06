@@ -16,6 +16,8 @@ export interface RevenueEntry {
   category?: string;
   notes: string;
   receiptUrl?: string;
+  servicePeriodStart?: Date;
+  servicePeriodEnd?: Date;
 }
 
 export function useRevenueEntries() {
@@ -50,6 +52,8 @@ export function useRevenueEntries() {
         category: e.category || undefined,
         notes: e.notes || "",
         receiptUrl: e.receipt_url || undefined,
+        servicePeriodStart: e.service_period_start ? new Date(e.service_period_start) : undefined,
+        servicePeriodEnd: e.service_period_end ? new Date(e.service_period_end) : undefined,
       }));
 
       setEntries(mappedEntries);
@@ -81,8 +85,8 @@ export function useRevenueEntries() {
       const { data, error } = await supabase
         .from("revenue_entries")
         .insert({
-          user_id: effectiveUserId,           // Owner's ID (for RLS visibility)
-          created_by_user_id: user.id,        // Actual creator (for attribution)
+          user_id: effectiveUserId,
+          created_by_user_id: user.id,
           type: entry.type,
           location_id: entry.locationId || null,
           machine_type: entry.machineType || null,
@@ -91,6 +95,8 @@ export function useRevenueEntries() {
           category: entry.category || null,
           notes: entry.notes,
           receipt_url: entry.receiptUrl || null,
+          service_period_start: entry.servicePeriodStart ? entry.servicePeriodStart.toISOString().split('T')[0] : null,
+          service_period_end: entry.servicePeriodEnd ? entry.servicePeriodEnd.toISOString().split('T')[0] : null,
         })
         .select()
         .single();
@@ -107,6 +113,8 @@ export function useRevenueEntries() {
         category: data.category || undefined,
         notes: data.notes || "",
         receiptUrl: data.receipt_url || undefined,
+        servicePeriodStart: data.service_period_start ? new Date(data.service_period_start) : undefined,
+        servicePeriodEnd: data.service_period_end ? new Date(data.service_period_end) : undefined,
       };
 
       setEntries(prev => [newEntry, ...prev]);
@@ -159,6 +167,8 @@ export function useRevenueEntries() {
           category: updates.category !== undefined ? (updates.category || null) : undefined,
           notes: updates.notes !== undefined ? updates.notes : undefined,
           receipt_url: updates.receiptUrl !== undefined ? (updates.receiptUrl || null) : undefined,
+          service_period_start: updates.servicePeriodStart !== undefined ? (updates.servicePeriodStart ? updates.servicePeriodStart.toISOString().split('T')[0] : null) : undefined,
+          service_period_end: updates.servicePeriodEnd !== undefined ? (updates.servicePeriodEnd ? updates.servicePeriodEnd.toISOString().split('T')[0] : null) : undefined,
         })
         .eq("id", id)
         .select()
@@ -176,6 +186,8 @@ export function useRevenueEntries() {
         category: data.category || undefined,
         notes: data.notes || "",
         receiptUrl: data.receipt_url || undefined,
+        servicePeriodStart: data.service_period_start ? new Date(data.service_period_start) : undefined,
+        servicePeriodEnd: data.service_period_end ? new Date(data.service_period_end) : undefined,
       };
 
       setEntries(prev => prev.map(e => e.id === id ? updatedEntry : e));
