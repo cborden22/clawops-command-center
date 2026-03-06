@@ -34,7 +34,7 @@ import { MaintenanceWidget } from "@/components/maintenance/MaintenanceWidget";
 import { WeeklyCalendarWidget } from "@/components/dashboard/WeeklyCalendarWidget";
 import { RestockDueWidget } from "@/components/dashboard/RestockDueWidget";
 import { EditModeFAB, WidgetEditOverlay, HiddenWidgetsTray } from "@/components/dashboard/DashboardCustomizer";
-import type { WidgetConfig } from "@/components/dashboard/DashboardCustomizer";
+
 import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isWithinInterval, startOfDay, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -46,6 +46,7 @@ import { useExpenseBudgets } from "@/hooks/useExpenseBudgets";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 
 type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance' | 'leads' | 'businessHealth' | 'budgetTracking';
+
 
 interface WidgetConfig {
   id: WidgetId;
