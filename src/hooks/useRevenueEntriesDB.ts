@@ -167,6 +167,8 @@ export function useRevenueEntries() {
           category: updates.category !== undefined ? (updates.category || null) : undefined,
           notes: updates.notes !== undefined ? updates.notes : undefined,
           receipt_url: updates.receiptUrl !== undefined ? (updates.receiptUrl || null) : undefined,
+          service_period_start: updates.servicePeriodStart !== undefined ? (updates.servicePeriodStart ? updates.servicePeriodStart.toISOString().split('T')[0] : null) : undefined,
+          service_period_end: updates.servicePeriodEnd !== undefined ? (updates.servicePeriodEnd ? updates.servicePeriodEnd.toISOString().split('T')[0] : null) : undefined,
         })
         .eq("id", id)
         .select()
@@ -184,6 +186,8 @@ export function useRevenueEntries() {
         category: data.category || undefined,
         notes: data.notes || "",
         receiptUrl: data.receipt_url || undefined,
+        servicePeriodStart: data.service_period_start ? new Date(data.service_period_start) : undefined,
+        servicePeriodEnd: data.service_period_end ? new Date(data.service_period_end) : undefined,
       };
 
       setEntries(prev => prev.map(e => e.id === id ? updatedEntry : e));
