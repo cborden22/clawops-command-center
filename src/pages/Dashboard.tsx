@@ -159,7 +159,10 @@ export default function Dashboard() {
 
   const [widgets, setWidgets] = useState<WidgetConfig[]>(DEFAULT_WIDGET_ORDER);
   const [layoutLoaded, setLayoutLoaded] = useState(false);
-   const [customizePanelOpen, setCustomizePanelOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [draggedId, setDraggedId] = useState<WidgetId | null>(null);
+  const [dragOverId, setDragOverId] = useState<WidgetId | null>(null);
+  const [touchDragId, setTouchDragId] = useState<WidgetId | null>(null);
   
   const isMobile = useIsMobile();
   const { registerRefresh, unregisterRefresh } = useMobileRefresh();
