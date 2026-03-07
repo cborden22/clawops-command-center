@@ -49,7 +49,6 @@ interface RouteManagerProps {
     scheduleDayOfWeek?: number
   ) => Promise<boolean>;
   onDeleteRoute: (id: string) => Promise<boolean>;
-  onUseRoute: (route: MileageRoute) => void;
   onRunRoute: (route: MileageRoute) => void;
   hasActiveRun?: boolean;
 }
@@ -59,7 +58,6 @@ export function RouteManager({
   onAddRoute,
   onUpdateRoute,
   onDeleteRoute,
-  onUseRoute,
   onRunRoute,
   hasActiveRun,
 }: RouteManagerProps) {
@@ -170,10 +168,6 @@ export function RouteManager({
                       <DropdownMenuItem onClick={() => onRunRoute(route)}>
                         <Play className="h-4 w-4 mr-2" />
                         Run Route
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onUseRoute(route)}>
-                        <Play className="h-4 w-4 mr-2" />
-                        Quick Log Trip
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleEdit(route)}>
                         <Pencil className="h-4 w-4 mr-2" />
