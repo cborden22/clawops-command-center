@@ -22,15 +22,10 @@ export function RouteRunSummary({ run, routeName, onFinish, onDiscard, isFinishi
     (sum, s) => sum + s.collections.reduce((cs, c) => cs + c.coinsInserted, 0),
     0
   );
-  const totalPrizes = run.stopData.reduce(
-    (sum, s) => sum + s.collections.reduce((cs, c) => cs + c.prizesWon, 0),
-    0
-  );
   const stopsCompleted = run.stopData.length;
-  const commissionsHandled = run.stopData.filter((s) => s.commissionPaid).length;
 
   const handleFinish = async () => {
-    const odoEnd = run.trackingMode === "odometer" ? parseFloat(odometerEnd) || undefined : undefined;
+    const odoEnd = parseFloat(odometerEnd) || undefined;
     await onFinish(odoEnd);
   };
 
@@ -90,27 +85,25 @@ export function RouteRunSummary({ run, routeName, onFinish, onDiscard, isFinishi
         </CardContent>
       </Card>
 
-      {/* Odometer End (if odometer mode) */}
-      {run.trackingMode === "odometer" && (
-        <Card className="glass-card">
-          <CardContent className="p-4 space-y-2">
-            <Label>Ending Odometer</Label>
-            <NumberInput
-              placeholder="Enter final odometer reading"
-              value={odometerEnd}
-              onChange={(e) => setOdometerEnd(e.target.value)}
-              inputMode="numeric"
-              className="h-12 text-lg"
-            />
-          </CardContent>
-        </Card>
-      )}
+      {/* Ending Odometer */}
+      <Card className="glass-card">
+        <CardContent className="p-4 space-y-2">
+          <Label>Ending Odometer</Label>
+          <NumberInput
+            placeholder="Enter final odometer reading"
+            value={odometerEnd}
+            onChange={(e) => setOdometerEnd(e.target.value)}
+            inputMode="numeric"
+            className="h-12 text-lg"
+          />
+        </CardContent>
+      </Card>
 
       {/* Actions */}
       <div className="space-y-3 pb-6">
         <Button
           onClick={handleFinish}
-          disabled={isFinishing || (run.trackingMode === "odometer" && !odometerEnd)}
+          disabled={isFinishing || !odometerEnd}
           className="w-full h-14 text-base gap-2"
         >
           <RouteIcon className="h-5 w-5" />

@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { 
   CalendarIcon, Plus, Trash2, Car, Route, DollarSign,
   Download, Sparkles, TrendingUp, AlertTriangle, Pencil, ChevronDown, ChevronRight,
-  Navigation, Play
+  Play
 } from "lucide-react";
 import { 
   format, subDays, startOfMonth, endOfMonth, isWithinInterval, 
@@ -32,10 +32,7 @@ import { useRouteRun } from "@/hooks/useRouteRun";
 import { RouteManager } from "@/components/mileage/RouteManager";
 import { RouteRunPage } from "@/components/mileage/RouteRunPage";
 import { LocationSelector, LocationSelection, getLocationDisplayString } from "@/components/mileage/LocationSelector";
-import { TrackingModeSelector, TrackingMode } from "@/components/mileage/TrackingModeSelector";
 import { ActiveTripCard } from "@/components/mileage/ActiveTripCard";
-import { GpsTracker } from "@/components/mileage/GpsTracker";
-import { RouteQuickSelector } from "@/components/mileage/RouteQuickSelector";
 import { MileageRoute, RouteStop } from "@/hooks/useRoutesDB";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
@@ -92,10 +89,6 @@ const MileageTracker = () => {
   // Route run state
   const [routeRunRoute, setRouteRunRoute] = useState<MileageRoute | null>(null);
   
-  // Tracking mode state
-  const [trackingMode, setTrackingMode] = useState<TrackingMode>("odometer");
-  const [isGpsTracking, setIsGpsTracking] = useState(false);
-  
   // Form state - odometer only
   const [tripDate, setTripDate] = useState<Date>(new Date());
   const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
@@ -106,8 +99,6 @@ const MileageTracker = () => {
   const [purpose, setPurpose] = useState("");
   const [notes, setNotes] = useState("");
   
-  // Route template quick-start state
-  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [isStartingTrip, setIsStartingTrip] = useState(false);
   
   // Filter state
@@ -154,6 +145,13 @@ const MileageTracker = () => {
   const isLargeJump = calculatedMiles !== null && calculatedMiles > 500;
   
   const selectedVehicle = selectedVehicleId ? getVehicleById(selectedVehicleId) : undefined;
+
+  // Auto-fill odometer from vehicle's last reading
+  useEffect(() => {
+    if (selectedVehicle?.lastRecordedOdometer && !odometerStart) {
+      setOdometerStart(selectedVehicle.lastRecordedOdometer.toString());
+    }
+  }, [selectedVehicleId]);
   
   // Build warehouse address from settings
   const warehouseAddress = [
@@ -167,79 +165,26 @@ const MileageTracker = () => {
     navigate("/settings");
   };
 
-  // Helper to convert a route stop to LocationSelection
-  const stopToLocationSelection = (
-    stop: RouteStop
-  ): LocationSelection => {
-    if (stop.locationId) {
-      return { type: "location", locationId: stop.locationId };
-    }
-    
-    const customName = stop.customLocationName || "";
-    
-    // Check if this stop represents the warehouse
-    if (customName === warehouseAddress || 
-        customName.toLowerCase().includes("warehouse") ||
-        customName.toLowerCase() === "starting point") {
-      return { type: "warehouse" };
-    }
-    
-    return { type: "custom", customName };
-  };
-
   const resetForm = () => {
     setOdometerStart("");
     setOdometerEnd("");
     setPurpose("");
     setNotes("");
     setToSelection({ type: "location" });
-    setIsGpsTracking(false);
-    setSelectedRouteId(null);
     // Keep vehicle and from selection for convenience
   };
 
-  // Handle From selection change - clears route if user manually changes
+  // Handle From selection change
   const handleFromChange = (selection: LocationSelection) => {
     setFromSelection(selection);
-    if (selectedRouteId) {
-      setSelectedRouteId(null);
-    }
   };
 
-  // Handle To selection change - clears route if user manually changes
+  // Handle To selection change
   const handleToChange = (selection: LocationSelection) => {
     setToSelection(selection);
-    if (selectedRouteId) {
-      setSelectedRouteId(null);
-    }
   };
 
-  // Handle route selection from quick selector
-  const handleRouteSelect = (route: MileageRoute | null) => {
-    if (!route) {
-      setSelectedRouteId(null);
-      return;
-    }
-    
-    setSelectedRouteId(route.id);
-    
-    // Get first and last stops
-    const firstStop = route.stops[0];
-    const lastStop = route.stops[route.stops.length - 1];
-    
-    if (firstStop) {
-      setFromSelection(stopToLocationSelection(firstStop));
-    }
-    
-    if (lastStop) {
-      setToSelection(stopToLocationSelection(lastStop));
-    }
-    
-    // Set purpose to route name
-    setPurpose(route.name);
-  };
-
-  // Start a new in-progress trip (for manual mode)
+  // Start a new in-progress trip
   const handleStartTrip = async () => {
     if (!selectedVehicleId) {
       toast({ title: "Vehicle Required", description: "Please select a vehicle.", variant: "destructive" });
@@ -254,15 +199,10 @@ const MileageTracker = () => {
       return;
     }
     
-    // If no route is selected, destination is required
-    if (!selectedRouteId && !endLocationStr) {
-      toast({ title: "To Required", description: "Please select a route or enter a destination.", variant: "destructive" });
+    if (!endLocationStr) {
+      toast({ title: "To Required", description: "Please enter a destination.", variant: "destructive" });
       return;
     }
-    
-    // If route is selected, use route name as destination if To is empty
-    const selectedRoute = selectedRouteId ? routes.find(r => r.id === selectedRouteId) : null;
-    const finalEndLocation = endLocationStr || (selectedRoute ? `${selectedRoute.name} (Route)` : "");
     
     if (!odometerStart) {
       toast({ title: "Start Odometer Required", description: "Please enter your current odometer reading.", variant: "destructive" });
@@ -281,7 +221,7 @@ const MileageTracker = () => {
     const result = await startTrip({
       vehicleId: selectedVehicleId,
       startLocation: startLocationStr,
-      endLocation: finalEndLocation,
+      endLocation: endLocationStr,
       locationId,
       odometerStart: startVal,
       purpose: purpose.trim() || "Business Trip",
@@ -296,73 +236,7 @@ const MileageTracker = () => {
     setIsStartingTrip(false);
   };
 
-  // Start GPS tracking mode
-  const handleStartGpsTracking = async () => {
-    if (!selectedVehicleId) {
-      toast({ title: "Vehicle Required", description: "Please select a vehicle.", variant: "destructive" });
-      return;
-    }
-    
-    const startLocationStr = getLocationDisplayString(fromSelection, activeLocations, warehouseAddress);
-    const endLocationStr = getLocationDisplayString(toSelection, activeLocations, warehouseAddress);
-    
-    if (!startLocationStr) {
-      toast({ title: "From Required", description: "Please select or enter a start location.", variant: "destructive" });
-      return;
-    }
-    
-    // If no route is selected, destination is required
-    if (!selectedRouteId && !endLocationStr) {
-      toast({ title: "To Required", description: "Please select a route or enter a destination.", variant: "destructive" });
-      return;
-    }
-    
-    // If route is selected, use route name as destination if To is empty
-    const selectedRoute = selectedRouteId ? routes.find(r => r.id === selectedRouteId) : null;
-    const finalEndLocation = endLocationStr || (selectedRoute ? `${selectedRoute.name} (Route)` : "");
-    
-    const locationId = toSelection.type === "location" ? toSelection.locationId : undefined;
-    
-    // Start the trip first
-    const result = await startTrip({
-      vehicleId: selectedVehicleId,
-      startLocation: startLocationStr,
-      endLocation: finalEndLocation,
-      locationId,
-      odometerStart: 0, // GPS mode doesn't use odometer
-      purpose: purpose.trim() || "Business Trip",
-      notes: notes.trim(),
-      trackingMode: "gps",
-    });
-    
-    if (result) {
-      setIsGpsTracking(true);
-    }
-  };
-
-  // Handle GPS tracking completion
-  const handleGpsComplete = async (data: {
-    distanceMiles: number;
-    gpsDistanceMeters: number;
-    startLat?: number;
-    startLng?: number;
-    endLat?: number;
-    endLng?: number;
-  }) => {
-    const success = await completeTrip({
-      gpsDistanceMeters: data.gpsDistanceMeters,
-      gpsEndLat: data.endLat,
-      gpsEndLng: data.endLng,
-    });
-    
-    if (success) {
-      setIsGpsTracking(false);
-      resetForm();
-      refetchMileage();
-    }
-  };
-
-  // Handle active trip completion (manual mode)
+  // Handle active trip completion
   const handleCompleteActiveTrip = async (odometerEnd: number): Promise<boolean> => {
     const success = await completeTrip({ odometerEnd });
     if (success) {
@@ -373,11 +247,7 @@ const MileageTracker = () => {
 
   // Handle active trip discard
   const handleDiscardTrip = async (): Promise<boolean> => {
-    const success = await discardTrip();
-    if (success) {
-      setIsGpsTracking(false);
-    }
-    return success;
+    return await discardTrip();
   };
 
   const handleAddEntry = async () => {
@@ -395,15 +265,10 @@ const MileageTracker = () => {
       return;
     }
     
-    // If no route is selected, destination is required
-    if (!selectedRouteId && !endLocationStr) {
-      toast({ title: "To Required", description: "Please select a route or enter a destination.", variant: "destructive" });
+    if (!endLocationStr) {
+      toast({ title: "To Required", description: "Please enter a destination.", variant: "destructive" });
       return;
     }
-    
-    // If route is selected, use route name as destination if To is empty
-    const selectedRoute = selectedRouteId ? routes.find(r => r.id === selectedRouteId) : null;
-    const finalEndLocation = endLocationStr || (selectedRoute ? `${selectedRoute.name} (Route)` : "");
     
     if (!odometerStart || !odometerEnd) {
       toast({ title: "Odometer Required", description: "Please enter both odometer readings.", variant: "destructive" });
@@ -431,12 +296,12 @@ const MileageTracker = () => {
     const result = await addEntry({
       date: tripDate,
       startLocation: startLocationStr,
-      endLocation: finalEndLocation,
+      endLocation: endLocationStr,
       locationId,
       miles: milesToLog,
       purpose: purpose.trim(),
       notes: notes.trim(),
-      isRoundTrip: false, // Always false now - odometer captures actual miles
+      isRoundTrip: false,
       vehicleId: selectedVehicleId,
       odometerStart: startVal,
       odometerEnd: endVal,
@@ -521,7 +386,6 @@ const MileageTracker = () => {
   const handleSaveEdit = async () => {
     if (!editingEntry) return;
     
-    // Validation
     if (!editVehicleId) {
       toast({ title: "Vehicle Required", description: "Please select a vehicle.", variant: "destructive" });
       return;
@@ -576,7 +440,6 @@ const MileageTracker = () => {
       odometerEnd: endVal,
     });
     
-    // Update vehicle's last recorded odometer if it's higher
     if (result && editVehicleId) {
       const vehicle = getVehicleById(editVehicleId);
       if (!vehicle?.lastRecordedOdometer || endVal > vehicle.lastRecordedOdometer) {
@@ -670,7 +533,6 @@ const MileageTracker = () => {
       csvRows.push(row.join(","));
     });
 
-    // Add summary row
     csvRows.push("");
     csvRows.push(`Total Miles,${totalMiles.toFixed(1)}`);
     csvRows.push(`Tax Deduction (@ $${IRS_MILEAGE_RATE}/mi),$${taxDeduction.toFixed(2)}`);
@@ -689,11 +551,6 @@ const MileageTracker = () => {
     URL.revokeObjectURL(url);
     
     toast({ title: "Export Complete", description: `Exported ${filteredEntries.length} trips to CSV.` });
-  };
-
-  const handleUseRoute = (route: MileageRoute) => {
-    setActiveTab("log");
-    handleRouteSelect(route);
   };
 
   const handleRunRoute = (route: MileageRoute) => {
@@ -794,34 +651,13 @@ const MileageTracker = () => {
             {/* Log Trip Tab */}
             <TabsContent value="log" className="space-y-6">
               {/* Active Trip Card - shown if there's an in-progress trip */}
-              {activeTrip && !isGpsTracking && activeTrip.trackingMode === "odometer" && (
+              {activeTrip && (
                 <ActiveTripCard
                   trip={activeTrip}
                   onComplete={handleCompleteActiveTrip}
                   onDiscard={handleDiscardTrip}
                   onUpdateOdometer={(odometerEnd) => updateTrip({ odometerEnd })}
                 />
-              )}
-
-              {/* GPS Tracking UI - shown when GPS tracking is active */}
-              {activeTrip && (isGpsTracking || activeTrip.trackingMode === "gps") && (
-                <Card className="glass-card overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent border-b border-border/50">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <Navigation className="h-4 w-4 text-primary" />
-                      </div>
-                      GPS Tracking
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <GpsTracker
-                      destination={activeTrip.endLocation}
-                      onComplete={handleGpsComplete}
-                      onCancel={handleDiscardTrip}
-                    />
-                  </CardContent>
-                </Card>
               )}
 
               {/* New Trip Form - shown when no active trip */}
@@ -837,13 +673,6 @@ const MileageTracker = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4 pt-6">
-                      {/* Tracking Mode Selector */}
-                      <TrackingModeSelector
-                        value={trackingMode}
-                        onChange={setTrackingMode}
-                        disabled={isStartingTrip}
-                      />
-
                       {/* Vehicle Selector */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">Vehicle *</Label>
@@ -876,90 +705,47 @@ const MileageTracker = () => {
                             </SelectContent>
                           </Select>
                         )}
-                        {selectedVehicle?.lastRecordedOdometer !== undefined && trackingMode === "odometer" && (
+                        {selectedVehicle?.lastRecordedOdometer !== undefined && (
                           <p className="text-xs text-muted-foreground pl-1">
                             Last recorded: {selectedVehicle.lastRecordedOdometer.toLocaleString()} miles
                           </p>
                         )}
                       </div>
 
-                      {/* Route Quick Selector */}
-                      <RouteQuickSelector
-                        routes={routes}
-                        selectedRouteId={selectedRouteId}
-                        onSelectRoute={handleRouteSelect}
+                      {/* From Location */}
+                      <LocationSelector
+                        type="from"
+                        value={fromSelection}
+                        onChange={handleFromChange}
                         locations={activeLocations}
                         warehouseAddress={warehouseAddress}
                       />
 
-                      {/* Only show manual From/To if no route is selected */}
-                      {!selectedRouteId && (
-                        <>
-                          {/* From Location */}
-                          <LocationSelector
-                            type="from"
-                            value={fromSelection}
-                            onChange={handleFromChange}
-                            locations={activeLocations}
-                            warehouseAddress={warehouseAddress}
-                          />
+                      {/* To Location */}
+                      <LocationSelector
+                        type="to"
+                        value={toSelection}
+                        onChange={handleToChange}
+                        locations={activeLocations}
+                        warehouseAddress={warehouseAddress}
+                      />
 
-                          {/* To Location */}
-                          <LocationSelector
-                            type="to"
-                            value={toSelection}
-                            onChange={handleToChange}
-                            locations={activeLocations}
-                            warehouseAddress={warehouseAddress}
-                          />
-                        </>
-                      )}
-                      
-                      {/* Show route summary when route is selected */}
-                      {selectedRouteId && (
-                        <div className="p-3 rounded-lg bg-muted/50 border border-border space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-muted-foreground">Route Selected</span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedRouteId(null);
-                                setFromSelection({ type: "warehouse" });
-                                setToSelection({ type: "location" });
-                                setPurpose("");
-                              }}
-                              className="h-7 text-xs"
-                            >
-                              Clear
-                            </Button>
-                          </div>
-                          <div className="text-sm">
-                            <span className="font-medium">{getLocationDisplayString(fromSelection, activeLocations, warehouseAddress)}</span>
-                            <span className="text-muted-foreground mx-2">→</span>
-                            <span className="font-medium">{getLocationDisplayString(toSelection, activeLocations, warehouseAddress)}</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Start Odometer - only for manual mode */}
-                      {trackingMode === "odometer" && (
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium">Start Odometer *</Label>
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            placeholder="e.g., 45276"
-                            value={odometerStart}
-                            onChange={(e) => setOdometerStart(e.target.value)}
-                            className="h-14 text-xl font-semibold text-center"
-                            onFocus={(e) => e.target.select()}
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Enter your current odometer reading. You'll enter the end reading when you complete the trip.
-                          </p>
-                        </div>
-                      )}
+                      {/* Start Odometer */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Start Odometer *</Label>
+                        <Input
+                          type="number"
+                          inputMode="numeric"
+                          placeholder="e.g., 45276"
+                          value={odometerStart}
+                          onChange={(e) => setOdometerStart(e.target.value)}
+                          className="h-14 text-xl font-semibold text-center"
+                          onFocus={(e) => e.target.select()}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Enter your current odometer reading. You'll enter the end reading when you complete the trip.
+                        </p>
+                      </div>
 
                       {/* Purpose */}
                       <div className="space-y-2">
@@ -988,37 +774,23 @@ const MileageTracker = () => {
                       </div>
 
                       {/* Start Trip Button */}
-                      {trackingMode === "odometer" ? (
-                        <Button 
-                          onClick={handleStartTrip} 
-                          className="w-full h-12 gap-2"
-                          disabled={!selectedVehicleId || !odometerStart || isStartingTrip}
-                        >
-                          {isStartingTrip ? (
-                            <>Starting...</>
-                          ) : (
-                            <>
-                              <Play className="h-4 w-4" />
-                              Start Trip
-                            </>
-                          )}
-                        </Button>
-                      ) : (
-                        <Button 
-                          onClick={handleStartGpsTracking} 
-                          className="w-full h-12 gap-2"
-                          disabled={!selectedVehicleId}
-                        >
-                          <Navigation className="h-4 w-4" />
-                          Start GPS Tracking
-                        </Button>
-                      )}
+                      <Button 
+                        onClick={handleStartTrip} 
+                        className="w-full h-12 gap-2"
+                        disabled={!selectedVehicleId || !odometerStart || isStartingTrip}
+                      >
+                        {isStartingTrip ? (
+                          <>Starting...</>
+                        ) : (
+                          <>
+                            <Play className="h-4 w-4" />
+                            Start Trip
+                          </>
+                        )}
+                      </Button>
 
                       <p className="text-xs text-center text-muted-foreground">
-                        {trackingMode === "odometer" 
-                          ? "Your trip will be saved. Return here to enter your end odometer when done."
-                          : "GPS will track your distance automatically. Make sure location is enabled."
-                        }
+                        Your trip will be saved. Return here to enter your end odometer when done.
                       </p>
                     </CardContent>
                   </Card>
@@ -1127,7 +899,6 @@ const MileageTracker = () => {
                   onAddRoute={addRoute}
                   onUpdateRoute={updateRoute}
                   onDeleteRoute={deleteRoute}
-                  onUseRoute={handleUseRoute}
                   onRunRoute={handleRunRoute}
                   hasActiveRun={!!activeRun}
                 />

@@ -4,11 +4,9 @@ import { ArrowLeft } from "lucide-react";
 import { MileageRoute } from "@/hooks/useRoutesDB";
 import { Vehicle } from "@/hooks/useVehiclesDB";
 import { RouteRun, useRouteRun, StopResult } from "@/hooks/useRouteRun";
-import { supabase } from "@/integrations/supabase/client";
 import { RouteRunSetup } from "./RouteRunSetup";
 import { RouteRunStopView } from "./RouteRunStopView";
 import { RouteRunSummary } from "./RouteRunSummary";
-import { TrackingMode } from "./TrackingModeSelector";
 
 type Phase = "setup" | "running" | "summary";
 
@@ -49,13 +47,10 @@ export function RouteRunPage({
   const [isStarting, setIsStarting] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
-  // Custom stops set during setup (filtered/reordered)
   const [runStops, setRunStops] = useState<import("@/hooks/useRoutesDB").RouteStop[] | null>(null);
 
-  // The effective stops list for the active run
   const effectiveStops = runStops || route.stops;
 
-  // Determine phase
   const phase: Phase = useMemo(() => {
     if (!activeRun) return "setup";
     if (activeRun.currentStopIndex >= effectiveStops.length) return "summary";
@@ -66,10 +61,10 @@ export function RouteRunPage({
     ? effectiveStops[activeRun.currentStopIndex]
     : null;
 
-  const handleStart = async (vehicleId: string, trackingMode: TrackingMode, odometerStart?: number, customStops?: import("@/hooks/useRoutesDB").RouteStop[]) => {
+  const handleStart = async (vehicleId: string, trackingMode: "odometer", odometerStart?: number, customStops?: import("@/hooks/useRoutesDB").RouteStop[]) => {
     setIsStarting(true);
     if (customStops) setRunStops(customStops);
-    await onStartRun({ route, vehicleId, trackingMode, odometerStart, customStops });
+    await onStartRun({ route, vehicleId, trackingMode: "odometer", odometerStart, customStops });
     setIsStarting(false);
   };
 
@@ -104,7 +99,6 @@ export function RouteRunPage({
 
   return (
     <div className="space-y-4">
-      {/* Back button */}
       <Button variant="ghost" size="sm" onClick={onExit} className="gap-2 -ml-2">
         <ArrowLeft className="h-4 w-4" />
         Back to Routes
