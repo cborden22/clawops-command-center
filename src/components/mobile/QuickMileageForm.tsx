@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,14 +9,10 @@ import { useLocations } from "@/hooks/useLocationsDB";
 import { useVehicles } from "@/hooks/useVehiclesDB";
 import { useActiveTrip } from "@/hooks/useActiveTrip";
 import { useMileage, IRS_MILEAGE_RATE } from "@/hooks/useMileageDB";
-import { useRoutes, MileageRoute, RouteStop } from "@/hooks/useRoutesDB";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Car, AlertTriangle, Play, CheckCircle, Trash2, MapPin, Clock, Navigation } from "lucide-react";
+import { Loader2, Car, AlertTriangle, Play, CheckCircle, Trash2, MapPin, Clock } from "lucide-react";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
 import { LocationSelector, LocationSelection, getLocationDisplayString } from "@/components/mileage/LocationSelector";
-import { TrackingModeSelector, TrackingMode } from "@/components/mileage/TrackingModeSelector";
-import { GpsTracker } from "@/components/mileage/GpsTracker";
-import { RouteQuickSelector } from "@/components/mileage/RouteQuickSelector";
 import { useNavigate } from "react-router-dom";
 import { format, formatDistanceToNow } from "date-fns";
 import {
@@ -51,15 +47,9 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
   const { vehicles, updateVehicleOdometer, getVehicleById } = useVehicles();
   const { activeTrip, startTrip, completeTrip, discardTrip } = useActiveTrip();
   const { refetch: refetchMileage } = useMileage();
-  const { routes } = useRoutes();
   const { settings } = useAppSettings();
   
-  // Tracking mode state
-  const [trackingMode, setTrackingMode] = useState<TrackingMode>("odometer");
-  const [isGpsCompleting, setIsGpsCompleting] = useState(false);
-  
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
-  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [fromSelection, setFromSelection] = useState<LocationSelection>({ type: "warehouse" });
   const [toSelection, setToSelection] = useState<LocationSelection>({ type: "location" });
   const [odometerStart, setOdometerStart] = useState("");
@@ -76,58 +66,12 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
     settings.warehouseZip
   ].filter(Boolean).join(", ");
   
-  // Helper to convert route stop to location selection
-  const stopToLocationSelection = (stop: RouteStop): LocationSelection => {
-    if (stop.locationId) {
-      return { type: "location", locationId: stop.locationId };
-    }
-    
-    const customName = stop.customLocationName || "";
-    
-    // Check if this stop represents the warehouse
-    if (customName === warehouseAddress || 
-        customName.toLowerCase().includes("warehouse") ||
-        customName.toLowerCase() === "starting point") {
-      return { type: "warehouse" };
-    }
-    
-    return { type: "custom", customName };
-  };
-  
-  // Route selection handler
-  const handleRouteSelect = (route: MileageRoute | null) => {
-    if (!route) {
-      setSelectedRouteId(null);
-      return;
-    }
-    
-    setSelectedRouteId(route.id);
-    
-    // Auto-populate From and To from first and last stops
-    const firstStop = route.stops[0];
-    const lastStop = route.stops[route.stops.length - 1];
-    
-    if (firstStop) {
-      setFromSelection(stopToLocationSelection(firstStop));
-    }
-    
-    if (lastStop) {
-      setToSelection(stopToLocationSelection(lastStop));
-    }
-    
-    // Set purpose to route name
-    setPurpose(route.name);
-  };
-  
-  // Handlers to clear route when From/To manually changed
   const handleFromChange = (selection: LocationSelection) => {
     setFromSelection(selection);
-    if (selectedRouteId) setSelectedRouteId(null);
   };
   
   const handleToChange = (selection: LocationSelection) => {
     setToSelection(selection);
-    if (selectedRouteId) setSelectedRouteId(null);
   };
 
   const handleNavigateToSettings = () => {
@@ -144,13 +88,21 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
   const activeEstimatedDeduction = activeCalculatedMiles * IRS_MILEAGE_RATE;
   const isActiveEndValid = activeTrip && activeEndNum > activeTrip.odometerStart;
 
+  const selectedVehicle = selectedVehicleId ? getVehicleById(selectedVehicleId) : undefined;
+
+  // Auto-fill odometer from vehicle's last reading
+  useEffect(() => {
+    if (selectedVehicle?.lastRecordedOdometer && !odometerStart) {
+      setOdometerStart(selectedVehicle.lastRecordedOdometer.toString());
+    }
+  }, [selectedVehicleId]);
+
   const resetForm = () => {
     setOdometerStart("");
     setOdometerEnd("");
     setPurpose("");
     setNotes("");
     setToSelection({ type: "location" });
-    setSelectedRouteId(null);
   };
 
   const handleStartTrip = async () => {
@@ -167,15 +119,10 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       return;
     }
     
-    // If no route is selected, destination is required
-    const selectedRoute = selectedRouteId ? routes.find(r => r.id === selectedRouteId) : null;
-    if (!selectedRouteId && !endLocationStr) {
-      toast({ title: "To Required", description: "Please select a route or enter a destination.", variant: "destructive" });
+    if (!endLocationStr) {
+      toast({ title: "To Required", description: "Please enter a destination.", variant: "destructive" });
       return;
     }
-    
-    // If route is selected, use route name as destination if To is empty
-    const finalEndLocation = endLocationStr || (selectedRoute ? `${selectedRoute.name} (Route)` : "");
     
     if (!odometerStart) {
       toast({ title: "Start Odometer Required", description: "Enter your current odometer reading.", variant: "destructive" });
@@ -195,13 +142,12 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       const result = await startTrip({
         vehicleId: selectedVehicleId,
         startLocation: startLocationStr,
-        endLocation: finalEndLocation,
+        endLocation: endLocationStr,
         locationId,
         odometerStart: startVal,
         purpose: purpose || "Business Trip",
         notes: notes || "",
         trackingMode: "odometer",
-        routeId: selectedRouteId || undefined,
       });
       
       if (result) {
@@ -215,88 +161,6 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       toast({ title: "Error", description: "Failed to start trip.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleStartGpsTracking = async () => {
-    if (!selectedVehicleId) {
-      toast({ title: "Vehicle Required", description: "Please select a vehicle.", variant: "destructive" });
-      return;
-    }
-    
-    const startLocationStr = getLocationDisplayString(fromSelection, activeLocations, warehouseAddress);
-    const endLocationStr = getLocationDisplayString(toSelection, activeLocations, warehouseAddress);
-    
-    if (!startLocationStr) {
-      toast({ title: "From Required", description: "Please select or enter a start location.", variant: "destructive" });
-      return;
-    }
-    
-    // If no route is selected, destination is required
-    const selectedRoute = selectedRouteId ? routes.find(r => r.id === selectedRouteId) : null;
-    if (!selectedRouteId && !endLocationStr) {
-      toast({ title: "To Required", description: "Please select a route or enter a destination.", variant: "destructive" });
-      return;
-    }
-    
-    // If route is selected, use route name as destination if To is empty
-    const finalEndLocation = endLocationStr || (selectedRoute ? `${selectedRoute.name} (Route)` : "");
-    
-    const locationId = toSelection.type === "location" ? toSelection.locationId : undefined;
-
-    setIsSubmitting(true);
-    try {
-      const result = await startTrip({
-        vehicleId: selectedVehicleId,
-        startLocation: startLocationStr,
-        endLocation: finalEndLocation,
-        locationId,
-        odometerStart: 0, // GPS mode doesn't use odometer
-        purpose: purpose || "Business Trip",
-        notes: notes || "",
-        trackingMode: "gps",
-        routeId: selectedRouteId || undefined,
-      });
-      
-      if (result) {
-        toast({ 
-          title: "GPS Tracking Started!", 
-          description: "Tracking your route..." 
-        });
-        resetForm();
-      }
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to start GPS tracking.", variant: "destructive" });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleGpsComplete = async (data: {
-    distanceMiles: number;
-    gpsDistanceMeters: number;
-    startLat?: number;
-    startLng?: number;
-    endLat?: number;
-    endLng?: number;
-    elapsedSeconds: number;
-  }) => {
-    setIsGpsCompleting(true);
-    try {
-      const success = await completeTrip({
-        gpsDistanceMeters: data.gpsDistanceMeters,
-        gpsEndLat: data.endLat,
-        gpsEndLng: data.endLng,
-      });
-      
-      if (success) {
-        refetchMileage();
-        onSuccess();
-      }
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to complete trip.", variant: "destructive" });
-    } finally {
-      setIsGpsCompleting(false);
     }
   };
 
@@ -326,20 +190,8 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
     setIsSubmitting(false);
   };
 
-  // If there's an active GPS trip, show GPS tracker UI
-  if (activeTrip && activeTrip.trackingMode === "gps") {
-    return (
-      <GpsTracker
-        destination={activeTrip.endLocation}
-        onComplete={handleGpsComplete}
-        onCancel={handleDiscardTrip}
-        isCompleting={isGpsCompleting}
-      />
-    );
-  }
-
-  // If there's an active odometer trip, show completion UI
-  if (activeTrip && activeTrip.trackingMode === "odometer") {
+  // If there's an active trip, show completion UI
+  if (activeTrip) {
     return (
       <div className="space-y-4">
         {/* Active Trip Header */}
@@ -462,28 +314,8 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
   }
 
   // No active trip - show start trip form
-  const selectedVehicle = selectedVehicleId ? getVehicleById(selectedVehicleId) : undefined;
-
   return (
     <div className="space-y-4">
-      {/* Tracking Mode Selector */}
-      <TrackingModeSelector
-        value={trackingMode}
-        onChange={setTrackingMode}
-        disabled={isSubmitting}
-      />
-
-      {/* Route Quick Selector */}
-      {routes.length > 0 && (
-        <RouteQuickSelector
-          routes={routes}
-          selectedRouteId={selectedRouteId}
-          onSelectRoute={handleRouteSelect}
-          locations={activeLocations}
-          warehouseAddress={warehouseAddress}
-        />
-      )}
-
       {/* Vehicle Selector */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">Vehicle *</Label>
@@ -538,24 +370,22 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
         warehouseAddress={warehouseAddress}
       />
 
-      {/* Odometer Mode: Start Odometer Input */}
-      {trackingMode === "odometer" && (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Start Odometer *</Label>
-          <Input
-            type="number"
-            inputMode="numeric"
-            placeholder="e.g., 45276"
-            value={odometerStart}
-            onChange={(e) => setOdometerStart(e.target.value)}
-            className="h-14 text-xl font-semibold text-center"
-            onFocus={(e) => e.target.select()}
-          />
-          <p className="text-xs text-muted-foreground">
-            Enter your current reading. You'll add the end reading when you arrive.
-          </p>
-        </div>
-      )}
+      {/* Start Odometer Input */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Start Odometer *</Label>
+        <Input
+          type="number"
+          inputMode="numeric"
+          placeholder="e.g., 45276"
+          value={odometerStart}
+          onChange={(e) => setOdometerStart(e.target.value)}
+          className="h-14 text-xl font-semibold text-center"
+          onFocus={(e) => e.target.select()}
+        />
+        <p className="text-xs text-muted-foreground">
+          Enter your current reading. You'll add the end reading when you arrive.
+        </p>
+      </div>
 
       {/* Purpose */}
       <div className="space-y-2">
@@ -586,49 +416,26 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       </div>
 
       {/* Start Trip Button */}
-      {trackingMode === "odometer" ? (
-        <Button
-          onClick={handleStartTrip}
-          disabled={isSubmitting || !selectedVehicleId || !odometerStart}
-          className="w-full h-14 text-lg font-semibold touch-manipulation active:scale-[0.98]"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-              Starting...
-            </>
-          ) : (
-            <>
-              <Play className="h-5 w-5 mr-2" />
-              Start Trip
-            </>
-          )}
-        </Button>
-      ) : (
-        <Button
-          onClick={handleStartGpsTracking}
-          disabled={isSubmitting || !selectedVehicleId}
-          className="w-full h-14 text-lg font-semibold touch-manipulation active:scale-[0.98]"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-              Starting...
-            </>
-          ) : (
-            <>
-              <Navigation className="h-5 w-5 mr-2" />
-              Start GPS Tracking
-            </>
-          )}
-        </Button>
-      )}
+      <Button
+        onClick={handleStartTrip}
+        disabled={isSubmitting || !selectedVehicleId || !odometerStart}
+        className="w-full h-14 text-lg font-semibold touch-manipulation active:scale-[0.98]"
+      >
+        {isSubmitting ? (
+          <>
+            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+            Starting...
+          </>
+        ) : (
+          <>
+            <Play className="h-5 w-5 mr-2" />
+            Start Trip
+          </>
+        )}
+      </Button>
 
       <p className="text-xs text-center text-muted-foreground">
-        {trackingMode === "odometer" 
-          ? "Trip will be saved. Return here to enter your end odometer when done."
-          : "GPS will track your distance automatically. Keep this app open while driving."
-        }
+        Trip will be saved. Return here to enter your end odometer when done.
       </p>
     </div>
   );

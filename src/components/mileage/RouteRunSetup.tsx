@@ -6,10 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { NumberInput } from "@/components/ui/number-input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Play, Car, MapPin, Navigation, Gauge, ArrowUp, ArrowDown, GripVertical } from "lucide-react";
+import { Play, Car, MapPin, ArrowUp, ArrowDown, GripVertical } from "lucide-react";
 import { MileageRoute, RouteStop } from "@/hooks/useRoutesDB";
 import { Vehicle } from "@/hooks/useVehiclesDB";
-import { TrackingMode } from "@/components/mileage/TrackingModeSelector";
 import { useLocations } from "@/hooks/useLocationsDB";
 
 interface CustomStop extends RouteStop {
@@ -20,14 +19,13 @@ interface CustomStop extends RouteStop {
 interface RouteRunSetupProps {
   route: MileageRoute;
   vehicles: Vehicle[];
-  onStart: (vehicleId: string, trackingMode: TrackingMode, odometerStart?: number, customStops?: RouteStop[]) => Promise<void>;
+  onStart: (vehicleId: string, trackingMode: "odometer", odometerStart?: number, customStops?: RouteStop[]) => Promise<void>;
   onCancel: () => void;
   isStarting: boolean;
 }
 
 export function RouteRunSetup({ route, vehicles, onStart, onCancel, isStarting }: RouteRunSetupProps) {
   const [vehicleId, setVehicleId] = useState("");
-  const [trackingMode, setTrackingMode] = useState<TrackingMode>("odometer");
   const [odometerStart, setOdometerStart] = useState("");
   const { locations } = useLocations();
 
@@ -75,6 +73,13 @@ export function RouteRunSetup({ route, vehicles, onStart, onCancel, isStarting }
   const selectedVehicle = vehicles.find((v) => v.id === vehicleId);
   const enabledCount = customStops.filter((s) => s.enabled).length;
 
+  // Auto-fill odometer from vehicle's last reading
+  useEffect(() => {
+    if (selectedVehicle?.lastRecordedOdometer && !odometerStart) {
+      setOdometerStart(selectedVehicle.lastRecordedOdometer.toString());
+    }
+  }, [vehicleId]);
+
   const moveStop = (index: number, direction: "up" | "down") => {
     const newIndex = direction === "up" ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= customStops.length) return;
@@ -93,11 +98,11 @@ export function RouteRunSetup({ route, vehicles, onStart, onCancel, isStarting }
 
   const handleStart = async () => {
     if (!vehicleId) return;
-    const odoStart = trackingMode === "odometer" ? parseFloat(odometerStart) || undefined : undefined;
+    const odoStart = parseFloat(odometerStart) || undefined;
     const activeStops: RouteStop[] = customStops
       .filter((s) => s.enabled)
       .map(({ enabled, displayName, ...stop }, idx) => ({ ...stop, stopOrder: idx, customLocationName: displayName }));
-    await onStart(vehicleId, trackingMode, odoStart, activeStops);
+    await onStart(vehicleId, "odometer", odoStart, activeStops);
   };
 
   return (
@@ -212,49 +217,22 @@ export function RouteRunSetup({ route, vehicles, onStart, onCancel, isStarting }
             </Select>
           </div>
 
-          {/* Tracking Mode */}
+          {/* Starting Odometer */}
           <div className="space-y-2">
-            <Label>Tracking Mode</Label>
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                type="button"
-                variant={trackingMode === "odometer" ? "default" : "outline"}
-                className="h-14 flex-col gap-1"
-                onClick={() => setTrackingMode("odometer")}
-              >
-                <Gauge className="h-5 w-5" />
-                <span className="text-xs">Odometer</span>
-              </Button>
-              <Button
-                type="button"
-                variant={trackingMode === "gps" ? "default" : "outline"}
-                className="h-14 flex-col gap-1"
-                onClick={() => setTrackingMode("gps")}
-              >
-                <Navigation className="h-5 w-5" />
-                <span className="text-xs">GPS</span>
-              </Button>
-            </div>
+            <Label>Starting Odometer</Label>
+            <NumberInput
+              placeholder={selectedVehicle?.lastRecordedOdometer?.toString() || "Enter reading"}
+              value={odometerStart}
+              onChange={(e) => setOdometerStart(e.target.value)}
+              inputMode="numeric"
+              className="text-lg h-12"
+            />
+            {selectedVehicle?.lastRecordedOdometer && (
+              <p className="text-xs text-muted-foreground">
+                Last recorded: {selectedVehicle.lastRecordedOdometer.toLocaleString()} mi
+              </p>
+            )}
           </div>
-
-          {/* Odometer Start */}
-          {trackingMode === "odometer" && (
-            <div className="space-y-2">
-              <Label>Starting Odometer</Label>
-              <NumberInput
-                placeholder={selectedVehicle?.lastRecordedOdometer?.toString() || "Enter reading"}
-                value={odometerStart}
-                onChange={(e) => setOdometerStart(e.target.value)}
-                inputMode="numeric"
-                className="text-lg h-12"
-              />
-              {selectedVehicle?.lastRecordedOdometer && (
-                <p className="text-xs text-muted-foreground">
-                  Last recorded: {selectedVehicle.lastRecordedOdometer.toLocaleString()} mi
-                </p>
-              )}
-            </div>
-          )}
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-2">
@@ -263,7 +241,7 @@ export function RouteRunSetup({ route, vehicles, onStart, onCancel, isStarting }
             </Button>
             <Button
               onClick={handleStart}
-              disabled={!vehicleId || enabledCount === 0 || (trackingMode === "odometer" && !odometerStart) || isStarting}
+              disabled={!vehicleId || enabledCount === 0 || !odometerStart || isStarting}
               className="flex-1 h-12 gap-2"
             >
               <Play className="h-4 w-4" />
