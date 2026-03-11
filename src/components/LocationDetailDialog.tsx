@@ -1096,7 +1096,7 @@ export function LocationDetailDialog({
               )}
             </TabsContent>
             )}
-          </ScrollArea>
+          </div>
         </Tabs>
       </DialogContent>
     </Dialog>
