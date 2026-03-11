@@ -190,6 +190,28 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
         toast({ title: "Expense added!", description: `$${parseFloat(amount).toFixed(2)} recorded.` });
       }
       
+      // Create recurring_revenue record if recurring checkbox is checked
+      if (isRecurring && user) {
+        const finalAmt = type === "income" && machineId && calculatedAmount !== null ? calculatedAmount : parseFloat(amount);
+        const getNextDate = (d: Date, freq: string): string => {
+          if (freq === "weekly") return format(addDays(d, 7), "yyyy-MM-dd");
+          if (freq === "biweekly") return format(addDays(d, 14), "yyyy-MM-dd");
+          if (freq === "yearly") return format(addYears(d, 1), "yyyy-MM-dd");
+          return format(addMonths(d, 1), "yyyy-MM-dd");
+        };
+        const finalLocationId = locationId === "business-expense" ? null : (locationId || null);
+        await supabase.from("recurring_revenue").insert({
+          user_id: user.id,
+          location_id: finalLocationId,
+          amount: finalAmt,
+          frequency: recurringFrequency,
+          category: type === "expense" ? (category || "Other") : "Flat Fee",
+          next_due_date: getNextDate(date, recurringFrequency),
+          is_active: true,
+          notes: notes.trim() || null,
+        });
+      }
+
       // Reset form
       setAmount("");
       setLocationId("");
@@ -199,6 +221,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
       setMachineId("");
       setCoinsInserted("");
       setPrizesWon("");
+      setIsRecurring(false);
       
       onSuccess();
     } catch (error) {
