@@ -1,22 +1,35 @@
 
 
-## Fix: Location Detail Dialog Scroll with Photos
+## Fix: Location Map Breaking the App
 
-The `ScrollArea` at line 635 uses `flex-1` to fill remaining space, but Radix ScrollArea's internal viewport doesn't respect flex sizing properly -- it needs a concrete height constraint to enable scrolling.
+### Root Cause
+`react-leaflet` v5.0.0 requires **React 19**, but this project uses **React 18.3.1**. This version incompatibility causes the app to crash when the LocationMap component is loaded or even imported (since it's eagerly imported in App.tsx).
 
-### Fix
+### Fix Steps
 
-**File: `src/components/LocationDetailDialog.tsx`** (line 635)
+1. **Downgrade `react-leaflet` to v4.x** (compatible with React 18)
+   - Change `react-leaflet` from `^5.0.0` to `4.2.1` in package.json
+   - Add `@react-leaflet/core` at `2.1.0` (required peer dep for v4)
+   - Keep `leaflet` at current version
 
-Replace the `ScrollArea` with a plain `div` that uses `flex-1 min-h-0 overflow-y-auto`. This is the same pattern documented in the project's dialog-layout-stacking memory and works reliably with flex containers:
+2. **Lazy-load the LocationMap page** to prevent leaflet from blocking the entire app bundle if there are any remaining issues
+   - Use `React.lazy()` + `Suspense` in App.tsx for the `/map` route
+   - This isolates any map-related crashes from the rest of the app
 
-```tsx
-// Before
-<ScrollArea className="flex-1 mt-4">
+3. **Add error boundary** around the map route as a safety net so map issues never break the full app again
 
-// After
-<div className="flex-1 min-h-0 overflow-y-auto mt-4 pr-1">
+### Technical Details
+
+**package.json changes:**
+```json
+"react-leaflet": "4.2.1",
+"@react-leaflet/core": "2.1.0",
+"leaflet": "^1.9.4"
 ```
 
-And close the corresponding tag at the end. Single line change, proven pattern for this codebase.
+**App.tsx** - lazy import:
+```tsx
+const LocationMap = React.lazy(() => import("./pages/LocationMap"));
+// In route: wrap with <Suspense fallback={<Loading/>}>
+```
 

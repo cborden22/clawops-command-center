@@ -632,7 +632,7 @@ export function LocationDetailDialog({
             )}
           </TabsList>
 
-          <ScrollArea className="flex-1 mt-4">
+          <div className="flex-1 min-h-0 overflow-y-auto mt-4 pr-1">
             {/* Details Tab */}
             <TabsContent value="details" className="mt-0 space-y-4">
               <Card>
@@ -1096,7 +1096,7 @@ export function LocationDetailDialog({
               )}
             </TabsContent>
             )}
-          </ScrollArea>
+          </div>
         </Tabs>
       </DialogContent>
     </Dialog>
