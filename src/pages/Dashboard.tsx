@@ -858,7 +858,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in px-4 sm:px-0">
       {/* Welcome Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

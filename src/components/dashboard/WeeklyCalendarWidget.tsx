@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { format, addDays, startOfDay, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ScheduledTask, TaskType } from "@/hooks/useSmartScheduler";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface WeeklyCalendarWidgetProps {
   tasksByDate: Map<string, ScheduledTask[]>;
@@ -37,12 +38,15 @@ const STATUS_STYLES: Record<string, string> = {
 export function WeeklyCalendarWidget({ tasksByDate }: WeeklyCalendarWidgetProps) {
   const today = startOfDay(new Date());
   const days = Array.from({ length: 7 }, (_, i) => addDays(today, i));
+  const isMobile = useIsMobile();
 
   const getDayLabel = (date: Date, index: number) => {
     if (index === 0) return "Today";
     if (index === 1) return "Tomorrow";
     return format(date, "EEE");
   };
+
+  const allEmpty = Array.from(tasksByDate.values()).every((tasks) => tasks.length === 0);
 
   return (
     <Card className="glass-card">
@@ -75,82 +79,148 @@ export function WeeklyCalendarWidget({ tasksByDate }: WeeklyCalendarWidgetProps)
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-7 gap-1 sm:gap-2">
-          {days.map((date, index) => {
-            const dateKey = date.toISOString().split("T")[0];
-            const tasks = tasksByDate.get(dateKey) || [];
-            const isToday = isSameDay(date, today);
-            const hasUrgent = tasks.some((t) => t.status === "overdue" || t.status === "due_today");
+        {isMobile ? (
+          /* Mobile: Vertical stacked list */
+          <div className="space-y-2">
+            {days.map((date, index) => {
+              const dateKey = date.toISOString().split("T")[0];
+              const tasks = tasksByDate.get(dateKey) || [];
+              const isToday = isSameDay(date, today);
+              const hasUrgent = tasks.some((t) => t.status === "overdue" || t.status === "due_today");
 
-            return (
-              <div
-                key={dateKey}
-                className={cn(
-                  "flex flex-col rounded-lg border transition-all min-h-[120px]",
-                  isToday 
-                    ? "border-primary bg-primary/5" 
-                    : "border-border/50 bg-muted/20",
-                  hasUrgent && !isToday && "border-amber-500/50 bg-amber-500/5"
-                )}
-              >
-                {/* Day Header */}
+              return (
                 <div
+                  key={dateKey}
                   className={cn(
-                    "text-center py-1.5 rounded-t-lg border-b",
-                    isToday 
-                      ? "bg-primary text-primary-foreground border-primary" 
-                      : "bg-muted/50 border-border/50"
+                    "flex items-start gap-3 rounded-lg border p-3 transition-all",
+                    isToday
+                      ? "border-primary bg-primary/5"
+                      : "border-border/50 bg-muted/20",
+                    hasUrgent && !isToday && "border-amber-500/50 bg-amber-500/5"
                   )}
                 >
-                  <p className="text-[10px] sm:text-xs font-medium">
-                    {getDayLabel(date, index)}
-                  </p>
-                  <p className={cn(
-                    "text-sm sm:text-base font-bold",
-                    isToday ? "text-primary-foreground" : "text-foreground"
-                  )}>
-                    {format(date, "d")}
-                  </p>
-                </div>
+                  {/* Day label */}
+                  <div
+                    className={cn(
+                      "flex flex-col items-center justify-center min-w-[48px] rounded-lg py-1.5 px-2",
+                      isToday
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted/50 text-foreground"
+                    )}
+                  >
+                    <span className="text-[10px] font-medium leading-tight">
+                      {getDayLabel(date, index)}
+                    </span>
+                    <span className="text-lg font-bold leading-tight">
+                      {format(date, "d")}
+                    </span>
+                  </div>
 
-                {/* Tasks */}
-                <div className="flex-1 p-1 space-y-1 overflow-y-auto max-h-[100px]">
-                  {tasks.length === 0 ? (
-                    <p className="text-[10px] text-muted-foreground text-center py-2">
-                      —
-                    </p>
-                  ) : (
-                    tasks.slice(0, 3).map((task) => (
-                      <Link
-                        key={task.id}
-                        to={task.link}
-                        className={cn(
-                          "block p-1 rounded text-[10px] sm:text-xs border truncate transition-all hover:opacity-80",
-                          TASK_COLORS[task.type],
-                          STATUS_STYLES[task.status]
-                        )}
-                        title={task.title}
-                      >
-                        <div className="flex items-center gap-1">
+                  {/* Tasks */}
+                  <div className="flex-1 flex flex-wrap gap-1.5 min-h-[36px] items-center">
+                    {tasks.length === 0 ? (
+                      <span className="text-xs text-muted-foreground">No tasks</span>
+                    ) : (
+                      tasks.map((task) => (
+                        <Link
+                          key={task.id}
+                          to={task.link}
+                          className={cn(
+                            "inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs border transition-all hover:opacity-80",
+                            TASK_COLORS[task.type],
+                            STATUS_STYLES[task.status]
+                          )}
+                          title={task.title}
+                        >
                           {TASK_ICONS[task.type]}
-                          <span className="truncate">{task.title}</span>
-                        </div>
-                      </Link>
-                    ))
-                  )}
-                  {tasks.length > 3 && (
-                    <p className="text-[10px] text-center text-muted-foreground">
-                      +{tasks.length - 3} more
-                    </p>
-                  )}
+                          <span className="truncate max-w-[120px]">{task.title}</span>
+                        </Link>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* Desktop: 7-column grid */
+          <div className="grid grid-cols-7 gap-2">
+            {days.map((date, index) => {
+              const dateKey = date.toISOString().split("T")[0];
+              const tasks = tasksByDate.get(dateKey) || [];
+              const isToday = isSameDay(date, today);
+              const hasUrgent = tasks.some((t) => t.status === "overdue" || t.status === "due_today");
+
+              return (
+                <div
+                  key={dateKey}
+                  className={cn(
+                    "flex flex-col rounded-lg border transition-all min-h-[120px]",
+                    isToday
+                      ? "border-primary bg-primary/5"
+                      : "border-border/50 bg-muted/20",
+                    hasUrgent && !isToday && "border-amber-500/50 bg-amber-500/5"
+                  )}
+                >
+                  {/* Day Header */}
+                  <div
+                    className={cn(
+                      "text-center py-1.5 rounded-t-lg border-b",
+                      isToday
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-muted/50 border-border/50"
+                    )}
+                  >
+                    <p className="text-xs font-medium">
+                      {getDayLabel(date, index)}
+                    </p>
+                    <p className={cn(
+                      "text-base font-bold",
+                      isToday ? "text-primary-foreground" : "text-foreground"
+                    )}>
+                      {format(date, "d")}
+                    </p>
+                  </div>
+
+                  {/* Tasks */}
+                  <div className="flex-1 p-1 space-y-1 overflow-y-auto max-h-[100px]">
+                    {tasks.length === 0 ? (
+                      <p className="text-[10px] text-muted-foreground text-center py-2">
+                        —
+                      </p>
+                    ) : (
+                      tasks.slice(0, 3).map((task) => (
+                        <Link
+                          key={task.id}
+                          to={task.link}
+                          className={cn(
+                            "block p-1 rounded text-xs border truncate transition-all hover:opacity-80",
+                            TASK_COLORS[task.type],
+                            STATUS_STYLES[task.status]
+                          )}
+                          title={task.title}
+                        >
+                          <div className="flex items-center gap-1">
+                            {TASK_ICONS[task.type]}
+                            <span className="truncate">{task.title}</span>
+                          </div>
+                        </Link>
+                      ))
+                    )}
+                    {tasks.length > 3 && (
+                      <p className="text-[10px] text-center text-muted-foreground">
+                        +{tasks.length - 3} more
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Empty State */}
-        {Array.from(tasksByDate.values()).every((tasks) => tasks.length === 0) && (
+        {allEmpty && (
           <div className="text-center py-4 text-muted-foreground">
             <Calendar className="h-8 w-8 mx-auto mb-2 opacity-30" />
             <p className="text-sm">No scheduled tasks this week</p>
