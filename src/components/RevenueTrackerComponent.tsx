@@ -10,15 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   CalendarIcon, Plus, Trash2, TrendingUp, TrendingDown, DollarSign, 
   MapPin, Sparkles, AlertCircle, ArrowUpCircle, ArrowDownCircle, Wallet,
-  Download, Building2, Paperclip, FileImage, X, ExternalLink, Receipt, Eye, Loader2, Coins, Pencil, CalendarRange
+  Download, Building2, Paperclip, FileImage, X, ExternalLink, Receipt, Eye, Loader2, Coins, Pencil, CalendarRange, RefreshCw
 } from "lucide-react";
 import { 
   format, subDays, startOfMonth, endOfMonth, isWithinInterval, 
   startOfWeek, endOfWeek, subWeeks, startOfYear, endOfYear, subYears,
-  startOfQuarter, endOfQuarter, subQuarters, differenceInDays
+  startOfQuarter, endOfQuarter, subQuarters, differenceInDays, addDays, addWeeks, addMonths, addYears
 } from "date-fns";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
@@ -94,6 +95,8 @@ export function RevenueTrackerComponent() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   const [receiptsDialogOpen, setReceiptsDialogOpen] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState("monthly");
   
   // Collection metrics state (for income entries)
   const [coinsInserted, setCoinsInserted] = useState("");
@@ -271,6 +274,27 @@ export function RevenueTrackerComponent() {
       });
     }
     
+    // Create recurring_revenue record if recurring checkbox is checked
+    if (isRecurring && user) {
+      const getNextDate = (date: Date, freq: string): string => {
+        if (freq === "weekly") return format(addDays(date, 7), "yyyy-MM-dd");
+        if (freq === "biweekly") return format(addDays(date, 14), "yyyy-MM-dd");
+        if (freq === "yearly") return format(addYears(date, 1), "yyyy-MM-dd");
+        return format(addMonths(date, 1), "yyyy-MM-dd");
+      };
+      
+      await supabase.from("recurring_revenue").insert({
+        user_id: user.id,
+        location_id: locationId || null,
+        amount: finalAmount,
+        frequency: recurringFrequency,
+        category: entryType === "expense" ? category : "Flat Fee",
+        next_due_date: getNextDate(entryDate, recurringFrequency),
+        is_active: true,
+        notes: notes.trim() || null,
+      });
+    }
+    
     setAmount("");
     setNotes("");
     setCategory("");
@@ -278,6 +302,7 @@ export function RevenueTrackerComponent() {
     setReceiptFile(null);
     setCoinsInserted("");
     setPrizesWon("");
+    setIsRecurring(false);
     
     const loc = locationId ? getLocationById(locationId) : null;
     toast({ 
@@ -869,7 +894,35 @@ export function RevenueTrackerComponent() {
                         </label>
                       )}
                     </div>
-                  )}
+                    )}
+                  
+                  {/* Recurring Checkbox */}
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="recurring-desktop"
+                        checked={isRecurring}
+                        onCheckedChange={(checked) => setIsRecurring(checked === true)}
+                      />
+                      <label htmlFor="recurring-desktop" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
+                        <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+                        Make this recurring
+                      </label>
+                    </div>
+                    {isRecurring && (
+                      <Select value={recurringFrequency} onValueChange={setRecurringFrequency}>
+                        <SelectTrigger className="h-9 w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="biweekly">Biweekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
                   
                   <Button 
                     onClick={handleAddEntry}

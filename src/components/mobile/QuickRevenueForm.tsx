@@ -6,14 +6,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
 import { useLocations } from "@/hooks/useLocationsDB";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, TrendingUp, TrendingDown, Camera, ImageIcon, X, Coins, CalendarRange } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
+import { Loader2, TrendingUp, TrendingDown, Camera, ImageIcon, X, Coins, CalendarRange, RefreshCw } from "lucide-react";
+import { format, differenceInDays, addDays, addMonths, addYears } from "date-fns";
 
 interface QuickRevenueFormProps {
   onSuccess: () => void;
@@ -53,6 +54,8 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const [coinsInserted, setCoinsInserted] = useState("");
   const [prizesWon, setPrizesWon] = useState("");
   const [spreadRevenue, setSpreadRevenue] = useState(true);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState("monthly");
   
   // No longer need inputMode - coins is always primary when machine selected
 
@@ -187,6 +190,28 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
         toast({ title: "Expense added!", description: `$${parseFloat(amount).toFixed(2)} recorded.` });
       }
       
+      // Create recurring_revenue record if recurring checkbox is checked
+      if (isRecurring && user) {
+        const finalAmt = type === "income" && machineId && calculatedAmount !== null ? calculatedAmount : parseFloat(amount);
+        const getNextDate = (d: Date, freq: string): string => {
+          if (freq === "weekly") return format(addDays(d, 7), "yyyy-MM-dd");
+          if (freq === "biweekly") return format(addDays(d, 14), "yyyy-MM-dd");
+          if (freq === "yearly") return format(addYears(d, 1), "yyyy-MM-dd");
+          return format(addMonths(d, 1), "yyyy-MM-dd");
+        };
+        const finalLocationId = locationId === "business-expense" ? null : (locationId || null);
+        await supabase.from("recurring_revenue").insert({
+          user_id: user.id,
+          location_id: finalLocationId,
+          amount: finalAmt,
+          frequency: recurringFrequency,
+          category: type === "expense" ? (category || "Other") : "Flat Fee",
+          next_due_date: getNextDate(date, recurringFrequency),
+          is_active: true,
+          notes: notes.trim() || null,
+        });
+      }
+
       // Reset form
       setAmount("");
       setLocationId("");
@@ -196,6 +221,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
       setMachineId("");
       setCoinsInserted("");
       setPrizesWon("");
+      setIsRecurring(false);
       
       onSuccess();
     } catch (error) {
@@ -454,6 +480,34 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
           )}
         </div>
       )}
+
+      {/* Recurring Checkbox */}
+      <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="recurring-mobile"
+            checked={isRecurring}
+            onCheckedChange={(checked) => setIsRecurring(checked === true)}
+          />
+          <label htmlFor="recurring-mobile" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
+            <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+            Make this recurring
+          </label>
+        </div>
+        {isRecurring && (
+          <Select value={recurringFrequency} onValueChange={setRecurringFrequency}>
+            <SelectTrigger className="h-10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="biweekly">Biweekly</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="yearly">Yearly</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+      </div>
 
       {/* Submit Button */}
       <Button
