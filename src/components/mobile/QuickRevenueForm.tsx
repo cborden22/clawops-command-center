@@ -54,6 +54,8 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const [coinsInserted, setCoinsInserted] = useState("");
   const [prizesWon, setPrizesWon] = useState("");
   const [spreadRevenue, setSpreadRevenue] = useState(true);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState("monthly");
   
   // No longer need inputMode - coins is always primary when machine selected
 
