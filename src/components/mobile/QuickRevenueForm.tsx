@@ -6,14 +6,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
 import { useLocations } from "@/hooks/useLocationsDB";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, TrendingUp, TrendingDown, Camera, ImageIcon, X, Coins, CalendarRange } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
+import { Loader2, TrendingUp, TrendingDown, Camera, ImageIcon, X, Coins, CalendarRange, RefreshCw } from "lucide-react";
+import { format, differenceInDays, addDays, addMonths, addYears } from "date-fns";
 
 interface QuickRevenueFormProps {
   onSuccess: () => void;

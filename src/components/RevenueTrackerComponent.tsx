@@ -274,6 +274,27 @@ export function RevenueTrackerComponent() {
       });
     }
     
+    // Create recurring_revenue record if recurring checkbox is checked
+    if (isRecurring && user) {
+      const getNextDate = (date: Date, freq: string): string => {
+        if (freq === "weekly") return format(addDays(date, 7), "yyyy-MM-dd");
+        if (freq === "biweekly") return format(addDays(date, 14), "yyyy-MM-dd");
+        if (freq === "yearly") return format(addYears(date, 1), "yyyy-MM-dd");
+        return format(addMonths(date, 1), "yyyy-MM-dd");
+      };
+      
+      await supabase.from("recurring_revenue").insert({
+        user_id: user.id,
+        location_id: locationId || null,
+        amount: finalAmount,
+        frequency: recurringFrequency,
+        category: entryType === "expense" ? category : "Flat Fee",
+        next_due_date: getNextDate(entryDate, recurringFrequency),
+        is_active: true,
+        notes: notes.trim() || null,
+      });
+    }
+    
     setAmount("");
     setNotes("");
     setCategory("");
@@ -281,6 +302,7 @@ export function RevenueTrackerComponent() {
     setReceiptFile(null);
     setCoinsInserted("");
     setPrizesWon("");
+    setIsRecurring(false);
     
     const loc = locationId ? getLocationById(locationId) : null;
     toast({ 
