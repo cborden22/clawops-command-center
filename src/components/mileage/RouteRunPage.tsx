@@ -1,6 +1,17 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, XCircle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { MileageRoute } from "@/hooks/useRoutesDB";
 import { Vehicle } from "@/hooks/useVehiclesDB";
 import { RouteRun, useRouteRun, StopResult } from "@/hooks/useRouteRun";
@@ -115,14 +126,42 @@ export function RouteRunPage({
       )}
 
       {phase === "running" && currentStop && activeRun && (
-        <RouteRunStopView
-          stop={currentStop}
-          stopIndex={activeRun.currentStopIndex}
-          totalStops={effectiveStops.length}
-          onComplete={handleCompleteStop}
-          onGoBack={activeRun.currentStopIndex > 0 ? handleGoBack : undefined}
-          isCompleting={isCompleting}
-        />
+        <>
+          <RouteRunStopView
+            stop={currentStop}
+            stopIndex={activeRun.currentStopIndex}
+            totalStops={effectiveStops.length}
+            onComplete={handleCompleteStop}
+            onGoBack={activeRun.currentStopIndex > 0 ? handleGoBack : undefined}
+            isCompleting={isCompleting}
+          />
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="w-full text-destructive hover:text-destructive gap-2 mt-2">
+                <XCircle className="h-4 w-4" />
+                Cancel Route Run
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Cancel Route Run?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will discard all progress and collected data for this run. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep Running</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDiscard}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Discard Run
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
       )}
 
       {phase === "summary" && activeRun && (
