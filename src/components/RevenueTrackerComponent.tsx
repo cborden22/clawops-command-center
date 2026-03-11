@@ -95,6 +95,8 @@ export function RevenueTrackerComponent() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
   const [receiptsDialogOpen, setReceiptsDialogOpen] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState("monthly");
   
   // Collection metrics state (for income entries)
   const [coinsInserted, setCoinsInserted] = useState("");

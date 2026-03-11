@@ -1,14 +1,20 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { RevenueTrackerComponent } from "@/components/RevenueTrackerComponent";
-import { RecurringRevenueManager } from "@/components/revenue/RecurringRevenueManager";
 import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
+import { useRecurringRevenue } from "@/hooks/useRecurringRevenue";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Zap } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 const RevenueTracker = () => {
   const { refetch } = useRevenueEntries();
+  const { dueCount, generateDueEntries } = useRecurringRevenue();
   const isMobile = useIsMobile();
   const { registerRefresh, unregisterRefresh } = useMobileRefresh();
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Register mobile refresh callback
   useEffect(() => {
@@ -17,6 +23,18 @@ const RevenueTracker = () => {
       return () => unregisterRefresh("revenue");
     }
   }, [isMobile, registerRefresh, unregisterRefresh, refetch]);
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    const count = await generateDueEntries();
+    setIsGenerating(false);
+    if (count > 0) {
+      toast({ title: "Entries Generated", description: `${count} revenue entries created.` });
+      refetch();
+    } else {
+      toast({ title: "No Due Entries", description: "All recurring entries are up to date." });
+    }
+  };
 
   return (
     <div className="bg-background">
@@ -27,10 +45,22 @@ const RevenueTracker = () => {
             Track collections and revenue across your claw machine locations
           </p>
         </div>
-        <div className="space-y-6">
-          <RecurringRevenueManager />
-          <RevenueTrackerComponent />
-        </div>
+
+        {dueCount > 0 && (
+          <Alert className="mb-4 border-primary/30 bg-primary/5">
+            <AlertDescription className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-sm font-medium">
+                <Zap className="h-4 w-4 text-primary" />
+                {dueCount} recurring {dueCount === 1 ? "entry is" : "entries are"} due
+              </span>
+              <Button size="sm" onClick={handleGenerate} disabled={isGenerating}>
+                {isGenerating ? "Generating..." : "Generate"}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <RevenueTrackerComponent />
       </div>
     </div>
   );
