@@ -50,7 +50,7 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
   const mainTabs = useMemo(() => {
     if (permissions.isLoading) return allMainTabs;
     return allMainTabs.filter(tab => {
-      if (tab.path === "/revenue") return permissions.isOwner || permissions.canViewRevenue;
+      if (tab.path === "/locations") return permissions.isOwner || permissions.canViewLocations;
       if (tab.path === "/inventory") return permissions.isOwner || permissions.canViewInventory;
       return true; // Dashboard, Add, More always visible
     });

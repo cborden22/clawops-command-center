@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { format, addDays, startOfDay, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ScheduledTask, TaskType } from "@/hooks/useSmartScheduler";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface WeeklyCalendarWidgetProps {
   tasksByDate: Map<string, ScheduledTask[]>;
