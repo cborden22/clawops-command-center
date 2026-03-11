@@ -40,7 +40,7 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
 
   const allMainTabs = [
     { path: "/", icon: LayoutDashboard, label: "Home" },
-    { path: "/revenue", icon: DollarSign, label: "Revenue" },
+    { path: "/locations", icon: MapPin, label: "Locations" },
     { path: "quick-add", icon: Plus, label: "Add", isAction: true },
     { path: "/inventory", icon: Package, label: "Inventory" },
     { path: "more", icon: MoreHorizontal, label: "More", isMenu: true },
