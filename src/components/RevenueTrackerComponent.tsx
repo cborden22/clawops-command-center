@@ -902,6 +902,7 @@ export function RevenueTrackerComponent() {
                     )}
                   </div>
                   
+                  <Button 
                     onClick={handleAddEntry}
                     className={cn(
                       "w-full h-11",
