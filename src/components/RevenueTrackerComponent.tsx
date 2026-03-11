@@ -872,9 +872,36 @@ export function RevenueTrackerComponent() {
                         </label>
                       )}
                     </div>
-                  )}
+                    )}
                   
-                  <Button 
+                  {/* Recurring Checkbox */}
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="recurring-desktop"
+                        checked={isRecurring}
+                        onCheckedChange={(checked) => setIsRecurring(checked === true)}
+                      />
+                      <label htmlFor="recurring-desktop" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
+                        <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+                        Make this recurring
+                      </label>
+                    </div>
+                    {isRecurring && (
+                      <Select value={recurringFrequency} onValueChange={setRecurringFrequency}>
+                        <SelectTrigger className="h-9 w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="biweekly">Biweekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  
                     onClick={handleAddEntry}
                     className={cn(
                       "w-full h-11",
