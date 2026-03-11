@@ -10,15 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   CalendarIcon, Plus, Trash2, TrendingUp, TrendingDown, DollarSign, 
   MapPin, Sparkles, AlertCircle, ArrowUpCircle, ArrowDownCircle, Wallet,
-  Download, Building2, Paperclip, FileImage, X, ExternalLink, Receipt, Eye, Loader2, Coins, Pencil, CalendarRange
+  Download, Building2, Paperclip, FileImage, X, ExternalLink, Receipt, Eye, Loader2, Coins, Pencil, CalendarRange, RefreshCw
 } from "lucide-react";
 import { 
   format, subDays, startOfMonth, endOfMonth, isWithinInterval, 
   startOfWeek, endOfWeek, subWeeks, startOfYear, endOfYear, subYears,
-  startOfQuarter, endOfQuarter, subQuarters, differenceInDays
+  startOfQuarter, endOfQuarter, subQuarters, differenceInDays, addDays, addWeeks, addMonths, addYears
 } from "date-fns";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
