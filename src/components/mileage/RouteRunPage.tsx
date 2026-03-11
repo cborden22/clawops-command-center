@@ -1,6 +1,17 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, XCircle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { MileageRoute } from "@/hooks/useRoutesDB";
 import { Vehicle } from "@/hooks/useVehiclesDB";
 import { RouteRun, useRouteRun, StopResult } from "@/hooks/useRouteRun";
