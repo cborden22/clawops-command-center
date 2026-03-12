@@ -241,18 +241,11 @@ export function RouteRunStopView({
     const trueWinRate = totalPlays > 0 && prizes > 0 ? prizes / totalPlays : 0;
     const trueOdds = trueWinRate > 0 ? 1 / trueWinRate : 0;
 
-    // Compare to expected
+    // Compare to expected using the standardized helper
     let comparison: { status: string; message: string } | null = null;
     if (machine.winProbability && machine.winProbability > 0 && prizes > 0 && totalPlays > 0) {
-      const expectedWinRate = 1 / machine.winProbability;
-      const variance = Math.abs(trueWinRate - expectedWinRate) / expectedWinRate * 100;
-      if (variance <= 10) {
-        comparison = { status: "on-target", message: "On target" };
-      } else if (trueWinRate > expectedWinRate) {
-        comparison = { status: "over", message: `Running hot (+${variance.toFixed(0)}%)` };
-      } else {
-        comparison = { status: "under", message: `Running tight (-${variance.toFixed(0)}%)` };
-      }
+      const result = compareToExpected(trueWinRate, machine.winProbability);
+      comparison = { status: result.status, message: result.message };
     }
 
     return { coins, prizes, costPerPlay, totalDollars, totalPlays, trueWinRate, trueOdds, comparison };
