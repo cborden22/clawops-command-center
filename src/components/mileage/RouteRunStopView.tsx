@@ -55,6 +55,7 @@ export function RouteRunStopView({
   onGoBack,
   isCompleting,
 }: RouteRunStopViewProps) {
+  const { compareToExpected } = useMachineCollections();
   const [machines, setMachines] = useState<LocationMachine[]>([]);
   const [collections, setCollections] = useState<Record<string, { coins: string; prizes: string }>>({});
   const [notes, setNotes] = useState("");
