@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   getWinRateBenchmark,
 } from "@/hooks/useMachineCollections";
+import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { format, differenceInDays } from "date-fns";
 
 const QUARTER_VALUE = 0.25;
