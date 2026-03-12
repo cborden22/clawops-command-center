@@ -462,11 +462,6 @@ export function RouteRunStopView({
                           </span>
                         </div>
                       )}
-                      {benchmark && (
-                        <p className="text-xs text-muted-foreground">
-                          Benchmark: {benchmark.label}
-                        </p>
-                      )}
                     </div>
                   )}
                 </div>
