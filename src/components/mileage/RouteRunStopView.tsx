@@ -15,9 +15,7 @@ import {
 import { RouteStop } from "@/hooks/useRoutesDB";
 import { StopCollectionData, StopResult } from "@/hooks/useRouteRun";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  getWinRateBenchmark,
-} from "@/hooks/useMachineCollections";
+import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { format, differenceInDays } from "date-fns";
 
 const QUARTER_VALUE = 0.25;
@@ -54,6 +52,7 @@ export function RouteRunStopView({
   onGoBack,
   isCompleting,
 }: RouteRunStopViewProps) {
+  const { compareToExpected } = useMachineCollections();
   const [machines, setMachines] = useState<LocationMachine[]>([]);
   const [collections, setCollections] = useState<Record<string, { coins: string; prizes: string }>>({});
   const [notes, setNotes] = useState("");
@@ -240,18 +239,11 @@ export function RouteRunStopView({
     const trueWinRate = totalPlays > 0 && prizes > 0 ? prizes / totalPlays : 0;
     const trueOdds = trueWinRate > 0 ? 1 / trueWinRate : 0;
 
-    // Compare to expected
+    // Compare to expected using the standardized helper
     let comparison: { status: string; message: string } | null = null;
     if (machine.winProbability && machine.winProbability > 0 && prizes > 0 && totalPlays > 0) {
-      const expectedWinRate = 1 / machine.winProbability;
-      const variance = Math.abs(trueWinRate - expectedWinRate) / expectedWinRate * 100;
-      if (variance <= 10) {
-        comparison = { status: "on-target", message: "On target" };
-      } else if (trueWinRate > expectedWinRate) {
-        comparison = { status: "over", message: `Running hot (+${variance.toFixed(0)}%)` };
-      } else {
-        comparison = { status: "under", message: `Running tight (-${variance.toFixed(0)}%)` };
-      }
+      const result = compareToExpected(trueWinRate, machine.winProbability);
+      comparison = { status: result.status, message: result.message };
     }
 
     return { coins, prizes, costPerPlay, totalDollars, totalPlays, trueWinRate, trueOdds, comparison };
@@ -381,7 +373,6 @@ export function RouteRunStopView({
 
             {machines.map((machine) => {
               const calc = getMachineCalc(machine);
-              const benchmark = calc.trueOdds > 0 ? getWinRateBenchmark(calc.trueOdds) : null;
 
               return (
                 <div key={machine.id} className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
@@ -470,11 +461,6 @@ export function RouteRunStopView({
                             Expected: 1 in {Math.round(machine.winProbability!)} • {calc.comparison.message}
                           </span>
                         </div>
-                      )}
-                      {benchmark && (
-                        <p className="text-xs text-muted-foreground">
-                          Benchmark: {benchmark.label}
-                        </p>
                       )}
                     </div>
                   )}
