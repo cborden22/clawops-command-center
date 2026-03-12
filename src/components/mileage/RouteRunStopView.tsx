@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -7,18 +7,28 @@ import { NumberInput } from "@/components/ui/number-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import {
-  MapPin, ChevronRight, ChevronLeft, DollarSign, StickyNote, Coins, Locate, CheckCircle2
+  MapPin, ChevronRight, ChevronLeft, DollarSign, StickyNote, Coins, Locate, CheckCircle2,
+  TrendingUp, TrendingDown, Target, CalendarDays,
 } from "lucide-react";
 import { RouteStop } from "@/hooks/useRoutesDB";
 import { StopCollectionData, StopResult } from "@/hooks/useRouteRun";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  getWinRateBenchmark,
+} from "@/hooks/useMachineCollections";
+import { format, differenceInDays } from "date-fns";
+
+const QUARTER_VALUE = 0.25;
+const DEFAULT_COST_PER_PLAY = 0.50;
 
 interface LocationMachine {
   id: string;
   machineType: string;
   customLabel?: string;
   costPerPlay?: number;
+  winProbability?: number;
 }
 
 interface PendingCommission {
@@ -54,10 +64,16 @@ export function RouteRunStopView({
   const [gpsPosition, setGpsPosition] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
+  const [spreadRevenue, setSpreadRevenue] = useState(true);
+  const [lastCollectionDate, setLastCollectionDate] = useState<string | null>(null);
 
   const locationName = resolvedLocationName || stop.customLocationName || `Stop ${stopIndex + 1}`;
   const isLastStop = stopIndex === totalStops - 1;
   const progressPercent = ((stopIndex + 1) / totalStops) * 100;
+
+  const today = new Date();
+  const servicePeriodStart = lastCollectionDate ? new Date(lastCollectionDate) : null;
+  const servicePeriodDays = servicePeriodStart ? differenceInDays(today, servicePeriodStart) : 0;
 
   // Reset GPS state when stop changes
   useEffect(() => {
@@ -95,7 +111,7 @@ export function RouteRunStopView({
     );
   };
 
-  // Fetch machines and pending commissions for this location
+  // Fetch machines, pending commissions, and last collection date
   useEffect(() => {
     const fetchLocationData = async () => {
       setLoadingData(true);
@@ -104,6 +120,8 @@ export function RouteRunStopView({
       setPayCommission(false);
       setPendingCommission(null);
       setResolvedLocationName(null);
+      setLastCollectionDate(null);
+      setSpreadRevenue(true);
 
       if (!stop.locationId) {
         setMachines([]);
@@ -112,20 +130,23 @@ export function RouteRunStopView({
       }
 
       try {
-        // Fetch location name
+        // Fetch location name + last_collection_date
         const { data: locData } = await supabase
           .from("locations")
-          .select("name")
+          .select("name, last_collection_date")
           .eq("id", stop.locationId)
           .maybeSingle();
         if (locData?.name) {
           setResolvedLocationName(locData.name);
         }
+        if (locData?.last_collection_date) {
+          setLastCollectionDate(locData.last_collection_date);
+        }
 
-        // Fetch machines
+        // Fetch machines with win_probability
         const { data: machineData } = await supabase
           .from("location_machines")
-          .select("id, machine_type, custom_label, cost_per_play")
+          .select("id, machine_type, custom_label, cost_per_play, win_probability")
           .eq("location_id", stop.locationId);
 
         const mapped: LocationMachine[] = (machineData || []).map((m) => ({
@@ -133,6 +154,7 @@ export function RouteRunStopView({
           machineType: m.machine_type,
           customLabel: m.custom_label || undefined,
           costPerPlay: m.cost_per_play ? Number(m.cost_per_play) : undefined,
+          winProbability: m.win_probability ? Number(m.win_probability) : undefined,
         }));
         setMachines(mapped);
 
@@ -189,6 +211,13 @@ export function RouteRunStopView({
       gpsLat: gpsPosition?.lat,
       gpsLng: gpsPosition?.lng,
       gpsAccuracy: gpsPosition?.accuracy,
+      spreadRevenue,
+      servicePeriodStart: spreadRevenue && servicePeriodStart
+        ? format(servicePeriodStart, "yyyy-MM-dd")
+        : undefined,
+      servicePeriodEnd: spreadRevenue && servicePeriodStart
+        ? format(today, "yyyy-MM-dd")
+        : undefined,
     };
 
     await onComplete(result);
@@ -200,6 +229,41 @@ export function RouteRunStopView({
       [machineId]: { ...prev[machineId], [field]: value },
     }));
   };
+
+  // Per-machine calculated stats
+  const getMachineCalc = (machine: LocationMachine) => {
+    const coins = parseInt(collections[machine.id]?.coins || "0") || 0;
+    const prizes = parseInt(collections[machine.id]?.prizes || "0") || 0;
+    const costPerPlay = machine.costPerPlay && machine.costPerPlay > 0 ? machine.costPerPlay : DEFAULT_COST_PER_PLAY;
+    const totalDollars = coins * QUARTER_VALUE;
+    const totalPlays = totalDollars / costPerPlay;
+    const trueWinRate = totalPlays > 0 && prizes > 0 ? prizes / totalPlays : 0;
+    const trueOdds = trueWinRate > 0 ? 1 / trueWinRate : 0;
+
+    // Compare to expected
+    let comparison: { status: string; message: string } | null = null;
+    if (machine.winProbability && machine.winProbability > 0 && prizes > 0 && totalPlays > 0) {
+      const expectedWinRate = 1 / machine.winProbability;
+      const variance = Math.abs(trueWinRate - expectedWinRate) / expectedWinRate * 100;
+      if (variance <= 10) {
+        comparison = { status: "on-target", message: "On target" };
+      } else if (trueWinRate > expectedWinRate) {
+        comparison = { status: "over", message: `Running hot (+${variance.toFixed(0)}%)` };
+      } else {
+        comparison = { status: "under", message: `Running tight (-${variance.toFixed(0)}%)` };
+      }
+    }
+
+    return { coins, prizes, costPerPlay, totalDollars, totalPlays, trueWinRate, trueOdds, comparison };
+  };
+
+  // Calculate stop total
+  const stopTotal = useMemo(() => {
+    return machines.reduce((sum, m) => {
+      const coins = parseInt(collections[m.id]?.coins || "0") || 0;
+      return sum + coins * QUARTER_VALUE;
+    }, 0);
+  }, [machines, collections]);
 
   return (
     <div className="max-w-lg mx-auto space-y-4 animate-fade-in">
@@ -303,19 +367,38 @@ export function RouteRunStopView({
       {machines.length > 0 && !loadingData && (
         <Card className="glass-card">
           <CardContent className="p-4 space-y-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Coins className="h-4 w-4 text-primary" />
-              Machine Collections
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <Coins className="h-4 w-4 text-primary" />
+                Machine Collections
+              </div>
+              {stopTotal > 0 && (
+                <Badge variant="secondary" className="text-xs font-semibold">
+                  ${stopTotal.toFixed(2)}
+                </Badge>
+              )}
             </div>
 
-            {machines.map((machine) => (
-              <div key={machine.id} className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
-                <p className="font-medium text-sm text-foreground">
-                  {machine.customLabel || machine.machineType}
-                </p>
-                <div className="grid grid-cols-2 gap-3">
+            {machines.map((machine) => {
+              const calc = getMachineCalc(machine);
+              const benchmark = calc.trueOdds > 0 ? getWinRateBenchmark(calc.trueOdds) : null;
+
+              return (
+                <div key={machine.id} className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-sm text-foreground">
+                      {machine.customLabel || machine.machineType}
+                    </p>
+                    {machine.winProbability && machine.winProbability > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        Expected: 1 in {Math.round(machine.winProbability)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Coins Input */}
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Coins In</Label>
+                    <Label className="text-xs text-muted-foreground">Coins Inserted</Label>
                     <NumberInput
                       placeholder="0"
                       value={collections[machine.id]?.coins || ""}
@@ -324,8 +407,27 @@ export function RouteRunStopView({
                       className="h-11 text-base"
                     />
                   </div>
+
+                  {/* Dollar & Plays Breakdown */}
+                  {calc.coins > 0 && (
+                    <div className="rounded-md bg-primary/5 border border-primary/10 px-3 py-2 space-y-0.5">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          {calc.coins} coins = {calc.totalPlays % 1 === 0 ? calc.totalPlays : calc.totalPlays.toFixed(1)} plays
+                        </span>
+                        <span className="font-semibold text-foreground">
+                          ${calc.totalDollars.toFixed(2)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        ${calc.costPerPlay.toFixed(2)} per play
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Prizes Input */}
                   <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground">Prizes Won</Label>
+                    <Label className="text-xs text-muted-foreground">Prizes Won (Optional)</Label>
                     <NumberInput
                       placeholder="0"
                       value={collections[machine.id]?.prizes || ""}
@@ -334,9 +436,51 @@ export function RouteRunStopView({
                       className="h-11 text-base"
                     />
                   </div>
+
+                  {/* Win Rate Stats */}
+                  {calc.prizes > 0 && calc.totalPlays > 0 && (
+                    <div className="rounded-md bg-muted/40 border border-border px-3 py-2 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-sm font-medium text-foreground">
+                          Win Rate: 1 in {Math.round(calc.trueOdds)} ({(calc.trueWinRate * 100).toFixed(1)}%)
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {calc.totalPlays % 1 === 0 ? calc.totalPlays : calc.totalPlays.toFixed(1)} plays → {calc.prizes} prizes
+                      </p>
+                      {calc.comparison && (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          {calc.comparison.status === "over" && (
+                            <TrendingUp className="h-3.5 w-3.5 text-chart-2" />
+                          )}
+                          {calc.comparison.status === "under" && (
+                            <TrendingDown className="h-3.5 w-3.5 text-chart-5" />
+                          )}
+                          {calc.comparison.status === "on-target" && (
+                            <Target className="h-3.5 w-3.5 text-chart-1" />
+                          )}
+                          <span className={
+                            calc.comparison.status === "over"
+                              ? "text-chart-2"
+                              : calc.comparison.status === "under"
+                              ? "text-chart-5"
+                              : "text-chart-1"
+                          }>
+                            Expected: 1 in {Math.round(machine.winProbability!)} • {calc.comparison.message}
+                          </span>
+                        </div>
+                      )}
+                      {benchmark && (
+                        <p className="text-xs text-muted-foreground">
+                          Benchmark: {benchmark.label}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       )}
@@ -346,6 +490,34 @@ export function RouteRunStopView({
         <Card className="glass-card">
           <CardContent className="p-4 text-center text-sm text-muted-foreground">
             No machines found at this location.
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Spread across service period */}
+      {stop.locationId && machines.length > 0 && !loadingData && (
+        <Card className="glass-card">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <CalendarDays className="h-4 w-4 text-primary" />
+                Spread across service period
+              </div>
+              <Switch
+                checked={spreadRevenue}
+                onCheckedChange={setSpreadRevenue}
+              />
+            </div>
+            {spreadRevenue && servicePeriodStart && servicePeriodDays > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Revenue spread from {format(servicePeriodStart, "MMM d")} to today ({servicePeriodDays} days)
+              </p>
+            )}
+            {spreadRevenue && !servicePeriodStart && (
+              <p className="text-xs text-muted-foreground">
+                No previous collection date — revenue will be recorded for today only
+              </p>
+            )}
           </CardContent>
         </Card>
       )}

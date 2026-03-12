@@ -22,6 +22,9 @@ export interface StopResult {
   gpsLat?: number;
   gpsLng?: number;
   gpsAccuracy?: number;
+  spreadRevenue?: boolean;
+  servicePeriodStart?: string;
+  servicePeriodEnd?: string;
 }
 
 export interface RouteRun {
