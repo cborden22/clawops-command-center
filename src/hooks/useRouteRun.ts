@@ -192,6 +192,10 @@ export function useRouteRun() {
 
       if (error) throw error;
 
+      // Calculate total revenue for this stop
+      const QUARTER_VALUE = 0.25;
+      let stopTotalRevenue = 0;
+
       // Save machine collections to the database
       for (const coll of stopResult.collections) {
         if (coll.coinsInserted > 0 || coll.prizesWon > 0) {
@@ -203,7 +207,33 @@ export function useRouteRun() {
             coins_inserted: coll.coinsInserted,
             prizes_won: coll.prizesWon,
           });
+          stopTotalRevenue += coll.coinsInserted * QUARTER_VALUE;
         }
+      }
+
+      // Create a revenue entry for this stop if there's revenue
+      if (stopTotalRevenue > 0 && stopResult.locationId) {
+        await supabase.from("revenue_entries").insert({
+          user_id: user.id,
+          location_id: stopResult.locationId,
+          amount: stopTotalRevenue,
+          date: new Date().toISOString(),
+          type: "income",
+          category: "Collections",
+          notes: stopResult.notes || `Route collection at ${stopResult.locationName}`,
+          service_period_start: stopResult.spreadRevenue && stopResult.servicePeriodStart
+            ? stopResult.servicePeriodStart
+            : null,
+          service_period_end: stopResult.spreadRevenue && stopResult.servicePeriodEnd
+            ? stopResult.servicePeriodEnd
+            : null,
+        });
+
+        // Update the location's last_collection_date
+        await supabase
+          .from("locations")
+          .update({ last_collection_date: new Date().toISOString() })
+          .eq("id", stopResult.locationId);
       }
 
       // Mark commission as paid if requested
