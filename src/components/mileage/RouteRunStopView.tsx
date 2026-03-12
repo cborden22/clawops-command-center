@@ -373,7 +373,6 @@ export function RouteRunStopView({
 
             {machines.map((machine) => {
               const calc = getMachineCalc(machine);
-              const benchmark = calc.trueOdds > 0 ? getWinRateBenchmark(calc.trueOdds) : null;
 
               return (
                 <div key={machine.id} className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
