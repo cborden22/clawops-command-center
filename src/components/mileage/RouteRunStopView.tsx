@@ -15,9 +15,6 @@ import {
 import { RouteStop } from "@/hooks/useRoutesDB";
 import { StopCollectionData, StopResult } from "@/hooks/useRouteRun";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  getWinRateBenchmark,
-} from "@/hooks/useMachineCollections";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { format, differenceInDays } from "date-fns";
 
