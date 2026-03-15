@@ -28,6 +28,7 @@ export interface CollectionInput {
   meterReadingStart?: number;
   meterReadingEnd?: number;
   notes?: string;
+  bagLabel?: string;
 }
 
 export interface MachineStats {
