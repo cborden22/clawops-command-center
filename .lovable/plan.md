@@ -1,35 +1,17 @@
 
 
-## Fix: Location Map Breaking the App
+## Remove GPS/Current Location from Route Run Stop View
 
-### Root Cause
-`react-leaflet` v5.0.0 requires **React 19**, but this project uses **React 18.3.1**. This version incompatibility causes the app to crash when the LocationMap component is loaded or even imported (since it's eagerly imported in App.tsx).
+Since the app is odometer-only, remove the "Current Location GPS" card and all related GPS state/logic from `RouteRunStopView.tsx`.
 
-### Fix Steps
+### Changes to `src/components/mileage/RouteRunStopView.tsx`
 
-1. **Downgrade `react-leaflet` to v4.x** (compatible with React 18)
-   - Change `react-leaflet` from `^5.0.0` to `4.2.1` in package.json
-   - Add `@react-leaflet/core` at `2.1.0` (required peer dep for v4)
-   - Keep `leaflet` at current version
+1. **Remove GPS state variables** (lines 64-66): `gpsPosition`, `gpsLoading`, `gpsError`
+2. **Remove GPS reset useEffect** (lines 78-83)
+3. **Remove `captureCurrentLocation` function** (lines 85-110)
+4. **Remove GPS data from `handleCompleteStop`** (lines 212-214): `gpsLat`, `gpsLng`, `gpsAccuracy`
+5. **Remove the entire "Current Location GPS" card** (lines 301-358)
+6. **Remove unused `Locate` icon import** if no longer referenced
 
-2. **Lazy-load the LocationMap page** to prevent leaflet from blocking the entire app bundle if there are any remaining issues
-   - Use `React.lazy()` + `Suspense` in App.tsx for the `/map` route
-   - This isolates any map-related crashes from the rest of the app
-
-3. **Add error boundary** around the map route as a safety net so map issues never break the full app again
-
-### Technical Details
-
-**package.json changes:**
-```json
-"react-leaflet": "4.2.1",
-"@react-leaflet/core": "2.1.0",
-"leaflet": "^1.9.4"
-```
-
-**App.tsx** - lazy import:
-```tsx
-const LocationMap = React.lazy(() => import("./pages/LocationMap"));
-// In route: wrap with <Suspense fallback={<Loading/>}>
-```
+No other files need changes -- the `StopResult` type in `useRouteRun.ts` can keep the optional GPS fields for backward compatibility with existing data.
 
