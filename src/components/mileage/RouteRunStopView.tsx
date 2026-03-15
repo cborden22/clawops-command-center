@@ -223,7 +223,7 @@ export function RouteRunStopView({
     await onComplete(result);
   };
 
-  const updateCollection = (machineId: string, field: "coins" | "prizes", value: string) => {
+  const updateCollection = (machineId: string, field: "coins" | "prizes" | "bagLabel", value: string) => {
     setCollections((prev) => ({
       ...prev,
       [machineId]: { ...prev[machineId], [field]: value },
