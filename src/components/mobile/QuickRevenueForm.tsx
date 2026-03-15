@@ -224,6 +224,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
       setCoinsInserted("");
       setPrizesWon("");
       setIsRecurring(false);
+      setBagLabel("");
       
       onSuccess();
     } catch (error) {
