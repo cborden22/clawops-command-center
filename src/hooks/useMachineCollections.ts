@@ -28,6 +28,7 @@ export interface CollectionInput {
   meterReadingStart?: number;
   meterReadingEnd?: number;
   notes?: string;
+  bagLabel?: string;
 }
 
 export interface MachineStats {
@@ -142,6 +143,7 @@ export function useMachineCollections() {
           meter_reading_start: input.meterReadingStart || null,
           meter_reading_end: input.meterReadingEnd || null,
           notes: input.notes || null,
+          bag_label: input.bagLabel || null,
         })
         .select()
         .single();

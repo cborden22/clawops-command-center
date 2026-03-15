@@ -521,6 +521,7 @@ export type Database = {
       }
       machine_collections: {
         Row: {
+          bag_label: string | null
           coins_inserted: number
           collection_date: string
           created_at: string | null
@@ -535,6 +536,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bag_label?: string | null
           coins_inserted?: number
           collection_date?: string
           created_at?: string | null
@@ -549,6 +551,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bag_label?: string | null
           coins_inserted?: number
           collection_date?: string
           created_at?: string | null

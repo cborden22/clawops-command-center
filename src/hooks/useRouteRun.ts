@@ -8,6 +8,7 @@ export interface StopCollectionData {
   machineId: string;
   coinsInserted: number;
   prizesWon: number;
+  bagLabel?: string;
 }
 
 export interface StopResult {
@@ -206,6 +207,7 @@ export function useRouteRun() {
             collection_date: new Date().toISOString(),
             coins_inserted: coll.coinsInserted,
             prizes_won: coll.prizesWon,
+            bag_label: coll.bagLabel || null,
           });
           stopTotalRevenue += coll.coinsInserted * QUARTER_VALUE;
         }

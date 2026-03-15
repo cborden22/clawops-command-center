@@ -56,6 +56,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const [spreadRevenue, setSpreadRevenue] = useState(true);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringFrequency, setRecurringFrequency] = useState("monthly");
+  const [bagLabel, setBagLabel] = useState("");
   
   // No longer need inputMode - coins is always primary when machine selected
 
@@ -168,6 +169,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
             collectionDate: date,
             coinsInserted: parseInt(coinsInserted) || 0,
             prizesWon: parseInt(prizesWon) || 0,
+            bagLabel: bagLabel.trim() || undefined,
           });
         }
         
@@ -222,6 +224,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
       setCoinsInserted("");
       setPrizesWon("");
       setIsRecurring(false);
+      setBagLabel("");
       
       onSuccess();
     } catch (error) {
@@ -288,6 +291,17 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
               value={prizesWon}
               onChange={(e) => setPrizesWon(e.target.value)}
               onFocus={(e) => e.target.select()}
+              className="h-12"
+            />
+          </div>
+
+          {/* Bag / Tag Label */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Bag / Tag (Optional)</Label>
+            <Input
+              placeholder="e.g. Red #1, Bag 3"
+              value={bagLabel}
+              onChange={(e) => setBagLabel(e.target.value)}
               className="h-12"
             />
           </div>
