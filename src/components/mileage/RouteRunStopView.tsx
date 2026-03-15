@@ -54,7 +54,7 @@ export function RouteRunStopView({
 }: RouteRunStopViewProps) {
   const { compareToExpected } = useMachineCollections();
   const [machines, setMachines] = useState<LocationMachine[]>([]);
-  const [collections, setCollections] = useState<Record<string, { coins: string; prizes: string }>>({});
+  const [collections, setCollections] = useState<Record<string, { coins: string; prizes: string; bagLabel: string }>>({});
   const [notes, setNotes] = useState("");
   const [pendingCommission, setPendingCommission] = useState<PendingCommission | null>(null);
   const [payCommission, setPayCommission] = useState(false);
