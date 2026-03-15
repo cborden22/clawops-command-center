@@ -169,6 +169,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
             collectionDate: date,
             coinsInserted: parseInt(coinsInserted) || 0,
             prizesWon: parseInt(prizesWon) || 0,
+            bagLabel: bagLabel.trim() || undefined,
           });
         }
         
