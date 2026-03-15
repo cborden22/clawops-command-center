@@ -8,6 +8,7 @@ export interface StopCollectionData {
   machineId: string;
   coinsInserted: number;
   prizesWon: number;
+  bagLabel?: string;
 }
 
 export interface StopResult {
