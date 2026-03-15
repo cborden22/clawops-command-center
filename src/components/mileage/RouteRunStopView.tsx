@@ -158,9 +158,9 @@ export function RouteRunStopView({
         setMachines(mapped);
 
         // Initialize collections state
-        const initialCollections: Record<string, { coins: string; prizes: string }> = {};
+        const initialCollections: Record<string, { coins: string; prizes: string; bagLabel: string }> = {};
         mapped.forEach((m) => {
-          initialCollections[m.id] = { coins: "", prizes: "" };
+          initialCollections[m.id] = { coins: "", prizes: "", bagLabel: "" };
         });
         setCollections(initialCollections);
 
