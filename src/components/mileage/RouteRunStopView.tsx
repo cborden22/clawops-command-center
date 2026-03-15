@@ -61,9 +61,6 @@ export function RouteRunStopView({
   const [payCommission, setPayCommission] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [resolvedLocationName, setResolvedLocationName] = useState<string | null>(null);
-  const [gpsPosition, setGpsPosition] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
-  const [gpsLoading, setGpsLoading] = useState(false);
-  const [gpsError, setGpsError] = useState<string | null>(null);
   const [spreadRevenue, setSpreadRevenue] = useState(true);
   const [lastCollectionDate, setLastCollectionDate] = useState<string | null>(null);
 
