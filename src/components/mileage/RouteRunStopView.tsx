@@ -72,12 +72,6 @@ export function RouteRunStopView({
   const servicePeriodStart = lastCollectionDate ? new Date(lastCollectionDate) : null;
   const servicePeriodDays = servicePeriodStart ? differenceInDays(today, servicePeriodStart) : 0;
 
-  // Reset GPS state when stop changes
-  useEffect(() => {
-    setGpsPosition(null);
-    setGpsError(null);
-    setGpsLoading(false);
-  }, [stopIndex]);
 
   const captureCurrentLocation = () => {
     if (!navigator.geolocation) {
