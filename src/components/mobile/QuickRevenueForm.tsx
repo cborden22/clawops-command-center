@@ -294,6 +294,17 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
               className="h-12"
             />
           </div>
+
+          {/* Bag / Tag Label */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Bag / Tag (Optional)</Label>
+            <Input
+              placeholder="e.g. Red #1, Bag 3"
+              value={bagLabel}
+              onChange={(e) => setBagLabel(e.target.value)}
+              className="h-12"
+            />
+          </div>
           
           {/* Live TRUE Win Rate Display */}
           {currentStats && currentStats.trueWinRate > 0 && (
