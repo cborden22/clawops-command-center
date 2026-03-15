@@ -196,6 +196,7 @@ export function RouteRunStopView({
       machineId: m.id,
       coinsInserted: parseInt(collections[m.id]?.coins || "0") || 0,
       prizesWon: parseInt(collections[m.id]?.prizes || "0") || 0,
+      bagLabel: collections[m.id]?.bagLabel?.trim() || undefined,
     }));
 
     const result: StopResult = {
