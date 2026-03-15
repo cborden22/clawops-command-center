@@ -172,9 +172,6 @@ export function RouteRunStopView({
       commissionPaid: payCommission,
       commissionSummaryId: payCommission ? pendingCommission?.id : undefined,
       completedAt: new Date().toISOString(),
-      gpsLat: gpsPosition?.lat,
-      gpsLng: gpsPosition?.lng,
-      gpsAccuracy: gpsPosition?.accuracy,
       spreadRevenue,
       servicePeriodStart: spreadRevenue && servicePeriodStart
         ? format(servicePeriodStart, "yyyy-MM-dd")
