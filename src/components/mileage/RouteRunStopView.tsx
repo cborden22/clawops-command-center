@@ -430,7 +430,17 @@ export function RouteRunStopView({
                     />
                   </div>
 
-                  {/* Win Rate Stats */}
+                  {/* Bag / Tag Label */}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Bag / Tag (Optional)</Label>
+                    <Input
+                      placeholder="e.g. Red #1, Bag 3"
+                      value={collections[machine.id]?.bagLabel || ""}
+                      onChange={(e) => updateCollection(machine.id, "bagLabel", e.target.value)}
+                      className="h-10 text-sm"
+                    />
+                  </div>
+
                   {calc.prizes > 0 && calc.totalPlays > 0 && (
                     <div className="rounded-md bg-muted/40 border border-border px-3 py-2 space-y-1.5">
                       <div className="flex items-center gap-2">
