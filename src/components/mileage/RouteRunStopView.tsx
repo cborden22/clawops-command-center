@@ -258,65 +258,6 @@ export function RouteRunStopView({
         </CardContent>
       </Card>
 
-      {/* Current Location GPS */}
-      <Card className="glass-card">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Locate className="h-4 w-4 text-primary" />
-              Current Location
-            </div>
-            {gpsPosition && (
-              <Badge variant="secondary" className="text-xs gap-1">
-                <CheckCircle2 className="h-3 w-3" />
-                Captured
-              </Badge>
-            )}
-          </div>
-
-          {gpsPosition ? (
-            <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1">
-              <p className="text-sm text-foreground font-mono">
-                {gpsPosition.lat.toFixed(6)}, {gpsPosition.lng.toFixed(6)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Accuracy: ±{Math.round(gpsPosition.accuracy)}m
-              </p>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="mt-1 h-8 text-xs"
-                onClick={captureCurrentLocation}
-                disabled={gpsLoading}
-              >
-                <Locate className="h-3.5 w-3.5 mr-1" />
-                Recapture
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-11 gap-2"
-                onClick={captureCurrentLocation}
-                disabled={gpsLoading}
-              >
-                <Locate className="h-4 w-4" />
-                {gpsLoading ? "Getting Location..." : "Use Current Location"}
-              </Button>
-              {gpsError && (
-                <p className="text-xs text-destructive">{gpsError}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Optional – captures your GPS coordinates at this stop
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Machine Collections */}
       {machines.length > 0 && !loadingData && (
         <Card className="glass-card">
