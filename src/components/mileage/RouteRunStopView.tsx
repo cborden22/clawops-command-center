@@ -73,34 +73,6 @@ export function RouteRunStopView({
   const servicePeriodDays = servicePeriodStart ? differenceInDays(today, servicePeriodStart) : 0;
 
 
-  const captureCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setGpsError("Geolocation not supported by your browser");
-      return;
-    }
-    setGpsLoading(true);
-    setGpsError(null);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setGpsPosition({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-        });
-        setGpsLoading(false);
-      },
-      (err) => {
-        const msg = err.code === err.PERMISSION_DENIED
-          ? "Location permission denied. Enable it in browser settings."
-          : err.code === err.POSITION_UNAVAILABLE
-          ? "Location unavailable. Check GPS signal."
-          : "Location request timed out.";
-        setGpsError(msg);
-        setGpsLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
-    );
-  };
 
   // Fetch machines, pending commissions, and last collection date
   useEffect(() => {
