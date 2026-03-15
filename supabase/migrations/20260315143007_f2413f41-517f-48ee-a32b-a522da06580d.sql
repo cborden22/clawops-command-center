@@ -1,0 +1,1 @@
+ALTER TABLE public.machine_collections ADD COLUMN bag_label text;
