@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import {
-  MapPin, ChevronRight, ChevronLeft, DollarSign, StickyNote, Coins, Locate, CheckCircle2,
+  MapPin, ChevronRight, ChevronLeft, DollarSign, StickyNote, Coins,
   TrendingUp, TrendingDown, Target, CalendarDays,
 } from "lucide-react";
 import { RouteStop } from "@/hooks/useRoutesDB";
