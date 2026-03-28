@@ -235,6 +235,8 @@ export function useInventory() {
       if (updates.supplierName !== undefined) updateData.supplier_name = updates.supplierName;
       if (updates.lastPrice !== undefined) updateData.last_price = updates.lastPrice;
       if (updates.notes !== undefined) updateData.notes = updates.notes;
+      if (updates.warehouseId !== undefined) updateData.warehouse_id = updates.warehouseId;
+      if (updates.zoneId !== undefined) updateData.zone_id = updates.zoneId;
       
       // Auto-calculate price per item when lastPrice or packageQuantity changes
       if (updates.lastPrice !== undefined || updates.packageQuantity !== undefined) {
