@@ -165,8 +165,8 @@ export function useInventory() {
       const { data, error } = await supabase
         .from("inventory_items")
         .insert({
-          user_id: effectiveUserId,           // Owner's ID (for RLS visibility)
-          created_by_user_id: user.id,        // Actual creator (for attribution)
+          user_id: effectiveUserId,
+          created_by_user_id: user.id,
           name: item.name,
           category: item.category,
           quantity: item.quantity,
@@ -179,7 +179,9 @@ export function useInventory() {
           last_price: item.lastPrice,
           price_per_item: pricePerItem,
           notes: item.notes,
-        })
+          warehouse_id: item.warehouseId || null,
+          zone_id: item.zoneId || null,
+        } as any)
         .select()
         .single();
 
