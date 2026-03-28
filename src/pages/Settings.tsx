@@ -35,6 +35,7 @@ import { toast } from "@/hooks/use-toast";
 import { VehicleManager } from "@/components/settings/VehicleManager";
 import { MachineTypeManager } from "@/components/settings/MachineTypeManager";
 import { BudgetManager } from "@/components/settings/BudgetManager";
+import { WarehouseManager } from "@/components/settings/WarehouseManager";
 import { FeedbackDialog } from "@/components/shared/FeedbackDialog";
 import { useQRLogo } from "@/hooks/useQRLogo";
 import { SubscriptionManager } from "@/components/settings/SubscriptionManager";
