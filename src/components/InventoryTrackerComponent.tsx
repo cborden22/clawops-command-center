@@ -200,6 +200,8 @@ export function InventoryTrackerComponent() {
       supplierName: editSupplierName || null,
       supplierUrl: editSupplierUrl || null,
       notes: editNotes || null,
+      warehouseId: editWarehouseId,
+      zoneId: editZoneId,
     });
     setEditingItem(null);
     toast({
