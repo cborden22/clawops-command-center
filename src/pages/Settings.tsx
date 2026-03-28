@@ -423,63 +423,8 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          {/* Warehouse Address */}
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Warehouse className="h-5 w-5 text-primary" />
-                Warehouse Address
-              </CardTitle>
-              <CardDescription>
-                Your main warehouse or storage location
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="warehouseAddress">Street Address</Label>
-                <Input
-                  id="warehouseAddress"
-                  value={appSettings.warehouseAddress}
-                  onChange={(e) => updateSetting("warehouseAddress", e.target.value)}
-                  placeholder="123 Main Street"
-                  maxLength={200}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="space-y-2 col-span-2">
-                  <Label htmlFor="warehouseCity">City</Label>
-                  <Input
-                    id="warehouseCity"
-                    value={appSettings.warehouseCity}
-                    onChange={(e) => updateSetting("warehouseCity", e.target.value)}
-                    placeholder="City"
-                    maxLength={100}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="warehouseState">State</Label>
-                  <Input
-                    id="warehouseState"
-                    value={appSettings.warehouseState}
-                    onChange={(e) => updateSetting("warehouseState", e.target.value)}
-                    placeholder="State"
-                    maxLength={50}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="warehouseZip">ZIP Code</Label>
-                  <Input
-                    id="warehouseZip"
-                    value={appSettings.warehouseZip}
-                    onChange={(e) => updateSetting("warehouseZip", e.target.value)}
-                    placeholder="12345"
-                    maxLength={10}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Warehouses & Storage */}
+          <WarehouseManager />
 
           {/* Default Values */}
           <Card className="glass-card">
