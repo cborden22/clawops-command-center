@@ -62,6 +62,7 @@ const LAST_STOCK_RUN_KEY = "clawops_last_stock_run";
 export function InventoryTrackerComponent() {
   const { user } = useAuth();
   const { items, isLoaded, addItem, updateItem, deleteItem, updateQuantity, bulkDeductQuantities, bulkAddQuantities } = useInventory();
+  const { warehouses, zones, getZonesForWarehouse } = useWarehouses();
   const { settings: appSettings } = useAppSettings();
   const [searchQuery, setSearchQuery] = useState("");
   const [newItemName, setNewItemName] = useState("");
