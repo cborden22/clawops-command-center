@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useInventory, InventoryItem, saveStockRunHistory, updateStockRunReturns } from "@/hooks/useInventoryDB";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWarehouses } from "@/hooks/useWarehousesDB";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
 import {
   Sheet,
