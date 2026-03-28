@@ -20,6 +20,9 @@ export interface InventoryItem {
   lastPrice: number | null;
   pricePerItem: number | null;
   notes: string | null;
+  // Warehouse fields
+  warehouseId: string | null;
+  zoneId: string | null;
 }
 
 export interface StockRunHistoryItem {
