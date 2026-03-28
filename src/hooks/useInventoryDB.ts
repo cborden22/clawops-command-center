@@ -202,6 +202,8 @@ export function useInventory() {
         lastPrice: data.last_price ? Number(data.last_price) : null,
         pricePerItem: data.price_per_item ? Number(data.price_per_item) : null,
         notes: data.notes || null,
+        warehouseId: (data as any).warehouse_id || null,
+        zoneId: (data as any).zone_id || null,
       };
 
       setItems(prev => [newItem, ...prev]);

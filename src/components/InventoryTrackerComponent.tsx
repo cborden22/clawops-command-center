@@ -152,6 +152,8 @@ export function InventoryTrackerComponent() {
       lastPrice: lastPrice,
       pricePerItem: lastPrice && newItemPackageQty ? lastPrice / newItemPackageQty : null,
       notes: null,
+      warehouseId: null,
+      zoneId: null,
     });
 
     if (item) {
