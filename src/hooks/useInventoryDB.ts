@@ -250,7 +250,7 @@ export function useInventory() {
 
       const { error } = await supabase
         .from("inventory_items")
-        .update(updateData)
+        .update(updateData as any)
         .eq("id", id);
 
       if (error) throw error;
