@@ -707,6 +707,12 @@ export function InventoryTrackerComponent() {
                     {isStockRunMode || isReturnMode ? (
                       <p className="text-xs text-muted-foreground">
                         {item.quantity} in inventory
+                        {(() => {
+                          const wh = warehouses.find(w => w.id === item.warehouseId);
+                          const zone = zones.find(z => z.id === item.zoneId);
+                          if (wh || zone) return ` • ${wh?.name || ""}${zone ? ` > ${zone.name}` : ""}`;
+                          return "";
+                        })()}
                       </p>
                     ) : (
                       <div className="flex flex-col sm:flex-row sm:items-center text-xs text-muted-foreground gap-0.5 sm:gap-0">
@@ -716,6 +722,19 @@ export function InventoryTrackerComponent() {
                             Last cost: ${item.lastPrice.toFixed(2)}/{item.packageType.toLowerCase()} (${item.pricePerItem?.toFixed(2)}/ea)
                           </span>
                         )}
+                        {(() => {
+                          const wh = warehouses.find(w => w.id === item.warehouseId);
+                          const zone = zones.find(z => z.id === item.zoneId);
+                          if (wh || zone) {
+                            return (
+                              <span className="sm:before:content-['_•_'] flex items-center gap-1">
+                                <WarehouseIcon className="h-3 w-3" />
+                                {wh?.name || ""}{zone ? ` > ${zone.name}` : ""}
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     )}
                   </div>
