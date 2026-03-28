@@ -42,6 +42,8 @@ interface BulkAddInventoryDialogProps {
     lastPrice: number | null;
     pricePerItem: number | null;
     notes: string | null;
+    warehouseId: string | null;
+    zoneId: string | null;
   }) => Promise<any>;
 }
 
@@ -206,6 +208,8 @@ export function BulkAddInventoryDialog({ open, onOpenChange, addItem }: BulkAddI
         lastPrice: cost,
         pricePerItem: cost && pkgQty ? cost / pkgQty : null,
         notes: null,
+        warehouseId: null,
+        zoneId: null,
       });
       if (result) added++;
     }

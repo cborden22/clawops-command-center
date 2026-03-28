@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check, Edit2, RotateCcw, ExternalLink, ChevronDown, ChevronUp, DollarSign, CalendarIcon } from "lucide-react";
+import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check, Edit2, RotateCcw, ExternalLink, ChevronDown, ChevronUp, DollarSign, CalendarIcon, Warehouse as WarehouseIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useInventory, InventoryItem, saveStockRunHistory, updateStockRunReturns } from "@/hooks/useInventoryDB";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWarehouses } from "@/hooks/useWarehousesDB";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
 import {
   Sheet,
@@ -61,6 +62,7 @@ const LAST_STOCK_RUN_KEY = "clawops_last_stock_run";
 export function InventoryTrackerComponent() {
   const { user } = useAuth();
   const { items, isLoaded, addItem, updateItem, deleteItem, updateQuantity, bulkDeductQuantities, bulkAddQuantities } = useInventory();
+  const { warehouses, zones, getZonesForWarehouse } = useWarehouses();
   const { settings: appSettings } = useAppSettings();
   const [searchQuery, setSearchQuery] = useState("");
   const [newItemName, setNewItemName] = useState("");
@@ -95,7 +97,8 @@ export function InventoryTrackerComponent() {
   const [editSupplierName, setEditSupplierName] = useState("");
   const [editSupplierUrl, setEditSupplierUrl] = useState("");
   const [editNotes, setEditNotes] = useState("");
-
+  const [editWarehouseId, setEditWarehouseId] = useState<string | null>(null);
+  const [editZoneId, setEditZoneId] = useState<string | null>(null);
   // Expanded item state
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
@@ -152,6 +155,8 @@ export function InventoryTrackerComponent() {
       lastPrice: lastPrice,
       pricePerItem: lastPrice && newItemPackageQty ? lastPrice / newItemPackageQty : null,
       notes: null,
+      warehouseId: null,
+      zoneId: null,
     });
 
     if (item) {
@@ -177,6 +182,8 @@ export function InventoryTrackerComponent() {
     setEditSupplierName(item.supplierName || "");
     setEditSupplierUrl(item.supplierUrl || "");
     setEditNotes(item.notes || "");
+    setEditWarehouseId(item.warehouseId);
+    setEditZoneId(item.zoneId);
   };
 
   const handleSaveEdit = async () => {
@@ -193,6 +200,8 @@ export function InventoryTrackerComponent() {
       supplierName: editSupplierName || null,
       supplierUrl: editSupplierUrl || null,
       notes: editNotes || null,
+      warehouseId: editWarehouseId,
+      zoneId: editZoneId,
     });
     setEditingItem(null);
     toast({
@@ -698,6 +707,12 @@ export function InventoryTrackerComponent() {
                     {isStockRunMode || isReturnMode ? (
                       <p className="text-xs text-muted-foreground">
                         {item.quantity} in inventory
+                        {(() => {
+                          const wh = warehouses.find(w => w.id === item.warehouseId);
+                          const zone = zones.find(z => z.id === item.zoneId);
+                          if (wh || zone) return ` • ${wh?.name || ""}${zone ? ` > ${zone.name}` : ""}`;
+                          return "";
+                        })()}
                       </p>
                     ) : (
                       <div className="flex flex-col sm:flex-row sm:items-center text-xs text-muted-foreground gap-0.5 sm:gap-0">
@@ -707,6 +722,19 @@ export function InventoryTrackerComponent() {
                             Last cost: ${item.lastPrice.toFixed(2)}/{item.packageType.toLowerCase()} (${item.pricePerItem?.toFixed(2)}/ea)
                           </span>
                         )}
+                        {(() => {
+                          const wh = warehouses.find(w => w.id === item.warehouseId);
+                          const zone = zones.find(z => z.id === item.zoneId);
+                          if (wh || zone) {
+                            return (
+                              <span className="sm:before:content-['_•_'] flex items-center gap-1">
+                                <WarehouseIcon className="h-3 w-3" />
+                                {wh?.name || ""}{zone ? ` > ${zone.name}` : ""}
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     )}
                   </div>
@@ -1355,6 +1383,43 @@ export function InventoryTrackerComponent() {
                 </div>
               </div>
             </div>
+
+            {/* Storage Location Section */}
+            {warehouses.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-muted-foreground">Storage Location</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Warehouse</Label>
+                    <Select value={editWarehouseId || "none"} onValueChange={(v) => { setEditWarehouseId(v === "none" ? null : v); setEditZoneId(null); }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select warehouse" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No warehouse</SelectItem>
+                        {warehouses.map(wh => (
+                          <SelectItem key={wh.id} value={wh.id}>{wh.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Zone / Tote</Label>
+                    <Select value={editZoneId || "none"} onValueChange={(v) => setEditZoneId(v === "none" ? null : v)} disabled={!editWarehouseId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select zone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No zone</SelectItem>
+                        {editWarehouseId && getZonesForWarehouse(editWarehouseId).map(z => (
+                          <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Notes Section */}
             <div className="space-y-3">

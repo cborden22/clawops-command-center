@@ -74,6 +74,8 @@ export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
         lastPrice: cost,
         pricePerItem: cost && pkgQty ? cost / pkgQty : null,
         notes: null,
+        warehouseId: null,
+        zoneId: null,
       });
       toast({ title: "Item added!", description: `${newItemName} added to inventory.` });
       onSuccess();

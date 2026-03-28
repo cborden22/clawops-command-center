@@ -202,6 +202,8 @@ export type Database = {
           supplier_name: string | null
           supplier_url: string | null
           user_id: string
+          warehouse_id: string | null
+          zone_id: string | null
         }
         Insert: {
           category?: string | null
@@ -220,6 +222,8 @@ export type Database = {
           supplier_name?: string | null
           supplier_url?: string | null
           user_id: string
+          warehouse_id?: string | null
+          zone_id?: string | null
         }
         Update: {
           category?: string | null
@@ -238,8 +242,25 @@ export type Database = {
           supplier_name?: string | null
           supplier_url?: string | null
           user_id?: string
+          warehouse_id?: string | null
+          zone_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "inventory_items_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_items_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "warehouse_zones"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lead_activities: {
         Row: {
@@ -1434,6 +1455,80 @@ export type Database = {
         }
         Relationships: []
       }
+      warehouse_zones: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          warehouse_id: string
+          zone_type: Database["public"]["Enums"]["zone_type"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          warehouse_id: string
+          zone_type?: Database["public"]["Enums"]["zone_type"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          warehouse_id?: string
+          zone_type?: Database["public"]["Enums"]["zone_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warehouse_zones_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      warehouses: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          notes: string | null
+          state: string | null
+          user_id: string
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          notes?: string | null
+          state?: string | null
+          user_id: string
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          notes?: string | null
+          state?: string | null
+          user_id?: string
+          zip?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1483,6 +1578,7 @@ export type Database = {
         | "route_driver"
         | "inventory_clerk"
         | "sales_manager"
+      zone_type: "tote" | "shelf" | "bin" | "section" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1619,6 +1715,7 @@ export const Constants = {
         "inventory_clerk",
         "sales_manager",
       ],
+      zone_type: ["tote", "shelf", "bin", "section", "other"],
     },
   },
 } as const

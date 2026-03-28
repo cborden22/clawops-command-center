@@ -20,6 +20,9 @@ export interface InventoryItem {
   lastPrice: number | null;
   pricePerItem: number | null;
   notes: string | null;
+  // Warehouse fields
+  warehouseId: string | null;
+  zoneId: string | null;
 }
 
 export interface StockRunHistoryItem {
@@ -124,6 +127,8 @@ export function useInventory() {
         lastPrice: item.last_price ? Number(item.last_price) : null,
         pricePerItem: item.price_per_item ? Number(item.price_per_item) : null,
         notes: item.notes || null,
+        warehouseId: (item as any).warehouse_id || null,
+        zoneId: (item as any).zone_id || null,
       }));
 
       setItems(mappedItems);
@@ -160,8 +165,8 @@ export function useInventory() {
       const { data, error } = await supabase
         .from("inventory_items")
         .insert({
-          user_id: effectiveUserId,           // Owner's ID (for RLS visibility)
-          created_by_user_id: user.id,        // Actual creator (for attribution)
+          user_id: effectiveUserId,
+          created_by_user_id: user.id,
           name: item.name,
           category: item.category,
           quantity: item.quantity,
@@ -174,7 +179,9 @@ export function useInventory() {
           last_price: item.lastPrice,
           price_per_item: pricePerItem,
           notes: item.notes,
-        })
+          warehouse_id: item.warehouseId || null,
+          zone_id: item.zoneId || null,
+        } as any)
         .select()
         .single();
 
@@ -195,6 +202,8 @@ export function useInventory() {
         lastPrice: data.last_price ? Number(data.last_price) : null,
         pricePerItem: data.price_per_item ? Number(data.price_per_item) : null,
         notes: data.notes || null,
+        warehouseId: (data as any).warehouse_id || null,
+        zoneId: (data as any).zone_id || null,
       };
 
       setItems(prev => [newItem, ...prev]);
@@ -226,6 +235,8 @@ export function useInventory() {
       if (updates.supplierName !== undefined) updateData.supplier_name = updates.supplierName;
       if (updates.lastPrice !== undefined) updateData.last_price = updates.lastPrice;
       if (updates.notes !== undefined) updateData.notes = updates.notes;
+      if (updates.warehouseId !== undefined) updateData.warehouse_id = updates.warehouseId;
+      if (updates.zoneId !== undefined) updateData.zone_id = updates.zoneId;
       
       // Auto-calculate price per item when lastPrice or packageQuantity changes
       if (updates.lastPrice !== undefined || updates.packageQuantity !== undefined) {
@@ -239,7 +250,7 @@ export function useInventory() {
 
       const { error } = await supabase
         .from("inventory_items")
-        .update(updateData)
+        .update(updateData as any)
         .eq("id", id);
 
       if (error) throw error;
