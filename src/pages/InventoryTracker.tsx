@@ -1,8 +1,11 @@
 import { useEffect } from "react";
 import { InventoryTrackerComponent } from "@/components/InventoryTrackerComponent";
+import { StorageLocationView } from "@/components/inventory/StorageLocationView";
 import { useInventory } from "@/hooks/useInventoryDB";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Package, MapPin } from "lucide-react";
 
 const InventoryTracker = () => {
   const { refetch } = useInventory();
@@ -26,7 +29,24 @@ const InventoryTracker = () => {
             Track your claw machine inventory, prizes, and supplies
           </p>
         </div>
-        <InventoryTrackerComponent />
+        <Tabs defaultValue="inventory" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="inventory" className="gap-1.5">
+              <Package className="h-4 w-4" />
+              <span className="hidden sm:inline">Inventory</span>
+            </TabsTrigger>
+            <TabsTrigger value="storage" className="gap-1.5">
+              <MapPin className="h-4 w-4" />
+              <span className="hidden sm:inline">Where Is It?</span>
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="inventory">
+            <InventoryTrackerComponent />
+          </TabsContent>
+          <TabsContent value="storage">
+            <StorageLocationView />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
