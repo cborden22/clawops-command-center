@@ -127,6 +127,8 @@ export function useInventory() {
         lastPrice: item.last_price ? Number(item.last_price) : null,
         pricePerItem: item.price_per_item ? Number(item.price_per_item) : null,
         notes: item.notes || null,
+        warehouseId: (item as any).warehouse_id || null,
+        zoneId: (item as any).zone_id || null,
       }));
 
       setItems(mappedItems);
