@@ -1384,6 +1384,43 @@ export function InventoryTrackerComponent() {
               </div>
             </div>
 
+            {/* Storage Location Section */}
+            {warehouses.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-muted-foreground">Storage Location</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Warehouse</Label>
+                    <Select value={editWarehouseId || "none"} onValueChange={(v) => { setEditWarehouseId(v === "none" ? null : v); setEditZoneId(null); }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select warehouse" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No warehouse</SelectItem>
+                        {warehouses.map(wh => (
+                          <SelectItem key={wh.id} value={wh.id}>{wh.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Zone / Tote</Label>
+                    <Select value={editZoneId || "none"} onValueChange={(v) => setEditZoneId(v === "none" ? null : v)} disabled={!editWarehouseId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select zone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No zone</SelectItem>
+                        {editWarehouseId && getZonesForWarehouse(editWarehouseId).map(z => (
+                          <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Notes Section */}
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-muted-foreground">Notes</h4>
