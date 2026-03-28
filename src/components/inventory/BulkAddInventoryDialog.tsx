@@ -42,6 +42,8 @@ interface BulkAddInventoryDialogProps {
     lastPrice: number | null;
     pricePerItem: number | null;
     notes: string | null;
+    warehouseId: string | null;
+    zoneId: string | null;
   }) => Promise<any>;
 }
 
