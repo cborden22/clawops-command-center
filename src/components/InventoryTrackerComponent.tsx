@@ -182,6 +182,8 @@ export function InventoryTrackerComponent() {
     setEditSupplierName(item.supplierName || "");
     setEditSupplierUrl(item.supplierUrl || "");
     setEditNotes(item.notes || "");
+    setEditWarehouseId(item.warehouseId);
+    setEditZoneId(item.zoneId);
   };
 
   const handleSaveEdit = async () => {
