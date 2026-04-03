@@ -213,6 +213,10 @@ export function useInventory() {
         notes: data.notes || null,
         warehouseId: (data as any).warehouse_id || null,
         zoneId: (data as any).zone_id || null,
+        sku: (data as any).sku || null,
+        subcategory: (data as any).subcategory || null,
+        description: (data as any).description || null,
+        active: (data as any).active ?? true,
       };
 
       setItems(prev => [newItem, ...prev]);
