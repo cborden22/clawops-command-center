@@ -262,6 +262,45 @@ export type Database = {
           },
         ]
       }
+      inventory_locations: {
+        Row: {
+          active: boolean
+          address: string | null
+          code: string | null
+          created_at: string
+          id: string
+          location_name: string
+          location_type: Database["public"]["Enums"]["inventory_location_type"]
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          code?: string | null
+          created_at?: string
+          id?: string
+          location_name: string
+          location_type?: Database["public"]["Enums"]["inventory_location_type"]
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          code?: string | null
+          created_at?: string
+          id?: string
+          location_name?: string
+          location_type?: Database["public"]["Enums"]["inventory_location_type"]
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lead_activities: {
         Row: {
           activity_type: string
@@ -1570,6 +1609,7 @@ export type Database = {
       }
     }
     Enums: {
+      inventory_location_type: "warehouse" | "business_location"
       team_role:
         | "owner"
         | "manager"
@@ -1706,6 +1746,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      inventory_location_type: ["warehouse", "business_location"],
       team_role: [
         "owner",
         "manager",
