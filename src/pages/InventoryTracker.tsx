@@ -1,11 +1,12 @@
 import { useEffect } from "react";
 import { InventoryTrackerComponent } from "@/components/InventoryTrackerComponent";
 import { StorageLocationView } from "@/components/inventory/StorageLocationView";
+import { WarehouseManager } from "@/components/settings/WarehouseManager";
 import { useInventory } from "@/hooks/useInventoryDB";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, MapPin } from "lucide-react";
+import { Package, MapPin, Warehouse } from "lucide-react";
 
 const InventoryTracker = () => {
   const { refetch } = useInventory();
@@ -39,12 +40,19 @@ const InventoryTracker = () => {
               <MapPin className="h-4 w-4" />
               <span className="hidden sm:inline">Where Is It?</span>
             </TabsTrigger>
+            <TabsTrigger value="warehouses" className="gap-1.5">
+              <Warehouse className="h-4 w-4" />
+              <span className="hidden sm:inline">Warehouses</span>
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="inventory">
             <InventoryTrackerComponent />
           </TabsContent>
           <TabsContent value="storage">
             <StorageLocationView />
+          </TabsContent>
+          <TabsContent value="warehouses">
+            <WarehouseManager />
           </TabsContent>
         </Tabs>
       </div>

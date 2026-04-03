@@ -71,6 +71,8 @@ export function InventoryTrackerComponent() {
   const [newItemPackageQty, setNewItemPackageQty] = useState(24);
   const [newItemMinStock, setNewItemMinStock] = useState(appSettings.lowStockThreshold);
   const [newItemLastPrice, setNewItemLastPrice] = useState<string>("");
+  const [newItemWarehouseId, setNewItemWarehouseId] = useState<string | null>(null);
+  const [newItemZoneId, setNewItemZoneId] = useState<string | null>(null);
   
   // Stock Run state
   const [isStockRunMode, setIsStockRunMode] = useState(false);
@@ -155,8 +157,8 @@ export function InventoryTrackerComponent() {
       lastPrice: lastPrice,
       pricePerItem: lastPrice && newItemPackageQty ? lastPrice / newItemPackageQty : null,
       notes: null,
-      warehouseId: null,
-      zoneId: null,
+      warehouseId: newItemWarehouseId,
+      zoneId: newItemZoneId,
     });
 
     if (item) {
@@ -166,6 +168,8 @@ export function InventoryTrackerComponent() {
       setNewItemPackageQty(24);
       setNewItemMinStock(appSettings.lowStockThreshold);
       setNewItemLastPrice("");
+      setNewItemWarehouseId(null);
+      setNewItemZoneId(null);
       toast({
         title: "Added!",
         description: `${item.name} added to inventory.`,
@@ -503,17 +507,29 @@ export function InventoryTrackerComponent() {
               onKeyDown={(e) => e.key === "Enter" && handleQuickAdd()}
               className="flex-1"
             />
-            <NumberInput
-              min="1"
-              value={newItemQty}
-              onChange={(e) => setNewItemQty(parseInt(e.target.value) || 1)}
-              className="w-20 text-center"
-            />
+            <div className="flex flex-col items-center">
+              <NumberInput
+                min="1"
+                value={newItemQty}
+                onChange={(e) => setNewItemQty(parseInt(e.target.value) || 1)}
+                className="w-20 text-center"
+              />
+              <span className="text-[10px] text-muted-foreground mt-0.5">Total Items</span>
+            </div>
             <Button onClick={handleQuickAdd}>
               <Plus className="h-4 w-4 mr-1" />
               Add
             </Button>
           </div>
+          {/* Package equivalence helper */}
+          {newItemQty > 0 && newItemPackageQty > 0 && (
+            <p className="text-xs text-muted-foreground">
+              = {(newItemQty / newItemPackageQty) % 1 === 0
+                ? (newItemQty / newItemPackageQty)
+                : (newItemQty / newItemPackageQty).toFixed(1)}{" "}
+              {newItemPackageType}{newItemQty / newItemPackageQty !== 1 ? "s" : ""}
+            </p>
+          )}
           {/* Packaging Configuration */}
           <div className="flex gap-2 items-center flex-wrap">
             <span className="text-xs text-muted-foreground whitespace-nowrap">Packaging:</span>
@@ -564,12 +580,45 @@ export function InventoryTrackerComponent() {
               className="w-16 h-8 text-center text-sm"
             />
           </div>
+          {/* Warehouse & Zone Selector */}
+          {warehouses.length > 0 && (
+            <div className="flex gap-2 items-center flex-wrap">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">Store in:</span>
+              <Select value={newItemWarehouseId || "none"} onValueChange={(v) => { setNewItemWarehouseId(v === "none" ? null : v); setNewItemZoneId(null); }}>
+                <SelectTrigger className="w-36 h-8 text-sm">
+                  <SelectValue placeholder="Warehouse" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No warehouse</SelectItem>
+                  {warehouses.map(w => (
+                    <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {newItemWarehouseId && getZonesForWarehouse(newItemWarehouseId).length > 0 && (
+                <Select value={newItemZoneId || "none"} onValueChange={(v) => setNewItemZoneId(v === "none" ? null : v)}>
+                  <SelectTrigger className="w-36 h-8 text-sm">
+                    <SelectValue placeholder="Zone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No zone</SelectItem>
+                    {getZonesForWarehouse(newItemWarehouseId).map(z => (
+                      <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
           {/* Summary line */}
           {newItemName.trim() && (
             <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
-              Adding {newItemQty} {newItemName.trim()} • {newItemPackageType} of {newItemPackageQty}
+              Adding {newItemQty} total {newItemName.trim()} ({(newItemQty / newItemPackageQty) % 1 === 0 ? (newItemQty / newItemPackageQty) : (newItemQty / newItemPackageQty).toFixed(1)} {newItemPackageType}{newItemQty / newItemPackageQty !== 1 ? "s" : ""} of {newItemPackageQty})
               {newItemLastPrice && parseFloat(newItemLastPrice) > 0 && (
                 <span> • ${parseFloat(newItemLastPrice).toFixed(2)}/{newItemPackageType.toLowerCase()} (${(parseFloat(newItemLastPrice) / newItemPackageQty).toFixed(2)}/ea)</span>
+              )}
+              {newItemWarehouseId && warehouses.find(w => w.id === newItemWarehouseId) && (
+                <span> • {warehouses.find(w => w.id === newItemWarehouseId)!.name}{newItemZoneId && getZonesForWarehouse(newItemWarehouseId).find(z => z.id === newItemZoneId) ? ` > ${getZonesForWarehouse(newItemWarehouseId).find(z => z.id === newItemZoneId)!.name}` : ""}</span>
               )}
             </p>
           )}
