@@ -157,8 +157,8 @@ export function InventoryTrackerComponent() {
       lastPrice: lastPrice,
       pricePerItem: lastPrice && newItemPackageQty ? lastPrice / newItemPackageQty : null,
       notes: null,
-      warehouseId: null,
-      zoneId: null,
+      warehouseId: newItemWarehouseId,
+      zoneId: newItemZoneId,
     });
 
     if (item) {
@@ -168,6 +168,8 @@ export function InventoryTrackerComponent() {
       setNewItemPackageQty(24);
       setNewItemMinStock(appSettings.lowStockThreshold);
       setNewItemLastPrice("");
+      setNewItemWarehouseId(null);
+      setNewItemZoneId(null);
       toast({
         title: "Added!",
         description: `${item.name} added to inventory.`,
