@@ -76,6 +76,10 @@ export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
         notes: null,
         warehouseId: null,
         zoneId: null,
+        sku: null,
+        subcategory: null,
+        description: null,
+        active: true,
       });
       toast({ title: "Item added!", description: `${newItemName} added to inventory.` });
       onSuccess();

@@ -159,6 +159,10 @@ export function InventoryTrackerComponent() {
       notes: null,
       warehouseId: newItemWarehouseId,
       zoneId: newItemZoneId,
+      sku: null,
+      subcategory: null,
+      description: null,
+      active: true,
     });
 
     if (item) {

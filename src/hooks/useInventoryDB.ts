@@ -23,6 +23,11 @@ export interface InventoryItem {
   // Warehouse fields
   warehouseId: string | null;
   zoneId: string | null;
+  // Phase 1 new fields
+  sku: string | null;
+  subcategory: string | null;
+  description: string | null;
+  active: boolean;
 }
 
 export interface StockRunHistoryItem {
@@ -112,7 +117,7 @@ export function useInventory() {
 
       if (error) throw error;
 
-      const mappedItems: InventoryItem[] = (data || []).map(item => ({
+      const mappedItems: InventoryItem[] = (data || []).map((item: any) => ({
         id: item.id,
         name: item.name,
         category: item.category || "",
@@ -127,8 +132,12 @@ export function useInventory() {
         lastPrice: item.last_price ? Number(item.last_price) : null,
         pricePerItem: item.price_per_item ? Number(item.price_per_item) : null,
         notes: item.notes || null,
-        warehouseId: (item as any).warehouse_id || null,
-        zoneId: (item as any).zone_id || null,
+        warehouseId: item.warehouse_id || null,
+        zoneId: item.zone_id || null,
+        sku: item.sku || null,
+        subcategory: item.subcategory || null,
+        description: item.description || null,
+        active: item.active ?? true,
       }));
 
       setItems(mappedItems);
@@ -204,6 +213,10 @@ export function useInventory() {
         notes: data.notes || null,
         warehouseId: (data as any).warehouse_id || null,
         zoneId: (data as any).zone_id || null,
+        sku: (data as any).sku || null,
+        subcategory: (data as any).subcategory || null,
+        description: (data as any).description || null,
+        active: (data as any).active ?? true,
       };
 
       setItems(prev => [newItem, ...prev]);
