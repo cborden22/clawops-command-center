@@ -237,8 +237,10 @@ export type Database = {
       }
       inventory_items: {
         Row: {
+          active: boolean
           category: string | null
           created_by_user_id: string | null
+          description: string | null
           id: string
           last_price: number | null
           last_updated: string | null
@@ -250,6 +252,8 @@ export type Database = {
           package_type: string | null
           price_per_item: number | null
           quantity: number | null
+          sku: string | null
+          subcategory: string | null
           supplier_name: string | null
           supplier_url: string | null
           user_id: string
@@ -257,8 +261,10 @@ export type Database = {
           zone_id: string | null
         }
         Insert: {
+          active?: boolean
           category?: string | null
           created_by_user_id?: string | null
+          description?: string | null
           id?: string
           last_price?: number | null
           last_updated?: string | null
@@ -270,6 +276,8 @@ export type Database = {
           package_type?: string | null
           price_per_item?: number | null
           quantity?: number | null
+          sku?: string | null
+          subcategory?: string | null
           supplier_name?: string | null
           supplier_url?: string | null
           user_id: string
@@ -277,8 +285,10 @@ export type Database = {
           zone_id?: string | null
         }
         Update: {
+          active?: boolean
           category?: string | null
           created_by_user_id?: string | null
+          description?: string | null
           id?: string
           last_price?: number | null
           last_updated?: string | null
@@ -290,6 +300,8 @@ export type Database = {
           package_type?: string | null
           price_per_item?: number | null
           quantity?: number | null
+          sku?: string | null
+          subcategory?: string | null
           supplier_name?: string | null
           supplier_url?: string | null
           user_id?: string
