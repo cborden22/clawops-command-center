@@ -23,6 +23,11 @@ export interface InventoryItem {
   // Warehouse fields
   warehouseId: string | null;
   zoneId: string | null;
+  // Phase 1 new fields
+  sku: string | null;
+  subcategory: string | null;
+  description: string | null;
+  active: boolean;
 }
 
 export interface StockRunHistoryItem {
