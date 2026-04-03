@@ -71,6 +71,8 @@ export function InventoryTrackerComponent() {
   const [newItemPackageQty, setNewItemPackageQty] = useState(24);
   const [newItemMinStock, setNewItemMinStock] = useState(appSettings.lowStockThreshold);
   const [newItemLastPrice, setNewItemLastPrice] = useState<string>("");
+  const [newItemWarehouseId, setNewItemWarehouseId] = useState<string | null>(null);
+  const [newItemZoneId, setNewItemZoneId] = useState<string | null>(null);
   
   // Stock Run state
   const [isStockRunMode, setIsStockRunMode] = useState(false);
