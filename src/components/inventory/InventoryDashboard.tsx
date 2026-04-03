@@ -184,7 +184,7 @@ export function InventoryDashboard() {
                           </Badge>
                         )}
                         {status === "ok" && (
-                          <Badge variant="outline" className="text-xs text-green-600 border-green-300">OK</Badge>
+                          <Badge variant="outline" className="text-xs">OK</Badge>
                         )}
                       </TableCell>
                     </TableRow>
