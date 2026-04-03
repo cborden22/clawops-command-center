@@ -223,16 +223,24 @@ export function InventoryDashboard() {
               await updateItem(editingItem.id, data);
             } else {
               await addItem({
-                ...data,
+                name: data.name || "",
+                category: data.category || "Plush",
                 quantity: 0,
+                minStock: data.minStock || 0,
                 location: "",
                 packageType: "Case",
                 packageQuantity: 1,
                 supplierUrl: null,
                 supplierName: null,
                 lastPrice: data.pricePerItem || null,
+                pricePerItem: data.pricePerItem || null,
+                notes: data.notes || null,
                 warehouseId: null,
                 zoneId: null,
+                sku: data.sku || null,
+                subcategory: data.subcategory || null,
+                description: data.description || null,
+                active: data.active ?? true,
               });
             }
             setShowAddForm(false);
