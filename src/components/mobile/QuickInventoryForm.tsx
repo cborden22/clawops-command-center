@@ -8,6 +8,8 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, Plus, Minus, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
+import { useCustomCategories } from "@/hooks/useCustomCategories";
+import { CategorySelect } from "@/components/inventory/CategorySelect";
 
 interface QuickInventoryFormProps {
   onSuccess: () => void;
