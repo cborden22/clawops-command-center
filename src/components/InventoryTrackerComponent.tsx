@@ -191,6 +191,7 @@ export function InventoryTrackerComponent() {
     setEditSupplierName(item.supplierName || "");
     setEditSupplierUrl(item.supplierUrl || "");
     setEditNotes(item.notes || "");
+    setEditCategory(item.category || "General");
     setEditWarehouseId(item.warehouseId);
     setEditZoneId(item.zoneId);
   };
