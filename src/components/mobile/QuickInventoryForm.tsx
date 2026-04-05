@@ -67,7 +67,7 @@ export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
       const cost = newCostPerPkg ? parseFloat(newCostPerPkg) : null;
       await addItem({
         name: newItemName.trim(),
-        category: "General",
+        category: newItemCategory,
         quantity: parseInt(newItemQty) || 10,
         minStock: appSettings.lowStockThreshold,
         location: "",
