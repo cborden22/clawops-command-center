@@ -433,6 +433,7 @@ export function ConvertToLocationDialog({ lead, open, onOpenChange, onSuccess }:
                         <Input
                           placeholder="Custom name (optional, e.g., Mini Claw)"
                           value={machine.customLabel || ""}
+                          onKeyDown={(e) => e.stopPropagation()}
                           onChange={(e) =>
                             handleMachineTypeChange(index, "customLabel", e.target.value)
                           }
