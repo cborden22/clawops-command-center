@@ -18,6 +18,7 @@ interface QuickInventoryFormProps {
 export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
   const { items, updateQuantity, addItem } = useInventory();
   const { settings: appSettings } = useAppSettings();
+  const { allCategories, addCategory } = useCustomCategories();
   const [mode, setMode] = useState<"adjust" | "add">("adjust");
   const [selectedItemId, setSelectedItemId] = useState("");
   const [adjustmentType, setAdjustmentType] = useState<"add" | "remove">("remove");
