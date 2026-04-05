@@ -40,7 +40,7 @@ import { SubscriptionManager } from "@/components/settings/SubscriptionManager";
 
 export default function Settings() {
   const { user } = useAuth();
-  const { settings: appSettings, updateSetting, saveSettings, isLoaded } = useAppSettings();
+  const { settings: appSettings, updateSetting, isLoaded } = useAppSettings();
   
   // Profile state
   const [fullName, setFullName] = useState("");
