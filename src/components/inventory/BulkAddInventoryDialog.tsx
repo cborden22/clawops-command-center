@@ -24,6 +24,7 @@ interface BulkAddRow {
 const emptyRow = (): BulkAddRow => ({
   name: "",
   quantity: "",
+  category: "General",
   packageType: "Case",
   packageQuantity: "24",
   costPerPackage: "",
