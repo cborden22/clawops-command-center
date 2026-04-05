@@ -169,6 +169,7 @@ export function InventoryTrackerComponent() {
 
     if (item) {
       setNewItemName("");
+      setNewItemCategory("General");
       setNewItemQty(10);
       setNewItemPackageType("Case");
       setNewItemPackageQty(24);
