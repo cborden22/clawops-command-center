@@ -106,6 +106,7 @@ export function InventoryTrackerComponent() {
   const [editSupplierUrl, setEditSupplierUrl] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editWarehouseId, setEditWarehouseId] = useState<string | null>(null);
+  const [editCategory, setEditCategory] = useState("General");
   const [editZoneId, setEditZoneId] = useState<string | null>(null);
   // Expanded item state
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
