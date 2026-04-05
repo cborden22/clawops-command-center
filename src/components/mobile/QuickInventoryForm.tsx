@@ -24,6 +24,7 @@ export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
   const [adjustmentType, setAdjustmentType] = useState<"add" | "remove">("remove");
   const [quantity, setQuantity] = useState("");
   const [newItemName, setNewItemName] = useState("");
+  const [newItemCategory, setNewItemCategory] = useState("General");
   const [newItemQty, setNewItemQty] = useState("10");
   const [newPackageType, setNewPackageType] = useState("Case");
   const [newPackageQty, setNewPackageQty] = useState("24");
