@@ -214,7 +214,7 @@ export function BulkAddInventoryDialog({ open, onOpenChange, addItem }: BulkAddI
       const cost = parseFloat(row.costPerPackage) || null;
       const result = await addItem({
         name: row.name.trim(),
-        category: "General",
+        category: row.category,
         quantity: parseInt(row.quantity) || 0,
         minStock: appSettings.lowStockThreshold,
         location: "",
