@@ -603,7 +603,7 @@ export function InventoryTrackerComponent() {
           {/* Summary line */}
           {newItemName.trim() && (
             <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
-              Adding {newItemQty} {newItemName.trim()} • {newItemPackageType} of {newItemPackageQty}
+              Adding {newItemQty} {newItemName.trim()} ({newItemCategory}) • {newItemPackageType} of {newItemPackageQty}
               {newItemLastPrice && parseFloat(newItemLastPrice) > 0 && (
                 <span> • ${parseFloat(newItemLastPrice).toFixed(2)}/{newItemPackageType.toLowerCase()} (${(parseFloat(newItemLastPrice) / newItemPackageQty).toFixed(2)}/ea)</span>
               )}
