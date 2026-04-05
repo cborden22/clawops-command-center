@@ -47,7 +47,7 @@ export default function Settings() {
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   
   // App Settings saving state
-  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  
   
   // Email notification preferences
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
