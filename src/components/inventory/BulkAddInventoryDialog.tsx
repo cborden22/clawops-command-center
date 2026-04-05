@@ -93,8 +93,9 @@ function BulkAddTable({
   return (
     <div className="space-y-3">
       {/* Header */}
-      <div className="hidden sm:grid sm:grid-cols-[1fr_70px_90px_60px_90px_60px_28px] gap-2 text-xs font-medium text-muted-foreground px-1">
+      <div className="hidden sm:grid sm:grid-cols-[1fr_100px_70px_90px_60px_90px_60px_28px] gap-2 text-xs font-medium text-muted-foreground px-1">
         <span>Name</span>
+        <span>Category</span>
         <span>Qty</span>
         <span>Pkg Type</span>
         <span>Per Pkg</span>
