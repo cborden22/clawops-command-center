@@ -85,13 +85,12 @@ function BulkAddTable({
   return (
     <div className="space-y-3">
       {/* Header */}
-      <div className="hidden sm:grid sm:grid-cols-[1fr_80px_90px_60px_90px_70px_60px_28px] gap-2 text-xs font-medium text-muted-foreground px-1">
+      <div className="hidden sm:grid sm:grid-cols-[1fr_70px_90px_60px_90px_60px_28px] gap-2 text-xs font-medium text-muted-foreground px-1">
         <span>Name</span>
-        <span>Total Items</span>
+        <span>Qty</span>
         <span>Pkg Type</span>
         <span>Per Pkg</span>
         <span>Cost/Pkg</span>
-        <span>Packages</span>
         <span>/ea</span>
         <span />
       </div>
@@ -100,11 +99,8 @@ function BulkAddTable({
       <div className="space-y-2 max-h-[50vh] overflow-y-auto">
         {rows.map((row, i) => {
           const ppi = getPricePerItem(row);
-          const totalItems = parseInt(row.quantity) || 0;
-          const pkgQty = parseInt(row.packageQuantity) || 0;
-          const packageCount = pkgQty > 0 && totalItems > 0 ? (totalItems / pkgQty) : null;
           return (
-            <div key={i} className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-[1fr_80px_90px_60px_90px_70px_60px_28px] gap-2 items-center p-2 sm:p-0 border sm:border-0 rounded-lg sm:rounded-none">
+            <div key={i} className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-[1fr_70px_90px_60px_90px_60px_28px] gap-2 items-center p-2 sm:p-0 border sm:border-0 rounded-lg sm:rounded-none">
               {/* Mobile labels */}
               <div className="sm:hidden text-xs text-muted-foreground">Item {i + 1}</div>
               <Input
@@ -113,16 +109,13 @@ function BulkAddTable({
                 onChange={e => updateRow(i, "name", e.target.value)}
                 className="h-9 text-sm"
               />
-              <div>
-                <NumberInput
-                  placeholder="0"
-                  min="1"
-                  value={row.quantity}
-                  onChange={e => updateRow(i, "quantity", e.target.value)}
-                  className="h-9 text-sm text-center"
-                />
-                <span className="sm:hidden text-xs text-muted-foreground">Total individual items</span>
-              </div>
+              <NumberInput
+                placeholder="0"
+                min="1"
+                value={row.quantity}
+                onChange={e => updateRow(i, "quantity", e.target.value)}
+                className="h-9 text-sm text-center"
+              />
               <Select value={row.packageType} onValueChange={v => updateRow(i, "packageType", v)}>
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue />
@@ -149,9 +142,6 @@ function BulkAddTable({
                 onChange={e => updateRow(i, "costPerPackage", e.target.value)}
                 className="h-9 text-sm text-center"
               />
-              <span className="text-xs text-muted-foreground text-center tabular-nums">
-                {packageCount !== null ? `${packageCount % 1 === 0 ? packageCount : packageCount.toFixed(1)} ${row.packageType}${packageCount !== 1 ? 's' : ''}` : "—"}
-              </span>
               <span className="text-xs text-muted-foreground text-center tabular-nums">
                 {ppi !== null ? `$${ppi.toFixed(2)}` : "—"}
               </span>

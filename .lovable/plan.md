@@ -1,110 +1,74 @@
-## Phase 1 Inventory Management Overhaul
 
-This is a significant rebuild of the inventory module. The existing `inventory_items` table stores a single quantity per item. The new system introduces **inventory balances** so one item can exist at multiple locations with separate quantities.
 
-### Key Design Decision
+## Inventory Overhaul: Warehouses and Storage Locations
 
-The existing `locations` table is used throughout the app for claw machine business locations (revenue, collections, leads, etc.). Rather than conflicting with that, we create a **separate `inventory_locations**` table that represents storage/assignment locations for inventory purposes. This keeps the existing app intact while building the new inventory module cleanly.
+### Concept
+
+Introduce **Warehouses** as first-class database entities that replace the current localStorage-only warehouse address. Each warehouse can have **Storage Zones** (totes, shelves, bins) and inventory items get assigned to a specific warehouse + optional zone. This lets you answer "where is item X stored?" and "what's in Tote #3?"
+
+```text
+Warehouse (e.g. "Main Storage")
+├── Zone: Tote A (Red)
+│   ├── Plush Bears (qty: 50)
+│   └── Bouncy Balls (qty: 200)
+├── Zone: Shelf B-2
+│   └── Capsule Toys (qty: 120)
+└── Unassigned
+    └── New Prizes (qty: 30)
+```
 
 ### Database Changes (3 migrations)
 
-**Migration 1: `inventory_locations` table**
+**1. `warehouses` table**
+- `id`, `user_id`, `name`, `address`, `city`, `state`, `zip`, `is_default` (boolean), `notes`, `created_at`
+- RLS: owner + team permission (reuse `inventory` permission)
+- The existing `warehouseAddress` from AppSettings gets migrated into a default warehouse record on first load
 
-- `id`, `user_id`, `location_name` (required), `location_type` (enum: warehouse, business_location), `code`, `address`, `notes`, `active` (default true), `created_at`, `updated_at`
-- RLS: owner + team `inventory` permission
-- Unique constraint on `(user_id, code)` where code is not null
+**2. `warehouse_zones` table**
+- `id`, `warehouse_id`, `name` (e.g. "Tote A", "Shelf 3"), `zone_type` (enum: tote, shelf, bin, section, other), `notes`, `created_at`
+- RLS: via parent warehouse ownership
 
-**Migration 2: `inventory_balances` table**
+**3. Update `inventory_items`**
+- Add `warehouse_id` (uuid, nullable FK to warehouses)
+- Add `zone_id` (uuid, nullable FK to warehouse_zones)
+- Keep existing `location` text field for backward compatibility (deprecate over time)
 
-- `id`, `user_id`, `inventory_item_id` (FK to inventory_items), `location_id` (FK to inventory_locations), `quantity_on_hand` (default 0), `reorder_point`, `notes`, `created_at`, `updated_at`
-- Unique constraint on `(inventory_item_id, location_id)` to prevent duplicates
-- RLS: owner + team `inventory` permission
+### Frontend Changes
 
-**Migration 3: Alter `inventory_items**`
+| Area | Change |
+|---|---|
+| **Settings page** | New "Warehouses" management section replacing the single warehouse address fields. CRUD for warehouses with a "Set as Default" toggle. Each warehouse expands to show/manage its zones. |
+| **Inventory Tracker** | Add warehouse and zone selectors when adding/editing items. New filter/group-by-warehouse in the item list. |
+| **Inventory Item Card** | Show warehouse name + zone badge (e.g. "Main Storage > Tote A") |
+| **"Where is it?" view** | New tab or section on inventory page that groups items by warehouse > zone, answering "what's in each tote?" |
+| **Mileage / Route system** | Replace localStorage warehouse address references with the default warehouse record from DB. The `LocationSelector` "Warehouse" option pulls from the default warehouse. |
+| **Bulk Add dialog** | Add optional warehouse + zone selector |
+| **Stock Run mode** | Show zone info on items so you know which tote to pull from |
 
-- Add columns: `sku` (text), `subcategory` (text), `description` (text), `active` (boolean, default true)
-- Existing columns map: `name` = item_name, `category` stays, `price_per_item` = unit_cost, `min_stock` = low_stock_threshold
+### Hooks
 
-### New Hooks
+| Hook | Purpose |
+|---|---|
+| `useWarehousesDB` | CRUD for warehouses and their zones. Fetches default warehouse for use across the app. |
+| Updated `useInventoryDB` | Accept `warehouseId` and `zoneId` on add/update. Include them in queries. |
 
+### Migration of Existing Data
 
-| Hook                    | Purpose                                                                    |
-| ----------------------- | -------------------------------------------------------------------------- |
-| `useInventoryLocations` | CRUD for `inventory_locations` table                                       |
-| `useInventoryBalances`  | CRUD for `inventory_balances`, compute totals per item                     |
-| Update `useInventoryDB` | Add `sku`, `subcategory`, `description`, `active` to interface and queries |
+On first load of the new warehouses hook, if zero warehouses exist and AppSettings has a `warehouseAddress`, auto-create a default warehouse from those settings. This ensures backward compatibility with mileage routes that reference "Warehouse."
 
+### What This Does NOT Change
 
-### Frontend: New Pages & Components
-
-**1. Inventory Dashboard (replaces current inventory tab)**
-
-- Summary cards: Total Items, Total Units, Active Locations, Total Est. Value
-- Table: Item Name, SKU, Category, Total Qty (sum of balances), # Locations, Unit Cost, Low Stock status
-- Filters: search, category, active/inactive
-- Click row opens item detail
-
-**2. Item Detail Page (dialog or inline expand)**
-
-- Item info header (name, SKU, category, subcategory, description, unit cost, threshold, active)
-- "Quantities by Location" table: Location Name, Type, Qty On Hand, Reorder Point, Notes, Edit button
-- Button to assign item to new location
-- Button to edit item details
-
-**3. Add/Edit Item Form (dialog)**
-
-- Fields: name, SKU, category (Plush/Parts/Machines/Bulk), subcategory, unit cost, description, low stock threshold, active toggle
-
-**4. Locations tab (replaces Warehouses tab)**
-
-- Table: Location Name, Code, Type, Address, Active, # Items
-- Search + type filter
-- Click row opens location detail
-
-**5. Location Detail (dialog)**
-
-- Location info header
-- Table of assigned inventory: Item Name, Category, SKU, Qty, Unit Cost, Total Value
-- Summary: Total Units, Total Est. Value
-
-**6. Balance Management**
-
-- From item detail: "Add to Location" button, set qty, reorder point
-- Inline edit qty on hand from both item detail and location detail views
-
-### Navigation Update
-
-- Keep existing `/inventory` route
-- Replace tab structure: **Dashboard** | **Locations** (replaces "Where Is It?" + "Warehouses")
-- Item detail and location detail open as dialogs from their respective tabs
-
-### Files to Create
-
-- `src/hooks/useInventoryLocations.ts`
-- `src/hooks/useInventoryBalances.ts`
-- `src/components/inventory/InventoryDashboard.tsx`
-- `src/components/inventory/InventoryItemDetail.tsx`
-- `src/components/inventory/InventoryItemForm.tsx`
-- `src/components/inventory/InventoryLocationsList.tsx`
-- `src/components/inventory/InventoryLocationDetail.tsx`
-- `src/components/inventory/InventoryLocationForm.tsx`
-- `src/components/inventory/BalanceEditor.tsx`
-
-### Files to Modify
-
-- `src/hooks/useInventoryDB.ts` - Add new fields to interface/queries
-- `src/pages/InventoryTracker.tsx` - New tab layout (Dashboard | Locations)
-- `src/integrations/supabase/types.ts` - Auto-updated after migrations
-
-### What Stays Unchanged
-
-- Existing stock run functionality continues to work with the legacy `quantity` field on `inventory_items` (backward compatible)
-- All other app modules (revenue, locations, mileage, etc.) untouched
-- The existing `warehouses` and `warehouse_zones` tables remain for the legacy storage zone feature
+- No changes to revenue, collections, or machine tracking
+- The `location` text field on inventory items stays (not removed) but the UI nudges toward warehouse + zone instead
+- Route runs and mileage continue to work -- they just pull the default warehouse address from DB instead of localStorage
 
 ### Implementation Order
 
-1. Run 3 database migrations
-2. Build hooks (locations, balances, update inventory)
-3. Build UI components (dashboard, forms, detail views)
-4. Update page layout with new tabs
+1. Database migrations (warehouses, zones, inventory_items columns)
+2. `useWarehousesDB` hook
+3. Settings page warehouse management UI
+4. Update inventory add/edit forms with warehouse + zone pickers
+5. Inventory list grouping and "Where is it?" view
+6. Migrate mileage/route warehouse references to use DB default
+7. Update reports to include warehouse data
+
