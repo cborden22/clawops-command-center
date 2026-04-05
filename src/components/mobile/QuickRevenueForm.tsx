@@ -216,6 +216,14 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
             bagLabel: bagLabel.trim() || undefined,
           });
         }
+
+        // Update the location's last_collection_date so next collection has correct service period
+        if (locationId && locationId !== "business-expense") {
+          await supabase
+            .from("locations")
+            .update({ last_collection_date: date.toISOString() })
+            .eq("id", locationId);
+        }
         
         toast({ title: "Income added!", description: `$${finalAmount.toFixed(2)} recorded.` });
       } else {
