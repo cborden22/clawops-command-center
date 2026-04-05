@@ -19,10 +19,7 @@ import {
   Shield, 
   Save,
   Building2,
-  Warehouse,
   DollarSign,
-  Palette,
-  Car,
   Eye,
   EyeOff,
   Bell,
@@ -35,7 +32,7 @@ import { toast } from "@/hooks/use-toast";
 import { VehicleManager } from "@/components/settings/VehicleManager";
 import { MachineTypeManager } from "@/components/settings/MachineTypeManager";
 import { BudgetManager } from "@/components/settings/BudgetManager";
-import { WarehouseManager } from "@/components/settings/WarehouseManager";
+
 import { FeedbackDialog } from "@/components/shared/FeedbackDialog";
 import { useQRLogo } from "@/hooks/useQRLogo";
 import { SubscriptionManager } from "@/components/settings/SubscriptionManager";
@@ -43,14 +40,14 @@ import { SubscriptionManager } from "@/components/settings/SubscriptionManager";
 
 export default function Settings() {
   const { user } = useAuth();
-  const { settings: appSettings, updateSetting, saveSettings, isLoaded } = useAppSettings();
+  const { settings: appSettings, updateSetting, isLoaded } = useAppSettings();
   
   // Profile state
   const [fullName, setFullName] = useState("");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   
   // App Settings saving state
-  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  
   
   // Email notification preferences
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
@@ -134,24 +131,6 @@ export default function Settings() {
     }
   };
 
-  const handleSaveAppSettings = async () => {
-    setIsSavingSettings(true);
-    try {
-      saveSettings();
-      toast({
-        title: "Settings Saved",
-        description: "Your app settings have been saved successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save settings.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSavingSettings(false);
-    }
-  };
 
   const handleToggleDarkMode = (checked: boolean) => {
     updateSetting("darkMode", checked);
@@ -423,178 +402,122 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          {/* Warehouses & Storage */}
-          <WarehouseManager />
-
-          {/* Default Values */}
+          {/* Defaults, Display & Notifications - Consolidated */}
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5 text-primary" />
-                Default Values
+                Defaults & Preferences
               </CardTitle>
               <CardDescription>
-                Set defaults for new locations and inventory
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="defaultCommissionRate">Default Commission Rate (%)</Label>
-                  <Input
-                    id="defaultCommissionRate"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={appSettings.defaultCommissionRate}
-                    onChange={(e) => updateSetting("defaultCommissionRate", Number(e.target.value))}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Applied to new locations by default
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
-                  <Input
-                    id="lowStockThreshold"
-                    type="number"
-                    min="0"
-                    value={appSettings.lowStockThreshold}
-                    onChange={(e) => updateSetting("lowStockThreshold", Number(e.target.value))}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Items below this count trigger low stock alerts
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Currency</Label>
-                  <Select 
-                    value={appSettings.currency} 
-                    onValueChange={(v) => updateSetting("currency", v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">USD ($)</SelectItem>
-                      <SelectItem value="EUR">EUR (€)</SelectItem>
-                      <SelectItem value="GBP">GBP (£)</SelectItem>
-                      <SelectItem value="CAD">CAD ($)</SelectItem>
-                      <SelectItem value="AUD">AUD ($)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dateFormat">Date Format</Label>
-                  <Select 
-                    value={appSettings.dateFormat} 
-                    onValueChange={(v) => updateSetting("dateFormat", v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MM/dd/yyyy">MM/DD/YYYY</SelectItem>
-                      <SelectItem value="dd/MM/yyyy">DD/MM/YYYY</SelectItem>
-                      <SelectItem value="yyyy-MM-dd">YYYY-MM-DD</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Budget Management */}
-          <BudgetManager />
-
-          {/* Display Preferences */}
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Palette className="h-5 w-5 text-primary" />
-                Display Preferences
-              </CardTitle>
-              <CardDescription>
-                Customize how the app looks and behaves
+                Default values, display options, and notification settings
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="darkMode">Dark Mode</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Use dark theme for the interface
-                  </p>
+              {/* Default Values Section */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Defaults</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultCommissionRate">Default Commission Rate (%)</Label>
+                    <Input
+                      id="defaultCommissionRate"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={appSettings.defaultCommissionRate}
+                      onChange={(e) => updateSetting("defaultCommissionRate", Number(e.target.value))}
+                    />
+                    <p className="text-xs text-muted-foreground">Applied to new locations by default</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
+                    <Input
+                      id="lowStockThreshold"
+                      type="number"
+                      min="0"
+                      value={appSettings.lowStockThreshold}
+                      onChange={(e) => updateSetting("lowStockThreshold", Number(e.target.value))}
+                    />
+                    <p className="text-xs text-muted-foreground">Items below this count trigger low stock alerts</p>
+                  </div>
                 </div>
-                <Switch
-                  id="darkMode"
-                  checked={appSettings.darkMode}
-                  onCheckedChange={handleToggleDarkMode}
-                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">Currency</Label>
+                    <Select value={appSettings.currency} onValueChange={(v) => updateSetting("currency", v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                        <SelectItem value="EUR">EUR (€)</SelectItem>
+                        <SelectItem value="GBP">GBP (£)</SelectItem>
+                        <SelectItem value="CAD">CAD ($)</SelectItem>
+                        <SelectItem value="AUD">AUD ($)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dateFormat">Date Format</Label>
+                    <Select value={appSettings.dateFormat} onValueChange={(v) => updateSetting("dateFormat", v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MM/dd/yyyy">MM/DD/YYYY</SelectItem>
+                        <SelectItem value="dd/MM/yyyy">DD/MM/YYYY</SelectItem>
+                        <SelectItem value="yyyy-MM-dd">YYYY-MM-DD</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
 
               <Separator />
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="compactView">Compact View</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Show more data with less spacing
-                  </p>
+              {/* Display Preferences Section */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Display</h4>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="darkMode">Dark Mode</Label>
+                    <p className="text-sm text-muted-foreground">Use dark theme for the interface</p>
+                  </div>
+                  <Switch id="darkMode" checked={appSettings.darkMode} onCheckedChange={handleToggleDarkMode} />
                 </div>
-                <Switch
-                  id="compactView"
-                  checked={appSettings.compactView}
-                  onCheckedChange={handleToggleCompactView}
-                />
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="compactView">Compact View</Label>
+                    <p className="text-sm text-muted-foreground">Show more data with less spacing</p>
+                  </div>
+                  <Switch id="compactView" checked={appSettings.compactView} onCheckedChange={handleToggleCompactView} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="autoBackup">Auto Backup</Label>
+                    <p className="text-sm text-muted-foreground">Automatically backup data to the cloud</p>
+                  </div>
+                  <Switch id="autoBackup" checked={appSettings.autoBackup} onCheckedChange={handleToggleAutoBackup} />
+                </div>
               </div>
 
               <Separator />
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="autoBackup">Auto Backup</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Automatically backup data to the cloud
-                  </p>
+              {/* Notifications Section */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                  <Bell className="h-3.5 w-3.5" /> Notifications
+                </h4>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="emailNotifications">Email Notifications</Label>
+                    <p className="text-sm text-muted-foreground">Receive email alerts for maintenance reports</p>
+                  </div>
+                  <Switch
+                    id="emailNotifications"
+                    checked={emailNotificationsEnabled}
+                    onCheckedChange={handleToggleEmailNotifications}
+                    disabled={isLoadingNotificationPref}
+                  />
                 </div>
-                <Switch
-                  id="autoBackup"
-                  checked={appSettings.autoBackup}
-                  onCheckedChange={handleToggleAutoBackup}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Notifications */}
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-primary" />
-                Notifications
-              </CardTitle>
-              <CardDescription>
-                Configure how you receive alerts and updates
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="emailNotifications">Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive email alerts when maintenance reports are submitted
-                  </p>
-                </div>
-                <Switch
-                  id="emailNotifications"
-                  checked={emailNotificationsEnabled}
-                  onCheckedChange={handleToggleEmailNotifications}
-                  disabled={isLoadingNotificationPref}
-                />
               </div>
             </CardContent>
           </Card>
@@ -612,7 +535,6 @@ export default function Settings() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-6 items-start">
-                {/* Preview */}
                 <div className="flex flex-col items-center gap-2">
                   <div className="p-3 bg-white rounded-xl border">
                     <QRCodeSVG
@@ -622,77 +544,42 @@ export default function Settings() {
                       includeMargin
                       bgColor="#ffffff"
                       fgColor="#000000"
-                      imageSettings={qrLogoUrl ? {
-                        src: qrLogoUrl,
-                        height: 24,
-                        width: 24,
-                        excavate: true,
-                      } : undefined}
+                      imageSettings={qrLogoUrl ? { src: qrLogoUrl, height: 24, width: 24, excavate: true } : undefined}
                     />
                   </div>
                   <span className="text-xs text-muted-foreground">Preview</span>
                 </div>
-
-                {/* Upload controls */}
                 <div className="flex-1 space-y-3">
                   {qrLogoUrl ? (
                     <div className="flex items-center gap-3">
-                      <img
-                        src={qrLogoUrl}
-                        alt="Current QR logo"
-                        className="h-12 w-12 object-contain rounded border bg-white p-1"
-                      />
+                      <img src={qrLogoUrl} alt="Current QR logo" className="h-12 w-12 object-contain rounded border bg-white p-1" />
                       <div className="flex-1">
                         <p className="text-sm font-medium">Logo uploaded</p>
-                        <p className="text-xs text-muted-foreground">
-                          Appears on all QR codes automatically
-                        </p>
+                        <p className="text-xs text-muted-foreground">Appears on all QR codes automatically</p>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No logo uploaded. QR codes will display without a logo.
-                    </p>
+                    <p className="text-sm text-muted-foreground">No logo uploaded. QR codes will display without a logo.</p>
                   )}
-
                   <div className="flex gap-2">
                     <input
                       ref={logoInputRef}
                       type="file"
                       accept="image/png,image/jpeg,image/svg+xml"
                       className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) uploadLogo(file);
-                        e.target.value = "";
-                      }}
+                      onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadLogo(file); e.target.value = ""; }}
                     />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      disabled={isUploadingLogo}
-                      onClick={() => logoInputRef.current?.click()}
-                    >
+                    <Button variant="outline" size="sm" className="gap-2" disabled={isUploadingLogo} onClick={() => logoInputRef.current?.click()}>
                       <Upload className="h-4 w-4" />
                       {isUploadingLogo ? "Uploading..." : qrLogoUrl ? "Replace Logo" : "Upload Logo"}
                     </Button>
                     {qrLogoUrl && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="gap-2 text-destructive hover:text-destructive"
-                        disabled={isUploadingLogo}
-                        onClick={removeLogo}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Remove
+                      <Button variant="ghost" size="sm" className="gap-2 text-destructive hover:text-destructive" disabled={isUploadingLogo} onClick={removeLogo}>
+                        <Trash2 className="h-4 w-4" /> Remove
                       </Button>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    PNG, JPG, or SVG — max 2MB. Works best with a square image.
-                  </p>
+                  <p className="text-xs text-muted-foreground">PNG, JPG, or SVG — max 2MB. Works best with a square image.</p>
                 </div>
               </div>
             </CardContent>
@@ -701,41 +588,26 @@ export default function Settings() {
           {/* Machine Types */}
           <MachineTypeManager />
 
-          {/* Vehicles Section */}
+          {/* Vehicles */}
           <VehicleManager />
 
-          {/* Report Issue Section */}
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-primary" />
-                Feedback & Support
-              </CardTitle>
-              <CardDescription>
-                Report bugs, request features, or share feedback
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button 
-                variant="outline" 
-                className="gap-2"
-                onClick={() => setFeedbackOpen(true)}
-              >
-                <MessageSquare className="h-4 w-4" />
-                Report an Issue
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Budget Management */}
+          <BudgetManager />
 
-          <Button 
-            onClick={handleSaveAppSettings} 
-            disabled={isSavingSettings}
-            className="gap-2"
-          >
-            <Save className="h-4 w-4" />
-            {isSavingSettings ? "Saving..." : "Save App Settings"}
-          </Button>
-          
+          {/* Feedback - simplified row */}
+          <div className="flex items-center justify-between rounded-lg border bg-card p-4">
+            <div className="flex items-center gap-3">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              <div>
+                <p className="text-sm font-medium">Feedback & Support</p>
+                <p className="text-xs text-muted-foreground">Report bugs, request features, or share feedback</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setFeedbackOpen(true)}>
+              <MessageSquare className="h-4 w-4" /> Report an Issue
+            </Button>
+          </div>
+
           <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
         </TabsContent>
 
