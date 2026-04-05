@@ -66,13 +66,19 @@ export function InventoryTrackerComponent() {
   const { items, isLoaded, addItem, updateItem, deleteItem, updateQuantity, bulkDeductQuantities, bulkAddQuantities } = useInventory();
   const { warehouses, zones, getZonesForWarehouse } = useWarehouses();
   const { settings: appSettings } = useAppSettings();
+  const { allCategories, addCategory } = useCustomCategories();
   const [searchQuery, setSearchQuery] = useState("");
   const [newItemName, setNewItemName] = useState("");
+  const [newItemCategory, setNewItemCategory] = useState("General");
   const [newItemQty, setNewItemQty] = useState(10);
   const [newItemPackageType, setNewItemPackageType] = useState("Case");
   const [newItemPackageQty, setNewItemPackageQty] = useState(24);
   const [newItemMinStock, setNewItemMinStock] = useState(appSettings.lowStockThreshold);
   const [newItemLastPrice, setNewItemLastPrice] = useState<string>("");
+  
+  // Sort and filter state
+  const [sortBy, setSortBy] = useState("name-asc");
+  const [filterCategory, setFilterCategory] = useState("all");
   
   // Stock Run state
   const [isStockRunMode, setIsStockRunMode] = useState(false);
