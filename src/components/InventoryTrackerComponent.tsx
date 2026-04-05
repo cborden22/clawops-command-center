@@ -152,7 +152,7 @@ export function InventoryTrackerComponent() {
     
     const item = await addItem({
       name: newItemName.trim(),
-      category: "General",
+      category: newItemCategory,
       quantity: newItemQty,
       minStock: newItemMinStock,
       location: "",
