@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
    const resetPasswordForEmail = async (email: string) => {
-     const redirectUrl = `https://clawops.lovable.app/reset-password`;
+     const redirectUrl = `${window.location.origin}/reset-password`;
      const { error } = await supabase.auth.resetPasswordForEmail(email, {
        redirectTo: redirectUrl,
      });
