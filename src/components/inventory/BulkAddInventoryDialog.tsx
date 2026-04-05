@@ -109,7 +109,7 @@ function BulkAddTable({
         {rows.map((row, i) => {
           const ppi = getPricePerItem(row);
           return (
-            <div key={i} className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-[1fr_70px_90px_60px_90px_60px_28px] gap-2 items-center p-2 sm:p-0 border sm:border-0 rounded-lg sm:rounded-none">
+            <div key={i} className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-[1fr_100px_70px_90px_60px_90px_60px_28px] gap-2 items-center p-2 sm:p-0 border sm:border-0 rounded-lg sm:rounded-none">
               {/* Mobile labels */}
               <div className="sm:hidden text-xs text-muted-foreground">Item {i + 1}</div>
               <Input
@@ -117,6 +117,14 @@ function BulkAddTable({
                 value={row.name}
                 onChange={e => updateRow(i, "name", e.target.value)}
                 className="h-9 text-sm"
+              />
+              <CategorySelect
+                value={row.category}
+                onValueChange={v => updateRow(i, "category", v)}
+                allCategories={allCategories}
+                onAddCustom={onAddCategory}
+                triggerClassName="h-9 text-sm"
+                placeholder="Category"
               />
               <NumberInput
                 placeholder="0"
