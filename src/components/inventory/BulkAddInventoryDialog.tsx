@@ -9,10 +9,13 @@ import { Plus, Trash2, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
+import { useCustomCategories } from "@/hooks/useCustomCategories";
+import { CategorySelect } from "@/components/inventory/CategorySelect";
 
 interface BulkAddRow {
   name: string;
   quantity: string;
+  category: string;
   packageType: string;
   packageQuantity: string;
   costPerPackage: string;
@@ -21,6 +24,7 @@ interface BulkAddRow {
 const emptyRow = (): BulkAddRow => ({
   name: "",
   quantity: "",
+  category: "General",
   packageType: "Case",
   packageQuantity: "24",
   costPerPackage: "",
@@ -63,11 +67,15 @@ function BulkAddTable({
   setRows,
   isSubmitting,
   onSubmit,
+  allCategories,
+  onAddCategory,
 }: {
   rows: BulkAddRow[];
   setRows: React.Dispatch<React.SetStateAction<BulkAddRow[]>>;
   isSubmitting: boolean;
   onSubmit: () => void;
+  allCategories: string[];
+  onAddCategory: (name: string) => Promise<boolean>;
 }) {
   const updateRow = (index: number, field: keyof BulkAddRow, value: string) => {
     setRows(prev => prev.map((r, i) => (i === index ? { ...r, [field]: value } : r)));
@@ -85,8 +93,9 @@ function BulkAddTable({
   return (
     <div className="space-y-3">
       {/* Header */}
-      <div className="hidden sm:grid sm:grid-cols-[1fr_70px_90px_60px_90px_60px_28px] gap-2 text-xs font-medium text-muted-foreground px-1">
+      <div className="hidden sm:grid sm:grid-cols-[1fr_100px_70px_90px_60px_90px_60px_28px] gap-2 text-xs font-medium text-muted-foreground px-1">
         <span>Name</span>
+        <span>Category</span>
         <span>Qty</span>
         <span>Pkg Type</span>
         <span>Per Pkg</span>
@@ -100,7 +109,7 @@ function BulkAddTable({
         {rows.map((row, i) => {
           const ppi = getPricePerItem(row);
           return (
-            <div key={i} className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-[1fr_70px_90px_60px_90px_60px_28px] gap-2 items-center p-2 sm:p-0 border sm:border-0 rounded-lg sm:rounded-none">
+            <div key={i} className="space-y-2 sm:space-y-0 sm:grid sm:grid-cols-[1fr_100px_70px_90px_60px_90px_60px_28px] gap-2 items-center p-2 sm:p-0 border sm:border-0 rounded-lg sm:rounded-none">
               {/* Mobile labels */}
               <div className="sm:hidden text-xs text-muted-foreground">Item {i + 1}</div>
               <Input
@@ -108,6 +117,14 @@ function BulkAddTable({
                 value={row.name}
                 onChange={e => updateRow(i, "name", e.target.value)}
                 className="h-9 text-sm"
+              />
+              <CategorySelect
+                value={row.category}
+                onValueChange={v => updateRow(i, "category", v)}
+                allCategories={allCategories}
+                onAddCustom={onAddCategory}
+                triggerClassName="h-9 text-sm"
+                placeholder="Category"
               />
               <NumberInput
                 placeholder="0"
@@ -183,6 +200,7 @@ function BulkAddTable({
 export function BulkAddInventoryDialog({ open, onOpenChange, addItem }: BulkAddInventoryDialogProps) {
   const isMobile = useIsMobile();
   const { settings: appSettings } = useAppSettings();
+  const { allCategories, addCategory } = useCustomCategories();
   const [rows, setRows] = useState<BulkAddRow[]>([emptyRow(), emptyRow(), emptyRow()]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -197,7 +215,7 @@ export function BulkAddInventoryDialog({ open, onOpenChange, addItem }: BulkAddI
       const cost = parseFloat(row.costPerPackage) || null;
       const result = await addItem({
         name: row.name.trim(),
-        category: "General",
+        category: row.category,
         quantity: parseInt(row.quantity) || 0,
         minStock: appSettings.lowStockThreshold,
         location: "",
@@ -223,7 +241,7 @@ export function BulkAddInventoryDialog({ open, onOpenChange, addItem }: BulkAddI
   };
 
   const content = (
-    <BulkAddTable rows={rows} setRows={setRows} isSubmitting={isSubmitting} onSubmit={handleSubmit} />
+    <BulkAddTable rows={rows} setRows={setRows} isSubmitting={isSubmitting} onSubmit={handleSubmit} allCategories={allCategories} onAddCategory={addCategory} />
   );
 
   if (isMobile) {

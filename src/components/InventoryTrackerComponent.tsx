@@ -1,16 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check, Edit2, RotateCcw, ExternalLink, ChevronDown, ChevronUp, DollarSign, CalendarIcon, Warehouse as WarehouseIcon } from "lucide-react";
+import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check, Edit2, RotateCcw, ExternalLink, ChevronDown, ChevronUp, DollarSign, CalendarIcon, Warehouse as WarehouseIcon, ArrowUpDown, Filter } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useInventory, InventoryItem, saveStockRunHistory, updateStockRunReturns } from "@/hooks/useInventoryDB";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWarehouses } from "@/hooks/useWarehousesDB";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
+import { useCustomCategories } from "@/hooks/useCustomCategories";
+import { CategorySelect } from "@/components/inventory/CategorySelect";
 import {
   Sheet,
   SheetContent,
@@ -64,13 +66,19 @@ export function InventoryTrackerComponent() {
   const { items, isLoaded, addItem, updateItem, deleteItem, updateQuantity, bulkDeductQuantities, bulkAddQuantities } = useInventory();
   const { warehouses, zones, getZonesForWarehouse } = useWarehouses();
   const { settings: appSettings } = useAppSettings();
+  const { allCategories, addCategory } = useCustomCategories();
   const [searchQuery, setSearchQuery] = useState("");
   const [newItemName, setNewItemName] = useState("");
+  const [newItemCategory, setNewItemCategory] = useState("General");
   const [newItemQty, setNewItemQty] = useState(10);
   const [newItemPackageType, setNewItemPackageType] = useState("Case");
   const [newItemPackageQty, setNewItemPackageQty] = useState(24);
   const [newItemMinStock, setNewItemMinStock] = useState(appSettings.lowStockThreshold);
   const [newItemLastPrice, setNewItemLastPrice] = useState<string>("");
+  
+  // Sort and filter state
+  const [sortBy, setSortBy] = useState("name-asc");
+  const [filterCategory, setFilterCategory] = useState("all");
   
   // Stock Run state
   const [isStockRunMode, setIsStockRunMode] = useState(false);
@@ -98,6 +106,7 @@ export function InventoryTrackerComponent() {
   const [editSupplierUrl, setEditSupplierUrl] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editWarehouseId, setEditWarehouseId] = useState<string | null>(null);
+  const [editCategory, setEditCategory] = useState("General");
   const [editZoneId, setEditZoneId] = useState<string | null>(null);
   // Expanded item state
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
@@ -144,7 +153,7 @@ export function InventoryTrackerComponent() {
     
     const item = await addItem({
       name: newItemName.trim(),
-      category: "General",
+      category: newItemCategory,
       quantity: newItemQty,
       minStock: newItemMinStock,
       location: "",
@@ -161,6 +170,7 @@ export function InventoryTrackerComponent() {
 
     if (item) {
       setNewItemName("");
+      setNewItemCategory("General");
       setNewItemQty(10);
       setNewItemPackageType("Case");
       setNewItemPackageQty(24);
@@ -182,6 +192,7 @@ export function InventoryTrackerComponent() {
     setEditSupplierName(item.supplierName || "");
     setEditSupplierUrl(item.supplierUrl || "");
     setEditNotes(item.notes || "");
+    setEditCategory(item.category || "General");
     setEditWarehouseId(item.warehouseId);
     setEditZoneId(item.zoneId);
   };
@@ -192,6 +203,7 @@ export function InventoryTrackerComponent() {
     const pricePerItem = lastPrice && editPackageQty ? lastPrice / editPackageQty : null;
     
     await updateItem(editingItem.id, {
+      category: editCategory,
       packageType: editPackageType,
       packageQuantity: editPackageQty,
       minStock: editMinStock,
@@ -389,9 +401,26 @@ export function InventoryTrackerComponent() {
     }
   };
 
-  const filteredItems = items.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredItems = useMemo(() => {
+    let result = items.filter(item =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    if (filterCategory !== "all") {
+      result = result.filter(item => (item.category || "General") === filterCategory);
+    }
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "name-desc": return b.name.localeCompare(a.name);
+        case "quantity-asc": return a.quantity - b.quantity;
+        case "quantity-desc": return b.quantity - a.quantity;
+        case "low-stock": return (a.quantity - a.minStock) - (b.quantity - b.minStock);
+        case "category": return (a.category || "General").localeCompare(b.category || "General");
+        case "name-asc":
+        default: return a.name.localeCompare(b.name);
+      }
+    });
+    return result;
+  }, [items, searchQuery, filterCategory, sortBy]);
 
   const lowStockItems = items.filter((item) => item.quantity <= item.minStock);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -514,7 +543,17 @@ export function InventoryTrackerComponent() {
               Add
             </Button>
           </div>
-          {/* Packaging Configuration */}
+          {/* Category Selector */}
+          <div className="flex gap-2 items-center flex-wrap">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Category:</span>
+            <CategorySelect
+              value={newItemCategory}
+              onValueChange={setNewItemCategory}
+              allCategories={allCategories}
+              onAddCustom={addCategory}
+              triggerClassName="w-32 h-8 text-sm"
+            />
+          </div>
           <div className="flex gap-2 items-center flex-wrap">
             <span className="text-xs text-muted-foreground whitespace-nowrap">Packaging:</span>
             <Select value={newItemPackageType} onValueChange={setNewItemPackageType}>
@@ -567,7 +606,7 @@ export function InventoryTrackerComponent() {
           {/* Summary line */}
           {newItemName.trim() && (
             <p className="text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
-              Adding {newItemQty} {newItemName.trim()} • {newItemPackageType} of {newItemPackageQty}
+              Adding {newItemQty} {newItemName.trim()} ({newItemCategory}) • {newItemPackageType} of {newItemPackageQty}
               {newItemLastPrice && parseFloat(newItemLastPrice) > 0 && (
                 <span> • ${parseFloat(newItemLastPrice).toFixed(2)}/{newItemPackageType.toLowerCase()} (${(parseFloat(newItemLastPrice) / newItemPackageQty).toFixed(2)}/ea)</span>
               )}
@@ -596,22 +635,61 @@ export function InventoryTrackerComponent() {
 
       {/* Search and List Size */}
       {items.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search items..."
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setInventoryPage(1); }}
-              className="pl-9"
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search items..."
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setInventoryPage(1); }}
+                className="pl-9"
+              />
+            </div>
+            <ListSizeSelector
+              storageKey="inventory-list-size"
+              value={inventoryListSize}
+              onChange={(size) => { setInventoryListSize(size); setInventoryPage(1); }}
+              totalCount={filteredItems.length}
             />
           </div>
-          <ListSizeSelector
-            storageKey="inventory-list-size"
-            value={inventoryListSize}
-            onChange={(size) => { setInventoryListSize(size); setInventoryPage(1); }}
-            totalCount={filteredItems.length}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[140px] h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name-asc">Name A→Z</SelectItem>
+                  <SelectItem value="name-desc">Name Z→A</SelectItem>
+                  <SelectItem value="quantity-asc">Qty Low→High</SelectItem>
+                  <SelectItem value="quantity-desc">Qty High→Low</SelectItem>
+                  <SelectItem value="low-stock">Low Stock First</SelectItem>
+                  <SelectItem value="category">Category A→Z</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+              <Select value={filterCategory} onValueChange={(v) => { setFilterCategory(v); setInventoryPage(1); }}>
+                <SelectTrigger className={cn("w-[140px] h-8 text-sm", filterCategory !== "all" && "border-primary")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {allCategories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {filterCategory !== "all" && (
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFilterCategory("all")}>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -658,6 +736,11 @@ export function InventoryTrackerComponent() {
                     {/* Name + badges */}
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="font-medium truncate">{item.name}</span>
+                      {item.category && item.category !== "General" && (
+                        <Badge variant="secondary" className="text-xs shrink-0">
+                          {item.category}
+                        </Badge>
+                      )}
                       {item.quantity <= item.minStock && !isReturnMode && (
                         <Badge variant="destructive" className="text-xs shrink-0">
                           Low
@@ -1285,6 +1368,17 @@ export function InventoryTrackerComponent() {
             <DialogTitle>Edit {editingItem?.name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* Category Section */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground">Category</h4>
+              <CategorySelect
+                value={editCategory}
+                onValueChange={setEditCategory}
+                allCategories={allCategories}
+                onAddCustom={addCategory}
+                triggerClassName="w-full"
+              />
+            </div>
             {/* Packaging Section */}
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-muted-foreground">Packaging</h4>

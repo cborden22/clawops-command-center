@@ -8,6 +8,8 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, Plus, Minus, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
+import { useCustomCategories } from "@/hooks/useCustomCategories";
+import { CategorySelect } from "@/components/inventory/CategorySelect";
 
 interface QuickInventoryFormProps {
   onSuccess: () => void;
@@ -16,11 +18,13 @@ interface QuickInventoryFormProps {
 export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
   const { items, updateQuantity, addItem } = useInventory();
   const { settings: appSettings } = useAppSettings();
+  const { allCategories, addCategory } = useCustomCategories();
   const [mode, setMode] = useState<"adjust" | "add">("adjust");
   const [selectedItemId, setSelectedItemId] = useState("");
   const [adjustmentType, setAdjustmentType] = useState<"add" | "remove">("remove");
   const [quantity, setQuantity] = useState("");
   const [newItemName, setNewItemName] = useState("");
+  const [newItemCategory, setNewItemCategory] = useState("General");
   const [newItemQty, setNewItemQty] = useState("10");
   const [newPackageType, setNewPackageType] = useState("Case");
   const [newPackageQty, setNewPackageQty] = useState("24");
@@ -63,7 +67,7 @@ export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
       const cost = newCostPerPkg ? parseFloat(newCostPerPkg) : null;
       await addItem({
         name: newItemName.trim(),
-        category: "General",
+        category: newItemCategory,
         quantity: parseInt(newItemQty) || 10,
         minStock: appSettings.lowStockThreshold,
         location: "",
@@ -192,6 +196,18 @@ export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
               className="h-12"
+            />
+          </div>
+
+          {/* Category */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Category</Label>
+            <CategorySelect
+              value={newItemCategory}
+              onValueChange={setNewItemCategory}
+              allCategories={allCategories}
+              onAddCustom={addCategory}
+              triggerClassName="h-12 w-full"
             />
           </div>
 
