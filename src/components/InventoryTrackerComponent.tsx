@@ -632,22 +632,61 @@ export function InventoryTrackerComponent() {
 
       {/* Search and List Size */}
       {items.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search items..."
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setInventoryPage(1); }}
-              className="pl-9"
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search items..."
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setInventoryPage(1); }}
+                className="pl-9"
+              />
+            </div>
+            <ListSizeSelector
+              storageKey="inventory-list-size"
+              value={inventoryListSize}
+              onChange={(size) => { setInventoryListSize(size); setInventoryPage(1); }}
+              totalCount={filteredItems.length}
             />
           </div>
-          <ListSizeSelector
-            storageKey="inventory-list-size"
-            value={inventoryListSize}
-            onChange={(size) => { setInventoryListSize(size); setInventoryPage(1); }}
-            totalCount={filteredItems.length}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[140px] h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name-asc">Name A→Z</SelectItem>
+                  <SelectItem value="name-desc">Name Z→A</SelectItem>
+                  <SelectItem value="quantity-asc">Qty Low→High</SelectItem>
+                  <SelectItem value="quantity-desc">Qty High→Low</SelectItem>
+                  <SelectItem value="low-stock">Low Stock First</SelectItem>
+                  <SelectItem value="category">Category A→Z</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+              <Select value={filterCategory} onValueChange={(v) => { setFilterCategory(v); setInventoryPage(1); }}>
+                <SelectTrigger className={cn("w-[140px] h-8 text-sm", filterCategory !== "all" && "border-primary")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {allCategories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {filterCategory !== "all" && (
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFilterCategory("all")}>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
