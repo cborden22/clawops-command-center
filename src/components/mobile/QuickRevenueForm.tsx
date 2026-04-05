@@ -66,9 +66,9 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const selectedLocationData = locationId && locationId !== "business-expense"
     ? locations.find(loc => loc.id === locationId)
     : null;
-  const selectedLocationLastCollection = selectedLocationData?.lastCollectionDate 
-    ? new Date(selectedLocationData.lastCollectionDate) 
-    : null;
+  const [resolvedLastCollection, setResolvedLastCollection] = useState<Date | null>(null);
+  const [loadingLastCollection, setLoadingLastCollection] = useState(false);
+  const selectedLocationLastCollection = resolvedLastCollection;
   const locationMachines = selectedLocationData?.machines || [];
 
   // Get selected machine data (includes costPerPlay)
