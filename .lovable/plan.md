@@ -1,35 +1,36 @@
 
 
-## Fix: Service Period Spread Not Working Reliably
+## Fix Password Reset Flow
 
-### Root Cause
+### Problems Found
 
-There are **two bugs** causing the "spread across service period" feature to fail:
+1. **Hardcoded redirect URL**: `resetPasswordForEmail` in `AuthContext.tsx` hardcodes `https://clawops.lovable.app/reset-password` but the app is now served from `clawops.com`. Users clicking the reset link land on the wrong domain, so the recovery session never reaches the actual app.
 
-1. **Quick Collection never updates `last_collection_date`**: When you submit income via `QuickRevenueForm`, the location's `last_collection_date` is never updated. Only route run stops update it (in `useRouteRun.ts` line 235-238). So the next time you collect at that location, the spread period is wrong or missing.
+2. **Race condition in ResetPassword.tsx**: The `useEffect` sets `isCheckingSession(false)` synchronously *before* the `onAuthStateChange` listener has a chance to fire with `PASSWORD_RECOVERY`. This means users often see "Invalid or Expired Link" even with a valid token, because the check completes before the auth event arrives.
 
-2. **Stale cached data in QuickRevenueForm**: The form reads `lastCollectionDate` from the `useLocations()` hook's cached state, which was fetched once at page load. Even if `last_collection_date` exists in the DB, the cached data may be stale.
+3. **Config mismatch**: `supabase/config.toml` has `site_url = "https://clawops.lovable.app"` and `additional_redirect_urls` pointing to the old domain. These should reference `clawops.com`.
+
+4. **Auth logs confirm**: A 422 on `PUT /user` from `clawops.com` referer — the recovery session established on the old domain doesn't carry over properly.
 
 ### Fix Plan
 
-**File: `src/components/mobile/QuickRevenueForm.tsx`**
-- After successfully adding an income entry for a location, update the location's `last_collection_date` in the database (same as route run does)
-- This ensures the next collection at that location will have a valid service period start date
+**File: `src/contexts/AuthContext.tsx`**
+- Change the hardcoded redirect URL to use `window.location.origin + '/reset-password'` so it works on any domain (preview, lovable.app, clawops.com).
 
-**File: `src/components/mileage/RouteRunStopView.tsx`**
-- Add a fallback: if `last_collection_date` is null on the location, query `revenue_entries` for the most recent income entry at that location to use as the service period start
-- This handles locations where collections were recorded before `last_collection_date` tracking was added
+**File: `src/pages/ResetPassword.tsx`**
+- Fix the race condition: add a short delay or use a timeout before declaring the session invalid, giving `onAuthStateChange` time to fire with `PASSWORD_RECOVERY`.
+- Also parse the URL hash for `type=recovery` as a direct check — if present, exchange the token immediately rather than relying solely on the event listener.
+- Improve error messaging: show the actual error from `updatePassword` instead of a generic message.
 
-**File: `src/components/mobile/QuickRevenueForm.tsx`** (additional)
-- Same fallback: if `selectedLocationLastCollection` is null, query `revenue_entries` for the latest income entry at that location when the location is selected
-- This fixes the "No previous collection" message even when prior collections exist
+**File: `supabase/config.toml`**
+- Update `site_url` to `https://clawops.com`
+- Update `additional_redirect_urls` to include `https://clawops.com/reset-password`
 
-### Summary of Changes
+### Summary
 
 | File | Change |
 |---|---|
-| `QuickRevenueForm.tsx` | Update `last_collection_date` on location after income submit; add fallback query to `revenue_entries` when no `last_collection_date` exists |
-| `RouteRunStopView.tsx` | Add fallback query to `revenue_entries` when `last_collection_date` is null on the location |
-
-This is a focused 2-file fix that addresses both the write-side gap (not saving the date) and the read-side gap (not falling back to actual revenue history).
+| `AuthContext.tsx` | Dynamic redirect URL using `window.location.origin` |
+| `ResetPassword.tsx` | Fix session detection race condition; parse URL hash for recovery token; better error messages |
+| `supabase/config.toml` | Update URLs to `clawops.com` |
 
