@@ -199,6 +199,18 @@ export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
             />
           </div>
 
+          {/* Category */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Category</Label>
+            <CategorySelect
+              value={newItemCategory}
+              onValueChange={setNewItemCategory}
+              allCategories={allCategories}
+              onAddCustom={addCategory}
+              triggerClassName="h-12 w-full"
+            />
+          </div>
+
           {/* Total Individual Items */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Total Individual Items</Label>
