@@ -1,36 +1,50 @@
 
 
-## Fix Password Reset Flow
+## Move Warehouse Management to Inventory & Clean Up Settings
 
-### Problems Found
+### Part 1: Move Warehouse/Zone Management into Inventory Tracker
 
-1. **Hardcoded redirect URL**: `resetPasswordForEmail` in `AuthContext.tsx` hardcodes `https://clawops.lovable.app/reset-password` but the app is now served from `clawops.com`. Users clicking the reset link land on the wrong domain, so the recovery session never reaches the actual app.
+Add a third tab "Storage" to the Inventory Tracker page that contains the `WarehouseManager` component. This puts warehouse and zone CRUD right next to where users manage inventory items, making it contextually logical.
 
-2. **Race condition in ResetPassword.tsx**: The `useEffect` sets `isCheckingSession(false)` synchronously *before* the `onAuthStateChange` listener has a chance to fire with `PASSWORD_RECOVERY`. This means users often see "Invalid or Expired Link" even with a valid token, because the check completes before the auth event arrives.
+**File: `src/pages/InventoryTracker.tsx`**
+- Add a third tab: "Storage" (with Warehouse icon) alongside "Inventory" and "Where Is It?"
+- Import and render `WarehouseManager` in the new tab
+- This replaces the need for warehouse management in Settings
 
-3. **Config mismatch**: `supabase/config.toml` has `site_url = "https://clawops.lovable.app"` and `additional_redirect_urls` pointing to the old domain. These should reference `clawops.com`.
+### Part 2: Remove Warehouse Manager from Settings
 
-4. **Auth logs confirm**: A 422 on `PUT /user` from `clawops.com` referer — the recovery session established on the old domain doesn't carry over properly.
+**File: `src/pages/Settings.tsx`**
+- Remove the `<WarehouseManager />` component and its import (line 38, line 427)
+- Remove unused `Warehouse` icon import
 
-### Fix Plan
+### Part 3: Clean Up Settings Page
 
-**File: `src/contexts/AuthContext.tsx`**
-- Change the hardcoded redirect URL to use `window.location.origin + '/reset-password'` so it works on any domain (preview, lovable.app, clawops.com).
+The current App tab has 8 cards stacked vertically. Reorganize into a cleaner layout:
 
-**File: `src/pages/ResetPassword.tsx`**
-- Fix the race condition: add a short delay or use a timeout before declaring the session invalid, giving `onAuthStateChange` time to fire with `PASSWORD_RECOVERY`.
-- Also parse the URL hash for `type=recovery` as a direct check — if present, exchange the token immediately rather than relying solely on the event listener.
-- Improve error messaging: show the actual error from `updatePassword` instead of a generic message.
+**File: `src/pages/Settings.tsx`**
+- Consolidate cards into fewer, grouped sections:
+  - **Business Info** card stays as-is (name, phone, email)
+  - **Defaults & Preferences** card: merge "Default Values" (commission rate, low stock, currency, date format) and "Display Preferences" (dark mode, compact view, auto backup) into one card with two sections separated by a divider
+  - **Notifications** card: stays but made more compact (single toggle, no full card needed — fold into Defaults & Preferences as a third section)
+  - **QR Code Branding** card stays as-is
+  - **Customization** section: merge Machine Types and Vehicles into a single collapsible area or keep as separate but more compact cards
+  - **Feedback** card: simplify to a single row with button, not a full card
+- Remove the standalone "Save App Settings" button at the bottom — each section auto-saves or has its own save action (most already do via toggles)
+- Move Budget Manager to its own tab or keep it but visually deemphasize it
 
-**File: `supabase/config.toml`**
-- Update `site_url` to `https://clawops.com`
-- Update `additional_redirect_urls` to include `https://clawops.com/reset-password`
+Final Settings tab structure:
+1. Business Information (card)
+2. Defaults, Display & Notifications (single consolidated card with sections)
+3. QR Code Branding (card)
+4. Machine Types (card)
+5. Vehicles (card)  
+6. Budgets (card)
+7. Feedback button (simple row, not a full card)
 
-### Summary
+### Files Changed
 
 | File | Change |
 |---|---|
-| `AuthContext.tsx` | Dynamic redirect URL using `window.location.origin` |
-| `ResetPassword.tsx` | Fix session detection race condition; parse URL hash for recovery token; better error messages |
-| `supabase/config.toml` | Update URLs to `clawops.com` |
+| `src/pages/InventoryTracker.tsx` | Add "Storage" tab with WarehouseManager |
+| `src/pages/Settings.tsx` | Remove WarehouseManager; consolidate cards; merge Display + Defaults + Notifications into one card; simplify Feedback to a button row |
 
