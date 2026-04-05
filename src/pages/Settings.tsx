@@ -131,24 +131,6 @@ export default function Settings() {
     }
   };
 
-  const handleSaveAppSettings = async () => {
-    setIsSavingSettings(true);
-    try {
-      saveSettings();
-      toast({
-        title: "Settings Saved",
-        description: "Your app settings have been saved successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save settings.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSavingSettings(false);
-    }
-  };
 
   const handleToggleDarkMode = (checked: boolean) => {
     updateSetting("darkMode", checked);
