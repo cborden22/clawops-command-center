@@ -67,11 +67,15 @@ function BulkAddTable({
   setRows,
   isSubmitting,
   onSubmit,
+  allCategories,
+  onAddCategory,
 }: {
   rows: BulkAddRow[];
   setRows: React.Dispatch<React.SetStateAction<BulkAddRow[]>>;
   isSubmitting: boolean;
   onSubmit: () => void;
+  allCategories: string[];
+  onAddCategory: (name: string) => Promise<boolean>;
 }) {
   const updateRow = (index: number, field: keyof BulkAddRow, value: string) => {
     setRows(prev => prev.map((r, i) => (i === index ? { ...r, [field]: value } : r)));
