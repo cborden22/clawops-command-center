@@ -733,6 +733,11 @@ export function InventoryTrackerComponent() {
                     {/* Name + badges */}
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="font-medium truncate">{item.name}</span>
+                      {item.category && item.category !== "General" && (
+                        <Badge variant="secondary" className="text-xs shrink-0">
+                          {item.category}
+                        </Badge>
+                      )}
                       {item.quantity <= item.minStock && !isReturnMode && (
                         <Badge variant="destructive" className="text-xs shrink-0">
                           Low
