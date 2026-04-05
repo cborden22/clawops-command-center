@@ -9,10 +9,13 @@ import { Plus, Trash2, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
+import { useCustomCategories } from "@/hooks/useCustomCategories";
+import { CategorySelect } from "@/components/inventory/CategorySelect";
 
 interface BulkAddRow {
   name: string;
   quantity: string;
+  category: string;
   packageType: string;
   packageQuantity: string;
   costPerPackage: string;
