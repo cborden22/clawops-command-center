@@ -200,6 +200,7 @@ function BulkAddTable({
 export function BulkAddInventoryDialog({ open, onOpenChange, addItem }: BulkAddInventoryDialogProps) {
   const isMobile = useIsMobile();
   const { settings: appSettings } = useAppSettings();
+  const { allCategories, addCategory } = useCustomCategories();
   const [rows, setRows] = useState<BulkAddRow[]>([emptyRow(), emptyRow(), emptyRow()]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -240,7 +241,7 @@ export function BulkAddInventoryDialog({ open, onOpenChange, addItem }: BulkAddI
   };
 
   const content = (
-    <BulkAddTable rows={rows} setRows={setRows} isSubmitting={isSubmitting} onSubmit={handleSubmit} />
+    <BulkAddTable rows={rows} setRows={setRows} isSubmitting={isSubmitting} onSubmit={handleSubmit} allCategories={allCategories} onAddCategory={addCategory} />
   );
 
   if (isMobile) {
