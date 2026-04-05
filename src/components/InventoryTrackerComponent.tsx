@@ -540,7 +540,17 @@ export function InventoryTrackerComponent() {
               Add
             </Button>
           </div>
-          {/* Packaging Configuration */}
+          {/* Category Selector */}
+          <div className="flex gap-2 items-center flex-wrap">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Category:</span>
+            <CategorySelect
+              value={newItemCategory}
+              onValueChange={setNewItemCategory}
+              allCategories={allCategories}
+              onAddCustom={addCategory}
+              triggerClassName="w-32 h-8 text-sm"
+            />
+          </div>
           <div className="flex gap-2 items-center flex-wrap">
             <span className="text-xs text-muted-foreground whitespace-nowrap">Packaging:</span>
             <Select value={newItemPackageType} onValueChange={setNewItemPackageType}>
