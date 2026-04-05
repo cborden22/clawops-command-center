@@ -398,9 +398,26 @@ export function InventoryTrackerComponent() {
     }
   };
 
-  const filteredItems = items.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredItems = useMemo(() => {
+    let result = items.filter(item =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    if (filterCategory !== "all") {
+      result = result.filter(item => (item.category || "General") === filterCategory);
+    }
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "name-desc": return b.name.localeCompare(a.name);
+        case "quantity-asc": return a.quantity - b.quantity;
+        case "quantity-desc": return b.quantity - a.quantity;
+        case "low-stock": return (a.quantity - a.minStock) - (b.quantity - b.minStock);
+        case "category": return (a.category || "General").localeCompare(b.category || "General");
+        case "name-asc":
+        default: return a.name.localeCompare(b.name);
+      }
+    });
+    return result;
+  }, [items, searchQuery, filterCategory, sortBy]);
 
   const lowStockItems = items.filter((item) => item.quantity <= item.minStock);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
