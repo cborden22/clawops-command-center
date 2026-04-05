@@ -184,10 +184,63 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_balances: {
+        Row: {
+          created_at: string
+          id: string
+          inventory_item_id: string
+          location_id: string
+          notes: string | null
+          quantity_on_hand: number
+          reorder_point: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          inventory_item_id: string
+          location_id: string
+          notes?: string | null
+          quantity_on_hand?: number
+          reorder_point?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          inventory_item_id?: string
+          location_id?: string
+          notes?: string | null
+          quantity_on_hand?: number
+          reorder_point?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_balances_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_balances_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_items: {
         Row: {
+          active: boolean
           category: string | null
           created_by_user_id: string | null
+          description: string | null
           id: string
           last_price: number | null
           last_updated: string | null
@@ -199,6 +252,8 @@ export type Database = {
           package_type: string | null
           price_per_item: number | null
           quantity: number | null
+          sku: string | null
+          subcategory: string | null
           supplier_name: string | null
           supplier_url: string | null
           user_id: string
@@ -206,8 +261,10 @@ export type Database = {
           zone_id: string | null
         }
         Insert: {
+          active?: boolean
           category?: string | null
           created_by_user_id?: string | null
+          description?: string | null
           id?: string
           last_price?: number | null
           last_updated?: string | null
@@ -219,6 +276,8 @@ export type Database = {
           package_type?: string | null
           price_per_item?: number | null
           quantity?: number | null
+          sku?: string | null
+          subcategory?: string | null
           supplier_name?: string | null
           supplier_url?: string | null
           user_id: string
@@ -226,8 +285,10 @@ export type Database = {
           zone_id?: string | null
         }
         Update: {
+          active?: boolean
           category?: string | null
           created_by_user_id?: string | null
+          description?: string | null
           id?: string
           last_price?: number | null
           last_updated?: string | null
@@ -239,6 +300,8 @@ export type Database = {
           package_type?: string | null
           price_per_item?: number | null
           quantity?: number | null
+          sku?: string | null
+          subcategory?: string | null
           supplier_name?: string | null
           supplier_url?: string | null
           user_id?: string
@@ -261,6 +324,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      inventory_locations: {
+        Row: {
+          active: boolean
+          address: string | null
+          code: string | null
+          created_at: string
+          id: string
+          location_name: string
+          location_type: Database["public"]["Enums"]["inventory_location_type"]
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          code?: string | null
+          created_at?: string
+          id?: string
+          location_name: string
+          location_type?: Database["public"]["Enums"]["inventory_location_type"]
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          code?: string | null
+          created_at?: string
+          id?: string
+          location_name?: string
+          location_type?: Database["public"]["Enums"]["inventory_location_type"]
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       lead_activities: {
         Row: {
@@ -1570,6 +1672,7 @@ export type Database = {
       }
     }
     Enums: {
+      inventory_location_type: "warehouse" | "business_location"
       team_role:
         | "owner"
         | "manager"
@@ -1706,6 +1809,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      inventory_location_type: ["warehouse", "business_location"],
       team_role: [
         "owner",
         "manager",

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,9 +66,53 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const selectedLocationData = locationId && locationId !== "business-expense"
     ? locations.find(loc => loc.id === locationId)
     : null;
-  const selectedLocationLastCollection = selectedLocationData?.lastCollectionDate 
-    ? new Date(selectedLocationData.lastCollectionDate) 
-    : null;
+  const [resolvedLastCollection, setResolvedLastCollection] = useState<Date | null>(null);
+  const [loadingLastCollection, setLoadingLastCollection] = useState(false);
+  const selectedLocationLastCollection = resolvedLastCollection;
+
+  // Fetch the most accurate last collection date when location changes
+  useEffect(() => {
+    if (!locationId || locationId === "business-expense") {
+      setResolvedLastCollection(null);
+      return;
+    }
+    const fetchLastCollection = async () => {
+      setLoadingLastCollection(true);
+      // First try the location's stored last_collection_date
+      const cachedDate = selectedLocationData?.lastCollectionDate
+        ? new Date(selectedLocationData.lastCollectionDate)
+        : null;
+      
+      if (cachedDate) {
+        setResolvedLastCollection(cachedDate);
+        setLoadingLastCollection(false);
+        return;
+      }
+
+      // Fallback: query the most recent income entry at this location
+      try {
+        const { data } = await supabase
+          .from("revenue_entries")
+          .select("date")
+          .eq("location_id", locationId)
+          .eq("type", "income")
+          .order("date", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (data?.date) {
+          setResolvedLastCollection(new Date(data.date));
+        } else {
+          setResolvedLastCollection(null);
+        }
+      } catch {
+        setResolvedLastCollection(null);
+      } finally {
+        setLoadingLastCollection(false);
+      }
+    };
+    fetchLastCollection();
+  }, [locationId, selectedLocationData?.lastCollectionDate]);
+
   const locationMachines = selectedLocationData?.machines || [];
 
   // Get selected machine data (includes costPerPlay)
@@ -171,6 +215,14 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
             prizesWon: parseInt(prizesWon) || 0,
             bagLabel: bagLabel.trim() || undefined,
           });
+        }
+
+        // Update the location's last_collection_date so next collection has correct service period
+        if (locationId && locationId !== "business-expense") {
+          await supabase
+            .from("locations")
+            .update({ last_collection_date: date.toISOString() })
+            .eq("id", locationId);
         }
         
         toast({ title: "Income added!", description: `$${finalAmount.toFixed(2)} recorded.` });

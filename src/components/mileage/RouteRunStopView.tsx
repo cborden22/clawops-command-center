@@ -104,6 +104,19 @@ export function RouteRunStopView({
         }
         if (locData?.last_collection_date) {
           setLastCollectionDate(locData.last_collection_date);
+        } else {
+          // Fallback: query the most recent income entry at this location
+          const { data: lastEntry } = await supabase
+            .from("revenue_entries")
+            .select("date")
+            .eq("location_id", stop.locationId)
+            .eq("type", "income")
+            .order("date", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (lastEntry?.date) {
+            setLastCollectionDate(lastEntry.date);
+          }
         }
 
         // Fetch machines with win_probability
