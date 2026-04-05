@@ -1368,6 +1368,17 @@ export function InventoryTrackerComponent() {
             <DialogTitle>Edit {editingItem?.name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* Category Section */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground">Category</h4>
+              <CategorySelect
+                value={editCategory}
+                onValueChange={setEditCategory}
+                allCategories={allCategories}
+                onAddCustom={addCategory}
+                triggerClassName="w-full"
+              />
+            </div>
             {/* Packaging Section */}
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-muted-foreground">Packaging</h4>
