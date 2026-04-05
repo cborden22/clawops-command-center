@@ -328,6 +328,7 @@ export function MachinesManager() {
                   <Input
                     placeholder="e.g., Mini Claw, Giant Claw"
                     value={formData.customLabel}
+                    onKeyDown={(e) => e.stopPropagation()}
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, customLabel: e.target.value }))
                     }
