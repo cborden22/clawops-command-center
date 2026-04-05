@@ -202,6 +202,7 @@ export function InventoryTrackerComponent() {
     const pricePerItem = lastPrice && editPackageQty ? lastPrice / editPackageQty : null;
     
     await updateItem(editingItem.id, {
+      category: editCategory,
       packageType: editPackageType,
       packageQuantity: editPackageQty,
       minStock: editMinStock,
