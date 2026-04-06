@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
       includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
       manifest: false, // Using public/manifest.json
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB limit
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024, // 6 MB limit
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         skipWaiting: false,
         clientsClaim: true,
