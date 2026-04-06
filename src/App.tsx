@@ -18,6 +18,7 @@ import RevenueTracker from "./pages/RevenueTracker";
 import MileageTracker from "./pages/MileageTracker";
 import Locations from "./pages/Locations";
 const LocationMap = React.lazy(() => import("./pages/LocationMap"));
+import ARPreview from "./pages/ARPreview";
 
 class MapErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean}> {
   constructor(props: {children: React.ReactNode}) {
