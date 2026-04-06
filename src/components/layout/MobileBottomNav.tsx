@@ -20,6 +20,7 @@ const operationsItems = [
   { path: "/maintenance", icon: Wrench, label: "Maintenance" },
   { path: "/mileage", icon: Car, label: "Routes" },
   { path: "/inventory", icon: Package, label: "Inventory" },
+  { path: "/ar-preview", icon: Box, label: "AR Preview" },
 ];
 
 const financialsItems = [
