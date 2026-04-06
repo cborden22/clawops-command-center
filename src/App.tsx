@@ -286,6 +286,16 @@ function ProtectedAppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/ar-preview"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <ARPreview />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<NotFound />} />
         </Routes>
       </TeamContextProvider>

@@ -37,6 +37,7 @@ const operationsItems = [
   { title: "Maintenance", url: "/maintenance", icon: Wrench },
   { title: "Routes", url: "/mileage", icon: Car },
   { title: "Inventory Tracker", url: "/inventory", icon: Package },
+  { title: "AR Preview", url: "/ar-preview", icon: Box },
 ]
 
 const financialsItems = [
