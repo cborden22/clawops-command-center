@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, ChevronDown, Car, BarChart3, Wrench, Users, UsersRound, Calendar, Map } from "lucide-react"
+import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, ChevronDown, Car, BarChart3, Wrench, Users, UsersRound, Calendar, Map, Box } from "lucide-react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions"
