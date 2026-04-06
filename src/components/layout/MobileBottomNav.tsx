@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, DollarSign, Package, Plus, MoreHorizontal, MapPin, Car, FileText, Settings, LogOut, Receipt, BarChart3, Wrench, Users, MessageSquare } from "lucide-react";
+import { LayoutDashboard, DollarSign, Package, Plus, MoreHorizontal, MapPin, Car, FileText, Settings, LogOut, Receipt, BarChart3, Wrench, Users, MessageSquare, Box } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
