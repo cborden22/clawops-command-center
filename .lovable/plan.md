@@ -1,55 +1,47 @@
 
 
-## Add Category System to Inventory (Standard + Custom)
+## AR Machine Placement Tool
 
-### What Changes
+Build a new "AR Preview" page that lets you select a claw machine model, view it in 3D, and tap "View in AR" to place it in a real-world space using your phone's camera. No app download required — works natively on iPhones (Quick Look) and Android (Scene Viewer).
 
-Add a category system with preset standard categories plus the ability to create custom ones. Categories will be selectable when adding/editing items and usable for filtering and sorting.
+### How It Works
 
-### Standard Categories
-Plush, Candy, Electronics, Figurines, Keychains, Balls, Capsules, Parts, Supplies, General
+Uses Google's `<model-viewer>` web component which has built-in AR support on mobile devices. You pick a machine size/style, see a 3D preview, then tap an AR button to place it on the floor in a restaurant.
 
 ### Implementation
 
-**1. Add a `custom_categories` table (database migration)**
-- Stores user-created category labels: `id`, `user_id`, `name`, `created_at`
-- RLS: users can only CRUD their own categories
+**1. Add model-viewer dependency**
+- Install `@google/model-viewer` package
+- Add type declarations for the custom element
 
-**2. New hook: `src/hooks/useCustomCategories.ts`**
-- Fetches user's custom categories from DB
-- Provides `addCategory` and `deleteCategory` functions
-- Merges standard categories with custom ones into a single list
+**2. Create 3D machine models**
+- Source or create `.glb` (GL Binary) files for 2-3 claw machine sizes (small, standard, large)
+- Store in `public/models/` directory
+- Can start with a free claw machine 3D model from Sketchfab or similar, or a placeholder box with dimensions
 
-**3. Update `src/components/InventoryTrackerComponent.tsx`**
-- Add `newItemCategory` state for the quick-add form
-- Add a category `Select` dropdown in the quick-add card (between item name and packaging rows)
-- Options: standard categories + custom ones + "Add Custom..." option at the bottom
-- When "Add Custom..." is selected, show an inline input to type and save a new category
-- Add `sortBy` and `filterCategory` state
-- Add sort and category filter `Select` dropdowns in the search/filter bar
-- Update `filteredItems` to filter by category and sort by selected option
-- In the edit dialog: add category `Select` so users can recategorize existing items
-- Pass category to `addItem()` instead of hardcoded "General"
+**3. New page: `src/pages/ARPreview.tsx`**
+- Machine size selector (Small / Standard / Large) with real-world dimensions shown
+- `<model-viewer>` component displaying the selected model in 3D (rotatable, zoomable)
+- Built-in AR button — on mobile, taps launch native AR experience
+- On desktop, shows 3D preview only with a note to open on phone
+- Optional: QR code to quickly open the page on your phone from desktop
 
-**4. Update `src/components/inventory/BulkAddInventoryDialog.tsx`**
-- Add a category column to bulk-add rows
+**4. Add route and navigation**
+- Add `/ar-preview` route in `App.tsx`
+- Add a link in the sidebar under a "Sales Tools" section or near Leads
 
-**5. Update `src/components/mobile/QuickInventoryForm.tsx`**
-- Add category `Select` to the "New Item" form
-
-### Sort Options
-- Name A→Z, Name Z→A
-- Quantity Low→High, Quantity High→Low
-- Low Stock First
-- Category A→Z
+### Limitations to Note
+- Requires `.glb` 3D model files — we'll start with a placeholder/generic model
+- AR placement works on iPhone (iOS 12+) and Android (Chrome 79+) only when opened on a physical device
+- The preview in Lovable's sandbox will show the 3D viewer but AR requires a real phone
 
 ### Files Changed
 
 | File | Change |
 |---|---|
-| Migration | Create `custom_categories` table with RLS |
-| `src/hooks/useCustomCategories.ts` | New hook for category CRUD + merged list |
-| `src/components/InventoryTrackerComponent.tsx` | Category picker in quick-add, sort/filter dropdowns, category in edit dialog, filtering/sorting logic |
-| `src/components/inventory/BulkAddInventoryDialog.tsx` | Add category column to bulk rows |
-| `src/components/mobile/QuickInventoryForm.tsx` | Add category picker to new item form |
+| `package.json` | Add `@google/model-viewer` |
+| `src/pages/ARPreview.tsx` | New page with model-viewer, machine selector, AR launch |
+| `src/App.tsx` | Add `/ar-preview` route |
+| `src/components/layout/AppSidebar.tsx` | Add nav link |
+| `public/models/` | Placeholder `.glb` model file(s) |
 
