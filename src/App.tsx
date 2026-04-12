@@ -10,34 +10,11 @@ import { TeamContextProvider } from "@/contexts/TeamContext";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
-import Documents from "./pages/Documents";
 import CalendarPage from "./pages/Calendar";
-import CommissionSummary from "./pages/CommissionSummary";
 import InventoryTracker from "./pages/InventoryTracker";
 import RevenueTracker from "./pages/RevenueTracker";
 import MileageTracker from "./pages/MileageTracker";
 import Locations from "./pages/Locations";
-const LocationMap = React.lazy(() => import("./pages/LocationMap"));
-import ARPreview from "./pages/ARPreview";
-
-class MapErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean}> {
-  constructor(props: {children: React.ReactNode}) {
-    super(props);
-    this.state = { hasError: false };
-  }
-  static getDerivedStateFromError() { return { hasError: true }; }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-muted-foreground">
-          <p>Failed to load the map. Please try refreshing the page.</p>
-          <button className="text-primary underline" onClick={() => this.setState({ hasError: false })}>Retry</button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 import Leads from "./pages/Leads";
 import Maintenance from "./pages/Maintenance";
 import Receipts from "./pages/Receipts";
@@ -131,22 +108,6 @@ function ProtectedAppRoutes() {
           }
         />
         <Route
-          path="/map"
-          element={
-            <ProtectedRoute>
-              <AppLayout>
-                <PermissionGuard requiredPermission="canViewLocations">
-                  <MapErrorBoundary>
-                    <React.Suspense fallback={<div className="min-h-[60vh] flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading map...</div></div>}>
-                      <LocationMap />
-                    </React.Suspense>
-                  </MapErrorBoundary>
-                </PermissionGuard>
-              </AppLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="/leads"
           element={
             <ProtectedRoute>
@@ -165,30 +126,6 @@ function ProtectedAppRoutes() {
               <AppLayout>
                 <PermissionGuard requiredPermission="canViewMaintenance">
                   <Maintenance />
-                </PermissionGuard>
-              </AppLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/documents"
-          element={
-            <ProtectedRoute>
-              <AppLayout>
-                <PermissionGuard requiredPermission="canViewDocuments">
-                  <Documents />
-                </PermissionGuard>
-              </AppLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/commission-summary"
-          element={
-            <ProtectedRoute>
-              <AppLayout>
-                <PermissionGuard requiredPermission="canViewDocuments">
-                  <CommissionSummary />
                 </PermissionGuard>
               </AppLayout>
             </ProtectedRoute>
@@ -286,16 +223,11 @@ function ProtectedAppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/ar-preview"
-          element={
-            <ProtectedRoute>
-              <AppLayout>
-                <ARPreview />
-              </AppLayout>
-            </ProtectedRoute>
-          }
-        />
+        {/* Redirect old routes to consolidated locations page */}
+        <Route path="/map" element={<Navigate to="/locations" replace />} />
+        <Route path="/documents" element={<Navigate to="/locations" replace />} />
+        <Route path="/commission-summary" element={<Navigate to="/locations" replace />} />
+        <Route path="/ar-preview" element={<Navigate to="/locations" replace />} />
         <Route path="*" element={<NotFound />} />
         </Routes>
       </TeamContextProvider>
@@ -314,19 +246,19 @@ const App: React.FC = () => {
             <Sonner />
             <BrowserRouter>
               <Routes>
-                {/* Public reporting route with /report prefix - e.g., /report/downtown-pizza/claw-1 */}
+                {/* Public reporting route */}
                 <Route path="/report/:locationSlug/:unitCode" element={<ReportIssue />} />
-                {/* Legacy UUID route for existing QR codes - e.g., /m/77ad0e7c-8304-4dbf-9506-6085d8148255 */}
+                {/* Legacy UUID route */}
                 <Route path="/m/:machineId" element={<ReportIssue />} />
-               {/* Password reset route - public, handles recovery token */}
-               <Route path="/reset-password" element={
-                 <AuthProvider>
-                   <ResetPassword />
-                 </AuthProvider>
-               } />
-                {/* Public sales/landing page */}
+                {/* Password reset */}
+                <Route path="/reset-password" element={
+                  <AuthProvider>
+                    <ResetPassword />
+                  </AuthProvider>
+                } />
+                {/* Public sales page */}
                 <Route path="/sales" element={<Sales />} />
-                {/* All other routes go through AuthProvider */}
+                {/* All other routes */}
                 <Route path="/*" element={<ProtectedAppRoutes />} />
               </Routes>
             </BrowserRouter>
