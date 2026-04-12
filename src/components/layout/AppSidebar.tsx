@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, ChevronDown, Car, BarChart3, Wrench, Users, UsersRound, Calendar, Map, Box } from "lucide-react"
+import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, ChevronDown, Car, BarChart3, Wrench, Users, UsersRound, Calendar } from "lucide-react"
 import { NavLink, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions"
@@ -8,9 +8,7 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
@@ -33,18 +31,14 @@ import {
 const operationsItems = [
   { title: "Leads", url: "/leads", icon: Users },
   { title: "Locations", url: "/locations", icon: MapPin },
-  { title: "Location Map", url: "/map", icon: Map },
   { title: "Maintenance", url: "/maintenance", icon: Wrench },
   { title: "Routes", url: "/mileage", icon: Car },
   { title: "Inventory Tracker", url: "/inventory", icon: Package },
-  { title: "AR Preview", url: "/ar-preview", icon: Box },
 ]
 
 const financialsItems = [
   { title: "Revenue Tracker", url: "/revenue", icon: DollarSign },
   { title: "Reports", url: "/reports", icon: BarChart3 },
-  { title: "Commission Summary", url: "/commission-summary", icon: Receipt },
-  { title: "Agreement Generator", url: "/documents", icon: FileText },
 ]
 
 const managementItems = [
@@ -58,13 +52,11 @@ export function AppSidebar() {
   const { user, signOut } = useAuth()
   const permissions = useMyTeamPermissions()
 
-  // Filter operations items based on permissions
   const filteredOperationsItems = useMemo(() => {
     if (permissions.isLoading) return operationsItems
     return operationsItems.filter(item => {
       if (item.url === "/leads") return permissions.isOwner || permissions.canViewLeads
       if (item.url === "/locations") return permissions.isOwner || permissions.canViewLocations
-      if (item.url === "/map") return permissions.isOwner || permissions.canViewLocations
       if (item.url === "/maintenance") return permissions.isOwner || permissions.canViewMaintenance
       if (item.url === "/inventory") return permissions.isOwner || permissions.canViewInventory
       if (item.url === "/mileage") return permissions.isOwner || permissions.canViewMileage
@@ -72,32 +64,25 @@ export function AppSidebar() {
     })
   }, [permissions])
 
-  // Filter financials items based on permissions
   const filteredFinancialsItems = useMemo(() => {
     if (permissions.isLoading) return financialsItems
     return financialsItems.filter(item => {
       if (item.url === "/revenue") return permissions.isOwner || permissions.canViewRevenue
       if (item.url === "/reports") return permissions.isOwner || permissions.canViewReports
-      if (item.url === "/commission-summary") return permissions.isOwner || permissions.canViewDocuments
-      if (item.url === "/documents") return permissions.isOwner || permissions.canViewDocuments
       return true
     })
   }, [permissions])
 
-  // Management section only visible to owners
   const showManagement = permissions.isOwner
 
-  // Check if current route is in a group (use filtered items)
   const isInOperations = filteredOperationsItems.some(item => location.pathname === item.url)
   const isInFinancials = filteredFinancialsItems.some(item => location.pathname === item.url)
   const isInManagement = showManagement && managementItems.some(item => location.pathname === item.url)
 
-  // State for collapsible groups - auto-expand if contains active route
   const [operationsOpen, setOperationsOpen] = useState(isInOperations)
   const [financialsOpen, setFinancialsOpen] = useState(isInFinancials)
   const [managementOpen, setManagementOpen] = useState(isInManagement)
 
-  // Auto-expand when navigating to a route in a group
   useEffect(() => {
     if (isInOperations) setOperationsOpen(true)
     if (isInFinancials) setFinancialsOpen(true)
@@ -166,7 +151,7 @@ export function AppSidebar() {
         </SidebarHeader>
 
         <SidebarMenu className="px-4">
-          {/* Dashboard - Standalone */}
+          {/* Dashboard */}
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenuItem className="p-0">
@@ -200,7 +185,7 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {/* Operations Group */}
+          {/* Operations */}
           {filteredOperationsItems.length > 0 && (
             <SidebarGroup>
               <Collapsible open={operationsOpen} onOpenChange={setOperationsOpen}>
@@ -219,7 +204,7 @@ export function AppSidebar() {
             </SidebarGroup>
           )}
 
-          {/* Financials & Reports Group */}
+          {/* Financials */}
           {filteredFinancialsItems.length > 0 && (
             <SidebarGroup>
               <Collapsible open={financialsOpen} onOpenChange={setFinancialsOpen}>
@@ -238,7 +223,7 @@ export function AppSidebar() {
             </SidebarGroup>
           )}
 
-          {/* Management Group - Only visible to owners */}
+          {/* Management */}
           {showManagement && (
             <SidebarGroup>
               <Collapsible open={managementOpen} onOpenChange={setManagementOpen}>
