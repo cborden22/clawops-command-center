@@ -144,57 +144,57 @@ export default function Leads() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="bg-card/80 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-2 rounded-lg bg-primary/10 shrink-0">
                 <Users className="h-4 w-4 text-primary" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-xs text-muted-foreground">Total Leads</p>
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-bold">{stats.total}</p>
+                <p className="text-xs text-muted-foreground truncate">Total Leads</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card className="bg-card/80 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-2 rounded-lg bg-green-500/10 shrink-0">
                 <TrendingUp className="h-4 w-4 text-green-500" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.conversionRate}%</p>
-                <p className="text-xs text-muted-foreground">Conversion Rate</p>
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-bold">{stats.conversionRate}%</p>
+                <p className="text-xs text-muted-foreground truncate">Conversion Rate</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card className="bg-card/80 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-2 rounded-lg bg-amber-500/10 shrink-0">
                 <Calendar className="h-4 w-4 text-amber-500" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.followUpsDue}</p>
-                <p className="text-xs text-muted-foreground">Follow-ups Due</p>
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-bold">{stats.followUpsDue}</p>
+                <p className="text-xs text-muted-foreground truncate">Follow-ups Due</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card className="bg-card/80 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-500/10">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-2 rounded-lg bg-red-500/10 shrink-0">
                 <Flame className="h-4 w-4 text-red-500" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-bold">
                   {leads.filter(l => l.priority === 'hot' && l.status !== 'won' && l.status !== 'lost').length}
                 </p>
-                <p className="text-xs text-muted-foreground">Hot Leads</p>
+                <p className="text-xs text-muted-foreground truncate">Hot Leads</p>
               </div>
             </div>
           </CardContent>

@@ -537,51 +537,51 @@ export function RevenueTrackerComponent() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-6 relative">
+          <CardContent className="pt-4 sm:pt-6 relative">
             <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-4 relative">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <ArrowUpCircle className="h-6 w-6 text-white" />
+            <div className="flex items-center gap-2 sm:gap-4 relative">
+              <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg group-hover:scale-110 transition-transform duration-300 shrink-0">
+                <ArrowUpCircle className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Income</p>
-                <p className="text-2xl font-bold text-foreground tracking-tight">${totalIncome.toFixed(2)}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Total Income</p>
+                <p className="text-lg sm:text-2xl font-bold text-foreground tracking-tight truncate">${totalIncome.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
         <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-6 relative">
+          <CardContent className="pt-4 sm:pt-6 relative">
             <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-4 relative">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <ArrowDownCircle className="h-6 w-6 text-white" />
+            <div className="flex items-center gap-2 sm:gap-4 relative">
+              <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg group-hover:scale-110 transition-transform duration-300 shrink-0">
+                <ArrowDownCircle className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
-                <p className="text-2xl font-bold text-foreground tracking-tight">${totalExpenses.toFixed(2)}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Total Expenses</p>
+                <p className="text-lg sm:text-2xl font-bold text-foreground tracking-tight truncate">${totalExpenses.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
         <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-6 relative">
+          <CardContent className="pt-4 sm:pt-6 relative">
             <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-4 relative">
+            <div className="flex items-center gap-2 sm:gap-4 relative">
               <div className={cn(
-                "p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300",
+                "p-2 sm:p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300 shrink-0",
                 netProfit >= 0 ? "bg-gradient-to-br from-primary to-primary/80" : "bg-gradient-to-br from-orange-500 to-orange-600"
               )}>
-                <Wallet className="h-6 w-6 text-white" />
+                <Wallet className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Net Profit</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Net Profit</p>
                 <p className={cn(
-                  "text-2xl font-bold tracking-tight",
+                  "text-lg sm:text-2xl font-bold tracking-tight truncate",
                   netProfit >= 0 ? "text-foreground" : "text-orange-500"
                 )}>
                   {netProfit < 0 ? "-" : ""}${Math.abs(netProfit).toFixed(2)}
@@ -592,15 +592,15 @@ export function RevenueTrackerComponent() {
         </Card>
         
         <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-6 relative">
+          <CardContent className="pt-4 sm:pt-6 relative">
             <div className="absolute top-0 right-0 w-24 h-24 bg-accent/50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-4 relative">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-muted to-muted/80 shadow-md group-hover:scale-110 transition-transform duration-300">
-                <TrendingUp className="h-6 w-6 text-muted-foreground" />
+            <div className="flex items-center gap-2 sm:gap-4 relative">
+              <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-muted to-muted/80 shadow-md group-hover:scale-110 transition-transform duration-300 shrink-0">
+                <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Avg Collection</p>
-                <p className="text-2xl font-bold text-foreground tracking-tight">${avgPerCollection.toFixed(2)}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Avg Collection</p>
+                <p className="text-lg sm:text-2xl font-bold text-foreground tracking-tight truncate">${avgPerCollection.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
