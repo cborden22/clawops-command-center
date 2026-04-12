@@ -47,36 +47,38 @@ const Locations = () => {
   return (
     <div className="bg-background">
       <div className="container mx-auto py-4 sm:py-8 px-4">
-        <div className="mb-4 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Location Tracker</h1>
-          <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
+        <div className="mb-4 sm:mb-6 hidden sm:block">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Locations</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
             Manage locations, machines, map view, commissions, and agreements
           </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-          <TabsList className="bg-muted/50 w-full overflow-x-auto flex">
-            <TabsTrigger value="locations" className="flex items-center gap-1.5 text-xs sm:text-sm">
-              <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span>Locations</span>
-            </TabsTrigger>
-            <TabsTrigger value="machines" className="flex items-center gap-1.5 text-xs sm:text-sm">
-              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span>Machines</span>
-            </TabsTrigger>
-            <TabsTrigger value="map" className="flex items-center gap-1.5 text-xs sm:text-sm">
-              <Map className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span>Map</span>
-            </TabsTrigger>
-            <TabsTrigger value="commissions" className="flex items-center gap-1.5 text-xs sm:text-sm">
-              <Receipt className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span>Commissions</span>
-            </TabsTrigger>
-            <TabsTrigger value="agreements" className="flex items-center gap-1.5 text-xs sm:text-sm">
-              <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span>Agreements</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+            <TabsList className="bg-muted/50 inline-flex w-auto min-w-full sm:w-full gap-0.5 p-1">
+              <TabsTrigger value="locations" className="flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap px-3 sm:px-4 flex-1">
+                <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span>Locations</span>
+              </TabsTrigger>
+              <TabsTrigger value="machines" className="flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap px-3 sm:px-4 flex-1">
+                <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span>Machines</span>
+              </TabsTrigger>
+              <TabsTrigger value="map" className="flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap px-3 sm:px-4 flex-1">
+                <Map className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span>Map</span>
+              </TabsTrigger>
+              <TabsTrigger value="commissions" className="flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap px-3 sm:px-4 flex-1">
+                <Receipt className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span>Commissions</span>
+              </TabsTrigger>
+              <TabsTrigger value="agreements" className="flex items-center gap-1.5 text-xs sm:text-sm whitespace-nowrap px-3 sm:px-4 flex-1">
+                <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                <span>Agreements</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="locations">
             <LocationTrackerComponent />
