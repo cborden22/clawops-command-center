@@ -266,19 +266,18 @@ export function LocationTrackerComponent() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-6 relative">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-4 relative">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Building2 className="h-6 w-6 text-primary-foreground" />
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        <Card className="glass-card overflow-hidden">
+          <CardContent className="p-3 sm:pt-6 sm:px-6">
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+              <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg">
+                <Building2 className="h-4 w-4 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Total Locations
+              <div className="text-center sm:text-left">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">
+                  Total
                 </p>
-                <p className="text-3xl font-bold text-foreground tracking-tight">
+                <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
                   {locations.length}
                 </p>
               </div>
@@ -286,18 +285,17 @@ export function LocationTrackerComponent() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-6 relative">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-accent/50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-4 relative">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-muted to-muted/80 shadow-md group-hover:scale-110 transition-transform duration-300">
-                <MapPin className="h-6 w-6 text-muted-foreground" />
+        <Card className="glass-card overflow-hidden">
+          <CardContent className="p-3 sm:pt-6 sm:px-6">
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+              <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-muted to-muted/80 shadow-md">
+                <MapPin className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Active Locations
+              <div className="text-center sm:text-left">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">
+                  Active
                 </p>
-                <p className="text-3xl font-bold text-foreground tracking-tight">
+                <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
                   {activeLocations.length}
                 </p>
               </div>
@@ -305,18 +303,17 @@ export function LocationTrackerComponent() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-6 relative">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-accent/50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-4 relative">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-muted to-muted/80 shadow-md group-hover:scale-110 transition-transform duration-300">
-                <Sparkles className="h-6 w-6 text-muted-foreground" />
+        <Card className="glass-card overflow-hidden">
+          <CardContent className="p-3 sm:pt-6 sm:px-6">
+            <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+              <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-muted to-muted/80 shadow-md">
+                <Sparkles className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Total Machines
+              <div className="text-center sm:text-left">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">
+                  Machines
                 </p>
-                <p className="text-3xl font-bold text-foreground tracking-tight">
+                <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
                   {totalMachines}
                 </p>
               </div>

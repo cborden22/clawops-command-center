@@ -99,11 +99,11 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
       <Button
         key={item.path}
         variant={isActive ? "default" : "outline"}
-        className="h-14 flex-col gap-1"
+        className="h-16 flex-col gap-1.5 text-xs"
         onClick={() => handleMoreItemClick(item)}
       >
         <Icon className="h-5 w-5" />
-        <span className="text-xs">{item.label}</span>
+        <span>{item.label}</span>
       </Button>
     );
   };
