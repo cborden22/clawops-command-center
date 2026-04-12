@@ -1,47 +1,84 @@
 
 
-## AR Machine Placement Tool
+## Simplify ClawOps: Complete UX Overhaul
 
-Build a new "AR Preview" page that lets you select a claw machine model, view it in 3D, and tap "View in AR" to place it in a real-world space using your phone's camera. No app download required — works natively on iPhones (Quick Look) and Android (Scene Viewer).
+### Phase 1: Navigation Consolidation
 
-### How It Works
+**Sidebar & Mobile Nav cleanup** — reduce from 14 nav items to ~8:
 
-Uses Google's `<model-viewer>` web component which has built-in AR support on mobile devices. You pick a machine size/style, see a 3D preview, then tap an AR button to place it on the floor in a restaurant.
+| Current Item | Action |
+|---|---|
+| Location Map | Merge into Locations page as a tab |
+| AR Preview | Remove from main nav; add contextual button on Leads page |
+| Commission Summary | Move into Locations page as a "Commissions" tab |
+| Agreement Generator | Move into Locations page as an "Agreements" tab |
 
-### Implementation
+**Files**: `AppSidebar.tsx`, `MobileBottomNav.tsx`, `App.tsx` (remove 4 routes), delete `Documents.tsx` and `CommissionSummary.tsx` standalone pages
 
-**1. Add model-viewer dependency**
-- Install `@google/model-viewer` package
-- Add type declarations for the custom element
+### Phase 2: Locations Page — 5-Tab Layout
 
-**2. Create 3D machine models**
-- Source or create `.glb` (GL Binary) files for 2-3 claw machine sizes (small, standard, large)
-- Store in `public/models/` directory
-- Can start with a free claw machine 3D model from Sketchfab or similar, or a placeholder box with dimensions
+Tabs: **Locations** | **Machines** | **Map** | **Commissions** | **Agreements**
 
-**3. New page: `src/pages/ARPreview.tsx`**
-- Machine size selector (Small / Standard / Large) with real-world dimensions shown
-- `<model-viewer>` component displaying the selected model in 3D (rotatable, zoomable)
-- Built-in AR button — on mobile, taps launch native AR experience
-- On desktop, shows 3D preview only with a note to open on phone
-- Optional: QR code to quickly open the page on your phone from desktop
+- Embed `LocationMap` component directly as a tab (remove lazy-load route)
+- Import existing `CommissionSummaryGenerator` component
+- Extract agreement form from `Documents.tsx` into new `AgreementGenerator.tsx` component
+- Horizontal scroll on mobile for tab overflow
 
-**4. Add route and navigation**
-- Add `/ar-preview` route in `App.tsx`
-- Add a link in the sidebar under a "Sales Tools" section or near Leads
+**Files**: `Locations.tsx`, new `src/components/AgreementGenerator.tsx`
 
-### Limitations to Note
-- Requires `.glb` 3D model files — we'll start with a placeholder/generic model
-- AR placement works on iPhone (iOS 12+) and Android (Chrome 79+) only when opened on a physical device
-- The preview in Lovable's sandbox will show the 3D viewer but AR requires a real phone
+### Phase 3: Quick-Add Form Simplification
 
-### Files Changed
+**Revenue form** — progressive disclosure:
+- Default: Location + Amount + Submit only
+- "Add Details" expander reveals machine breakdown, receipt upload, bag labels, accrual options
+- Auto-select location from active route stop if running
+- Move recurring revenue setup out of quick-add
+
+**Mileage form** — streamlined:
+- Default: Vehicle + Starting Odometer (pre-filled) + Start Trip
+- "Add Details" expander for purpose, notes
+- Remove location From/To selectors (handled in Route Runs)
+- Active trip card takes priority when trip is running
+
+**Files**: `QuickRevenueForm.tsx`, `QuickMileageForm.tsx`
+
+### Phase 4: Page Density Reduction
+
+**Revenue page**: Default to simple transaction list; charts/comparisons behind "Analytics" tab; collapse filters to date range only with "Advanced Filters" expander
+
+**Inventory page**: Compact list view default (name, qty, category badge); stock run history and bulk-add into secondary tab/action menu
+
+**Locations page**: Compact card view — name, machine count, last collection date; detailed stats stay in location detail dialog
+
+**Files**: `RevenueTrackerComponent.tsx`, `InventoryTrackerComponent.tsx`
+
+### Phase 5: Mobile "More" Menu Cleanup
+
+- With fewer items, reorganize into clean 2x2 grid sections
+- Group Settings + Report Issue into an "Account" row at bottom
+
+**Files**: `MobileBottomNav.tsx`
+
+---
+
+### Implementation Order
+1. Navigation consolidation + Locations tab merge (biggest impact)
+2. Quick-add form simplification (daily workflow)
+3. Page density reduction (polish)
+
+### All Files Changed
 
 | File | Change |
 |---|---|
-| `package.json` | Add `@google/model-viewer` |
-| `src/pages/ARPreview.tsx` | New page with model-viewer, machine selector, AR launch |
-| `src/App.tsx` | Add `/ar-preview` route |
-| `src/components/layout/AppSidebar.tsx` | Add nav link |
-| `public/models/` | Placeholder `.glb` model file(s) |
+| `src/pages/Locations.tsx` | Add Map, Commissions, Agreements tabs |
+| `src/components/AgreementGenerator.tsx` | **New** — extracted from Documents page |
+| `src/pages/Documents.tsx` | **Delete** |
+| `src/pages/CommissionSummary.tsx` | **Delete** |
+| `src/App.tsx` | Remove `/documents`, `/commission-summary` routes; remove standalone `/map` route |
+| `src/components/layout/AppSidebar.tsx` | Remove 4 nav items from sidebar groups |
+| `src/components/layout/MobileBottomNav.tsx` | Remove items + reorganize More menu grid |
+| `src/components/mobile/QuickRevenueForm.tsx` | Progressive disclosure refactor |
+| `src/components/mobile/QuickMileageForm.tsx` | Streamline to Start Trip default |
+| `src/components/RevenueTrackerComponent.tsx` | Add Analytics tab, collapse filters |
+| `src/components/InventoryTrackerComponent.tsx` | Compact list default, secondary tabs |
 
