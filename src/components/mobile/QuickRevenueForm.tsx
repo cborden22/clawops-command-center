@@ -13,8 +13,13 @@ import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, TrendingUp, TrendingDown, Camera, ImageIcon, X, Coins, CalendarRange, RefreshCw } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Camera, ImageIcon, X, Coins, CalendarRange, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { format, differenceInDays, addDays, addMonths, addYears } from "date-fns";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface QuickRevenueFormProps {
   onSuccess: () => void;
@@ -49,6 +54,9 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
+  // Details section (progressive disclosure)
+  const [showDetails, setShowDetails] = useState(false);
+
   // Collection metrics state
   const [machineId, setMachineId] = useState("");
   const [coinsInserted, setCoinsInserted] = useState("");
@@ -57,12 +65,9 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringFrequency, setRecurringFrequency] = useState("monthly");
   const [bagLabel, setBagLabel] = useState("");
-  
-  // No longer need inputMode - coins is always primary when machine selected
 
   const activeLocations = locations.filter((loc) => loc.isActive);
 
-  // Get machines for selected location
   const selectedLocationData = locationId && locationId !== "business-expense"
     ? locations.find(loc => loc.id === locationId)
     : null;
@@ -70,7 +75,6 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
   const [loadingLastCollection, setLoadingLastCollection] = useState(false);
   const selectedLocationLastCollection = resolvedLastCollection;
 
-  // Fetch the most accurate last collection date when location changes
   useEffect(() => {
     if (!locationId || locationId === "business-expense") {
       setResolvedLastCollection(null);
@@ -78,7 +82,6 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
     }
     const fetchLastCollection = async () => {
       setLoadingLastCollection(true);
-      // First try the location's stored last_collection_date
       const cachedDate = selectedLocationData?.lastCollectionDate
         ? new Date(selectedLocationData.lastCollectionDate)
         : null;
@@ -89,7 +92,6 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
         return;
       }
 
-      // Fallback: query the most recent income entry at this location
       try {
         const { data } = await supabase
           .from("revenue_entries")
@@ -115,43 +117,31 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
 
   const locationMachines = selectedLocationData?.machines || [];
 
-  // Get selected machine data (includes costPerPlay)
   const selectedMachineData = machineId
     ? locationMachines.find(m => m.id === machineId)
     : null;
   
-  // Get cost per play from selected machine (defaults to $0.50)
   const costPerPlay = selectedMachineData?.costPerPlay || 0.50;
 
-  // Calculate dollar amount from quarters (coins = quarters)
   const calculatedAmount = coinsInserted 
     ? (parseInt(coinsInserted) || 0) * QUARTER_VALUE 
     : null;
     
-  // Calculate total plays based on cost per play
   const totalPlays = calculatedAmount !== null && costPerPlay > 0
     ? calculatedAmount / costPerPlay
     : 0;
 
-  // Calculate TRUE win rate for current collection input (using costPerPlay)
   const currentStats = (coinsInserted && prizesWon && selectedMachineData)
     ? calculateCollectionWinRate(parseInt(coinsInserted) || 0, parseInt(prizesWon) || 0, costPerPlay)
     : null;
 
   const uploadReceipt = async (file: File): Promise<string | null> => {
-    if (!user) {
-      console.error("User not authenticated for receipt upload");
-      return null;
-    }
+    if (!user) return null;
     
     try {
       const fileExt = file.name.split(".").pop();
       const filePath = `${user.id}/${Date.now()}.${fileExt}`;
-
-      const { error } = await supabase.storage
-        .from("receipts")
-        .upload(filePath, file);
-
+      const { error } = await supabase.storage.from("receipts").upload(filePath, file);
       if (error) throw error;
       return filePath;
     } catch (error) {
@@ -162,15 +152,11 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setReceiptFile(file);
-    }
-    // Reset input so same file can be selected again
+    if (file) setReceiptFile(file);
     e.target.value = "";
   };
 
   const handleSubmit = async () => {
-    // When machine is selected, use calculated amount from coins; otherwise use entered amount
     const finalAmount = type === "income" && machineId && calculatedAmount !== null
       ? calculatedAmount
       : parseFloat(amount);
@@ -185,7 +171,6 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
       const date = new Date();
 
       if (type === "income") {
-        // Calculate service period
         let servicePeriodStart: Date | undefined;
         let servicePeriodEnd: Date | undefined;
         if (spreadRevenue && locationId) {
@@ -205,7 +190,6 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
           servicePeriodEnd,
         });
         
-        // Add collection metrics if machine is selected
         if (machineId && selectedMachineData && (coinsInserted || prizesWon)) {
           await addCollection({
             locationId: locationId,
@@ -217,7 +201,6 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
           });
         }
 
-        // Update the location's last_collection_date so next collection has correct service period
         if (locationId && locationId !== "business-expense") {
           await supabase
             .from("locations")
@@ -227,24 +210,19 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
         
         toast({ title: "Income added!", description: `$${finalAmount.toFixed(2)} recorded.` });
       } else {
-        // Upload receipt if present
         let receiptUrl: string | undefined;
         if (receiptFile) {
           setIsUploadingReceipt(true);
           const uploadedPath = await uploadReceipt(receiptFile);
-          if (uploadedPath) {
-            receiptUrl = uploadedPath;
-          }
+          if (uploadedPath) receiptUrl = uploadedPath;
           setIsUploadingReceipt(false);
         }
 
-        // Convert sentinel value back to empty string for API
         const finalLocationId = locationId === "business-expense" ? "" : locationId;
         await addExpense(finalLocationId, parseFloat(amount), category || "Other", notes || "", date, receiptUrl);
         toast({ title: "Expense added!", description: `$${parseFloat(amount).toFixed(2)} recorded.` });
       }
       
-      // Create recurring_revenue record if recurring checkbox is checked
       if (isRecurring && user) {
         const finalAmt = type === "income" && machineId && calculatedAmount !== null ? calculatedAmount : parseFloat(amount);
         const getNextDate = (d: Date, freq: string): string => {
@@ -266,7 +244,6 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
         });
       }
 
-      // Reset form
       setAmount("");
       setLocationId("");
       setCategory("");
@@ -277,6 +254,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
       setPrizesWon("");
       setIsRecurring(false);
       setBagLabel("");
+      setShowDetails(false);
       
       onSuccess();
     } catch (error) {
@@ -303,7 +281,25 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
         </TabsList>
       </Tabs>
 
-      {/* Amount Entry - Coins when machine selected, dollars otherwise */}
+      {/* Location — always visible */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Location {type === "expense" && "(Optional)"}</Label>
+        <Select value={locationId} onValueChange={(v) => { setLocationId(v); setMachineId(""); }}>
+          <SelectTrigger className="h-12">
+            <SelectValue placeholder={type === "expense" ? "Business Expense" : "Select location"} />
+          </SelectTrigger>
+          <SelectContent>
+            {type === "expense" && <SelectItem value="business-expense">Business Expense</SelectItem>}
+            {activeLocations.map((loc) => (
+              <SelectItem key={loc.id} value={loc.id}>
+                {loc.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Amount — always visible (unless machine selected for income) */}
       {type === "income" && machineId && selectedMachineData ? (
         <div className="space-y-3">
           <div className="space-y-2">
@@ -332,48 +328,6 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
               </div>
             )}
           </div>
-          
-          {/* Prizes Won */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Prizes Won (Optional)</Label>
-            <Input
-              type="number"
-              inputMode="numeric"
-              placeholder="0"
-              value={prizesWon}
-              onChange={(e) => setPrizesWon(e.target.value)}
-              onFocus={(e) => e.target.select()}
-              className="h-12"
-            />
-          </div>
-
-          {/* Bag / Tag Label */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Bag / Tag (Optional)</Label>
-            <Input
-              placeholder="e.g. Red #1, Bag 3"
-              value={bagLabel}
-              onChange={(e) => setBagLabel(e.target.value)}
-              className="h-12"
-            />
-          </div>
-          
-          {/* Live TRUE Win Rate Display */}
-          {currentStats && currentStats.trueWinRate > 0 && (
-            <div className="text-sm bg-muted/30 p-2 rounded border">
-              <span className="font-medium">
-                True Win Rate: {formatWinRate(currentStats.trueWinRate)} ({formatOdds(currentStats.trueOdds)})
-              </span>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {formatPlays(currentStats.totalPlays)} plays → {prizesWon} prizes
-              </p>
-              {selectedMachineData.winProbability && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Expected: 1 in {selectedMachineData.winProbability} — {compareToExpected(currentStats.trueWinRate, selectedMachineData.winProbability).message}
-                </p>
-              )}
-            </div>
-          )}
         </div>
       ) : (
         <div className="space-y-2">
@@ -393,46 +347,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
         </div>
       )}
 
-      {/* Location */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Location {type === "expense" && "(Optional)"}</Label>
-        <Select value={locationId} onValueChange={(v) => { setLocationId(v); setMachineId(""); }}>
-          <SelectTrigger className="h-12">
-            <SelectValue placeholder={type === "expense" ? "Business Expense" : "Select location"} />
-          </SelectTrigger>
-          <SelectContent>
-            {type === "expense" && <SelectItem value="business-expense">Business Expense</SelectItem>}
-            {activeLocations.map((loc) => (
-              <SelectItem key={loc.id} value={loc.id}>
-                {loc.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Machine Selector (income only, when location has machines) */}
-      {type === "income" && locationMachines.length > 0 && (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Machine (Optional)</Label>
-          <Select value={machineId} onValueChange={setMachineId}>
-            <SelectTrigger className="h-12">
-              <SelectValue placeholder="Select machine for metrics" />
-            </SelectTrigger>
-            <SelectContent>
-              {locationMachines.map((m) => (
-                <SelectItem key={m.id} value={m.id || ""}>
-                  {m.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {/* Collection Metrics removed - coins entry is now integrated above when machine selected */}
-
-      {/* Category (expense only) */}
+      {/* Category (expense only) — always visible */}
       {type === "expense" && (
         <div className="space-y-2">
           <Label className="text-sm font-medium">Category</Label>
@@ -451,131 +366,7 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
         </div>
       )}
 
-      {/* Notes */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Notes (Optional)</Label>
-        <Textarea
-          placeholder="Add notes..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="min-h-[80px] resize-none"
-        />
-      </div>
-
-      {/* Spread Revenue Toggle - Income only */}
-      {type === "income" && locationId && locationId !== "business-expense" && (
-        <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CalendarRange className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Spread across service period</span>
-            </div>
-            <Switch
-              checked={spreadRevenue}
-              onCheckedChange={setSpreadRevenue}
-            />
-          </div>
-          {spreadRevenue && (
-            <p className="text-xs text-muted-foreground">
-              {selectedLocationLastCollection 
-                ? `Revenue spread from ${format(selectedLocationLastCollection, "MMM d")} to today (${Math.max(1, differenceInDays(new Date(), selectedLocationLastCollection))} days)`
-                : "No previous collection — assigned to today only"}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Receipt Section (Expense only) */}
-      {type === "expense" && (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Receipt (Optional)</Label>
-          
-          {/* Hidden file inputs */}
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          <input
-            ref={galleryInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-
-          {receiptFile ? (
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <div className="flex items-center gap-2 truncate">
-                <ImageIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <span className="text-sm truncate">{receiptFile.name}</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 flex-shrink-0"
-                onClick={() => setReceiptFile(null)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-12"
-                onClick={() => cameraInputRef.current?.click()}
-              >
-                <Camera className="h-4 w-4 mr-2" />
-                Camera
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-12"
-                onClick={() => galleryInputRef.current?.click()}
-              >
-                <ImageIcon className="h-4 w-4 mr-2" />
-                Gallery
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Recurring Checkbox */}
-      <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="recurring-mobile"
-            checked={isRecurring}
-            onCheckedChange={(checked) => setIsRecurring(checked === true)}
-          />
-          <label htmlFor="recurring-mobile" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
-            <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
-            Make this recurring
-          </label>
-        </div>
-        {isRecurring && (
-          <Select value={recurringFrequency} onValueChange={setRecurringFrequency}>
-            <SelectTrigger className="h-10">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="biweekly">Biweekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-              <SelectItem value="yearly">Yearly</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-      </div>
-
-      {/* Submit Button */}
+      {/* Submit Button — always visible, above details */}
       <Button
         onClick={handleSubmit}
         disabled={isSubmitting || (type === "income" && machineId ? !coinsInserted : !amount)}
@@ -588,6 +379,171 @@ export function QuickRevenueForm({ onSuccess }: QuickRevenueFormProps) {
           <>Add {type === "income" ? "Income" : "Expense"}</>
         )}
       </Button>
+
+      {/* Add Details — collapsible */}
+      <Collapsible open={showDetails} onOpenChange={setShowDetails}>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" className="w-full text-sm text-muted-foreground gap-2">
+            {showDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {showDetails ? "Hide Details" : "Add Details"}
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-4 pt-2">
+          {/* Machine Selector (income only) */}
+          {type === "income" && locationMachines.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Machine (Optional)</Label>
+              <Select value={machineId} onValueChange={setMachineId}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Select machine for metrics" />
+                </SelectTrigger>
+                <SelectContent>
+                  {locationMachines.map((m) => (
+                    <SelectItem key={m.id} value={m.id || ""}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Prizes Won & Bag Label (when machine selected) */}
+          {type === "income" && machineId && selectedMachineData && (
+            <>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Prizes Won (Optional)</Label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={prizesWon}
+                  onChange={(e) => setPrizesWon(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  className="h-12"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Bag / Tag (Optional)</Label>
+                <Input
+                  placeholder="e.g. Red #1, Bag 3"
+                  value={bagLabel}
+                  onChange={(e) => setBagLabel(e.target.value)}
+                  className="h-12"
+                />
+              </div>
+              
+              {currentStats && currentStats.trueWinRate > 0 && (
+                <div className="text-sm bg-muted/30 p-2 rounded border">
+                  <span className="font-medium">
+                    True Win Rate: {formatWinRate(currentStats.trueWinRate)} ({formatOdds(currentStats.trueOdds)})
+                  </span>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {formatPlays(currentStats.totalPlays)} plays → {prizesWon} prizes
+                  </p>
+                  {selectedMachineData.winProbability && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Expected: 1 in {selectedMachineData.winProbability} — {compareToExpected(currentStats.trueWinRate, selectedMachineData.winProbability).message}
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Notes (Optional)</Label>
+            <Textarea
+              placeholder="Add notes..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="min-h-[60px] resize-none"
+            />
+          </div>
+
+          {/* Spread Revenue Toggle */}
+          {type === "income" && locationId && locationId !== "business-expense" && (
+            <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CalendarRange className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Spread across service period</span>
+                </div>
+                <Switch checked={spreadRevenue} onCheckedChange={setSpreadRevenue} />
+              </div>
+              {spreadRevenue && (
+                <p className="text-xs text-muted-foreground">
+                  {selectedLocationLastCollection 
+                    ? `Revenue spread from ${format(selectedLocationLastCollection, "MMM d")} to today (${Math.max(1, differenceInDays(new Date(), selectedLocationLastCollection))} days)`
+                    : "No previous collection — assigned to today only"}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Receipt (expense only) */}
+          {type === "expense" && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Receipt (Optional)</Label>
+              <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileSelect} className="hidden" />
+              <input ref={galleryInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+
+              {receiptFile ? (
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <div className="flex items-center gap-2 truncate">
+                    <ImageIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-sm truncate">{receiptFile.name}</span>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => setReceiptFile(null)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <Button type="button" variant="outline" className="h-12" onClick={() => cameraInputRef.current?.click()}>
+                    <Camera className="h-4 w-4 mr-2" />
+                    Camera
+                  </Button>
+                  <Button type="button" variant="outline" className="h-12" onClick={() => galleryInputRef.current?.click()}>
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    Gallery
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Recurring */}
+          <div className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="recurring-mobile"
+                checked={isRecurring}
+                onCheckedChange={(checked) => setIsRecurring(checked === true)}
+              />
+              <label htmlFor="recurring-mobile" className="text-sm font-medium flex items-center gap-1.5 cursor-pointer">
+                <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+                Make this recurring
+              </label>
+            </div>
+            {isRecurring && (
+              <Select value={recurringFrequency} onValueChange={setRecurringFrequency}>
+                <SelectTrigger className="h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="biweekly">Biweekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }

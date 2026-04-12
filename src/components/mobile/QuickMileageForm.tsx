@@ -10,7 +10,7 @@ import { useVehicles } from "@/hooks/useVehiclesDB";
 import { useActiveTrip } from "@/hooks/useActiveTrip";
 import { useMileage, IRS_MILEAGE_RATE } from "@/hooks/useMileageDB";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Car, AlertTriangle, Play, CheckCircle, Trash2, MapPin, Clock } from "lucide-react";
+import { Loader2, Car, AlertTriangle, Play, CheckCircle, Trash2, MapPin, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
 import { LocationSelector, LocationSelection, getLocationDisplayString } from "@/components/mileage/LocationSelector";
 import { useNavigate } from "react-router-dom";
@@ -26,6 +26,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface QuickMileageFormProps {
   onSuccess: () => void;
@@ -57,8 +62,8 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
   const [purpose, setPurpose] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   
-  // Build warehouse address from settings
   const warehouseAddress = [
     settings.warehouseAddress,
     settings.warehouseCity,
@@ -66,20 +71,14 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
     settings.warehouseZip
   ].filter(Boolean).join(", ");
   
-  const handleFromChange = (selection: LocationSelection) => {
-    setFromSelection(selection);
-  };
-  
-  const handleToChange = (selection: LocationSelection) => {
-    setToSelection(selection);
-  };
+  const handleFromChange = (selection: LocationSelection) => setFromSelection(selection);
+  const handleToChange = (selection: LocationSelection) => setToSelection(selection);
 
   const handleNavigateToSettings = () => {
     navigate("/settings");
-    onSuccess(); // Close the sheet
+    onSuccess();
   };
 
-  // For active trip completion
   const activeTripVehicle = activeTrip ? getVehicleById(activeTrip.vehicleId) : undefined;
   const activeEndNum = parseFloat(odometerEnd) || 0;
   const activeCalculatedMiles = activeTrip && activeEndNum > activeTrip.odometerStart 
@@ -90,7 +89,6 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
 
   const selectedVehicle = selectedVehicleId ? getVehicleById(selectedVehicleId) : undefined;
 
-  // Auto-fill odometer from vehicle's last reading
   useEffect(() => {
     if (selectedVehicle?.lastRecordedOdometer && !odometerStart) {
       setOdometerStart(selectedVehicle.lastRecordedOdometer.toString());
@@ -103,6 +101,7 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
     setPurpose("");
     setNotes("");
     setToSelection({ type: "location" });
+    setShowDetails(false);
   };
 
   const handleStartTrip = async () => {
@@ -151,10 +150,7 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       });
       
       if (result) {
-        toast({ 
-          title: "Trip Started!", 
-          description: "Enter end odometer when you arrive." 
-        });
+        toast({ title: "Trip Started!", description: "Enter end odometer when you arrive." });
         resetForm();
       }
     } catch (error) {
@@ -190,11 +186,10 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
     setIsSubmitting(false);
   };
 
-  // If there's an active trip, show completion UI
+  // Active trip — completion UI
   if (activeTrip) {
     return (
       <div className="space-y-4">
-        {/* Active Trip Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
@@ -209,9 +204,7 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Discard Trip?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete this in-progress trip.
-                </AlertDialogDescription>
+                <AlertDialogDescription>This will permanently delete this in-progress trip.</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -223,20 +216,17 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
           </AlertDialog>
         </div>
 
-        {/* Trip Details */}
         <div className="p-4 rounded-lg bg-muted/30 space-y-2">
           <div className="flex items-center gap-2 text-sm">
             <MapPin className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">To:</span>
             <span className="font-medium">{activeTrip.endLocation}</span>
           </div>
-          
           <div className="flex items-center gap-2 text-sm">
             <Car className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">Vehicle:</span>
             <span className="font-medium">{activeTripVehicle?.name || "Unknown"}</span>
           </div>
-          
           <div className="flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">Started:</span>
@@ -244,16 +234,12 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
               {format(activeTrip.startedAt, "h:mm a")} ({formatDistanceToNow(activeTrip.startedAt, { addSuffix: true })})
             </span>
           </div>
-          
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground ml-6">Start Odometer:</span>
-            <Badge variant="outline" className="font-mono">
-              {activeTrip.odometerStart.toLocaleString()}
-            </Badge>
+            <Badge variant="outline" className="font-mono">{activeTrip.odometerStart.toLocaleString()}</Badge>
           </div>
         </div>
 
-        {/* End Odometer Input */}
         <div className="space-y-2">
           <Label className="text-sm font-medium">End Odometer *</Label>
           <Input
@@ -267,7 +253,6 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
           />
         </div>
 
-        {/* Validation Warning */}
         {odometerEnd && !isActiveEndValid && (
           <div className="flex items-center gap-2 p-2 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
             <AlertTriangle className="h-4 w-4 flex-shrink-0" />
@@ -275,7 +260,6 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
           </div>
         )}
 
-        {/* Calculated Results */}
         {activeCalculatedMiles > 0 && (
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-lg bg-primary/10 text-center">
@@ -291,32 +275,25 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
           </div>
         )}
 
-        {/* Complete Button */}
         <Button
           onClick={handleCompleteTrip}
           disabled={!isActiveEndValid || isSubmitting}
           className="w-full h-14 text-lg font-semibold touch-manipulation active:scale-[0.98]"
         >
           {isSubmitting ? (
-            <>
-              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-              Completing...
-            </>
+            <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Completing...</>
           ) : (
-            <>
-              <CheckCircle className="h-5 w-5 mr-2" />
-              Complete Trip
-            </>
+            <><CheckCircle className="h-5 w-5 mr-2" />Complete Trip</>
           )}
         </Button>
       </div>
     );
   }
 
-  // No active trip - show start trip form
+  // No active trip — streamlined start form
   return (
     <div className="space-y-4">
-      {/* Vehicle Selector */}
+      {/* Vehicle — always visible */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">Vehicle *</Label>
         {vehicles.length === 0 ? (
@@ -352,25 +329,7 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
         )}
       </div>
 
-      {/* From Location */}
-      <LocationSelector
-        type="from"
-        value={fromSelection}
-        onChange={handleFromChange}
-        locations={activeLocations}
-        warehouseAddress={warehouseAddress}
-      />
-
-      {/* To Location */}
-      <LocationSelector
-        type="to"
-        value={toSelection}
-        onChange={handleToChange}
-        locations={activeLocations}
-        warehouseAddress={warehouseAddress}
-      />
-
-      {/* Start Odometer Input */}
+      {/* Start Odometer — always visible */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">Start Odometer *</Label>
         <Input
@@ -387,52 +346,69 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
         </p>
       </div>
 
-      {/* Purpose */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Purpose</Label>
-        <Select value={purpose} onValueChange={setPurpose}>
-          <SelectTrigger className="h-12">
-            <SelectValue placeholder="Select purpose" />
-          </SelectTrigger>
-          <SelectContent className="bg-background border border-border z-50">
-            {tripPurposes.map((p) => (
-              <SelectItem key={p} value={p}>
-                {p}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* From/To Locations — always visible */}
+      <LocationSelector
+        type="from"
+        value={fromSelection}
+        onChange={handleFromChange}
+        locations={activeLocations}
+        warehouseAddress={warehouseAddress}
+      />
+      <LocationSelector
+        type="to"
+        value={toSelection}
+        onChange={handleToChange}
+        locations={activeLocations}
+        warehouseAddress={warehouseAddress}
+      />
 
-      {/* Notes */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Notes (Optional)</Label>
-        <Textarea
-          placeholder="Add notes..."
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="min-h-[60px] resize-none"
-        />
-      </div>
-
-      {/* Start Trip Button */}
+      {/* Start Trip — always visible */}
       <Button
         onClick={handleStartTrip}
         disabled={isSubmitting || !selectedVehicleId || !odometerStart}
         className="w-full h-14 text-lg font-semibold touch-manipulation active:scale-[0.98]"
       >
         {isSubmitting ? (
-          <>
-            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-            Starting...
-          </>
+          <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Starting...</>
         ) : (
-          <>
-            <Play className="h-5 w-5 mr-2" />
-            Start Trip
-          </>
+          <><Play className="h-5 w-5 mr-2" />Start Trip</>
         )}
       </Button>
+
+      {/* Add Details — collapsible */}
+      <Collapsible open={showDetails} onOpenChange={setShowDetails}>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" className="w-full text-sm text-muted-foreground gap-2">
+            {showDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {showDetails ? "Hide Details" : "Add Details"}
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Purpose</Label>
+            <Select value={purpose} onValueChange={setPurpose}>
+              <SelectTrigger className="h-12">
+                <SelectValue placeholder="Select purpose" />
+              </SelectTrigger>
+              <SelectContent className="bg-background border border-border z-50">
+                {tripPurposes.map((p) => (
+                  <SelectItem key={p} value={p}>{p}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Notes (Optional)</Label>
+            <Textarea
+              placeholder="Add notes..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="min-h-[60px] resize-none"
+            />
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       <p className="text-xs text-center text-muted-foreground">
         Trip will be saved. Return here to enter your end odometer when done.
