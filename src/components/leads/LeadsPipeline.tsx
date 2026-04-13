@@ -37,8 +37,7 @@ const statusColumns: { status: LeadStatus; label: string; icon: React.ComponentT
   { status: 'lost', label: 'Lost', icon: XCircle, color: 'bg-destructive/20 text-destructive border-destructive/30' },
 ];
 
-export function LeadsPipeline({ leads, onLeadClick, onStatusChange }: LeadsPipelineProps) {
-  const isMobile = useIsMobile();
+  const isTabletOrMobile = useIsTabletOrMobile();
   const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<LeadStatus | null>(null);
   const [activeStatus, setActiveStatus] = useState<LeadStatus>('new');
