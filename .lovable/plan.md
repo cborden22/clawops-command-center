@@ -1,31 +1,51 @@
 
 
-## Fix Tablet Cutoff on Leads Pipeline
+## Fix Tablet Leads Page: Tabbed Pipeline + Visible Stats
 
 ### Problem
-At tablet viewport (768px), the desktop layout renders with a sidebar, leaving ~700px for content. The pipeline's 5 kanban columns are each `md:w-[260px]` (total 1300px), and while the pipeline has `overflow-x-auto`, the parent page container doesn't constrain its width, so the overflow bleeds out and cuts off stat cards and other content on the right edge.
-
-### Root Cause
-The Leads page wrapper (`space-y-6`) has no overflow constraint. The pipeline's flex container expands the page width beyond the viewport, making stat cards and badges clip on the right.
+At 768px (tablet with sidebar), the Kanban columns overflow and clip. The stat cards in the top row (Conversion Rate, Hot Leads) are also cut off because `overflow-hidden` hides them along with the pipeline overflow.
 
 ### Solution
 
+**1. Use tabbed stages on tablet (not just mobile)**
+
+In `src/components/leads/LeadsPipeline.tsx`, introduce a `useIsTablet` check (viewport < 1024px) alongside the existing `useIsMobile`. When tablet OR mobile, render the tabbed stage view instead of the Kanban columns. This completely eliminates the overflow problem.
+
+**2. Fix stat cards visibility**
+
+In `src/pages/Leads.tsx`, the stat cards use `grid-cols-2 lg:grid-cols-4`. At 768px they render as 2 columns which should fit, but `overflow-hidden` on the page wrapper clips them. Move `overflow-hidden` from the page wrapper to only wrap the pipeline section, so stats, header, and filters are never clipped.
+
+### Files to Change
+
 | File | Change |
 |---|---|
-| `src/pages/Leads.tsx` | Add `overflow-hidden` to the outermost wrapper div so the pipeline scrolls within its bounds instead of expanding the page |
-| `src/components/leads/LeadsPipeline.tsx` | Add `min-w-0` to the pipeline's parent flex container and ensure the desktop view wrapper has proper containment. Also consider making columns narrower at `md` breakpoint (`md:w-[220px]`) so more columns are visible on tablet |
+| `src/components/leads/LeadsPipeline.tsx` | Add a tablet breakpoint check (`window.innerWidth < 1024`). Show tabbed view for both mobile and tablet. Keep Kanban only for `lg` and above. |
+| `src/pages/Leads.tsx` | Remove `overflow-hidden` from outer wrapper. Wrap only the pipeline content section in an `overflow-hidden` container so stats/filters remain fully visible. |
 
 ### Technical Detail
+
 ```text
-// Page wrapper gets overflow containment
+// LeadsPipeline.tsx
+// New hook or inline check:
+const isTabletOrMobile = window.innerWidth < 1024;
+// Use media query listener like useIsMobile but with 1024 threshold
+
+// Show tabbed view when isTabletOrMobile is true
+// Show kanban columns only when >= 1024px (lg)
+
+// Leads.tsx  
+// Before:
 <div className="space-y-6 overflow-hidden">
+  {stats}
+  {filters}
+  {pipeline}
 
-// Pipeline container gets min-w-0 for flex containment  
-<div className="flex gap-4 overflow-x-auto pb-4 min-w-0 ...">
-
-// Columns slightly narrower at md to show more on tablet
-'flex-shrink-0 w-[280px] md:w-[220px] lg:flex-1 lg:min-w-[200px] ...'
+// After:
+<div className="space-y-6">
+  {stats}
+  {filters}
+  <div className="overflow-hidden">
+    {pipeline}
+  </div>
 ```
-
-Two files, minimal changes. The stat cards and pipeline will stay within bounds at every viewport width.
 
