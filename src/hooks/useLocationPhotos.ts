@@ -24,18 +24,21 @@ export function useLocationPhotos(locationId: string | undefined) {
         .from("location-photos")
         .list(folder, { sortBy: { column: "created_at", order: "desc" } });
       if (error) throw error;
-      const mapped = (data || [])
-        .filter(f => !f.name.startsWith("."))
-        .map(f => {
-          const { data: urlData } = supabase.storage
-            .from("location-photos")
-            .getPublicUrl(`${folder}/${f.name}`);
-          return {
-            name: f.name,
-            url: urlData.publicUrl,
-            createdAt: f.created_at || "",
-          };
-        });
+      const files = (data || []).filter(f => !f.name.startsWith("."));
+      if (files.length === 0) {
+        setPhotos([]);
+        return;
+      }
+      const paths = files.map(f => `${folder}/${f.name}`);
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from("location-photos")
+        .createSignedUrls(paths, 3600); // 1 hour expiry
+      if (signedError) throw signedError;
+      const mapped = files.map((f, i) => ({
+        name: f.name,
+        url: signedData?.[i]?.signedUrl || "",
+        createdAt: f.created_at || "",
+      }));
       setPhotos(mapped);
     } catch (e) {
       console.error("Error fetching photos:", e);
