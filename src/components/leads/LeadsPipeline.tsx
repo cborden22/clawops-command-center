@@ -10,22 +10,17 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const TABLET_BREAKPOINT = 1024;
 
 function useIsTabletOrMobile() {
-  const isMobile = useIsMobile();
-  const [isTablet, setIsTablet] = useState(false);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
 
-  useState(() => {
+  useEffect(() => {
     const mql = window.matchMedia(`(max-width: ${TABLET_BREAKPOINT - 1}px)`);
-    setIsTablet(mql.matches);
-  });
+    const onChange = () => setIsSmallScreen(mql.matches);
+    mql.addEventListener('change', onChange);
+    setIsSmallScreen(mql.matches);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
 
-  // Listen for changes
-  useState(() => {
-    const handler = () => setIsTablet(window.innerWidth < TABLET_BREAKPOINT);
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
-  });
-
-  return isMobile || isTablet;
+  return isSmallScreen;
 }
 
 interface LeadsPipelineProps {
