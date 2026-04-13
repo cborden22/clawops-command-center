@@ -1,41 +1,51 @@
 
 
-## Add Visual Widget Highlighting to Dashboard Customizer
+## Add Row-Based Layout Preview to Dashboard Customizer
 
 ### Problem
-When the customizer drawer is open and the user hovers/focuses a widget row, there's no indication of which widget on the dashboard it corresponds to. Users can't tell "which line is which" on the actual grid.
+The customizer currently shows a flat list of widgets with no sense of how they arrange into rows on the grid. Users can't tell that three "⅓ width" widgets share a row, or that a "½ width" widget leaves room for another "½ width" beside it.
 
 ### Solution
-Add a **highlight state** that connects the customizer rows to the dashboard widgets. When the user taps or hovers a row in the customizer, the corresponding widget on the dashboard gets a visible highlight ring/pulse, and a small floating label appears on it.
+Add a **visual row layout preview** at the top of the customizer drawer that shows how visible widgets flow into rows based on their sizes. Each row displays miniature blocks proportional to their grid width (out of 12 columns), with widget labels inside. This gives users an immediate spatial understanding of their layout.
 
-**How it works:**
-- Add `highlightedWidgetId` state to Dashboard, passed into both the grid rendering and the customizer drawer
-- Each `WidgetRow` in the customizer fires `onHighlight(id)` on pointer enter / touch start, and `onHighlight(null)` on pointer leave
-- Each widget wrapper in the grid checks if it's the highlighted one -- if so, it gets a `ring-2 ring-primary` outline and a small absolute-positioned badge showing its position number (e.g., "1", "2", "3")
-- When the customizer is open, each widget row also shows a row number badge (e.g., "#1", "#2") so the user can visually map drawer rows to dashboard positions
-- When customizer closes, highlight clears automatically
-
-### Visual Result
 ```text
-Customizer Drawer:           Dashboard Grid:
-┌──────────────────────┐     ┌─────────────────────────┐
-│ #1 Primary Stats [✓] │ --> │ ╔═══════════════════════╗│ <-- ring highlight
-│ #2 Weekly Cal    [✓] │     │ ║ 1  Primary Stats      ║│ <-- position badge
-│ #3 Business H    [✓]◄│     │ ╚═══════════════════════╝│
-└──────────────────────┘     └─────────────────────────┘
+┌─────────────────────────────────┐
+│  Customize Dashboard        [X] │
+│─────────────────────────────────│
+│  Layout Preview                 │
+│  ┌─────────────────────────────┐│
+│  │ Row 1: Primary Stats (full) ││
+│  ├──────────────┬──────────────┤│
+│  │ Row 2: Biz   │ Row 2: Budg  ││
+│  │ Health (½)   │ Track (½)    ││
+│  ├────────┬─────────┬──────────┤│
+│  │ All-   │ Top     │ Low      ││
+│  │ Time ⅓ │ Locs ⅓  │ Stock ⅓  ││
+│  └────────┴─────────┴──────────┘│
+│─────────────────────────────────│
+│  Widget List (existing rows)    │
+│  ...                            │
+└─────────────────────────────────┘
 ```
+
+### How It Works
+- Compute rows by iterating visible widgets, accumulating column spans (sm=4, md=6, lg=8, full=12). When a widget would exceed 12, start a new row.
+- Render each row as a flex container with blocks sized proportionally (e.g., `width: ${(cols/12)*100}%`).
+- Each block shows the widget label (truncated) and a row number.
+- Hovering/tapping a block in the preview highlights that widget in both the list below and on the dashboard grid (reuses existing `onHighlight`).
+- The highlighted block gets a primary ring, matching the dashboard highlight.
 
 ### Files to Change
 
 | File | Change |
 |---|---|
-| `src/components/dashboard/DashboardCustomizer.tsx` | Add `highlightedWidgetId` and `onHighlight` props. Show row number badges (#1, #2...) next to each widget label. Fire `onHighlight` on pointer enter/leave for each `WidgetRow`. |
-| `src/pages/Dashboard.tsx` | Add `highlightedWidgetId` state. Pass it + setter to the customizer. In the grid, when a widget is highlighted and customizer is open, apply `ring-2 ring-primary rounded-lg` and render a small position number badge overlay. Clear highlight when customizer closes. |
+| `src/components/dashboard/DashboardCustomizer.tsx` | Add a `LayoutPreview` component above the widget list. It computes rows from visible widgets using the size-to-cols mapping (sm=4, md=6, lg=8, full=12), renders proportional blocks per row, and wires into the existing `onHighlight` system. Each block shows truncated label + size badge. |
 
 ### Technical Detail
-- Row numbers are computed from visible widget index (skip hidden ones)
-- Highlight uses `ring-2 ring-primary` with a subtle scale transform for emphasis
-- Position badge is a small absolute-positioned circle in the top-left corner of the widget
-- On mobile (drawer), touch-based: tapping a row highlights it (toggle behavior since no hover)
-- No new dependencies
+- Size mapping: `{ sm: 4, md: 6, lg: 8, full: 12 }` (matches `SIZE_TO_COLS` in Dashboard.tsx)
+- Row computation: iterate visible widgets, track `currentRowCols`. If adding a widget exceeds 12, push current row and start new one.
+- Block styling: `style={{ width: \`${(cols/12)*100}%\` }}` inside a `flex flex-wrap` container
+- Each block is a small rounded rectangle with `bg-muted` (or `bg-primary/20` when highlighted), showing the widget label in `text-[10px]`
+- Tapping a block fires `onHighlight(id)` just like the list rows
+- No new files or dependencies -- just a new sub-component within `DashboardCustomizer.tsx`
 
