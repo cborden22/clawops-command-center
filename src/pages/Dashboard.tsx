@@ -338,9 +338,9 @@ export default function Dashboard() {
               <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg group-hover:scale-110 transition-transform duration-300">
                 <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground">Active Locations</p>
-                <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{activeLocations.length}</p>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight truncate">{activeLocations.length}</p>
                 <p className="text-[10px] sm:text-xs text-muted-foreground">{totalMachines} machines</p>
               </div>
             </div>
@@ -358,9 +358,9 @@ export default function Dashboard() {
               <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
                 <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground">Month Income</p>
-                <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">${totalIncome.toLocaleString()}</p>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight truncate">${totalIncome.toLocaleString()}</p>
                 <p className="text-[10px] sm:text-xs text-muted-foreground">{format(now, "MMMM")}</p>
               </div>
             </div>
@@ -386,10 +386,10 @@ export default function Dashboard() {
               )}>
                 <Wallet className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground">Net Profit</p>
                 <p className={cn(
-                  "text-2xl sm:text-3xl font-bold tracking-tight",
+                  "text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight truncate",
                   netProfit >= 0 ? "text-foreground" : "text-destructive"
                 )}>
                   ${Math.abs(netProfit).toLocaleString()}
@@ -424,9 +424,9 @@ export default function Dashboard() {
               )}>
                 <Package className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground">Inventory</p>
-                <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{totalInventoryItems}</p>
+                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight truncate">{totalInventoryItems}</p>
                 {lowStockItems.length > 0 ? (
                   <p className="text-[10px] sm:text-xs text-amber-600 font-medium">{lowStockItems.length} low stock</p>
                 ) : (
