@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Lead, LeadStatus } from '@/hooks/useLeadsDB';
 import { LeadCard } from './LeadCard';
 import { ScrollArea } from '@/components/ui/scroll-area';
