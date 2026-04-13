@@ -1,11 +1,15 @@
-import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { GripVertical, X, Plus, Check, Pencil, RotateCcw, Maximize2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from "@/components/ui/drawer";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Pencil, RotateCcw, ChevronUp, ChevronDown, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WidgetSize } from "@/hooks/useUserPreferences";
 import { triggerHaptic, hapticPatterns } from "@/utils/haptics";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance' | 'leads' | 'businessHealth' | 'budgetTracking';
 
@@ -16,294 +20,203 @@ export interface WidgetConfig {
   size: WidgetSize;
 }
 
-const SIZE_LABELS: Record<WidgetSize, string> = {
-  sm: '⅓ width',
-  md: '½ width',
-  lg: '⅔ width',
-  full: 'Full width',
-};
-
-// Map a percentage (0-1) of grid width to the nearest size
-const BREAKPOINTS: { threshold: number; size: WidgetSize }[] = [
-  { threshold: 0.29, size: 'sm' },   // ~4/12
-  { threshold: 0.46, size: 'md' },   // ~6/12
-  { threshold: 0.62, size: 'lg' },   // ~8/12
-  { threshold: 0.85, size: 'full' }, // 12/12
+const SIZE_OPTIONS: { value: WidgetSize; label: string }[] = [
+  { value: 'sm', label: '⅓ width' },
+  { value: 'md', label: '½ width' },
+  { value: 'lg', label: '⅔ width' },
+  { value: 'full', label: 'Full width' },
 ];
 
-function percentToSize(pct: number): WidgetSize {
-  if (pct < BREAKPOINTS[0].threshold) return 'sm';
-  if (pct < BREAKPOINTS[1].threshold) return 'sm';
-  if (pct < BREAKPOINTS[2].threshold) return 'md';
-  if (pct < BREAKPOINTS[3].threshold) return 'lg';
-  return 'full';
+// --- FAB to open customizer ---
+interface CustomizerFABProps {
+  onOpen: () => void;
 }
 
-// --- Edit Mode FAB ---
-interface EditModeFABProps {
-  isEditMode: boolean;
-  onToggle: () => void;
-  onReset: () => void;
-}
-
-export function EditModeFAB({ isEditMode, onToggle, onReset }: EditModeFABProps) {
+export function CustomizerFAB({ onOpen }: CustomizerFABProps) {
   const isMobile = useIsMobile();
 
   return (
     <div className={cn(
-      "fixed z-50 flex items-center gap-2",
+      "fixed z-50",
       isMobile ? "bottom-24 right-4" : "bottom-6 right-6"
     )}>
-      {isEditMode && (
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-11 w-11 rounded-full shadow-lg bg-card border-border hover:bg-muted animate-in fade-in slide-in-from-right-2 duration-200"
-          onClick={onReset}
-          title="Reset to default"
-        >
-          <RotateCcw className="h-4 w-4" />
-        </Button>
-      )}
       <Button
         size="icon"
         className={cn(
-          "rounded-full shadow-xl transition-all duration-300",
-          isMobile ? "h-14 w-14" : "h-12 w-12",
-          isEditMode
-            ? "bg-green-600 hover:bg-green-700 text-white"
-            : "bg-primary hover:bg-primary/90 text-primary-foreground"
+          "rounded-full shadow-xl bg-primary hover:bg-primary/90 text-primary-foreground",
+          isMobile ? "h-14 w-14" : "h-12 w-12"
         )}
         onClick={() => {
           triggerHaptic(hapticPatterns.medium);
-          onToggle();
+          onOpen();
         }}
-        title={isEditMode ? "Done editing" : "Customize dashboard"}
+        title="Customize dashboard"
       >
-        {isEditMode ? (
-          <Check className={cn(isMobile ? "h-6 w-6" : "h-5 w-5")} />
-        ) : (
-          <Pencil className={cn(isMobile ? "h-6 w-6" : "h-5 w-5")} />
-        )}
+        <Pencil className={cn(isMobile ? "h-6 w-6" : "h-5 w-5")} />
       </Button>
     </div>
   );
 }
 
-// --- Widget Edit Overlay ---
-interface WidgetEditOverlayProps {
+// --- Widget Row in the customizer ---
+interface WidgetRowProps {
   widget: WidgetConfig;
-  children: React.ReactNode;
-  isEditMode: boolean;
-  onHide: (id: WidgetId) => void;
+  index: number;
+  total: number;
+  onToggle: (id: WidgetId) => void;
   onResize: (id: WidgetId, size: WidgetSize) => void;
-  onDragStart: (e: React.DragEvent, id: WidgetId) => void;
-  onDragOver: (e: React.DragEvent, id: WidgetId) => void;
-  onDragEnd: () => void;
-  onDrop: (e: React.DragEvent, id: WidgetId) => void;
-  isDragOver: boolean;
-  isDragging: boolean;
-  onTouchDragStart: (id: WidgetId) => void;
-  isTouchDragging: boolean;
+  onMoveUp: (id: WidgetId) => void;
+  onMoveDown: (id: WidgetId) => void;
 }
 
-export function WidgetEditOverlay({
-  widget,
-  children,
-  isEditMode,
-  onHide,
-  onResize,
-  onDragStart,
-  onDragOver,
-  onDragEnd,
-  onDrop,
-  isDragOver,
-  isDragging,
-  onTouchDragStart,
-  isTouchDragging,
-}: WidgetEditOverlayProps) {
-  const isMobile = useIsMobile();
-  const [sizeToast, setSizeToast] = useState<string | null>(null);
-  const [isResizing, setIsResizing] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const lastSizeRef = useRef<WidgetSize>(widget.size);
-
-  // Drag-to-resize: find the grid parent width and map cursor X to a size
-  const handleResizeStart = useCallback((startX: number, startY: number) => {
-    setIsResizing(true);
-    lastSizeRef.current = widget.size;
-
-    const gridEl = containerRef.current?.parentElement?.parentElement;
-    if (!gridEl) return;
-    const gridRect = gridEl.getBoundingClientRect();
-
-    const onMove = (clientX: number) => {
-      const relativeX = clientX - gridRect.left;
-      const pct = Math.max(0, Math.min(1, relativeX / gridRect.width));
-      const newSize = percentToSize(pct);
-      if (newSize !== lastSizeRef.current) {
-        lastSizeRef.current = newSize;
-        onResize(widget.id, newSize);
-        triggerHaptic(hapticPatterns.light);
-        setSizeToast(SIZE_LABELS[newSize]);
-      }
-    };
-
-    const onMouseMove = (e: MouseEvent) => {
-      e.preventDefault();
-      onMove(e.clientX);
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      onMove(e.touches[0].clientX);
-    };
-
-    const cleanup = () => {
-      setIsResizing(false);
-      setSizeToast(null);
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', cleanup);
-      document.removeEventListener('touchmove', onTouchMove);
-      document.removeEventListener('touchend', cleanup);
-      document.removeEventListener('touchcancel', cleanup);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-
-    document.body.style.cursor = 'ew-resize';
-    document.body.style.userSelect = 'none';
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', cleanup);
-    document.addEventListener('touchmove', onTouchMove, { passive: true });
-    document.addEventListener('touchend', cleanup);
-    document.addEventListener('touchcancel', cleanup);
-  }, [widget.id, widget.size, onResize]);
-
-  if (!isEditMode) return <>{children}</>;
-
+function WidgetRow({ widget, index, total, onToggle, onResize, onMoveUp, onMoveDown }: WidgetRowProps) {
   return (
-    <div
-      ref={containerRef}
-      draggable={!isMobile && !isResizing}
-      onDragStart={(e) => onDragStart(e, widget.id)}
-      onDragOver={(e) => onDragOver(e, widget.id)}
-      onDragEnd={onDragEnd}
-      onDrop={(e) => onDrop(e, widget.id)}
-      className={cn(
-        "relative rounded-xl transition-all group/edit",
-        "ring-2 ring-primary/30 ring-offset-2 ring-offset-background",
-        isDragOver && "ring-primary ring-offset-4 scale-[1.01]",
-        isDragging && "opacity-40 scale-[0.97]",
-        isTouchDragging && "shadow-2xl scale-[1.03] z-50",
-        isResizing && "z-50 ring-primary",
-        !isResizing && "duration-200",
-      )}
-    >
-      {/* Top bar: drag handle + hide button */}
-      <div className={cn(
-        "absolute -top-3 left-0 right-0 flex items-center justify-between z-20 px-2",
-        "opacity-0 group-hover/edit:opacity-100 transition-opacity duration-150",
-        isMobile && "opacity-100"
-      )}>
-        <div
-          className={cn(
-            "flex items-center gap-1 px-2 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium",
-            "cursor-grab active:cursor-grabbing shadow-md select-none"
-          )}
-          onTouchStart={(e) => {
-            e.stopPropagation();
-            onTouchDragStart(widget.id);
-          }}
-          title="Drag to reorder"
-        >
-          <GripVertical className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">{widget.label}</span>
-        </div>
-
-        <button
-          onClick={() => {
+    <div className={cn(
+      "py-3 px-1 space-y-2 transition-opacity",
+      !widget.visible && "opacity-50"
+    )}>
+      <div className="flex items-center gap-3">
+        <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+        <span className="text-sm font-medium flex-1 truncate">{widget.label}</span>
+        <Switch
+          checked={widget.visible}
+          onCheckedChange={() => {
             triggerHaptic(hapticPatterns.light);
-            onHide(widget.id);
+            onToggle(widget.id);
           }}
-          className="p-1.5 rounded-full bg-destructive/90 text-destructive-foreground shadow-md hover:bg-destructive transition-colors"
-          title="Hide widget"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
+        />
       </div>
-
-      {/* Drag-to-resize handle (bottom-right) */}
-      <div
-        onMouseDown={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          handleResizeStart(e.clientX, e.clientY);
-        }}
-        onTouchStart={(e) => {
-          e.stopPropagation();
-          const touch = e.touches[0];
-          handleResizeStart(touch.clientX, touch.clientY);
-        }}
-        className={cn(
-          "absolute -bottom-2 -right-2 z-20 p-2 rounded-full shadow-md transition-all",
-          "bg-accent text-accent-foreground border-2 border-background",
-          "hover:bg-primary hover:text-primary-foreground",
-          "cursor-ew-resize select-none touch-none",
-          "opacity-0 group-hover/edit:opacity-100",
-          isMobile && "opacity-100",
-          isResizing && "bg-primary text-primary-foreground scale-125 opacity-100"
-        )}
-        title="Drag left/right to resize"
-      >
-        <Maximize2 className="h-3.5 w-3.5" />
-      </div>
-
-      {/* Live size indicator while dragging */}
-      {sizeToast && (
-        <div className="absolute bottom-4 right-4 z-30 px-3 py-1.5 rounded-full bg-foreground text-background text-xs font-bold shadow-lg animate-in fade-in zoom-in-95 duration-150">
-          {sizeToast}
+      {widget.visible && (
+        <div className="flex items-center gap-2 pl-7">
+          <Select
+            value={widget.size}
+            onValueChange={(val) => onResize(widget.id, val as WidgetSize)}
+          >
+            <SelectTrigger className="h-8 text-xs w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SIZE_OPTIONS.map(opt => (
+                <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-1 ml-auto">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              disabled={index === 0}
+              onClick={() => {
+                triggerHaptic(hapticPatterns.light);
+                onMoveUp(widget.id);
+              }}
+            >
+              <ChevronUp className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              disabled={index === total - 1}
+              onClick={() => {
+                triggerHaptic(hapticPatterns.light);
+                onMoveDown(widget.id);
+              }}
+            >
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
-
-      {/* Widget content - slightly dimmed */}
-      <div className={cn(
-        "pointer-events-none opacity-80 select-none",
-        isResizing && "opacity-60"
-      )}>
-        {children}
-      </div>
     </div>
   );
 }
 
-// --- Hidden Widgets Tray ---
-interface HiddenWidgetsTrayProps {
-  hiddenWidgets: WidgetConfig[];
-  onRestore: (id: WidgetId) => void;
-  isEditMode: boolean;
+// --- Main Drawer/Sheet Customizer ---
+interface DashboardCustomizerDrawerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  widgets: WidgetConfig[];
+  onToggle: (id: WidgetId) => void;
+  onResize: (id: WidgetId, size: WidgetSize) => void;
+  onMoveUp: (id: WidgetId) => void;
+  onMoveDown: (id: WidgetId) => void;
+  onReset: () => void;
 }
 
-export function HiddenWidgetsTray({ hiddenWidgets, onRestore, isEditMode }: HiddenWidgetsTrayProps) {
-  if (!isEditMode || hiddenWidgets.length === 0) return null;
+export function DashboardCustomizerDrawer({
+  open,
+  onOpenChange,
+  widgets,
+  onToggle,
+  onResize,
+  onMoveUp,
+  onMoveDown,
+  onReset,
+}: DashboardCustomizerDrawerProps) {
+  const isMobile = useIsMobile();
 
-  return (
-    <div className="rounded-xl border-2 border-dashed border-muted-foreground/30 bg-muted/30 p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <p className="text-xs font-medium text-muted-foreground mb-3">Hidden Widgets</p>
-      <div className="flex flex-wrap gap-2">
-        {hiddenWidgets.map((widget) => (
-          <Badge
-            key={widget.id}
-            variant="outline"
-            className="cursor-pointer hover:bg-primary/10 hover:border-primary transition-colors gap-1.5 py-1.5 px-3 text-sm"
-            onClick={() => {
-              triggerHaptic(hapticPatterns.light);
-              onRestore(widget.id);
-            }}
-          >
-            <Plus className="h-3 w-3" />
-            {widget.label}
-          </Badge>
-        ))}
+  const content = (
+    <div className="flex flex-col h-full">
+      <ScrollArea className="flex-1 px-4">
+        <div className="divide-y divide-border">
+          {widgets.map((widget, index) => (
+            <WidgetRow
+              key={widget.id}
+              widget={widget}
+              index={index}
+              total={widgets.length}
+              onToggle={onToggle}
+              onResize={onResize}
+              onMoveUp={onMoveUp}
+              onMoveDown={onMoveDown}
+            />
+          ))}
+        </div>
+      </ScrollArea>
+      <Separator />
+      <div className="p-4">
+        <Button
+          variant="outline"
+          className="w-full gap-2"
+          onClick={() => {
+            triggerHaptic(hapticPatterns.medium);
+            onReset();
+          }}
+        >
+          <RotateCcw className="h-4 w-4" />
+          Reset to Default
+        </Button>
       </div>
     </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="max-h-[85vh]">
+          <DrawerHeader>
+            <DrawerTitle>Customize Dashboard</DrawerTitle>
+            <DrawerDescription>Toggle, resize, and reorder your widgets.</DrawerDescription>
+          </DrawerHeader>
+          {content}
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-[380px] p-0 flex flex-col">
+        <SheetHeader className="p-6 pb-2">
+          <SheetTitle>Customize Dashboard</SheetTitle>
+          <SheetDescription>Toggle, resize, and reorder your widgets.</SheetDescription>
+        </SheetHeader>
+        {content}
+      </SheetContent>
+    </Sheet>
   );
 }
