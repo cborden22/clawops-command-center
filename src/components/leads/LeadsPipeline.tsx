@@ -1,11 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Lead, LeadStatus } from '@/hooks/useLeadsDB';
 import { LeadCard } from './LeadCard';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Sparkles, Phone, HandshakeIcon, Trophy, XCircle } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
+
+const TABLET_BREAKPOINT = 1024;
+
+function useIsTabletOrMobile() {
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${TABLET_BREAKPOINT - 1}px)`);
+    const onChange = () => setIsSmallScreen(mql.matches);
+    mql.addEventListener('change', onChange);
+    setIsSmallScreen(mql.matches);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+
+  return isSmallScreen;
+}
 
 interface LeadsPipelineProps {
   leads: Lead[];
@@ -22,7 +37,7 @@ const statusColumns: { status: LeadStatus; label: string; icon: React.ComponentT
 ];
 
 export function LeadsPipeline({ leads, onLeadClick, onStatusChange }: LeadsPipelineProps) {
-  const isMobile = useIsMobile();
+  const isTabletOrMobile = useIsTabletOrMobile();
   const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<LeadStatus | null>(null);
   const [activeStatus, setActiveStatus] = useState<LeadStatus>('new');
@@ -63,7 +78,7 @@ export function LeadsPipeline({ leads, onLeadClick, onStatusChange }: LeadsPipel
   };
 
   // Mobile view with tab-based layout
-  if (isMobile) {
+  if (isTabletOrMobile) {
     const activeLeads = getLeadsForStatus(activeStatus);
     const activeColumn = statusColumns.find(c => c.status === activeStatus);
     const ActiveIcon = activeColumn?.icon || Sparkles;
