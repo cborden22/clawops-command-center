@@ -158,10 +158,7 @@ export default function Dashboard() {
 
   const [widgets, setWidgets] = useState<WidgetConfig[]>(DEFAULT_WIDGET_ORDER);
   const [layoutLoaded, setLayoutLoaded] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [draggedId, setDraggedId] = useState<WidgetId | null>(null);
-  const [dragOverId, setDragOverId] = useState<WidgetId | null>(null);
-  const [touchDragId, setTouchDragId] = useState<WidgetId | null>(null);
+  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
   
   const isMobile = useIsMobile();
   const { registerRefresh, unregisterRefresh } = useMobileRefresh();
@@ -259,44 +256,26 @@ export default function Dashboard() {
     setWidgets(w => w.map(widget => widget.id === id ? { ...widget, size } : widget));
   };
 
-  const handleDragStart = (e: React.DragEvent, id: WidgetId) => {
-    setDraggedId(id);
-    e.dataTransfer.effectAllowed = 'move';
+  const toggleWidget = (id: WidgetId) => {
+    setWidgets(w => w.map(widget => widget.id === id ? { ...widget, visible: !widget.visible } : widget));
   };
 
-  const handleDragOver = (e: React.DragEvent, id: WidgetId) => {
-    e.preventDefault();
-    if (draggedId && draggedId !== id) setDragOverId(id);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedId(null);
-    setDragOverId(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, targetId: WidgetId) => {
-    e.preventDefault();
-    if (!draggedId || draggedId === targetId) return;
-    const newWidgets = [...widgets];
-    const fromIdx = newWidgets.findIndex(w => w.id === draggedId);
-    const toIdx = newWidgets.findIndex(w => w.id === targetId);
-    const [removed] = newWidgets.splice(fromIdx, 1);
-    newWidgets.splice(toIdx, 0, removed);
-    setWidgets(newWidgets);
-    setDraggedId(null);
-    setDragOverId(null);
-  };
-
-  const handleTouchDragStart = (id: WidgetId) => {
-    setTouchDragId(id);
-    // Simple: on mobile, move widget up by swapping with previous
+  const moveWidgetUp = (id: WidgetId) => {
     const idx = widgets.findIndex(w => w.id === id);
     if (idx > 0) {
       const newWidgets = [...widgets];
       [newWidgets[idx - 1], newWidgets[idx]] = [newWidgets[idx], newWidgets[idx - 1]];
       setWidgets(newWidgets);
     }
-    setTimeout(() => setTouchDragId(null), 300);
+  };
+
+  const moveWidgetDown = (id: WidgetId) => {
+    const idx = widgets.findIndex(w => w.id === id);
+    if (idx < widgets.length - 1) {
+      const newWidgets = [...widgets];
+      [newWidgets[idx], newWidgets[idx + 1]] = [newWidgets[idx + 1], newWidgets[idx]];
+      setWidgets(newWidgets);
+    }
   };
 
   const hiddenWidgets = filteredWidgets.filter(w => !w.visible);
