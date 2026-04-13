@@ -158,6 +158,8 @@ interface DashboardCustomizerDrawerProps {
   onMoveUp: (id: WidgetId) => void;
   onMoveDown: (id: WidgetId) => void;
   onReset: () => void;
+  highlightedWidgetId: WidgetId | null;
+  onHighlight: (id: WidgetId | null) => void;
 }
 
 export function DashboardCustomizerDrawer({
@@ -169,8 +171,20 @@ export function DashboardCustomizerDrawer({
   onMoveUp,
   onMoveDown,
   onReset,
+  highlightedWidgetId,
+  onHighlight,
 }: DashboardCustomizerDrawerProps) {
   const isMobile = useIsMobile();
+
+  // Compute visible indices
+  let visibleCounter = 0;
+  const visibleIndexMap = new Map<WidgetId, number>();
+  widgets.forEach(w => {
+    if (w.visible) {
+      visibleCounter++;
+      visibleIndexMap.set(w.id, visibleCounter);
+    }
+  });
 
   const content = (
     <div className="flex flex-col h-full">
@@ -182,10 +196,13 @@ export function DashboardCustomizerDrawer({
               widget={widget}
               index={index}
               total={widgets.length}
+              visibleIndex={visibleIndexMap.get(widget.id) ?? null}
               onToggle={onToggle}
               onResize={onResize}
               onMoveUp={onMoveUp}
               onMoveDown={onMoveDown}
+              onHighlight={onHighlight}
+              isHighlighted={highlightedWidgetId === widget.id}
             />
           ))}
         </div>

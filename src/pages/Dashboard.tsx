@@ -159,6 +159,7 @@ export default function Dashboard() {
   const [widgets, setWidgets] = useState<WidgetConfig[]>(DEFAULT_WIDGET_ORDER);
   const [layoutLoaded, setLayoutLoaded] = useState(false);
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
+  const [highlightedWidgetId, setHighlightedWidgetId] = useState<WidgetId | null>(null);
   
   const isMobile = useIsMobile();
   const { registerRefresh, unregisterRefresh } = useMobileRefresh();
@@ -842,35 +843,50 @@ export default function Dashboard() {
 
       {/* Widgets Grid */}
       <div className="grid grid-cols-12 gap-4">
-        {filteredWidgets.map((widget) => {
-          if (!widget.visible) return null;
-          
-          return (
-            <div
-              key={widget.id}
-              className={cn(
-                "col-span-12",
-                SIZE_TO_COLS[widget.size],
-                "transition-all duration-200"
-              )}
-            >
-              {widgetRenderers[widget.id]()}
-            </div>
-          );
-        })}
+        {(() => {
+          let visibleIdx = 0;
+          return filteredWidgets.map((widget) => {
+            if (!widget.visible) return null;
+            visibleIdx++;
+            const isHighlighted = isCustomizerOpen && highlightedWidgetId === widget.id;
+            return (
+              <div
+                key={widget.id}
+                className={cn(
+                  "col-span-12 relative",
+                  SIZE_TO_COLS[widget.size],
+                  "transition-all duration-200",
+                  isHighlighted && "ring-2 ring-primary rounded-lg scale-[1.01] z-10"
+                )}
+              >
+                {isHighlighted && (
+                  <div className="absolute -top-2 -left-2 z-20 flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg">
+                    {visibleIdx}
+                  </div>
+                )}
+                {widgetRenderers[widget.id]()}
+              </div>
+            );
+          });
+        })()}
       </div>
 
       {/* Customizer FAB + Drawer */}
       <CustomizerFAB onOpen={() => setIsCustomizerOpen(true)} />
       <DashboardCustomizerDrawer
         open={isCustomizerOpen}
-        onOpenChange={setIsCustomizerOpen}
+        onOpenChange={(open) => {
+          setIsCustomizerOpen(open);
+          if (!open) setHighlightedWidgetId(null);
+        }}
         widgets={filteredWidgets}
         onToggle={toggleWidget}
         onResize={resizeWidget}
         onMoveUp={moveWidgetUp}
         onMoveDown={moveWidgetDown}
         onReset={resetLayout}
+        highlightedWidgetId={highlightedWidgetId}
+        onHighlight={setHighlightedWidgetId}
       />
     </div>
   );
