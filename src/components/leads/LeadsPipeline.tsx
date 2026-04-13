@@ -128,7 +128,7 @@ export function LeadsPipeline({ leads, onLeadClick, onStatusChange }: LeadsPipel
 
   // Desktop view with kanban columns
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 md:mx-0 md:px-0">
+    <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 md:mx-0 md:px-0 min-w-0">
       {statusColumns.map(({ status, label, icon: Icon, color }) => {
         const columnLeads = getLeadsForStatus(status);
         const isDragOver = dragOverStatus === status;
@@ -137,7 +137,7 @@ export function LeadsPipeline({ leads, onLeadClick, onStatusChange }: LeadsPipel
           <div
             key={status}
             className={cn(
-              'flex-shrink-0 w-[280px] md:w-[260px] lg:flex-1 lg:min-w-[200px] lg:max-w-[320px]',
+              'flex-shrink-0 w-[280px] md:w-[220px] lg:flex-1 lg:min-w-[200px] lg:max-w-[320px]',
               'rounded-xl border border-border/50 bg-muted/30 transition-all duration-200',
               isDragOver && 'border-primary/50 bg-primary/5'
             )}
