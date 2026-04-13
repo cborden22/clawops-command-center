@@ -244,14 +244,6 @@ export default function Dashboard() {
     setWidgets(DEFAULT_WIDGET_ORDER);
   };
 
-  const hideWidget = (id: WidgetId) => {
-    setWidgets(w => w.map(widget => widget.id === id ? { ...widget, visible: false } : widget));
-  };
-
-  const restoreWidget = (id: WidgetId) => {
-    setWidgets(w => w.map(widget => widget.id === id ? { ...widget, visible: true } : widget));
-  };
-
   const resizeWidget = (id: WidgetId, size: WidgetSize) => {
     setWidgets(w => w.map(widget => widget.id === id ? { ...widget, size } : widget));
   };
@@ -277,8 +269,6 @@ export default function Dashboard() {
       setWidgets(newWidgets);
     }
   };
-
-  const hiddenWidgets = filteredWidgets.filter(w => !w.visible);
 
   const isLoaded = locationsLoaded && entriesLoaded && inventoryLoaded && layoutLoaded && routesLoaded && schedulesLoaded && maintenanceLoaded;
 
