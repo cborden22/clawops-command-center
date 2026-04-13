@@ -845,10 +845,7 @@ export default function Dashboard() {
             Dashboard
           </h1>
           <p className="text-muted-foreground text-sm sm:text-base">
-            {isEditMode 
-              ? "Drag, resize, or hide widgets. Tap ✓ when done."
-              : `Welcome back! Here's your business overview for ${format(now, "MMMM yyyy")}.`
-            }
+            {`Welcome back! Here's your business overview for ${format(now, "MMMM yyyy")}.`}
           </p>
         </div>
       </div>
@@ -867,40 +864,26 @@ export default function Dashboard() {
                 "transition-all duration-200"
               )}
             >
-              <WidgetEditOverlay
-                widget={widget}
-                isEditMode={isEditMode}
-                onHide={hideWidget}
-                onResize={resizeWidget}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDragEnd={handleDragEnd}
-                onDrop={handleDrop}
-                isDragOver={dragOverId === widget.id}
-                isDragging={draggedId === widget.id}
-                onTouchDragStart={handleTouchDragStart}
-                isTouchDragging={touchDragId === widget.id}
-              >
-                {widgetRenderers[widget.id]()}
-              </WidgetEditOverlay>
+              {widgetRenderers[widget.id]()}
             </div>
           );
         })}
       </div>
 
-      {/* Hidden Widgets Tray */}
-      <HiddenWidgetsTray
-        hiddenWidgets={hiddenWidgets}
-        onRestore={restoreWidget}
-        isEditMode={isEditMode}
-      />
-
-      {/* Floating Action Button */}
-      <EditModeFAB
-        isEditMode={isEditMode}
-        onToggle={() => setIsEditMode(!isEditMode)}
+      {/* Customizer FAB + Drawer */}
+      <CustomizerFAB onOpen={() => setIsCustomizerOpen(true)} />
+      <DashboardCustomizerDrawer
+        open={isCustomizerOpen}
+        onOpenChange={setIsCustomizerOpen}
+        widgets={filteredWidgets}
+        onToggle={toggleWidget}
+        onResize={resizeWidget}
+        onMoveUp={moveWidgetUp}
+        onMoveDown={moveWidgetDown}
         onReset={resetLayout}
       />
+    </div>
+  );
     </div>
   );
 }
