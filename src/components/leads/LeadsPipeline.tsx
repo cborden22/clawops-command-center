@@ -79,7 +79,7 @@ export function LeadsPipeline({ leads, onLeadClick, onStatusChange }: LeadsPipel
   };
 
   // Mobile view with tab-based layout
-  if (isMobile) {
+  if (isTabletOrMobile) {
     const activeLeads = getLeadsForStatus(activeStatus);
     const activeColumn = statusColumns.find(c => c.status === activeStatus);
     const ActiveIcon = activeColumn?.icon || Sparkles;
