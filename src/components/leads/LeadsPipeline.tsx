@@ -5,7 +5,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Sparkles, Phone, HandshakeIcon, Trophy, XCircle } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 const TABLET_BREAKPOINT = 1024;
 
