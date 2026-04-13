@@ -63,20 +63,33 @@ interface WidgetRowProps {
   widget: WidgetConfig;
   index: number;
   total: number;
+  visibleIndex: number | null;
   onToggle: (id: WidgetId) => void;
   onResize: (id: WidgetId, size: WidgetSize) => void;
   onMoveUp: (id: WidgetId) => void;
   onMoveDown: (id: WidgetId) => void;
+  onHighlight: (id: WidgetId | null) => void;
+  isHighlighted: boolean;
 }
 
-function WidgetRow({ widget, index, total, onToggle, onResize, onMoveUp, onMoveDown }: WidgetRowProps) {
+function WidgetRow({ widget, index, total, visibleIndex, onToggle, onResize, onMoveUp, onMoveDown, onHighlight, isHighlighted }: WidgetRowProps) {
   return (
-    <div className={cn(
-      "py-3 px-1 space-y-2 transition-opacity",
-      !widget.visible && "opacity-50"
-    )}>
+    <div
+      className={cn(
+        "py-3 px-1 space-y-2 transition-all rounded-lg",
+        !widget.visible && "opacity-50",
+        isHighlighted && "bg-primary/10"
+      )}
+      onPointerEnter={() => widget.visible && onHighlight(widget.id)}
+      onPointerLeave={() => onHighlight(null)}
+    >
       <div className="flex items-center gap-3">
         <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+        {visibleIndex !== null && (
+          <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold shrink-0">
+            {visibleIndex}
+          </span>
+        )}
         <span className="text-sm font-medium flex-1 truncate">{widget.label}</span>
         <Switch
           checked={widget.visible}
