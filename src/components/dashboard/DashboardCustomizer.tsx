@@ -27,6 +27,70 @@ const SIZE_OPTIONS: { value: WidgetSize; label: string }[] = [
   { value: 'full', label: 'Full width' },
 ];
 
+const SIZE_TO_COLS: Record<WidgetSize, number> = { sm: 4, md: 6, lg: 8, full: 12 };
+
+// --- Layout Preview ---
+interface LayoutPreviewProps {
+  widgets: WidgetConfig[];
+  highlightedWidgetId: WidgetId | null;
+  onHighlight: (id: WidgetId | null) => void;
+}
+
+function LayoutPreview({ widgets, highlightedWidgetId, onHighlight }: LayoutPreviewProps) {
+  const visible = widgets.filter(w => w.visible);
+  
+  const rows: WidgetConfig[][] = [];
+  let currentRow: WidgetConfig[] = [];
+  let currentCols = 0;
+  
+  for (const w of visible) {
+    const cols = SIZE_TO_COLS[w.size];
+    if (currentCols + cols > 12 && currentRow.length > 0) {
+      rows.push(currentRow);
+      currentRow = [w];
+      currentCols = cols;
+    } else {
+      currentRow.push(w);
+      currentCols += cols;
+    }
+  }
+  if (currentRow.length > 0) rows.push(currentRow);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="px-4 pb-3">
+      <p className="text-xs font-medium text-muted-foreground mb-2">Layout Preview</p>
+      <div className="space-y-1">
+        {rows.map((row, ri) => (
+          <div key={ri} className="flex gap-1">
+            {row.map((w) => {
+              const cols = SIZE_TO_COLS[w.size];
+              const isHl = highlightedWidgetId === w.id;
+              return (
+                <div
+                  key={w.id}
+                  className={cn(
+                    "rounded border px-1.5 py-1 truncate text-[10px] leading-tight transition-all cursor-pointer",
+                    isHl
+                      ? "bg-primary/20 border-primary ring-1 ring-primary text-primary font-semibold"
+                      : "bg-muted border-border text-muted-foreground"
+                  )}
+                  style={{ width: `${(cols / 12) * 100}%` }}
+                  onPointerEnter={() => onHighlight(w.id)}
+                  onPointerLeave={() => onHighlight(null)}
+                >
+                  {w.label}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // --- FAB to open customizer ---
 interface CustomizerFABProps {
   onOpen: () => void;
