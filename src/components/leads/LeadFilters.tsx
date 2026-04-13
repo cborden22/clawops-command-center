@@ -32,9 +32,9 @@ export function LeadFilters({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3">
-      {/* Search */}
-      <div className="relative flex-1 max-w-sm">
+    <div className="space-y-3">
+      {/* Search - full width */}
+      <div className="relative w-full sm:max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           value={searchQuery}
@@ -52,41 +52,40 @@ export function LeadFilters({
         )}
       </div>
 
-      {/* Priority Filter */}
-      <Select value={priorityFilter} onValueChange={(v) => onPriorityChange(v as LeadPriority | 'all')}>
-        <SelectTrigger className="w-[140px]">
-          <SelectValue placeholder="Priority" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Priorities</SelectItem>
-          <SelectItem value="hot">🔥 Hot</SelectItem>
-          <SelectItem value="warm">☀️ Warm</SelectItem>
-          <SelectItem value="cold">❄️ Cold</SelectItem>
-        </SelectContent>
-      </Select>
+      {/* Selects side-by-side */}
+      <div className="flex flex-row gap-2 items-center">
+        <Select value={priorityFilter} onValueChange={(v) => onPriorityChange(v as LeadPriority | 'all')}>
+          <SelectTrigger className="flex-1 min-w-0">
+            <SelectValue placeholder="Priority" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Priorities</SelectItem>
+            <SelectItem value="hot">🔥 Hot</SelectItem>
+            <SelectItem value="warm">☀️ Warm</SelectItem>
+            <SelectItem value="cold">❄️ Cold</SelectItem>
+          </SelectContent>
+        </Select>
 
-      {/* Source Filter */}
-      <Select value={sourceFilter} onValueChange={onSourceChange}>
-        <SelectTrigger className="w-[150px]">
-          <SelectValue placeholder="Source" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Sources</SelectItem>
-          {sources.map((source) => (
-            <SelectItem key={source} value={source}>
-              {source}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <Select value={sourceFilter} onValueChange={onSourceChange}>
+          <SelectTrigger className="flex-1 min-w-0">
+            <SelectValue placeholder="Source" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Sources</SelectItem>
+            {sources.map((source) => (
+              <SelectItem key={source} value={source}>
+                {source}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      {/* Clear Filters */}
-      {hasFilters && (
-        <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
-          <X className="h-4 w-4" />
-          Clear
-        </Button>
-      )}
+        {hasFilters && (
+          <Button variant="ghost" size="icon" onClick={clearFilters} className="shrink-0">
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
