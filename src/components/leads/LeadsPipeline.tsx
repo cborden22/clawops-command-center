@@ -7,6 +7,27 @@ import { cn } from '@/lib/utils';
 import { Sparkles, Phone, HandshakeIcon, Trophy, XCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+const TABLET_BREAKPOINT = 1024;
+
+function useIsTabletOrMobile() {
+  const isMobile = useIsMobile();
+  const [isTablet, setIsTablet] = useState(false);
+
+  useState(() => {
+    const mql = window.matchMedia(`(max-width: ${TABLET_BREAKPOINT - 1}px)`);
+    setIsTablet(mql.matches);
+  });
+
+  // Listen for changes
+  useState(() => {
+    const handler = () => setIsTablet(window.innerWidth < TABLET_BREAKPOINT);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  });
+
+  return isMobile || isTablet;
+}
+
 interface LeadsPipelineProps {
   leads: Lead[];
   onLeadClick: (lead: Lead) => void;
