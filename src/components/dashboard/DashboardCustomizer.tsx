@@ -252,6 +252,8 @@ export function DashboardCustomizerDrawer({
 
   const content = (
     <div className="flex flex-col h-full">
+      <LayoutPreview widgets={widgets} highlightedWidgetId={highlightedWidgetId} onHighlight={onHighlight} />
+      <Separator />
       <ScrollArea className="flex-1 px-4">
         <div className="divide-y divide-border">
           {widgets.map((widget, index) => (
