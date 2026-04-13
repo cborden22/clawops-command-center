@@ -1,41 +1,31 @@
 
 
-## Fix Stacked Filters on Mobile
+## Fix Tablet Cutoff on Leads Pipeline
 
 ### Problem
-On mobile, filter dropdowns (Priority, Source) and similar controls stack vertically one per row, wasting space when they could easily sit side-by-side. This affects the Leads page (visible in screenshot) and similar filter layouts elsewhere.
+At tablet viewport (768px), the desktop layout renders with a sidebar, leaving ~700px for content. The pipeline's 5 kanban columns are each `md:w-[260px]` (total 1300px), and while the pipeline has `overflow-x-auto`, the parent page container doesn't constrain its width, so the overflow bleeds out and cuts off stat cards and other content on the right edge.
+
+### Root Cause
+The Leads page wrapper (`space-y-6`) has no overflow constraint. The pipeline's flex container expands the page width beyond the viewport, making stat cards and badges clip on the right.
 
 ### Solution
-Wrap the select dropdowns in a flex row so they sit next to each other on mobile, while the search bar stays full-width above. Apply the same pattern to any other pages with similar stacked filter controls.
-
-### Files to Change
 
 | File | Change |
 |---|---|
-| `src/components/leads/LeadFilters.tsx` | Keep search full-width; wrap Priority + Source selects in a `flex flex-row gap-2` container so they sit side-by-side on mobile; make selects `flex-1` instead of fixed widths; add Clear button inline |
-| `src/pages/Leads.tsx` | Ensure the filters + view toggle row uses `flex-row flex-wrap` so filter bar and view toggle don't stack unnecessarily |
-| `src/pages/Maintenance.tsx` | Check header layout for similar stacking; fix if needed |
-| `src/pages/Calendar.tsx` | Same check and fix |
+| `src/pages/Leads.tsx` | Add `overflow-hidden` to the outermost wrapper div so the pipeline scrolls within its bounds instead of expanding the page |
+| `src/components/leads/LeadsPipeline.tsx` | Add `min-w-0` to the pipeline's parent flex container and ensure the desktop view wrapper has proper containment. Also consider making columns narrower at `md` breakpoint (`md:w-[220px]`) so more columns are visible on tablet |
 
-### Pattern
-```
-// Before: everything stacks on mobile
-<div className="flex flex-col sm:flex-row gap-3">
-  <Search />
-  <Select /> <!-- stacks below -->
-  <Select /> <!-- stacks below -->
-</div>
+### Technical Detail
+```text
+// Page wrapper gets overflow containment
+<div className="space-y-6 overflow-hidden">
 
-// After: search full-width, selects side-by-side
-<div className="space-y-3">
-  <Search />  <!-- full width -->
-  <div className="flex flex-row gap-2">
-    <Select className="flex-1" />
-    <Select className="flex-1" />
-    {hasFilters && <ClearButton />}
-  </div>
-</div>
+// Pipeline container gets min-w-0 for flex containment  
+<div className="flex gap-4 overflow-x-auto pb-4 min-w-0 ...">
+
+// Columns slightly narrower at md to show more on tablet
+'flex-shrink-0 w-[280px] md:w-[220px] lg:flex-1 lg:min-w-[200px] ...'
 ```
 
-Small, targeted fix across 2-4 files.
+Two files, minimal changes. The stat cards and pipeline will stay within bounds at every viewport width.
 
