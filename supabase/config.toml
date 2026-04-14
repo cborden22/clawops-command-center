@@ -2,7 +2,7 @@ project_id = "qzvcbegrygblyrldfdyz"
 
 [auth]
 site_url = "https://clawops.com"
-additional_redirect_urls = ["https://clawops.com/reset-password", "https://clawops.lovable.app/reset-password"]
+additional_redirect_urls = ["https://clawops.com", "https://clawops.com/reset-password", "https://www.clawops.com", "https://www.clawops.com/reset-password", "https://clawops.lovable.app/reset-password"]
 
 [auth.email]
 enable_signup = true
