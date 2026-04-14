@@ -5,8 +5,11 @@ import { useAuth } from "@/contexts/AuthContext";
 interface SubscriptionState {
   isSubscribed: boolean;
   isComplimentary: boolean;
+  isTrial: boolean;
+  trialEnd: string | null;
   productId: string | null;
   subscriptionEnd: string | null;
+  userCreatedAt: string | null;
   isLoading: boolean;
 }
 
@@ -15,8 +18,11 @@ export function useSubscription() {
   const [state, setState] = useState<SubscriptionState>({
     isSubscribed: false,
     isComplimentary: false,
+    isTrial: false,
+    trialEnd: null,
     productId: null,
     subscriptionEnd: null,
+    userCreatedAt: null,
     isLoading: true,
   });
 
@@ -36,8 +42,11 @@ export function useSubscription() {
       setState({
         isSubscribed: data?.subscribed ?? false,
         isComplimentary: data?.is_complimentary ?? false,
+        isTrial: data?.trial_active ?? false,
+        trialEnd: data?.trial_end ?? null,
         productId: data?.product_id ?? null,
         subscriptionEnd: data?.subscription_end ?? null,
+        userCreatedAt: data?.user_created_at ?? null,
         isLoading: false,
       });
     } catch (err) {

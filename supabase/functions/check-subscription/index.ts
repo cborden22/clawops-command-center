@@ -29,6 +29,15 @@ serve(async (req) => {
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated");
 
+    // Get user's profile created_at
+    const { data: profile } = await supabaseClient
+      .from("profiles")
+      .select("created_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const userCreatedAt = profile?.created_at ?? user.created_at ?? null;
+
     // Check complimentary access first
     const { data: compAccess } = await supabaseClient
       .from("complimentary_access")
@@ -45,6 +54,9 @@ serve(async (req) => {
             is_complimentary: true,
             product_id: null,
             subscription_end: compAccess.expires_at,
+            trial_active: false,
+            trial_end: null,
+            user_created_at: userCreatedAt,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
         );
@@ -82,6 +94,9 @@ serve(async (req) => {
               is_team_member: true,
               product_id: null,
               subscription_end: ownerCompAccess.expires_at,
+              trial_active: false,
+              trial_end: null,
+              user_created_at: userCreatedAt,
             }),
             { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
           );
@@ -113,6 +128,9 @@ serve(async (req) => {
                 is_team_member: true,
                 product_id: sub.items.data[0].price.product,
                 subscription_end: new Date(sub.current_period_end * 1000).toISOString(),
+                trial_active: false,
+                trial_end: null,
+                user_created_at: userCreatedAt,
               }),
               { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
             );
@@ -120,8 +138,7 @@ serve(async (req) => {
         }
       }
 
-      // Owner has no subscription
-      return new Response(JSON.stringify({ subscribed: false, is_team_member: true }), {
+      return new Response(JSON.stringify({ subscribed: false, is_team_member: true, trial_active: false, trial_end: null, user_created_at: userCreatedAt }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
@@ -130,35 +147,62 @@ serve(async (req) => {
     // Not a team member — check own Stripe subscription
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     if (customers.data.length === 0) {
-      return new Response(JSON.stringify({ subscribed: false }), {
+      return new Response(JSON.stringify({ subscribed: false, trial_active: false, trial_end: null, user_created_at: userCreatedAt }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
 
+    // Check for active subscriptions
     const subscriptions = await stripe.subscriptions.list({
       customer: customers.data[0].id,
       status: "active",
       limit: 1,
     });
 
-    if (subscriptions.data.length === 0) {
-      return new Response(JSON.stringify({ subscribed: false }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+    if (subscriptions.data.length > 0) {
+      const sub = subscriptions.data[0];
+      return new Response(
+        JSON.stringify({
+          subscribed: true,
+          is_complimentary: false,
+          product_id: sub.items.data[0].price.product,
+          subscription_end: new Date(sub.current_period_end * 1000).toISOString(),
+          trial_active: false,
+          trial_end: null,
+          user_created_at: userCreatedAt,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
     }
 
-    const sub = subscriptions.data[0];
-    return new Response(
-      JSON.stringify({
-        subscribed: true,
-        is_complimentary: false,
-        product_id: sub.items.data[0].price.product,
-        subscription_end: new Date(sub.current_period_end * 1000).toISOString(),
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-    );
+    // Check for trialing subscriptions
+    const trialingSubs = await stripe.subscriptions.list({
+      customer: customers.data[0].id,
+      status: "trialing",
+      limit: 1,
+    });
+
+    if (trialingSubs.data.length > 0) {
+      const sub = trialingSubs.data[0];
+      return new Response(
+        JSON.stringify({
+          subscribed: true,
+          is_complimentary: false,
+          product_id: sub.items.data[0].price.product,
+          subscription_end: new Date(sub.current_period_end * 1000).toISOString(),
+          trial_active: true,
+          trial_end: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
+          user_created_at: userCreatedAt,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    return new Response(JSON.stringify({ subscribed: false, trial_active: false, trial_end: null, user_created_at: userCreatedAt }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
   } catch (error) {
     console.error("check-subscription error:", error);
     return new Response(JSON.stringify({ error: "An internal error occurred. Please try again." }), {
