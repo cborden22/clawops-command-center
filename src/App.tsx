@@ -38,10 +38,11 @@ const queryClient = new QueryClient({
   },
 });
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children, allowDuringTrial }: { children: React.ReactNode; allowDuringTrial?: boolean }) {
   const { user, isLoading } = useAuth();
+  const { requiresTrialCheckout, isLoading: subLoading } = useFeatureAccess();
 
-  if (isLoading) {
+  if (isLoading || subLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
@@ -51,6 +52,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  if (requiresTrialCheckout && !allowDuringTrial) {
+    return <TrialPaywall />;
   }
 
   return <>{children}</>;
