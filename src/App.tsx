@@ -201,7 +201,7 @@ function ProtectedAppRoutes() {
         <Route
           path="/settings"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowDuringTrial>
               <AppLayout>
                 <Settings />
               </AppLayout>
