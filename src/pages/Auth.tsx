@@ -171,10 +171,16 @@ export default function Auth() {
           description: "An account with this email already exists. Please log in instead.",
           variant: "destructive",
         });
+      } else if (message.includes("rate") || message.includes("too many")) {
+        toast({
+          title: "Too Many Attempts",
+          description: "You've made too many signup attempts. Please wait a few minutes and try again.",
+          variant: "destructive",
+        });
       } else {
         toast({
           title: "Signup Failed",
-          description: "Unable to create account. Please try again.",
+          description: error.message || "Unable to create account. Please try again.",
           variant: "destructive",
         });
       }
