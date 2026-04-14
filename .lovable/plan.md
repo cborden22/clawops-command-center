@@ -1,114 +1,54 @@
 
-## Fix the broken new-user trial flow
 
-### What I found
-This is not mainly a Sales page issue anymore.
+## Fix Signup Flow: Remove Free Tier, Streamline Trial Checkout
 
-From the current code and auth config, there are 3 likely problems causing the flow to feel broken:
+### What is wrong today
 
-1. **Signup on `www.clawops.com` can fail with 422**
-   - `signUp()` uses `window.location.origin` as the email confirmation redirect.
-   - On `www.clawops.com`, that becomes `https://www.clawops.com/`.
-   - Your auth config currently allowlists `https://clawops.com` and reset-password URLs, but **not** `https://www.clawops.com/`.
-   - That mismatch can cause signup failure on the live domain.
+1. **SubscriptionManager.tsx** still displays "Free · 3 locations, 1 team member" for non-subscribed users. This is the old Free tier text.
+2. **subscriptionTiers.ts** still defines a `FREE` tier with `maxLocations: 3` and `maxTeamMembers: 1`.
+3. The signup flow requires creating a Supabase account first, then separately entering payment info on the TrialPaywall. This feels disjointed.
+4. Stripe Checkout cannot replace Supabase account creation because the entire app (RLS policies, data access) depends on Supabase auth. However, we can make it feel like one step.
 
-2. **The app is forcing users through account creation first**
-   - That part is actually required because checkout is tied to an authenticated user.
-   - But right now the UX feels wrong because after signup/login, users are not handed into billing smoothly enough.
+### What will change
 
-3. **Checkout currently opens in a new tab**
-   - `TrialPaywall` uses `window.open(data.url, "_blank")`.
-   - This can feel broken and can be blocked by pop-up settings.
-   - For a payment flow, same-tab redirect is safer.
+**1. Remove the FREE tier entirely**
 
-### Implementation plan
+- `src/config/subscriptionTiers.ts`: Remove the `FREE` object. New users without a subscription get zero access (paywall), not a limited free tier.
+- `src/hooks/useFeatureAccess.ts`: When not Pro, set limits to 0 (blocked) instead of 3/1.
+- `src/components/settings/SubscriptionManager.tsx`: Replace "Free · 3 locations, 1 team member" with "No active plan — start your trial to get access."
 
-#### 1) Fix allowed auth redirect URLs
-Update backend auth redirect configuration so signup and reset flows work on all live domains:
-- `https://www.clawops.com`
-- `https://www.clawops.com/reset-password`
-- keep:
-  - `https://clawops.com`
-  - `https://clawops.com/reset-password`
-  - `https://clawops.lovable.app/reset-password`
+**2. Auto-redirect to Stripe Checkout after signup + email verification**
 
-I’ll also make the frontend use a **safe canonical redirect URL helper** instead of blindly using `window.location.origin`.
+Instead of showing the TrialPaywall as a separate screen after login, automatically invoke `create-checkout` with `trial: true` as soon as a new user (post-cutoff) logs in for the first time. The flow becomes:
 
-Files/settings:
-- `supabase/config.toml`
-- `src/contexts/AuthContext.tsx`
-- possibly a small helper file like `src/lib/authRedirect.ts`
-
-#### 2) Make signup/login hand off cleanly into billing
-Keep the required sequence:
 ```text
-Sales page -> Create account -> Verify email -> Log in -> Stripe trial checkout -> App
+Sales "Start Free Trial" → /auth?tab=signup&trial=true
+  → User fills in name/email/password → Verify email → Log in
+  → App detects requiresTrialCheckout → auto-calls create-checkout
+  → Redirects to Stripe Checkout (collects credit card, 7-day trial)
+  → Returns to /settings?checkout=success → Full app access
 ```
 
-But make it feel seamless by preserving **trial intent** from the Sales page through auth, then automatically guiding eligible new users into checkout after login.
+Changes in `TrialPaywall.tsx`: Add an `autoCheckout` mode that immediately invokes checkout on mount (with a loading spinner) instead of showing the manual button. Show the manual paywall only as a fallback if auto-checkout fails.
 
-Changes:
-- keep Sales CTA pointing to `/auth?tab=signup&trial=true`
-- in `Auth.tsx`, preserve that trial intent after login/signup flow
-- in the protected flow, if a newly authenticated user came from the trial path and requires billing, trigger the trial checkout immediately or show a very explicit one-step “Continue to secure billing” handoff
+**3. Keep complimentary access unchanged**
 
-Files:
-- `src/pages/Auth.tsx`
-- `src/App.tsx`
-- `src/components/trial/TrialPaywall.tsx`
+The `complimentary_access` table and the `check-subscription` edge function already handle this. No changes needed — complimentary users bypass all payment requirements.
 
-#### 3) Replace popup checkout with same-tab redirect
-Change checkout launch from:
-```ts
-window.open(data.url, "_blank")
-```
-to a direct redirect:
-```ts
-window.location.href = data.url
-```
+**4. Update SubscriptionManager for post-cutoff users**
 
-This applies to:
-- trial checkout
-- regular upgrade checkout
+For users created after the cutoff who have no subscription, show "No active plan" with a button to start the trial, instead of showing the old free tier info.
 
-That will reduce blocked popups and make the payment step feel intentional.
+### Files to modify
 
-Files:
-- `src/components/trial/TrialPaywall.tsx`
-- `src/components/settings/SubscriptionManager.tsx`
+| File | Change |
+|---|---|
+| `src/config/subscriptionTiers.ts` | Remove `FREE` tier object, replace with `NONE` having 0/0 limits |
+| `src/hooks/useFeatureAccess.ts` | Use `NONE` tier (0 limits) instead of `FREE` when not Pro |
+| `src/components/settings/SubscriptionManager.tsx` | Update "Free" display text to "No active plan" for post-cutoff users; keep legacy free display for pre-cutoff users |
+| `src/components/trial/TrialPaywall.tsx` | Add auto-checkout on mount — immediately redirect to Stripe instead of showing a button. Show manual fallback on error. |
 
-#### 4) Harden auth error handling so failures are obvious
-The current signup error handling is better than before, but I’ll make it more reliable and specific so users don’t get vague failures.
+### Complimentary access
 
-I’ll:
-- surface the exact backend-safe auth error when available
-- add a clearer message for invalid redirect / signup configuration issues
-- keep rate-limit and duplicate-account handling explicit
-- improve trial-specific copy so users understand why account creation comes before billing
+No changes. The existing `complimentary_access` database table continues to work. You can grant complimentary access to anyone by adding a row to that table with their user ID.
 
-File:
-- `src/pages/Auth.tsx`
-
-### Technical notes
-- **Root cause most likely**: redirect allowlist mismatch for `www.clawops.com`
-- **No impact to existing users**: this only fixes auth + new-user trial onboarding
-- **Subscription model remains unchanged**: 7-day trial with card required for new users only
-- **Sales page itself is already mostly correct**; the broken behavior is downstream in auth/checkout
-
-### Verification after implementation
-I will test these exact paths:
-1. `https://www.clawops.com/sales` -> Start Free Trial -> signup form opens on signup tab
-2. Create a brand-new account on `www` domain without 422 failure
-3. Verify email link lands correctly
-4. Log in as that new user and confirm handoff to Stripe trial checkout works
-5. Confirm checkout opens in same tab
-6. Confirm existing/legacy user login is unaffected
-7. Confirm trial users return successfully after checkout
-
-### Files I expect to touch
-- `supabase/config.toml`
-- `src/contexts/AuthContext.tsx`
-- `src/pages/Auth.tsx`
-- `src/App.tsx`
-- `src/components/trial/TrialPaywall.tsx`
-- `src/components/settings/SubscriptionManager.tsx`
