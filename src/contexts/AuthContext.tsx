@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { getCanonicalRedirectOrigin } from "@/lib/authRedirect";
 
 interface AuthContextType {
   user: User | null;
@@ -41,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `${getCanonicalRedirectOrigin()}/`;
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -69,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
    const resetPasswordForEmail = async (email: string) => {
-     const redirectUrl = `${window.location.origin}/reset-password`;
+     const redirectUrl = `${getCanonicalRedirectOrigin()}/reset-password`;
      const { error } = await supabase.auth.resetPasswordForEmail(email, {
        redirectTo: redirectUrl,
      });
