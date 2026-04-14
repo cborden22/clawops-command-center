@@ -1,38 +1,114 @@
 
+## Fix the broken new-user trial flow
 
-## Fix Trial Signup Flow and Error Handling
+### What I found
+This is not mainly a Sales page issue anymore.
 
-### Problems Identified
+From the current code and auth config, there are 3 likely problems causing the flow to feel broken:
 
-1. **Confusing CTA flow**: The "Start Free Trial" button on the Sales page sends users to `/auth` (sign-up form). Users expect it to go straight to Stripe. However, Stripe checkout *requires* an authenticated user (the edge function validates the auth token). So the user must sign up first. The fix is to make this flow feel seamless rather than confusing.
+1. **Signup on `www.clawops.com` can fail with 422**
+   - `signUp()` uses `window.location.origin` as the email confirmation redirect.
+   - On `www.clawops.com`, that becomes `https://www.clawops.com/`.
+   - Your auth config currently allowlists `https://clawops.com` and reset-password URLs, but **not** `https://www.clawops.com/`.
+   - That mismatch can cause signup failure on the live domain.
 
-2. **Signup failure (422)**: The auth logs show a 422 on `/signup`. With `enable_confirmations = true` in the config, Supabase returns a fake 200 success for duplicate emails (to prevent user enumeration) — but it returns 422 when the email format is invalid or when rate-limited. The current error handler only checks for "already registered" / "already exists" messages and falls through to a generic "Sign up Failed" for anything else. The error handling needs to show the actual error message from Supabase instead of a generic failure.
+2. **The app is forcing users through account creation first**
+   - That part is actually required because checkout is tied to an authenticated user.
+   - But right now the UX feels wrong because after signup/login, users are not handed into billing smoothly enough.
 
-### Changes
+3. **Checkout currently opens in a new tab**
+   - `TrialPaywall` uses `window.open(data.url, "_blank")`.
+   - This can feel broken and can be blocked by pop-up settings.
+   - For a payment flow, same-tab redirect is safer.
 
-| File | Change |
-|---|---|
-| `src/pages/Sales.tsx` | Update all "Start Free Trial" links from `/auth` to `/auth?tab=signup&trial=true` so the Auth page opens on the signup tab with trial context. |
-| `src/pages/Auth.tsx` | 1. Read `tab` and `trial` query params on mount. If `tab=signup`, default to signup tab. If `trial=true`, show messaging like "Create your account to start your 7-day free trial". 2. Improve signup error handling: show the actual Supabase error message instead of generic "Sign up Failed". 3. After successful signup + email verification + login, the existing `TrialPaywall` interceptor in `App.tsx` handles the Stripe redirect automatically — no code change needed there. |
-| `src/components/trial/TrialPaywall.tsx` | No changes needed — already correctly calls `create-checkout` with `trial: true`. |
+### Implementation plan
 
-### Detailed Auth.tsx Changes
+#### 1) Fix allowed auth redirect URLs
+Update backend auth redirect configuration so signup and reset flows work on all live domains:
+- `https://www.clawops.com`
+- `https://www.clawops.com/reset-password`
+- keep:
+  - `https://clawops.com`
+  - `https://clawops.com/reset-password`
+  - `https://clawops.lovable.app/reset-password`
 
-- Use `useSearchParams` to read `tab` and `trial` params
-- Set `Tabs` `defaultValue` to `signup` when `tab=signup`
-- Add a banner above the form when `trial=true`: "Sign up to start your 7-day free trial — no charge until it ends"
-- In `handleSignup` error handler, replace the generic "Signup Failed" / "Unable to create account" with the actual `error.message` from Supabase so the user sees what went wrong (e.g., rate limit, invalid email, etc.)
-- Add a catch for messages containing "rate" to show a rate-limit-specific message
+I’ll also make the frontend use a **safe canonical redirect URL helper** instead of blindly using `window.location.origin`.
 
-### User Flow After Fix
+Files/settings:
+- `supabase/config.toml`
+- `src/contexts/AuthContext.tsx`
+- possibly a small helper file like `src/lib/authRedirect.ts`
 
+#### 2) Make signup/login hand off cleanly into billing
+Keep the required sequence:
 ```text
-Sales page "Start Free Trial"
-  → /auth?tab=signup&trial=true (signup form with trial messaging)
-  → User signs up → verifies email → logs in
-  → TrialPaywall intercepts (already implemented) → Stripe Checkout (7-day trial)
-  → Success → full app access
+Sales page -> Create account -> Verify email -> Log in -> Stripe trial checkout -> App
 ```
 
-This is a small, targeted fix to 2 files that addresses both the confusing UX and the generic error messaging.
+But make it feel seamless by preserving **trial intent** from the Sales page through auth, then automatically guiding eligible new users into checkout after login.
 
+Changes:
+- keep Sales CTA pointing to `/auth?tab=signup&trial=true`
+- in `Auth.tsx`, preserve that trial intent after login/signup flow
+- in the protected flow, if a newly authenticated user came from the trial path and requires billing, trigger the trial checkout immediately or show a very explicit one-step “Continue to secure billing” handoff
+
+Files:
+- `src/pages/Auth.tsx`
+- `src/App.tsx`
+- `src/components/trial/TrialPaywall.tsx`
+
+#### 3) Replace popup checkout with same-tab redirect
+Change checkout launch from:
+```ts
+window.open(data.url, "_blank")
+```
+to a direct redirect:
+```ts
+window.location.href = data.url
+```
+
+This applies to:
+- trial checkout
+- regular upgrade checkout
+
+That will reduce blocked popups and make the payment step feel intentional.
+
+Files:
+- `src/components/trial/TrialPaywall.tsx`
+- `src/components/settings/SubscriptionManager.tsx`
+
+#### 4) Harden auth error handling so failures are obvious
+The current signup error handling is better than before, but I’ll make it more reliable and specific so users don’t get vague failures.
+
+I’ll:
+- surface the exact backend-safe auth error when available
+- add a clearer message for invalid redirect / signup configuration issues
+- keep rate-limit and duplicate-account handling explicit
+- improve trial-specific copy so users understand why account creation comes before billing
+
+File:
+- `src/pages/Auth.tsx`
+
+### Technical notes
+- **Root cause most likely**: redirect allowlist mismatch for `www.clawops.com`
+- **No impact to existing users**: this only fixes auth + new-user trial onboarding
+- **Subscription model remains unchanged**: 7-day trial with card required for new users only
+- **Sales page itself is already mostly correct**; the broken behavior is downstream in auth/checkout
+
+### Verification after implementation
+I will test these exact paths:
+1. `https://www.clawops.com/sales` -> Start Free Trial -> signup form opens on signup tab
+2. Create a brand-new account on `www` domain without 422 failure
+3. Verify email link lands correctly
+4. Log in as that new user and confirm handoff to Stripe trial checkout works
+5. Confirm checkout opens in same tab
+6. Confirm existing/legacy user login is unaffected
+7. Confirm trial users return successfully after checkout
+
+### Files I expect to touch
+- `supabase/config.toml`
+- `src/contexts/AuthContext.tsx`
+- `src/pages/Auth.tsx`
+- `src/App.tsx`
+- `src/components/trial/TrialPaywall.tsx`
+- `src/components/settings/SubscriptionManager.tsx`
