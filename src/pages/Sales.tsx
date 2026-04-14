@@ -18,7 +18,6 @@ import {
   ArrowRight,
   Zap,
   Shield,
-  Star,
   QrCode,
 } from "lucide-react";
 
@@ -74,37 +73,31 @@ const features = [
 const steps = [
   {
     number: "1",
-    title: "Sign Up Free",
-    description: "Create your account in seconds. No credit card required.",
+    title: "Start Your Free Trial",
+    description: "Sign up and get 7 days of full access. No charge until your trial ends.",
   },
   {
     number: "2",
-    title: "Add Your Locations",
-    description: "Enter your claw machine locations, machines, and start tracking.",
+    title: "Set Up Your Operation",
+    description: "Add locations, machines, inventory, and start tracking everything.",
   },
   {
     number: "3",
     title: "Grow Your Business",
-    description: "Use data-driven insights to optimize revenue and expand your empire.",
+    description: "Use reports, leads, and analytics to optimize revenue and scale.",
   },
 ];
 
-const freeFeatures = [
-  "Up to 3 locations",
-  "Revenue tracking",
-  "Inventory management",
-  "Mileage logging",
-  "Maintenance reports",
-  "Business reports",
-];
-
-const proFeatures = [
+const allFeatures = [
   "Unlimited locations",
-  "Everything in Free",
   "Up to 5 team members",
-  "Priority support",
+  "Revenue & expense tracking",
+  "Inventory with restock alerts",
+  "Maintenance & QR codes",
+  "Mileage tracking with GPS",
+  "Leads CRM pipeline",
+  "Business reports & analytics",
   "Commission summaries",
-  "Advanced analytics",
 ];
 
 export default function Sales() {
@@ -126,7 +119,7 @@ export default function Sales() {
               <a href="#pricing">Pricing</a>
             </Button>
             <Button asChild>
-              <Link to="/auth">Get Started</Link>
+              <Link to="/auth">Start Free Trial</Link>
             </Button>
           </div>
         </div>
@@ -143,19 +136,20 @@ export default function Sales() {
             Run Your Claw Machine Empire from <span className="text-primary">One Dashboard</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            Track locations, revenue, inventory, maintenance, mileage, and leads — all in one place. Stop juggling
-            spreadsheets and start growing your business.
+            Track locations, revenue, inventory, maintenance, mileage, and leads — all in one place.
+            Try every feature free for 7 days.
           </p>
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button size="lg" asChild>
               <Link to="/auth">
-                Get Started Free <ArrowRight className="ml-2 h-4 w-4" />
+                Start Your Free Trial <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
               <a href="#pricing">See Pricing</a>
             </Button>
           </div>
+          <p className="mt-4 text-sm text-muted-foreground">7-day free trial · No charge until it ends</p>
         </div>
       </section>
 
@@ -210,7 +204,7 @@ export default function Sales() {
       <section id="pricing" className="py-20 sm:py-28">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Simple, Transparent Pricing</h2>
-          <p className="mt-4 text-muted-foreground">Start free. Upgrade when you're ready.</p>
+          <p className="mt-4 text-muted-foreground">Try everything free for 7 days. Cancel anytime.</p>
 
           <div className="mt-8 flex items-center justify-center gap-3">
             <span className={`text-sm font-medium ${!annual ? "text-foreground" : "text-muted-foreground"}`}>
@@ -225,46 +219,22 @@ export default function Sales() {
             </span>
           </div>
 
-          <div className="mx-auto mt-12 grid max-w-3xl gap-8 sm:grid-cols-2">
-            {/* Free */}
-            <Card className="flex flex-col border-border/60">
-              <CardHeader>
-                <CardTitle className="text-xl">Free</CardTitle>
-                <p className="mt-2 text-4xl font-extrabold">
-                  $0
-                  <span className="text-base font-normal text-muted-foreground">/mo</span>
-                </p>
-              </CardHeader>
-              <CardContent className="flex flex-1 flex-col">
-                <ul className="mb-8 flex-1 space-y-3 text-left text-sm">
-                  {freeFeatures.map((f) => (
-                    <li key={f} className="flex items-start gap-2">
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Button variant="outline" className="w-full" asChild>
-                  <Link to="/auth">Get Started</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Pro */}
+          <div className="mx-auto mt-12 max-w-md">
             <Card className="relative flex flex-col border-primary shadow-glow">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge>Most Popular</Badge>
+                <Badge>7-Day Free Trial</Badge>
               </div>
               <CardHeader>
-                <CardTitle className="text-xl">Pro</CardTitle>
+                <CardTitle className="text-xl">ClawOps Pro</CardTitle>
                 <p className="mt-2 text-4xl font-extrabold">
                   ${proPrice}
                   <span className="text-base font-normal text-muted-foreground">{proPeriod}</span>
                 </p>
+                <p className="text-sm text-muted-foreground">after your free trial</p>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col">
                 <ul className="mb-8 flex-1 space-y-3 text-left text-sm">
-                  {proFeatures.map((f) => (
+                  {allFeatures.map((f) => (
                     <li key={f} className="flex items-start gap-2">
                       <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                       {f}
@@ -272,8 +242,11 @@ export default function Sales() {
                   ))}
                 </ul>
                 <Button className="w-full" asChild>
-                  <Link to="/auth">Start Free Trial</Link>
+                  <Link to="/auth">Start 7-Day Free Trial</Link>
                 </Button>
+                <p className="mt-3 text-xs text-center text-muted-foreground">
+                  No charge during your trial. Cancel anytime.
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -287,10 +260,11 @@ export default function Sales() {
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Ready to Level Up Your Operation?</h2>
           <p className="mx-auto mt-4 max-w-lg text-muted-foreground">
             Join operators who are saving hours every week and growing revenue with ClawOps.
+            Start your 7-day free trial today — no charge until it ends.
           </p>
           <Button size="lg" className="mt-8" asChild>
             <Link to="/auth">
-              Get Started Free <ArrowRight className="ml-2 h-4 w-4" />
+              Start Your Free Trial <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
         </div>
