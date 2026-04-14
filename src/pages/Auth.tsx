@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,9 @@ const passwordSchema = z.string()
 
 export default function Auth() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isTrial = searchParams.get('trial') === 'true';
+  const defaultTab = searchParams.get('tab') === 'signup' ? 'signup' : 'login';
   const { signIn, signUp, resetPasswordForEmail } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -168,10 +171,16 @@ export default function Auth() {
           description: "An account with this email already exists. Please log in instead.",
           variant: "destructive",
         });
+      } else if (message.includes("rate") || message.includes("too many")) {
+        toast({
+          title: "Too Many Attempts",
+          description: "You've made too many signup attempts. Please wait a few minutes and try again.",
+          variant: "destructive",
+        });
       } else {
         toast({
           title: "Signup Failed",
-          description: "Unable to create account. Please try again.",
+          description: error.message || "Unable to create account. Please try again.",
           variant: "destructive",
         });
       }
@@ -245,9 +254,11 @@ export default function Auth() {
 
         <Card className="glass-card border-border/50">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-xl">Welcome</CardTitle>
+            <CardTitle className="text-xl">{isTrial ? "Start Your Free Trial" : "Welcome"}</CardTitle>
             <CardDescription>
-              Sign in to your account or create a new one
+              {isTrial 
+                ? "Create your account to start your 7-day free trial — no charge until it ends." 
+                : "Sign in to your account or create a new one"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -329,7 +340,7 @@ export default function Auth() {
                 </Button>
               </form>
             ) : (
-            <Tabs defaultValue="login" className="w-full">
+            <Tabs defaultValue={defaultTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
