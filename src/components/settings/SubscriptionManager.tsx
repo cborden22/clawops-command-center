@@ -106,7 +106,7 @@ export function SubscriptionManager() {
                 ? `Trial active · ${trialDaysLeft} day${trialDaysLeft !== 1 ? "s" : ""} left`
                 : isPro
                 ? `Pro plan active${subscriptionEnd ? ` · Renews ${new Date(subscriptionEnd).toLocaleDateString()}` : ""}`
-                : `Free · ${TIERS.FREE.maxLocations} locations, ${TIERS.FREE.maxTeamMembers} team member`}
+                : "No active plan — start your trial to get access"}
             </p>
           </div>
           {isComplimentary ? (
@@ -122,7 +122,7 @@ export function SubscriptionManager() {
               <Crown className="h-3 w-3" /> Pro
             </Badge>
           ) : (
-            <Badge variant="outline">Free</Badge>
+            <Badge variant="outline">No Plan</Badge>
           )}
         </div>
 

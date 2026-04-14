@@ -2,9 +2,9 @@ export const TRIAL_CUTOFF_DATE = "2026-04-15";
 export const TRIAL_DAYS = 7;
 
 export const TIERS = {
-  FREE: {
-    maxLocations: 3,
-    maxTeamMembers: 1,
+  NONE: {
+    maxLocations: 0,
+    maxTeamMembers: 0,
   },
   PRO: {
     maxLocations: Infinity,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,35 @@ import { toast } from "@/hooks/use-toast";
 export function TrialPaywall() {
   const [billingAnnual, setBillingAnnual] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [autoCheckoutFailed, setAutoCheckoutFailed] = useState(false);
+  const autoCheckoutAttempted = useRef(false);
+
+  // Auto-checkout: immediately redirect to Stripe on mount
+  useEffect(() => {
+    if (autoCheckoutAttempted.current) return;
+    autoCheckoutAttempted.current = true;
+
+    const triggerAutoCheckout = async () => {
+      setIsCheckingOut(true);
+      try {
+        const priceId = TIERS.PRO.monthly.price_id;
+        const { data, error } = await supabase.functions.invoke("create-checkout", {
+          body: { priceId, trial: true },
+        });
+        if (error) throw error;
+        if (data?.url) {
+          window.location.href = data.url;
+          return; // navigating away
+        }
+        throw new Error("No checkout URL returned");
+      } catch {
+        setAutoCheckoutFailed(true);
+        setIsCheckingOut(false);
+      }
+    };
+
+    triggerAutoCheckout();
+  }, []);
 
   const handleStartTrial = async () => {
     setIsCheckingOut(true);
@@ -28,7 +57,7 @@ export function TrialPaywall() {
       if (data?.url) {
         window.location.href = data.url;
       }
-    } catch (err) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to start checkout. Please try again.",
@@ -39,6 +68,24 @@ export function TrialPaywall() {
     }
   };
 
+  // Show loading spinner while auto-checkout is in progress
+  if (isCheckingOut && !autoCheckoutFailed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md glass-card">
+          <CardContent className="pt-8 pb-6 space-y-6 text-center">
+            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+            <h1 className="text-xl font-bold">Setting up your trial...</h1>
+            <p className="text-muted-foreground text-sm">
+              Redirecting you to enter your payment details.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Manual fallback if auto-checkout failed
   const features = [
     { icon: MapPin, label: "Unlimited locations" },
     { icon: Users, label: "Up to 5 team members" },

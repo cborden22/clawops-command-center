@@ -5,7 +5,7 @@ export function useFeatureAccess() {
   const subscription = useSubscription();
 
   const isPro = subscription.isSubscribed || subscription.isComplimentary;
-  const tier = isPro ? TIERS.PRO : TIERS.FREE;
+  const tier = isPro ? TIERS.PRO : TIERS.NONE;
 
   // Determine if this user was created after the cutoff and has no subscription
   const isNewUser =
@@ -34,5 +34,6 @@ export function useFeatureAccess() {
     subscriptionEnd: subscription.subscriptionEnd,
     refreshSubscription: subscription.refreshSubscription,
     requiresTrialCheckout,
+    isNewUser: !!isNewUser,
   };
 }
