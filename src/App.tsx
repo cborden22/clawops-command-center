@@ -9,6 +9,8 @@ import { AppSettingsProvider } from "@/contexts/AppSettingsContext";
 import { TeamContextProvider } from "@/contexts/TeamContext";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { TrialPaywall } from "@/components/trial/TrialPaywall";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import Dashboard from "./pages/Dashboard";
 import CalendarPage from "./pages/Calendar";
 import InventoryTracker from "./pages/InventoryTracker";
@@ -36,10 +38,11 @@ const queryClient = new QueryClient({
   },
 });
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children, allowDuringTrial }: { children: React.ReactNode; allowDuringTrial?: boolean }) {
   const { user, isLoading } = useAuth();
+  const { requiresTrialCheckout, isLoading: subLoading } = useFeatureAccess();
 
-  if (isLoading) {
+  if (isLoading || subLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
@@ -49,6 +52,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  if (requiresTrialCheckout && !allowDuringTrial) {
+    return <TrialPaywall />;
   }
 
   return <>{children}</>;
@@ -194,7 +201,7 @@ function ProtectedAppRoutes() {
         <Route
           path="/settings"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowDuringTrial>
               <AppLayout>
                 <Settings />
               </AppLayout>
