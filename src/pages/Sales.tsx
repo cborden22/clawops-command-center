@@ -119,7 +119,7 @@ export default function Sales() {
               <a href="#pricing">Pricing</a>
             </Button>
             <Button asChild>
-              <Link to="/auth">Start Free Trial</Link>
+              <Link to="/auth?tab=signup&trial=true">Start Free Trial</Link>
             </Button>
           </div>
         </div>
@@ -141,7 +141,7 @@ export default function Sales() {
           </p>
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button size="lg" asChild>
-              <Link to="/auth">
+              <Link to="/auth?tab=signup&trial=true">
                 Start Your Free Trial <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -242,7 +242,7 @@ export default function Sales() {
                   ))}
                 </ul>
                 <Button className="w-full" asChild>
-                  <Link to="/auth">Start 7-Day Free Trial</Link>
+                  <Link to="/auth?tab=signup&trial=true">Start 7-Day Free Trial</Link>
                 </Button>
                 <p className="mt-3 text-xs text-center text-muted-foreground">
                   No charge during your trial. Cancel anytime.
@@ -263,7 +263,7 @@ export default function Sales() {
             Start your 7-day free trial today — no charge until it ends.
           </p>
           <Button size="lg" className="mt-8" asChild>
-            <Link to="/auth">
+            <Link to="/auth?tab=signup&trial=true">
               Start Your Free Trial <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
