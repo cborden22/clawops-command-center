@@ -9,6 +9,8 @@ import { AppSettingsProvider } from "@/contexts/AppSettingsContext";
 import { TeamContextProvider } from "@/contexts/TeamContext";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { TrialPaywall } from "@/components/trial/TrialPaywall";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import Dashboard from "./pages/Dashboard";
 import CalendarPage from "./pages/Calendar";
 import InventoryTracker from "./pages/InventoryTracker";
