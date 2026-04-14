@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Crown, CreditCard, Gift, Loader2 } from "lucide-react";
+import { Crown, CreditCard, Gift, Loader2, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { TIERS } from "@/config/subscriptionTiers";
@@ -13,6 +13,8 @@ import { toast } from "@/hooks/use-toast";
 export function SubscriptionManager() {
   const {
     isPro,
+    isTrial,
+    trialEnd,
     isComplimentary,
     subscriptionEnd,
     isLoading,
@@ -21,6 +23,10 @@ export function SubscriptionManager() {
   const [billingAnnual, setBillingAnnual] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+
+  const trialDaysLeft = trialEnd
+    ? Math.max(0, Math.ceil((new Date(trialEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
 
   const handleUpgrade = async () => {
     setIsCheckingOut(true);
@@ -96,6 +102,8 @@ export function SubscriptionManager() {
             <p className="text-sm text-muted-foreground">
               {isComplimentary
                 ? "Pro features granted — no billing required"
+                : isTrial
+                ? `Trial active · ${trialDaysLeft} day${trialDaysLeft !== 1 ? "s" : ""} left`
                 : isPro
                 ? `Pro plan active${subscriptionEnd ? ` · Renews ${new Date(subscriptionEnd).toLocaleDateString()}` : ""}`
                 : `Free · ${TIERS.FREE.maxLocations} locations, ${TIERS.FREE.maxTeamMembers} team member`}
@@ -104,6 +112,10 @@ export function SubscriptionManager() {
           {isComplimentary ? (
             <Badge variant="secondary" className="gap-1">
               <Gift className="h-3 w-3" /> Complimentary
+            </Badge>
+          ) : isTrial ? (
+            <Badge className="bg-primary text-primary-foreground gap-1">
+              <Clock className="h-3 w-3" /> Trial
             </Badge>
           ) : isPro ? (
             <Badge className="bg-primary text-primary-foreground gap-1">
@@ -165,7 +177,7 @@ export function SubscriptionManager() {
           </div>
         )}
 
-        {/* Manage section for Pro users */}
+        {/* Manage section for Pro/Trial users */}
         {isPro && !isComplimentary && (
           <Button
             variant="outline"
