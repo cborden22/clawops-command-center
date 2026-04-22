@@ -139,7 +139,7 @@ export function LocationTrackerComponent() {
     if (!editingLocation && !canAddLocation(locations.length)) {
       toast({
         title: "Location Limit Reached",
-        description: "Upgrade to Pro to add more locations.",
+        description: "Start your trial to add locations.",
         variant: "destructive",
       });
       return;

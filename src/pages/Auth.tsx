@@ -125,11 +125,14 @@ export default function Auth() {
         });
       }
     } else {
+      if (isTrial) {
+        localStorage.setItem("clawops_trial_intent", "true");
+      }
       toast({
         title: "Welcome back!",
-        description: "You've successfully logged in.",
+        description: isTrial ? "Continue to secure billing to activate your trial." : "You've successfully logged in.",
       });
-      navigate("/");
+      navigate(isTrial ? "/?trial=true" : "/");
     }
   };
 
@@ -157,6 +160,10 @@ export default function Auth() {
         variant: "destructive",
       });
       return;
+    }
+
+    if (isTrial) {
+      localStorage.setItem("clawops_trial_intent", "true");
     }
 
     setIsLoading(true);
@@ -187,7 +194,9 @@ export default function Auth() {
     } else {
       toast({
         title: "Account Created",
-        description: "Check your email for a verification link. You'll need to verify before logging in.",
+        description: isTrial
+          ? "Check your email to verify your account, then log in to enter payment details and activate your 7-day trial."
+          : "Check your email for a verification link. You'll need to verify before logging in.",
       });
       // Clear form but stay on page
       setSignupEmail("");
@@ -257,7 +266,7 @@ export default function Auth() {
             <CardTitle className="text-xl">{isTrial ? "Start Your Free Trial" : "Welcome"}</CardTitle>
             <CardDescription>
               {isTrial 
-                ? "Create your account to start your 7-day free trial — no charge until it ends." 
+                ? "Create your account, verify your email, then enter payment details in Stripe. No charge during the 7-day trial." 
                 : "Sign in to your account or create a new one"}
             </CardDescription>
           </CardHeader>
@@ -485,7 +494,7 @@ export default function Auth() {
                   </div>
 
                   <Button type="submit" className="w-full premium-button" disabled={isLoading}>
-                    {isLoading ? "Creating account..." : "Create Account"}
+                    {isLoading ? "Creating account..." : isTrial ? "Create Account & Continue" : "Create Account"}
                   </Button>
                 </form>
               </TabsContent>
