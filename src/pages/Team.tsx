@@ -28,7 +28,7 @@ export default function Team() {
     if (!canAddTeamMember(teamMembers.length)) {
       toast({
         title: "Team Member Limit Reached",
-        description: "Upgrade to Pro to invite more team members.",
+        description: "Start your trial to invite team members.",
         variant: "destructive",
       });
       return;

@@ -26,6 +26,8 @@ export function useFeatureAccess() {
     isTrial: subscription.isTrial,
     trialEnd: subscription.trialEnd,
     isComplimentary: subscription.isComplimentary,
+    isTeamMember: subscription.isTeamMember,
+    subscriptionStatus: subscription.subscriptionStatus,
     maxLocations: tier.maxLocations,
     maxTeamMembers: tier.maxTeamMembers,
     canAddLocation,

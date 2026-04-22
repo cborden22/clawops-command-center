@@ -74,7 +74,7 @@ const steps = [
   {
     number: "1",
     title: "Start Your Free Trial",
-    description: "Sign up and get 7 days of full access. No charge until your trial ends.",
+    description: "Create your account, verify your email, then enter payment details in Stripe to activate 7 days of full access.",
   },
   {
     number: "2",
@@ -149,7 +149,7 @@ export default function Sales() {
               <a href="#pricing">See Pricing</a>
             </Button>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">7-day free trial · No charge until it ends</p>
+          <p className="mt-4 text-sm text-muted-foreground">7-day free trial · Card required · No charge until it ends</p>
         </div>
       </section>
 
@@ -204,7 +204,7 @@ export default function Sales() {
       <section id="pricing" className="py-20 sm:py-28">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Simple, Transparent Pricing</h2>
-          <p className="mt-4 text-muted-foreground">Try everything free for 7 days. Cancel anytime.</p>
+          <p className="mt-4 text-muted-foreground">Try everything free for 7 days with secure Stripe billing. Cancel anytime.</p>
 
           <div className="mt-8 flex items-center justify-center gap-3">
             <span className={`text-sm font-medium ${!annual ? "text-foreground" : "text-muted-foreground"}`}>
@@ -245,7 +245,7 @@ export default function Sales() {
                   <Link to="/auth?tab=signup&trial=true">Start 7-Day Free Trial</Link>
                 </Button>
                 <p className="mt-3 text-xs text-center text-muted-foreground">
-                  No charge during your trial. Cancel anytime.
+                  Card required. No charge during your trial. Cancel anytime.
                 </p>
               </CardContent>
             </Card>
@@ -260,7 +260,7 @@ export default function Sales() {
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Ready to Level Up Your Operation?</h2>
           <p className="mx-auto mt-4 max-w-lg text-muted-foreground">
             Join operators who are saving hours every week and growing revenue with ClawOps.
-            Start your 7-day free trial today — no charge until it ends.
+            Start your 7-day free trial today with secure Stripe billing — no charge until it ends.
           </p>
           <Button size="lg" className="mt-8" asChild>
             <Link to="/auth?tab=signup&trial=true">

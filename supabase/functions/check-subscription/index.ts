@@ -8,6 +8,93 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due"]);
+
+const jsonResponse = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status,
+  });
+
+const logStep = (step: string, details?: Record<string, unknown>) => {
+  console.log(`[CHECK-SUBSCRIPTION] ${step}${details ? ` - ${JSON.stringify(details)}` : ""}`);
+};
+
+const emptyStatus = (extra: Record<string, unknown> = {}) => ({
+  subscribed: false,
+  is_complimentary: false,
+  is_team_member: false,
+  product_id: null,
+  subscription_status: null,
+  subscription_end: null,
+  trial_active: false,
+  trial_end: null,
+  ...extra,
+});
+
+const statusFromSubscription = (subscription: Stripe.Subscription, extra: Record<string, unknown> = {}) => ({
+  subscribed: ACTIVE_STATUSES.has(subscription.status),
+  is_complimentary: false,
+  is_team_member: false,
+  product_id: subscription.items.data[0]?.price.product ?? null,
+  subscription_status: subscription.status,
+  subscription_end: subscription.current_period_end
+    ? new Date(subscription.current_period_end * 1000).toISOString()
+    : null,
+  trial_active: subscription.status === "trialing",
+  trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
+  ...extra,
+});
+
+async function getUserCreatedAt(supabaseClient: ReturnType<typeof createClient>, userId: string, fallback: string | null) {
+  const { data: profile } = await supabaseClient
+    .from("profiles")
+    .select("created_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  return profile?.created_at ?? fallback;
+}
+
+async function getValidComplimentaryAccess(supabaseClient: ReturnType<typeof createClient>, userId: string) {
+  const { data } = await supabaseClient
+    .from("complimentary_access")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!data) return null;
+  const isExpired = data.expires_at && new Date(data.expires_at) < new Date();
+  return isExpired ? null : data;
+}
+
+async function findStripeCustomer(stripe: Stripe, email: string, userId: string) {
+  const byMetadata = await stripe.customers.search({
+    query: `metadata['user_id']:'${userId}'`,
+    limit: 1,
+  }).catch(() => null);
+  if (byMetadata?.data.length) return byMetadata.data[0];
+
+  const byEmail = await stripe.customers.list({ email, limit: 10 });
+  return byEmail.data.find((customer) => customer.metadata?.user_id === userId) ?? byEmail.data[0] ?? null;
+}
+
+async function getBestSubscription(stripe: Stripe, customerId: string) {
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "all",
+    limit: 20,
+  });
+
+  return (
+    subscriptions.data.find((sub) => sub.status === "trialing") ??
+    subscriptions.data.find((sub) => sub.status === "active") ??
+    subscriptions.data.find((sub) => sub.status === "past_due") ??
+    subscriptions.data[0] ??
+    null
+  );
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -21,53 +108,34 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header");
+    if (!authHeader) return jsonResponse({ error: "No authorization header" }, 401);
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw userError;
+    if (userError) throw new Error(`Authentication failed: ${userError.message}`);
     const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated");
+    if (!user?.email) return jsonResponse({ error: "User not authenticated" }, 401);
 
-    // Get user's profile created_at
-    const { data: profile } = await supabaseClient
-      .from("profiles")
-      .select("created_at")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    const userCreatedAt = await getUserCreatedAt(supabaseClient, user.id, user.created_at ?? null);
 
-    const userCreatedAt = profile?.created_at ?? user.created_at ?? null;
-
-    // Check complimentary access first
-    const { data: compAccess } = await supabaseClient
-      .from("complimentary_access")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (compAccess) {
-      const isExpired = compAccess.expires_at && new Date(compAccess.expires_at) < new Date();
-      if (!isExpired) {
-        return new Response(
-          JSON.stringify({
-            subscribed: true,
-            is_complimentary: true,
-            product_id: null,
-            subscription_end: compAccess.expires_at,
-            trial_active: false,
-            trial_end: null,
-            user_created_at: userCreatedAt,
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-        );
-      }
+    const ownCompAccess = await getValidComplimentaryAccess(supabaseClient, user.id);
+    if (ownCompAccess) {
+      return jsonResponse({
+        ...emptyStatus({
+          subscribed: true,
+          is_complimentary: true,
+          subscription_status: "complimentary",
+          subscription_end: ownCompAccess.expires_at,
+          user_created_at: userCreatedAt,
+        }),
+      });
     }
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2025-08-27.basil",
-    });
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not configured");
+    logStep("Stripe key verified", { mode: stripeKey.startsWith("sk_live_") ? "live" : "test" });
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // Check if user is a team member and inherit owner's subscription
     const { data: membership } = await supabaseClient
       .from("team_members")
       .select("owner_user_id")
@@ -76,138 +144,54 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    if (membership) {
-      // Check owner's complimentary access
-      const { data: ownerCompAccess } = await supabaseClient
-        .from("complimentary_access")
-        .select("*")
-        .eq("user_id", membership.owner_user_id)
-        .maybeSingle();
+    const billingUserId = membership?.owner_user_id ?? user.id;
+    let billingEmail = user.email;
 
+    if (membership) {
+      const ownerCompAccess = await getValidComplimentaryAccess(supabaseClient, membership.owner_user_id);
       if (ownerCompAccess) {
-        const isExpired = ownerCompAccess.expires_at && new Date(ownerCompAccess.expires_at) < new Date();
-        if (!isExpired) {
-          return new Response(
-            JSON.stringify({
-              subscribed: true,
-              is_complimentary: true,
-              is_team_member: true,
-              product_id: null,
-              subscription_end: ownerCompAccess.expires_at,
-              trial_active: false,
-              trial_end: null,
-              user_created_at: userCreatedAt,
-            }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-          );
-        }
+        return jsonResponse({
+          ...emptyStatus({
+            subscribed: true,
+            is_complimentary: true,
+            is_team_member: true,
+            subscription_status: "complimentary",
+            subscription_end: ownerCompAccess.expires_at,
+            user_created_at: userCreatedAt,
+          }),
+        });
       }
 
-      // Get owner's email from profiles
       const { data: ownerProfile } = await supabaseClient
         .from("profiles")
         .select("email")
         .eq("user_id", membership.owner_user_id)
         .maybeSingle();
 
-      const ownerEmail = ownerProfile?.email;
-      if (ownerEmail) {
-        const customers = await stripe.customers.list({ email: ownerEmail, limit: 1 });
-        if (customers.data.length > 0) {
-          const subscriptions = await stripe.subscriptions.list({
-            customer: customers.data[0].id,
-            status: "active",
-            limit: 1,
-          });
-          if (subscriptions.data.length > 0) {
-            const sub = subscriptions.data[0];
-            return new Response(
-              JSON.stringify({
-                subscribed: true,
-                is_complimentary: false,
-                is_team_member: true,
-                product_id: sub.items.data[0].price.product,
-                subscription_end: new Date(sub.current_period_end * 1000).toISOString(),
-                trial_active: false,
-                trial_end: null,
-                user_created_at: userCreatedAt,
-              }),
-              { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-            );
-          }
-        }
-      }
-
-      return new Response(JSON.stringify({ subscribed: false, is_team_member: true, trial_active: false, trial_end: null, user_created_at: userCreatedAt }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      billingEmail = ownerProfile?.email ?? user.email;
     }
 
-    // Not a team member — check own Stripe subscription
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    if (customers.data.length === 0) {
-      return new Response(JSON.stringify({ subscribed: false, trial_active: false, trial_end: null, user_created_at: userCreatedAt }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+    const customer = await findStripeCustomer(stripe, billingEmail, billingUserId);
+    if (!customer) {
+      return jsonResponse(emptyStatus({ is_team_member: !!membership, user_created_at: userCreatedAt }));
     }
 
-    // Check for active subscriptions
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customers.data[0].id,
-      status: "active",
-      limit: 1,
-    });
-
-    if (subscriptions.data.length > 0) {
-      const sub = subscriptions.data[0];
-      return new Response(
-        JSON.stringify({
-          subscribed: true,
-          is_complimentary: false,
-          product_id: sub.items.data[0].price.product,
-          subscription_end: new Date(sub.current_period_end * 1000).toISOString(),
-          trial_active: false,
-          trial_end: null,
-          user_created_at: userCreatedAt,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
+    const subscription = await getBestSubscription(stripe, customer.id);
+    if (!subscription || !ACTIVE_STATUSES.has(subscription.status)) {
+      return jsonResponse(emptyStatus({
+        is_team_member: !!membership,
+        subscription_status: subscription?.status ?? null,
+        user_created_at: userCreatedAt,
+      }));
     }
 
-    // Check for trialing subscriptions
-    const trialingSubs = await stripe.subscriptions.list({
-      customer: customers.data[0].id,
-      status: "trialing",
-      limit: 1,
-    });
-
-    if (trialingSubs.data.length > 0) {
-      const sub = trialingSubs.data[0];
-      return new Response(
-        JSON.stringify({
-          subscribed: true,
-          is_complimentary: false,
-          product_id: sub.items.data[0].price.product,
-          subscription_end: new Date(sub.current_period_end * 1000).toISOString(),
-          trial_active: true,
-          trial_end: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
-          user_created_at: userCreatedAt,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-      );
-    }
-
-    return new Response(JSON.stringify({ subscribed: false, trial_active: false, trial_end: null, user_created_at: userCreatedAt }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return jsonResponse(statusFromSubscription(subscription, {
+      is_team_member: !!membership,
+      user_created_at: userCreatedAt,
+    }));
   } catch (error) {
-    console.error("check-subscription error:", error);
-    return new Response(JSON.stringify({ error: "An internal error occurred. Please try again." }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    const message = error instanceof Error ? error.message : String(error);
+    logStep("ERROR", { message });
+    return jsonResponse({ error: "Subscription status could not be checked. Please try again." }, 500);
   }
 });

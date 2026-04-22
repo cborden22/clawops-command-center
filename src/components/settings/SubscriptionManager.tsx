@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,8 @@ export function SubscriptionManager() {
     trialEnd,
     isComplimentary,
     subscriptionEnd,
+    subscriptionStatus,
+    isTeamMember,
     isLoading,
     refreshSubscription,
   } = useFeatureAccess();
@@ -28,25 +30,59 @@ export function SubscriptionManager() {
     ? Math.max(0, Math.ceil((new Date(trialEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0;
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkoutStatus = params.get("checkout");
+
+    if (checkoutStatus === "success") {
+      toast({
+        title: "Confirming your trial",
+        description: "We’re confirming your Stripe checkout. This usually takes a few seconds.",
+      });
+
+      let attempts = 0;
+      const confirmSubscription = async () => {
+        attempts += 1;
+        await refreshSubscription();
+        if (attempts < 4) {
+          window.setTimeout(confirmSubscription, 2000);
+        } else {
+          toast({
+            title: "Trial activated",
+            description: "Your Pro access is ready.",
+          });
+        }
+      };
+
+      confirmSubscription();
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
+    if (checkoutStatus === "cancel") {
+      toast({
+        title: "Checkout canceled",
+        description: "Your account is ready. Continue to secure billing when you’re ready to activate access.",
+      });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [refreshSubscription]);
+
   const handleUpgrade = async () => {
     setIsCheckingOut(true);
     try {
-      const priceId = billingAnnual
-        ? TIERS.PRO.annual.price_id
-        : TIERS.PRO.monthly.price_id;
-
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { priceId },
+        body: { billing: billingAnnual ? "annual" : "monthly", trial: true },
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       if (data?.url) {
         window.location.href = data.url;
       }
     } catch (err) {
       toast({
-        title: "Error",
-        description: "Failed to start checkout. Please try again.",
+        title: "Checkout Error",
+        description: err instanceof Error ? err.message : "Failed to start checkout. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -65,7 +101,7 @@ export function SubscriptionManager() {
     } catch (err) {
       toast({
         title: "Error",
-        description: "Failed to open billing portal.",
+        description: "Failed to open billing portal. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -101,12 +137,16 @@ export function SubscriptionManager() {
             <p className="font-medium">Current Plan</p>
             <p className="text-sm text-muted-foreground">
               {isComplimentary
-                ? "Pro features granted — no billing required"
+                ? "Complimentary Pro access — no billing required"
+                : isTeamMember && isPro
+                ? "Pro access inherited from your team owner"
                 : isTrial
                 ? `Trial active · ${trialDaysLeft} day${trialDaysLeft !== 1 ? "s" : ""} left`
                 : isPro
                 ? `Pro plan active${subscriptionEnd ? ` · Renews ${new Date(subscriptionEnd).toLocaleDateString()}` : ""}`
-                : "No active plan — start your trial to get access"}
+                : subscriptionStatus === "past_due"
+                ? "Payment needs attention — manage billing to keep access active"
+                : "No active plan — start your 7-day trial to get access"}
             </p>
           </div>
           {isComplimentary ? (
@@ -126,7 +166,7 @@ export function SubscriptionManager() {
           )}
         </div>
 
-        {/* Upgrade section for Free users */}
+        {/* Trial checkout section for users without access */}
         {!isPro && !isComplimentary && (
           <div className="space-y-4">
             <div className="flex items-center justify-center gap-3">
@@ -156,6 +196,7 @@ export function SubscriptionManager() {
                 </p>
               )}
               <ul className="text-sm text-muted-foreground space-y-1">
+                <li>✓ 7-day free trial with card required</li>
                 <li>✓ Unlimited locations</li>
                 <li>✓ Up to 5 team members</li>
                 <li>✓ All features included</li>
@@ -172,7 +213,7 @@ export function SubscriptionManager() {
               ) : (
                 <CreditCard className="h-4 w-4" />
               )}
-              Upgrade to Pro
+              Start Trial with Secure Billing
             </Button>
           </div>
         )}

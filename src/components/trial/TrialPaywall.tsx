@@ -23,9 +23,8 @@ export function TrialPaywall() {
     const triggerAutoCheckout = async () => {
       setIsCheckingOut(true);
       try {
-        const priceId = TIERS.PRO.monthly.price_id;
         const { data, error } = await supabase.functions.invoke("create-checkout", {
-          body: { priceId, trial: true },
+          body: { billing: "monthly", trial: true },
         });
         if (error) throw error;
         if (data?.url) {
@@ -45,12 +44,8 @@ export function TrialPaywall() {
   const handleStartTrial = async () => {
     setIsCheckingOut(true);
     try {
-      const priceId = billingAnnual
-        ? TIERS.PRO.annual.price_id
-        : TIERS.PRO.monthly.price_id;
-
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { priceId, trial: true },
+        body: { billing: billingAnnual ? "annual" : "monthly", trial: true },
       });
 
       if (error) throw error;
@@ -77,7 +72,7 @@ export function TrialPaywall() {
             <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
             <h1 className="text-xl font-bold">Setting up your trial...</h1>
             <p className="text-muted-foreground text-sm">
-              Redirecting you to enter your payment details.
+              Redirecting you to secure billing. Your card is required, but you won’t be charged during the trial.
             </p>
           </CardContent>
         </Card>
@@ -103,7 +98,7 @@ export function TrialPaywall() {
             </div>
             <h1 className="text-2xl font-bold">Start Your Free Trial</h1>
             <p className="text-muted-foreground">
-              Try ClawOps Pro free for 7 days. No charge until your trial ends.
+              Activate ClawOps Pro with a 7-day trial. Card required; no charge until your trial ends.
             </p>
           </div>
 
@@ -151,11 +146,11 @@ export function TrialPaywall() {
             ) : (
               <CreditCard className="h-4 w-4" />
             )}
-            Start 7-Day Free Trial
+            Continue to Secure Billing
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Cancel anytime during your trial and you won't be charged.
+            Secure billing through Stripe. Cancel anytime during your trial and you won't be charged.
           </p>
         </CardContent>
       </Card>
