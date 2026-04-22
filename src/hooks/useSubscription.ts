@@ -9,7 +9,9 @@ interface SubscriptionState {
   trialEnd: string | null;
   productId: string | null;
   subscriptionEnd: string | null;
+  subscriptionStatus: string | null;
   userCreatedAt: string | null;
+  isTeamMember: boolean;
   isLoading: boolean;
 }
 
@@ -22,7 +24,9 @@ export function useSubscription() {
     trialEnd: null,
     productId: null,
     subscriptionEnd: null,
+    subscriptionStatus: null,
     userCreatedAt: null,
+    isTeamMember: false,
     isLoading: true,
   });
 
@@ -46,7 +50,9 @@ export function useSubscription() {
         trialEnd: data?.trial_end ?? null,
         productId: data?.product_id ?? null,
         subscriptionEnd: data?.subscription_end ?? null,
+        subscriptionStatus: data?.subscription_status ?? null,
         userCreatedAt: data?.user_created_at ?? null,
+        isTeamMember: data?.is_team_member ?? false,
         isLoading: false,
       });
     } catch (err) {
