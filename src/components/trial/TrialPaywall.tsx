@@ -23,7 +23,6 @@ export function TrialPaywall() {
     const triggerAutoCheckout = async () => {
       setIsCheckingOut(true);
       try {
-        const priceId = TIERS.PRO.monthly.price_id;
         const { data, error } = await supabase.functions.invoke("create-checkout", {
           body: { billing: "monthly", trial: true },
         });
@@ -45,12 +44,8 @@ export function TrialPaywall() {
   const handleStartTrial = async () => {
     setIsCheckingOut(true);
     try {
-      const priceId = billingAnnual
-        ? TIERS.PRO.annual.price_id
-        : TIERS.PRO.monthly.price_id;
-
       const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { billing: "monthly", trial: true },
+        body: { billing: billingAnnual ? "annual" : "monthly", trial: true },
       });
 
       if (error) throw error;
