@@ -105,6 +105,16 @@ const SEVERITY_LABELS: Record<string, { label: string; color: string }> = {
   high: { label: "High", color: "#ef4444" },
 };
 
+// Escape HTML to prevent injection in email templates
+function escapeHtml(s: unknown): string {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 // Send email notification to machine owner
 async function sendEmailNotification(
   resend: Resend,
@@ -113,13 +123,17 @@ async function sendEmailNotification(
   reportData: Record<string, unknown>
 ): Promise<void> {
   const baseUrl = Deno.env.get("APP_BASE_URL") || "https://clawops.com";
-  const issueLabel = ISSUE_TYPE_LABELS[reportData.issue_type as string] || reportData.issue_type;
-  const severityInfo = SEVERITY_LABELS[reportData.severity as string] || { label: reportData.severity, color: "#6b7280" };
-  
-  const machineLabel = machineInfo.custom_label || machineInfo.machine_type;
-  const reporterInfo = reportData.reporter_name 
-    ? `${reportData.reporter_name}${reportData.reporter_contact ? ` (${reportData.reporter_contact})` : ""}`
+  const issueLabel = ISSUE_TYPE_LABELS[reportData.issue_type as string] || String(reportData.issue_type ?? "");
+  const severityInfo = SEVERITY_LABELS[reportData.severity as string] || { label: String(reportData.severity ?? ""), color: "#6b7280" };
+
+  const machineLabel = escapeHtml(machineInfo.custom_label || machineInfo.machine_type);
+  const locationName = escapeHtml(machineInfo.location_name);
+  const safeDescription = escapeHtml(reportData.description);
+  const reporterInfo = reportData.reporter_name
+    ? `${escapeHtml(reportData.reporter_name)}${reportData.reporter_contact ? ` (${escapeHtml(reportData.reporter_contact)})` : ""}`
     : "Anonymous";
+  const safeIssueLabel = escapeHtml(issueLabel);
+  const safeSeverityLabel = escapeHtml(severityInfo.label);
 
   const emailHtml = `
     <!DOCTYPE html>
@@ -141,7 +155,7 @@ async function sendEmailNotification(
             <strong>Machine:</strong> ${machineLabel}
           </p>
           <p style="margin: 4px 0; color: #6b7280;">
-            <strong>Location:</strong> ${machineInfo.location_name}
+            <strong>Location:</strong> ${locationName}
           </p>
         </div>
 
@@ -151,13 +165,13 @@ async function sendEmailNotification(
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Issue Type:</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${issueLabel}</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${safeIssueLabel}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Severity:</td>
               <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
                 <span style="background: ${severityInfo.color}20; color: ${severityInfo.color}; padding: 2px 8px; border-radius: 4px; font-weight: 500;">
-                  ${severityInfo.label}
+                  ${safeSeverityLabel}
                 </span>
               </td>
             </tr>
@@ -170,7 +184,7 @@ async function sendEmailNotification(
 
         <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
           <h3 style="margin: 0 0 8px 0; font-size: 14px; color: #92400e;">Description</h3>
-          <p style="margin: 0; color: #78350f;">${reportData.description}</p>
+          <p style="margin: 0; color: #78350f; white-space: pre-wrap;">${safeDescription}</p>
         </div>
 
         <div style="text-align: center; padding-top: 16px; border-top: 1px solid #e5e7eb;">
@@ -194,7 +208,7 @@ async function sendEmailNotification(
   await resend.emails.send({
     from: "ClawOps <noreply@clawops.com>",
     to: [ownerEmail],
-    subject: `🔧 ${severityInfo.label} Priority: ${issueLabel} - ${machineLabel} at ${machineInfo.location_name}`,
+    subject: `🔧 ${severityInfo.label} Priority: ${issueLabel} - ${machineInfo.custom_label || machineInfo.machine_type} at ${machineInfo.location_name}`,
     html: emailHtml,
   });
 }

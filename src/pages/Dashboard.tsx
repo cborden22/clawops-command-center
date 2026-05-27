@@ -1,4 +1,5 @@
 import { useLocations } from "@/hooks/useLocationsDB";
+import { isSafeHttpUrl } from "@/lib/safeUrl";
 import { useRevenueEntries } from "@/hooks/useRevenueEntriesDB";
 import { useInventory } from "@/hooks/useInventoryDB";
 import { useRoutes } from "@/hooks/useRoutesDB";
@@ -596,7 +597,7 @@ export default function Dashboard() {
                     ) : (
                       <span />
                     )}
-                    {item.supplierUrl && (
+                    {item.supplierUrl && isSafeHttpUrl(item.supplierUrl) && (
                       <a 
                         href={item.supplierUrl} 
                         target="_blank" 

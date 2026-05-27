@@ -8,6 +8,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const ALLOWED_ORIGINS = [
+  "https://clawops.com",
+  "https://www.clawops.com",
+  "https://clawops.lovable.app",
+];
+
 const PRICE_BY_BILLING = {
   monthly: "price_1Sz2PXBarnpPSLEkARaviN8t",
   annual: "price_1Sz2QkBarnpPSLEkmNjK14sW",
@@ -74,7 +80,10 @@ serve(async (req) => {
           metadata: { user_id: user.id, source: "clawops" },
         });
 
-    const origin = req.headers.get("origin") || Deno.env.get("APP_BASE_URL") || "http://localhost:3000";
+    const rawOrigin = req.headers.get("origin") ?? "";
+    const origin = ALLOWED_ORIGINS.includes(rawOrigin)
+      ? rawOrigin
+      : Deno.env.get("APP_BASE_URL") || "https://clawops.com";
     const session = await stripe.checkout.sessions.create({
       customer: customer.id,
       client_reference_id: user.id,
