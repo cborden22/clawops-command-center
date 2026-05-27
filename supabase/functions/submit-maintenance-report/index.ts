@@ -155,7 +155,7 @@ async function sendEmailNotification(
             <strong>Machine:</strong> ${machineLabel}
           </p>
           <p style="margin: 4px 0; color: #6b7280;">
-            <strong>Location:</strong> ${machineInfo.location_name}
+            <strong>Location:</strong> ${locationName}
           </p>
         </div>
 
@@ -165,13 +165,13 @@ async function sendEmailNotification(
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Issue Type:</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${issueLabel}</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${safeIssueLabel}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Severity:</td>
               <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
                 <span style="background: ${severityInfo.color}20; color: ${severityInfo.color}; padding: 2px 8px; border-radius: 4px; font-weight: 500;">
-                  ${severityInfo.label}
+                  ${safeSeverityLabel}
                 </span>
               </td>
             </tr>
@@ -184,7 +184,7 @@ async function sendEmailNotification(
 
         <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
           <h3 style="margin: 0 0 8px 0; font-size: 14px; color: #92400e;">Description</h3>
-          <p style="margin: 0; color: #78350f;">${reportData.description}</p>
+          <p style="margin: 0; color: #78350f; white-space: pre-wrap;">${safeDescription}</p>
         </div>
 
         <div style="text-align: center; padding-top: 16px; border-top: 1px solid #e5e7eb;">
@@ -208,7 +208,7 @@ async function sendEmailNotification(
   await resend.emails.send({
     from: "ClawOps <noreply@clawops.com>",
     to: [ownerEmail],
-    subject: `🔧 ${severityInfo.label} Priority: ${issueLabel} - ${machineLabel} at ${machineInfo.location_name}`,
+    subject: `🔧 ${severityInfo.label} Priority: ${issueLabel} - ${machineInfo.custom_label || machineInfo.machine_type} at ${machineInfo.location_name}`,
     html: emailHtml,
   });
 }
