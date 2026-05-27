@@ -596,7 +596,7 @@ export default function Dashboard() {
                     ) : (
                       <span />
                     )}
-                    {item.supplierUrl && (
+                    {item.supplierUrl && isSafeHttpUrl(item.supplierUrl) && (
                       <a 
                         href={item.supplierUrl} 
                         target="_blank" 

@@ -105,6 +105,16 @@ const SEVERITY_LABELS: Record<string, { label: string; color: string }> = {
   high: { label: "High", color: "#ef4444" },
 };
 
+// Escape HTML to prevent injection in email templates
+function escapeHtml(s: unknown): string {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 // Send email notification to machine owner
 async function sendEmailNotification(
   resend: Resend,
@@ -113,13 +123,17 @@ async function sendEmailNotification(
   reportData: Record<string, unknown>
 ): Promise<void> {
   const baseUrl = Deno.env.get("APP_BASE_URL") || "https://clawops.com";
-  const issueLabel = ISSUE_TYPE_LABELS[reportData.issue_type as string] || reportData.issue_type;
-  const severityInfo = SEVERITY_LABELS[reportData.severity as string] || { label: reportData.severity, color: "#6b7280" };
-  
-  const machineLabel = machineInfo.custom_label || machineInfo.machine_type;
-  const reporterInfo = reportData.reporter_name 
-    ? `${reportData.reporter_name}${reportData.reporter_contact ? ` (${reportData.reporter_contact})` : ""}`
+  const issueLabel = ISSUE_TYPE_LABELS[reportData.issue_type as string] || String(reportData.issue_type ?? "");
+  const severityInfo = SEVERITY_LABELS[reportData.severity as string] || { label: String(reportData.severity ?? ""), color: "#6b7280" };
+
+  const machineLabel = escapeHtml(machineInfo.custom_label || machineInfo.machine_type);
+  const locationName = escapeHtml(machineInfo.location_name);
+  const safeDescription = escapeHtml(reportData.description);
+  const reporterInfo = reportData.reporter_name
+    ? `${escapeHtml(reportData.reporter_name)}${reportData.reporter_contact ? ` (${escapeHtml(reportData.reporter_contact)})` : ""}`
     : "Anonymous";
+  const safeIssueLabel = escapeHtml(issueLabel);
+  const safeSeverityLabel = escapeHtml(severityInfo.label);
 
   const emailHtml = `
     <!DOCTYPE html>
