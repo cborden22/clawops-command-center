@@ -7,6 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+const ALLOWED_ORIGINS = [
+  "https://clawops.com",
+  "https://www.clawops.com",
+  "https://clawops.lovable.app",
+];
 
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -48,7 +53,10 @@ serve(async (req) => {
     const customer = customers.data.find((item) => item.metadata?.user_id === user.id) ?? customers.data[0];
     if (!customer) return jsonResponse({ error: "No billing account was found for this user." }, 404);
 
-    const origin = req.headers.get("origin") || Deno.env.get("APP_BASE_URL") || "http://localhost:3000";
+    const rawOrigin = req.headers.get("origin") ?? "";
+    const origin = ALLOWED_ORIGINS.includes(rawOrigin)
+      ? rawOrigin
+      : Deno.env.get("APP_BASE_URL") || "https://clawops.com";
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customer.id,
       return_url: `${origin}/settings`,
