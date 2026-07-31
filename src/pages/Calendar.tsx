@@ -38,6 +38,7 @@ import { CalendarFilters, TaskTypeFilter } from "@/components/calendar/CalendarF
 import { AddTaskDialog } from "@/components/calendar/AddTaskDialog";
 import { EditTaskDialog } from "@/components/calendar/EditTaskDialog";
 import { AgendaView } from "@/components/calendar/AgendaView";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { cn } from "@/lib/utils";
 
 type ExtendedTaskType = "restock" | "route" | "maintenance" | "followup" | "custom";
