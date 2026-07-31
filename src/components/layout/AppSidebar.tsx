@@ -114,6 +114,34 @@ export function AppSidebar() {
     await signOut()
   }
 
+  const trialDaysLeft = trialEnd
+    ? Math.max(0, Math.ceil((new Date(trialEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0
+
+  const planBadge = () => {
+    if (subscriptionLoading) return null
+    if (isComplimentary) {
+      return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">Complimentary</span>
+    }
+    if (isTeamMember) {
+      return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success/10 text-success font-medium">Team Pro</span>
+    }
+    if (isTrial) {
+      return (
+        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning font-medium">
+          Trial · {trialDaysLeft}d left
+        </span>
+      )
+    }
+    if (isPro) {
+      return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success/10 text-success font-medium">Pro</span>
+    }
+    if (subscriptionStatus === "past_due") {
+      return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive font-medium">Past Due</span>
+    }
+    return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">No plan</span>
+  }
+
   const userInitials = user?.user_metadata?.full_name
     ? user.user_metadata.full_name
         .split(" ")
