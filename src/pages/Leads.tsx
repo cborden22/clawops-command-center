@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatCard } from '@/components/shared/StatCard';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, LayoutGrid, List, Users, TrendingUp, Calendar, Flame } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -130,19 +132,16 @@ export default function Leads() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Leads Pipeline</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Track and manage your potential locations
-          </p>
-        </div>
-        <Button onClick={() => setShowAddDialog(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Lead
-        </Button>
-      </div>
+      <PageHeader
+        title="Leads Pipeline"
+        description="Track and manage your potential locations"
+        actions={
+          <Button onClick={() => setShowAddDialog(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Lead
+          </Button>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -218,8 +217,20 @@ export default function Leads() {
             <LeadCard key={lead.id} lead={lead} onClick={() => handleLeadClick(lead)} />
           ))}
           {filteredLeads.length === 0 && (
-            <div className="col-span-full text-center py-12 text-muted-foreground">
-              No leads found
+            <div className="col-span-full">
+              <EmptyState
+                icon={Users}
+                title="No leads found"
+                description={searchQuery ? "Try adjusting your search or filters." : "Add your first lead to start tracking potential locations."}
+                action={
+                  !searchQuery && (
+                    <Button onClick={() => setShowAddDialog(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Lead
+                    </Button>
+                  )
+                }
+              />
             </div>
           )}
         </div>

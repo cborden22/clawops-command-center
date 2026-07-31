@@ -9,6 +9,7 @@ import { InviteMemberDialog } from "@/components/team/InviteMemberDialog";
 import { TeamMemberCard } from "@/components/team/TeamMemberCard";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { toast } from "@/hooks/use-toast";
+import { PageHeader } from "@/components/shared/PageHeader";
 export default function Team() {
   const {
     teamMembers,
@@ -41,20 +42,16 @@ export default function Team() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-brand-500 to-brand-600 bg-clip-text text-transparent">
-            Team Management
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Invite and manage team members with custom permissions
-          </p>
-        </div>
-        <Button onClick={handleInviteClick} className="gap-2">
-          <UserPlus className="h-4 w-4" />
-          Invite Member
-        </Button>
-      </div>
+      <PageHeader
+        title="Team Management"
+        description="Invite and manage team members with custom permissions"
+        actions={
+          <Button onClick={handleInviteClick} className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            Invite Member
+          </Button>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

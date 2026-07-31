@@ -16,6 +16,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   MapPin, 
   DollarSign, 
@@ -40,6 +41,7 @@ import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist"
 import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isWithinInterval, startOfDay, addDays } from "date-fns";
 import { StatCard } from "@/components/shared/StatCard";
+import { SkeletonGrid, SkeletonWidget } from "@/components/shared/SkeletonGrid";
 import { cn } from "@/lib/utils";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -765,8 +767,18 @@ export default function Dashboard() {
 
   if (!isLoaded) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
+      <div className="space-y-4 sm:space-y-6 px-4 sm:px-0 animate-fade-in">
+        <div className="space-y-1">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <SkeletonGrid columns={4} count={4} />
+        <div className="grid grid-cols-12 gap-4">
+          <div className="col-span-12 lg:col-span-8"><SkeletonWidget /></div>
+          <div className="col-span-12 lg:col-span-4"><SkeletonWidget /></div>
+          <div className="col-span-12 lg:col-span-6"><SkeletonWidget /></div>
+          <div className="col-span-12 lg:col-span-6"><SkeletonWidget /></div>
+        </div>
       </div>
     );
   }

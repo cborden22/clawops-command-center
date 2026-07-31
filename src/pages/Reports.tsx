@@ -13,6 +13,7 @@ import { useReportsData, DateRange, getDateRangeFromPreset } from "@/hooks/useRe
 import { handleExport, ExportType } from "@/utils/csvExport";
 import { generatePDFFromHTML } from "@/utils/pdfGenerator";
 import { toast } from "@/hooks/use-toast";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 export default function Reports() {
   const [dateRange, setDateRange] = useState<DateRange>(() => 
@@ -56,12 +57,10 @@ export default function Reports() {
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Business Reports</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Analyze performance across your claw machine business
-        </p>
-      </div>
+      <PageHeader
+        title="Business Reports"
+        description="Analyze performance across your claw machine business"
+      />
 
       <DateRangeFilter
         dateRange={dateRange}

@@ -19,6 +19,7 @@ import {
 import { NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions"
+import { useFeatureAccess } from "@/hooks/useFeatureAccess"
 import {
   Sidebar,
   SidebarContent,
@@ -69,6 +70,7 @@ export function AppSidebar() {
   const navigate = useNavigate()
   const { user, signOut } = useAuth()
   const permissions = useMyTeamPermissions()
+  const { isPro, isTrial, trialEnd, isComplimentary, isTeamMember, subscriptionStatus, isLoading: subscriptionLoading } = useFeatureAccess()
 
   const canSee = useMemo(() => {
     return (url: string) => {
@@ -110,6 +112,34 @@ export function AppSidebar() {
 
   const handleSignOut = async () => {
     await signOut()
+  }
+
+  const trialDaysLeft = trialEnd
+    ? Math.max(0, Math.ceil((new Date(trialEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0
+
+  const planBadge = () => {
+    if (subscriptionLoading) return null
+    if (isComplimentary) {
+      return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">Complimentary</span>
+    }
+    if (isTeamMember) {
+      return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success/10 text-success font-medium">Team Pro</span>
+    }
+    if (isTrial) {
+      return (
+        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-warning/10 text-warning font-medium">
+          Trial · {trialDaysLeft}d left
+        </span>
+      )
+    }
+    if (isPro) {
+      return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success/10 text-success font-medium">Pro</span>
+    }
+    if (subscriptionStatus === "past_due") {
+      return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive font-medium">Past Due</span>
+    }
+    return <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">No plan</span>
   }
 
   const userInitials = user?.user_metadata?.full_name
@@ -209,7 +239,10 @@ export function AppSidebar() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0 text-left">
-                  <p className="text-sm font-medium truncate">{displayName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium truncate">{displayName}</p>
+                    {planBadge()}
+                  </div>
                   <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />

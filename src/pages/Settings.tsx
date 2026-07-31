@@ -36,6 +36,8 @@ import { BudgetManager } from "@/components/settings/BudgetManager";
 import { FeedbackDialog } from "@/components/shared/FeedbackDialog";
 import { useQRLogo } from "@/hooks/useQRLogo";
 import { SubscriptionManager } from "@/components/settings/SubscriptionManager";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 
 
 export default function Settings() {
@@ -324,32 +326,30 @@ export default function Settings() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-brand-500 to-brand-600 bg-clip-text text-transparent">
-          Settings
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Manage your account, business settings, and integrations
-        </p>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Manage your account, business settings, and integrations"
+      />
 
       <SubscriptionManager />
 
-      <Tabs defaultValue="app" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="app" className="gap-2">
+      <Tabs defaultValue="app" className="flex flex-col lg:flex-row gap-6">
+        <TabsList className="grid w-full grid-cols-3 lg:w-56 lg:flex-col lg:h-fit lg:sticky lg:top-20">
+          <TabsTrigger value="app" className="gap-2 justify-start lg:px-4">
             <SettingsIcon className="h-4 w-4" />
             <span className="hidden sm:inline">App</span>
           </TabsTrigger>
-          <TabsTrigger value="profile" className="gap-2">
+          <TabsTrigger value="profile" className="gap-2 justify-start lg:px-4">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">Profile</span>
           </TabsTrigger>
-          <TabsTrigger value="security" className="gap-2">
+          <TabsTrigger value="security" className="gap-2 justify-start lg:px-4">
             <Shield className="h-4 w-4" />
             <span className="hidden sm:inline">Security</span>
           </TabsTrigger>
         </TabsList>
+
+        <div className="flex-1 min-w-0 space-y-6">
 
         {/* App Settings Tab */}
         <TabsContent value="app" className="space-y-6">
@@ -419,7 +419,10 @@ export default function Settings() {
                 <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Defaults</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="defaultCommissionRate">Default Commission Rate (%)</Label>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="defaultCommissionRate">Default Commission Rate (%)</Label>
+                      <HelpTooltip content="Percentage paid to location owners from machine revenue. Applied automatically to new locations." />
+                    </div>
                     <Input
                       id="defaultCommissionRate"
                       type="number"
@@ -431,7 +434,10 @@ export default function Settings() {
                     <p className="text-xs text-muted-foreground">Applied to new locations by default</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
+                      <HelpTooltip content="When an item's total on-hand quantity falls below this number, it appears in low-stock alerts and reports." />
+                    </div>
                     <Input
                       id="lowStockThreshold"
                       type="number"
@@ -804,6 +810,7 @@ export default function Settings() {
             </CardContent>
           </Card>
         </TabsContent>
+        </div>
       </Tabs>
     </div>
   );

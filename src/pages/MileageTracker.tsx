@@ -35,6 +35,7 @@ import { LocationSelector, LocationSelection, getLocationDisplayString } from "@
 import { ActiveTripCard } from "@/components/mileage/ActiveTripCard";
 import { MileageRoute, RouteStop } from "@/hooks/useRoutesDB";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 type FilterPeriod = 
   | "past7days" 
@@ -575,12 +576,10 @@ const MileageTracker = () => {
   return (
     <div className="bg-background">
       <div className="container mx-auto py-4 sm:py-8 px-4">
-        <div className="mb-4 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Routes</h1>
-          <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
-            Log business trips for tax deductions (${IRS_MILEAGE_RATE}/mile IRS rate)
-          </p>
-        </div>
+        <PageHeader
+          title="Routes"
+          description={`Log business trips for tax deductions ($${IRS_MILEAGE_RATE}/mile IRS rate)`}
+        />
 
         <div className="space-y-6 animate-fade-in">
           {/* Stats Cards */}
