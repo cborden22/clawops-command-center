@@ -266,9 +266,9 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
               <p className="text-xs text-muted-foreground mb-1">Miles</p>
               <p className="text-2xl font-bold text-foreground">{activeCalculatedMiles.toFixed(1)}</p>
             </div>
-            <div className="p-3 rounded-lg bg-green-500/10 text-center">
+            <div className="p-3 rounded-lg bg-success/10 text-center">
               <p className="text-xs text-muted-foreground mb-1">Est. Deduction</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+              <p className="text-2xl font-bold text-success dark:text-success">
                 ${activeEstimatedDeduction.toFixed(2)}
               </p>
             </div>
@@ -297,10 +297,10 @@ export function QuickMileageForm({ onSuccess }: QuickMileageFormProps) {
       <div className="space-y-2">
         <Label className="text-sm font-medium">Vehicle *</Label>
         {vehicles.length === 0 ? (
-          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-            <p className="text-sm text-amber-600 dark:text-amber-400">
+          <div className="p-3 rounded-lg bg-warning/10 border border-warning/30">
+            <p className="text-sm text-warning dark:text-warning">
               No vehicles added.{" "}
-              <Button variant="link" className="p-0 h-auto text-amber-600 dark:text-amber-400 underline" onClick={handleNavigateToSettings}>
+              <Button variant="link" className="p-0 h-auto text-warning dark:text-warning underline" onClick={handleNavigateToSettings}>
                 Add one in Settings
               </Button>
             </p>

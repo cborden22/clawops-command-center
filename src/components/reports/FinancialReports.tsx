@@ -172,26 +172,26 @@ export function FinancialReports({ data }: FinancialReportsProps) {
           className="lg:col-span-3"
         >
           <div className="grid md:grid-cols-3 gap-6 py-4">
-            <div className="text-center p-4 rounded-lg bg-green-500/5 border border-green-500/20">
+            <div className="text-center p-4 rounded-lg bg-success/5 border border-success/20">
               <p className="text-sm text-muted-foreground mb-1">Total Income</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-success">
                 {formatCurrency(financialSummary.totalIncome)}
               </p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-red-500/5 border border-red-500/20">
+            <div className="text-center p-4 rounded-lg bg-destructive/5 border border-destructive/20">
               <p className="text-sm text-muted-foreground mb-1">Total Expenses</p>
-              <p className="text-2xl font-bold text-red-600">
+              <p className="text-2xl font-bold text-destructive">
                 {formatCurrency(financialSummary.totalExpenses)}
               </p>
             </div>
             <div className={`text-center p-4 rounded-lg ${
               financialSummary.netProfit >= 0 
                 ? 'bg-primary/5 border border-primary/20'
-                : 'bg-red-500/5 border border-red-500/20'
+                : 'bg-destructive/5 border border-destructive/20'
             }`}>
               <p className="text-sm text-muted-foreground mb-1">Net Profit</p>
               <p className={`text-2xl font-bold ${
-                financialSummary.netProfit >= 0 ? 'text-primary' : 'text-red-600'
+                financialSummary.netProfit >= 0 ? 'text-primary' : 'text-destructive'
               }`}>
                 {formatCurrency(financialSummary.netProfit)}
               </p>

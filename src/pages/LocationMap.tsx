@@ -254,16 +254,16 @@ const LocationMap = () => {
 
         <div className="flex flex-wrap gap-4 mb-4">
           <div className="flex items-center gap-2 text-sm">
-            <div className="w-3 h-3 rounded-full bg-green-500" /> Above average
+            <div className="w-3 h-3 rounded-full bg-success" /> Above average
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <div className="w-3 h-3 rounded-full bg-yellow-500" /> Needs attention
+            <div className="w-3 h-3 rounded-full bg-warning" /> Needs attention
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <div className="w-3 h-3 rounded-full bg-red-500" /> Overdue collection
+            <div className="w-3 h-3 rounded-full bg-destructive" /> Overdue collection
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <div className="w-3 h-3 rounded-full bg-gray-500" /> No recent data
+            <div className="w-3 h-3 rounded-full bg-muted" /> No recent data
           </div>
         </div>
 

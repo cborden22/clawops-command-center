@@ -31,15 +31,15 @@ const ISSUE_TYPE_LABELS: Record<string, string> = {
 };
 
 const SEVERITY_CONFIG: Record<string, { label: string; className: string }> = {
-  low: { label: "Low", className: "bg-slate-500/10 text-slate-600 border-slate-500/20" },
-  medium: { label: "Medium", className: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
+  low: { label: "Low", className: "bg-muted/10 text-muted-foreground border-muted/20" },
+  medium: { label: "Medium", className: "bg-warning/10 text-warning border-warning/20" },
   high: { label: "High", className: "bg-destructive/10 text-destructive border-destructive/20" },
 };
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; className: string }> = {
-  open: { label: "Open", icon: AlertTriangle, className: "text-amber-600" },
-  in_progress: { label: "In Progress", icon: Wrench, className: "text-blue-600" },
-  resolved: { label: "Resolved", icon: CheckCircle2, className: "text-green-600" },
+  open: { label: "Open", icon: AlertTriangle, className: "text-warning" },
+  in_progress: { label: "In Progress", icon: Wrench, className: "text-info" },
+  resolved: { label: "Resolved", icon: CheckCircle2, className: "text-success" },
 };
 
 export function MaintenanceWidget() {
@@ -103,13 +103,13 @@ export function MaintenanceWidget() {
   return (
     <Card className={cn(
       "glass-card",
-      openReports.length > 0 && "border-amber-500/30"
+      openReports.length > 0 && "border-warning/30"
     )}>
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2">
           <Wrench className={cn(
             "h-5 w-5",
-            openReports.length > 0 ? "text-amber-500" : "text-muted-foreground"
+            openReports.length > 0 ? "text-warning" : "text-muted-foreground"
           )} />
           Maintenance
           {totalActive > 0 && (
@@ -132,8 +132,8 @@ export function MaintenanceWidget() {
       <CardContent className="space-y-3">
         {activeReports.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <CheckCircle2 className="h-10 w-10 mx-auto mb-2 text-green-500/50" />
-            <p className="text-sm font-medium text-green-600">All clear!</p>
+            <CheckCircle2 className="h-10 w-10 mx-auto mb-2 text-success/50" />
+            <p className="text-sm font-medium text-success">All clear!</p>
             <p className="text-xs">No maintenance issues reported</p>
           </div>
         ) : (

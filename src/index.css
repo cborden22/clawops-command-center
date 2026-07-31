@@ -1,128 +1,152 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* ClawOps design system — "Navy Trust".
+   All colors MUST be HSL. Never hardcode color utilities in components.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 84% 4.9%;
+    --background: 210 33% 98%;
+    --foreground: 222 60% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 84% 4.9%;
+    --card-foreground: 222 60% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 84% 4.9%;
+    --popover-foreground: 222 60% 15%;
 
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 212 52% 25%;
+    --primary-foreground: 212 33% 97%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 84% 4.9%;
+    --secondary: 212 33% 93%;
+    --secondary-foreground: 222 60% 15%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 212 30% 95%;
+    --muted-foreground: 214 18% 42%;
 
-    --accent: 210 40% 94%;
-    --accent-foreground: 222 84% 4.9%;
+    --accent: 209 46% 43%;
+    --accent-foreground: 212 33% 97%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
+    --success: 152 52% 33%;
+    --success-foreground: 0 0% 100%;
 
-    /* Custom Blue Design Tokens */
-    --blue-50: 214 100% 97%;
-    --blue-100: 214 95% 93%;
-    --blue-500: 221 83% 53%;
-    --blue-600: 221 83% 45%;
-    --blue-700: 221 83% 37%;
-    --blue-900: 221 83% 25%;
-    
-    --gradient-primary: linear-gradient(135deg, hsl(221 83% 53%), hsl(211 73% 48%), hsl(201 83% 55%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 40% 98%));
-    --gradient-header: linear-gradient(90deg, hsl(0 0% 100%), hsl(210 40% 96%));
-    --gradient-accent: linear-gradient(135deg, hsl(221 83% 53% / 0.08), hsl(211 73% 48% / 0.04));
-    
-    --shadow-card: 0 4px 16px hsl(221 83% 53% / 0.08), 0 2px 8px hsl(221 83% 53% / 0.04);
-    --shadow-hover: 0 8px 32px hsl(221 83% 53% / 0.12), 0 4px 16px hsl(221 83% 53% / 0.06);
-    --shadow-glow: 0 0 20px hsl(221 83% 53% / 0.2);
-    
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --warning: 35 85% 40%;
+    --warning-foreground: 0 0% 100%;
 
-    --radius: 0.75rem;
+    --info: 209 46% 43%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 213 25% 88%;
+    --input: 213 25% 88%;
+    --ring: 209 46% 43%;
+
+    /* Brand scale — Navy Trust */
+    --brand-50: 210 40% 96%;
+    --brand-100: 212 33% 91%;
+    --brand-200: 211 32% 82%;
+    --brand-300: 210 38% 68%;
+    --brand-400: 209 44% 55%;
+    --brand-500: 209 46% 43%;
+    --brand-600: 211 50% 34%;
+    --brand-700: 212 52% 25%;
+    --brand-800: 218 55% 20%;
+    --brand-900: 222 60% 15%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(212 52% 25%), hsl(209 46% 43%));
+    --gradient-card: linear-gradient(150deg, hsl(0 0% 100%), hsl(210 33% 98%));
+    --gradient-header: linear-gradient(90deg, hsl(0 0% 100%), hsl(210 33% 98%));
+    --gradient-accent: linear-gradient(135deg, hsl(209 46% 43% / 0.1), hsl(212 52% 25% / 0.04));
+
+    --shadow-card: 0 1px 2px hsl(222 60% 15% / 0.05), 0 4px 12px hsl(222 60% 15% / 0.05);
+    --shadow-hover: 0 2px 4px hsl(222 60% 15% / 0.06), 0 10px 24px hsl(222 60% 15% / 0.09);
+    --shadow-glow: 0 0 0 3px hsl(209 46% 43% / 0.18);
+
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+
+    --radius: 0.625rem;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 84% 4.9%;
-    --sidebar-primary: 221 83% 53%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 40% 96%;
-    --sidebar-accent-foreground: 222 84% 4.9%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-foreground: 222 60% 15%;
+    --sidebar-primary: 212 52% 25%;
+    --sidebar-primary-foreground: 212 33% 97%;
+    --sidebar-accent: 212 33% 93%;
+    --sidebar-accent-foreground: 212 52% 25%;
+    --sidebar-border: 213 25% 88%;
+    --sidebar-ring: 209 46% 43%;
   }
 
-  /* Dark mode variables */
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    --background: 222 55% 11%;
+    --foreground: 212 33% 93%;
 
-    --card: 222 47% 13%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 47% 15%;
+    --card-foreground: 212 33% 93%;
 
-    --popover: 222 47% 13%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 47% 15%;
+    --popover-foreground: 212 33% 93%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 209 50% 55%;
+    --primary-foreground: 222 60% 12%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 214 38% 20%;
+    --secondary-foreground: 212 33% 93%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 214 34% 19%;
+    --muted-foreground: 213 22% 68%;
 
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 209 50% 50%;
+    --accent-foreground: 212 33% 97%;
 
-    --destructive: 0 63% 50%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 52%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217 33% 20%;
-    --input: 217 33% 20%;
-    --ring: 217 91% 60%;
+    --success: 152 45% 45%;
+    --success-foreground: 222 60% 12%;
 
-    /* Dark mode blue tokens */
-    --blue-50: 217 33% 17%;
-    --blue-100: 217 33% 20%;
-    --blue-500: 217 91% 60%;
-    --blue-600: 217 91% 55%;
-    --blue-700: 217 91% 50%;
-    --blue-900: 217 91% 40%;
-    
-    --gradient-card: linear-gradient(145deg, hsl(222 47% 13%), hsl(222 47% 11%));
-    --gradient-header: linear-gradient(90deg, hsl(222 47% 13%), hsl(222 47% 11%));
-    --gradient-accent: linear-gradient(135deg, hsl(217 91% 60% / 0.1), hsl(217 91% 55% / 0.05));
-    
-    --shadow-card: 0 4px 16px hsl(0 0% 0% / 0.3), 0 2px 8px hsl(0 0% 0% / 0.2);
-    --shadow-hover: 0 8px 32px hsl(0 0% 0% / 0.4), 0 4px 16px hsl(0 0% 0% / 0.3);
-    --shadow-glow: 0 0 20px hsl(217 91% 60% / 0.3);
+    --warning: 38 80% 55%;
+    --warning-foreground: 222 60% 12%;
 
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 217 33% 17%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 20%;
-    --sidebar-ring: 217 91% 60%;
+    --info: 209 50% 58%;
+    --info-foreground: 222 60% 12%;
+
+    --border: 214 30% 24%;
+    --input: 214 30% 24%;
+    --ring: 209 50% 55%;
+
+    --brand-50: 214 34% 19%;
+    --brand-100: 214 32% 23%;
+    --brand-200: 213 30% 30%;
+    --brand-300: 210 34% 40%;
+    --brand-400: 209 42% 48%;
+    --brand-500: 209 50% 55%;
+    --brand-600: 209 55% 62%;
+    --brand-700: 210 58% 70%;
+    --brand-800: 211 55% 80%;
+    --brand-900: 212 40% 90%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(212 45% 30%), hsl(209 50% 50%));
+    --gradient-card: linear-gradient(150deg, hsl(220 47% 16%), hsl(222 50% 13%));
+    --gradient-header: linear-gradient(90deg, hsl(220 47% 15%), hsl(222 52% 12%));
+    --gradient-accent: linear-gradient(135deg, hsl(209 50% 55% / 0.14), hsl(209 50% 55% / 0.05));
+
+    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.3), 0 4px 12px hsl(0 0% 0% / 0.25);
+    --shadow-hover: 0 2px 6px hsl(0 0% 0% / 0.35), 0 12px 28px hsl(0 0% 0% / 0.35);
+    --shadow-glow: 0 0 0 3px hsl(209 50% 55% / 0.25);
+
+    --sidebar-background: 222 52% 13%;
+    --sidebar-foreground: 212 33% 93%;
+    --sidebar-primary: 209 50% 55%;
+    --sidebar-primary-foreground: 222 60% 12%;
+    --sidebar-accent: 214 34% 20%;
+    --sidebar-accent-foreground: 212 33% 95%;
+    --sidebar-border: 214 30% 22%;
+    --sidebar-ring: 209 50% 55%;
   }
 }
 
@@ -131,7 +155,6 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  /* Global mobile scroll control - Android compatible */
   html {
     overflow-x: hidden;
   }
@@ -154,18 +177,15 @@ All colors MUST be HSL.
     width: 100%;
   }
 
-  :root body {
-    background: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 98%));
+  /* Numeric data should never wobble between renders */
+  .tabular,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
   }
 
-  .dark body {
-    background: linear-gradient(135deg, hsl(222 47% 11%), hsl(222 47% 9%));
-  }
-
-  /* Compact view mode - use CSS custom properties instead of @apply to avoid circular dependencies */
+  /* Compact view mode */
   .compact {
     --radius: 0.5rem;
-    --spacing-unit: 0.75;
   }
 
   .compact h1 {
@@ -183,7 +203,6 @@ All colors MUST be HSL.
     line-height: 1.75rem;
   }
 
-  /* Reduce padding and gaps in compact mode */
   .compact [class*="p-6"] {
     padding: 1rem;
   }
@@ -207,52 +226,28 @@ All colors MUST be HSL.
 
 @layer components {
   .glass-card {
-    @apply bg-card backdrop-blur-sm border;
-    border-color: hsl(var(--blue-100));
-    background: var(--gradient-card);
+    @apply bg-card border border-border;
     box-shadow: var(--shadow-card);
   }
 
-  .dark .glass-card {
-    border-color: hsl(var(--border));
-    background: var(--gradient-card);
-  }
-  
   .glass-header {
-    @apply bg-card/95 backdrop-blur-sm border-b;
-    border-color: hsl(var(--blue-100));
-    background: var(--gradient-header);
+    @apply bg-card/85 backdrop-blur-md border-b border-border;
   }
 
-  .dark .glass-header {
-    border-color: hsl(var(--border));
-    background: var(--gradient-header);
-  }
-  
   .premium-button {
-    @apply relative overflow-hidden bg-gradient-to-r from-blue-500 to-blue-600 text-primary-foreground font-semibold;
-    @apply hover:from-blue-600 hover:to-blue-700 transition-all duration-300;
-    @apply shadow-lg hover:shadow-glow hover:scale-105;
+    @apply relative bg-primary text-primary-foreground font-semibold;
+    @apply hover:bg-primary/90 transition-colors duration-200;
+    @apply shadow-sm;
   }
-  
-  .premium-button::before {
-    content: '';
-    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent;
-    @apply transform -skew-x-12 -translate-x-full transition-transform duration-700;
-  }
-  
-  .premium-button:hover::before {
-    @apply translate-x-full;
-  }
-  
+
   .accent-glow {
     @apply relative;
   }
-  
-  .accent-glow::before {
-    content: '';
-    @apply absolute -inset-1 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg opacity-10 blur-lg;
-    z-index: -1;
+
+  /* Shared surface for page-level section cards */
+  .surface-card {
+    @apply bg-card border border-border rounded-lg;
+    box-shadow: var(--shadow-card);
   }
 }
 
@@ -260,12 +255,11 @@ All colors MUST be HSL.
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
-  
+
   .animate-glow {
-    animation: glow 2s ease-in-out infinite alternate;
+    animation: glow 2.4s ease-in-out infinite alternate;
   }
 
-  /* Mobile-specific utilities */
   .mobile-safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
@@ -280,39 +274,35 @@ All colors MUST be HSL.
     padding-bottom: env(safe-area-inset-bottom, 0px);
     padding-left: env(safe-area-inset-left, 0px);
   }
-  
+
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-10px); }
   }
-  
+
   @keyframes glow {
-    from { box-shadow: 0 0 20px hsl(221 83% 53% / 0.15); }
-    to { box-shadow: 0 0 30px hsl(221 83% 53% / 0.25); }
+    from { opacity: 0.6; }
+    to { opacity: 1; }
   }
 
-  /* Improve mobile scrolling performance - Android compatible */
   .mobile-scroll-optimized {
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y pinch-zoom;
     overscroll-behavior-y: auto;
   }
 
-  /* Enhanced scroll momentum for all scroll containers */
   .scroll-smooth-momentum {
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
 
-  /* Sheet/dialog scroll optimization */
   .sheet-scroll-content {
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
     overscroll-behavior-y: contain;
   }
 
-  /* Mobile bottom sheet scroll container */
   .mobile-sheet-scroll {
     overflow-y: auto;
     overscroll-behavior-y: contain;
@@ -323,7 +313,6 @@ All colors MUST be HSL.
 
 /* Mobile Touch Targets & Form Controls */
 @media (max-width: 768px) {
-  /* Larger form controls on mobile for better touch targets */
   input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
@@ -331,14 +320,12 @@ All colors MUST be HSL.
     font-size: 16px !important; /* Prevents iOS zoom on focus */
   }
 
-  /* Button press feedback - remove default tap highlight */
   button,
   [role="button"],
   a {
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Ensure tabs have proper touch targets */
   [role="tab"] {
     min-height: 44px;
   }

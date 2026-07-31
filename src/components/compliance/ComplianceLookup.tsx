@@ -57,12 +57,12 @@ export const ComplianceLookup = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Allowed': return 'bg-green-500';
-      case 'Regulated': return 'bg-yellow-500';
-      case 'Restricted': return 'bg-orange-500';
-      case 'Prohibited': return 'bg-red-500';
-      case 'Ambiguous': return 'bg-gray-500';
-      default: return 'bg-gray-400';
+      case 'Allowed': return 'bg-success';
+      case 'Regulated': return 'bg-warning';
+      case 'Restricted': return 'bg-warning';
+      case 'Prohibited': return 'bg-destructive';
+      case 'Ambiguous': return 'bg-muted';
+      default: return 'bg-muted';
     }
   };
 
@@ -70,7 +70,7 @@ export const ComplianceLookup = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold bg-primary bg-clip-text text-transparent">
           Law & Compliance Quick Lookup
         </h1>
         <p className="text-muted-foreground">
@@ -82,7 +82,7 @@ export const ComplianceLookup = () => {
       </div>
 
       {/* Input Controls */}
-      <Card className="border-primary/20 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
+      <Card className="border-primary/20 bg-accent/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -146,7 +146,7 @@ export const ComplianceLookup = () => {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>{stateData.state} - Compliance Summary</span>
-                <Badge className={`${getStatusColor(stateData.status)} text-white`}>
+                <Badge className={`${getStatusColor(stateData.status)} text-primary-foreground`}>
                   {stateData.status}
                 </Badge>
               </CardTitle>
@@ -258,7 +258,7 @@ export const ComplianceLookup = () => {
                           href={src.url} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-blue-500 hover:underline mt-1"
+                          className="inline-flex items-center gap-1 text-xs text-info hover:underline mt-1"
                         >
                           <ExternalLink className="h-3 w-3" />
                           {src.title}
@@ -272,11 +272,11 @@ export const ComplianceLookup = () => {
 
             {stateData.red_flags.length > 0 && (
               <AccordionItem value="warnings">
-                <AccordionTrigger className="text-red-600">⚠️ Red Flags & Warnings</AccordionTrigger>
+                <AccordionTrigger className="text-destructive">⚠️ Red Flags & Warnings</AccordionTrigger>
                 <AccordionContent>
                   <ul className="list-disc pl-6 space-y-1">
                     {stateData.red_flags.map((flag, idx) => (
-                      <li key={idx} className="text-red-600">{flag}</li>
+                      <li key={idx} className="text-destructive">{flag}</li>
                     ))}
                   </ul>
                 </AccordionContent>
@@ -292,7 +292,7 @@ export const ComplianceLookup = () => {
                     href={source.url} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-blue-500 hover:underline"
+                    className="flex items-center gap-2 text-info hover:underline"
                   >
                     <ExternalLink className="h-4 w-4" />
                     {source.title}

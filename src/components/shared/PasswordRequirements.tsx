@@ -20,11 +20,11 @@ export default function PasswordRequirements({ password }: PasswordRequirementsP
         return (
           <li key={req.label} className="flex items-center gap-1.5">
             {met ? (
-              <Check className="h-3.5 w-3.5 text-green-500 shrink-0" />
+              <Check className="h-3.5 w-3.5 text-success shrink-0" />
             ) : (
               <Circle className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
             )}
-            <span className={met ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}>
+            <span className={met ? "text-success dark:text-success" : "text-muted-foreground"}>
               {req.label}
             </span>
           </li>

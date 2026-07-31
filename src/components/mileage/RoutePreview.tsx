@@ -37,8 +37,8 @@ export function RoutePreview({ route, compact = false }: RoutePreviewProps) {
         <div key={stop.id} className="flex items-start gap-2">
           <div className="flex flex-col items-center">
             <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
-              index === 0 ? "bg-green-500" : 
-              index === route.stops.length - 1 ? "bg-red-500" : 
+              index === 0 ? "bg-success" : 
+              index === route.stops.length - 1 ? "bg-destructive" : 
               "bg-primary"
             }`} />
             {index < route.stops.length - 1 && (

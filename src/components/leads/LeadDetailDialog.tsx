@@ -37,16 +37,16 @@ interface LeadDetailDialogProps {
 }
 
 const priorityConfig = {
-  hot: { icon: Flame, label: 'Hot', className: 'bg-red-500/20 text-red-400 border-red-500/30' },
-  warm: { icon: Sun, label: 'Warm', className: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
-  cold: { icon: Snowflake, label: 'Cold', className: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+  hot: { icon: Flame, label: 'Hot', className: 'bg-destructive/20 text-destructive border-destructive/30' },
+  warm: { icon: Sun, label: 'Warm', className: 'bg-warning/20 text-warning border-warning/30' },
+  cold: { icon: Snowflake, label: 'Cold', className: 'bg-info/20 text-info border-info/30' },
 };
 
 const statusConfig = {
   new: { label: 'New', className: 'bg-primary/20 text-primary' },
-  contacted: { label: 'Contacted', className: 'bg-blue-500/20 text-blue-400' },
-  negotiating: { label: 'Negotiating', className: 'bg-purple-500/20 text-purple-400' },
-  won: { label: 'Won', className: 'bg-green-500/20 text-green-400' },
+  contacted: { label: 'Contacted', className: 'bg-info/20 text-info' },
+  negotiating: { label: 'Negotiating', className: 'bg-info/20 text-info' },
+  won: { label: 'Won', className: 'bg-success/20 text-success' },
   lost: { label: 'Lost', className: 'bg-destructive/20 text-destructive' },
 };
 
@@ -132,7 +132,7 @@ export function LeadDetailDialog({
                       {priorityConfig[priority].label}
                     </Badge>
                     {isConverted && (
-                      <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/30">
+                      <Badge variant="outline" className="bg-success/20 text-success border-success/30">
                         Converted
                       </Badge>
                     )}

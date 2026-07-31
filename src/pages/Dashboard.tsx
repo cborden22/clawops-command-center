@@ -37,6 +37,7 @@ import { CustomizerFAB, DashboardCustomizerDrawer } from "@/components/dashboard
 
 import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isWithinInterval, startOfDay, addDays } from "date-fns";
+import { StatCard } from "@/components/shared/StatCard";
 import { cn } from "@/lib/utils";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -332,114 +333,54 @@ export default function Dashboard() {
     
     if (showLocations) {
       cards.push(
-        <Card key="locations" className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-4 sm:pt-6 relative">
-            <div className="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-3 sm:gap-4 relative">
-              <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Active Locations</p>
-                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight truncate">{activeLocations.length}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">{totalMachines} machines</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          key="locations"
+          label="Active Locations"
+          value={activeLocations.length}
+          hint={`${totalMachines} machines`}
+          icon={MapPin}
+        />
       );
     }
-    
+
     if (showRevenue) {
       cards.push(
-        <Card key="income" className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-4 sm:pt-6 relative">
-            <div className="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-green-500/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-3 sm:gap-4 relative">
-              <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Month Income</p>
-                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight truncate">${totalIncome.toLocaleString()}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">{format(now, "MMMM")}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          key="income"
+          label="Month Income"
+          value={`$${totalIncome.toLocaleString()}`}
+          hint={format(now, "MMMM")}
+          icon={TrendingUp}
+          tone="success"
+        />
       );
       cards.push(
-        <Card key="profit" className={cn(
-          "glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden",
-          netProfit < 0 && "border-destructive/30"
-        )}>
-          <CardContent className="pt-4 sm:pt-6 relative">
-            <div className={cn(
-              "absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500",
-              netProfit >= 0 ? "bg-primary/10" : "bg-destructive/10"
-            )} />
-            <div className="flex items-center gap-3 sm:gap-4 relative">
-              <div className={cn(
-                "p-2 sm:p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300",
-                netProfit >= 0 
-                  ? "bg-gradient-to-br from-primary to-primary/80" 
-                  : "bg-gradient-to-br from-destructive to-destructive/80"
-              )}>
-                <Wallet className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Net Profit</p>
-                <p className={cn(
-                  "text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight truncate",
-                  netProfit >= 0 ? "text-foreground" : "text-destructive"
-                )}>
-                  ${Math.abs(netProfit).toLocaleString()}
-                </p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">
-                  {netProfit >= 0 ? "Profit" : "Loss"} this month
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          key="profit"
+          label="Net Profit"
+          value={`${netProfit < 0 ? "-" : ""}$${Math.abs(netProfit).toLocaleString()}`}
+          hint={netProfit >= 0 ? "Profit this month" : "Loss this month"}
+          icon={Wallet}
+          tone={netProfit >= 0 ? "default" : "destructive"}
+          className={cn(netProfit < 0 && "border-destructive/40")}
+        />
       );
     }
-    
+
     if (showInventory) {
       cards.push(
-        <Card key="inventory" className={cn(
-          "glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden",
-          lowStockItems.length > 0 && "border-amber-500/30 bg-amber-500/5"
-        )}>
-          <CardContent className="pt-4 sm:pt-6 relative">
-            <div className={cn(
-              "absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500",
-              lowStockItems.length > 0 ? "bg-amber-500/10" : "bg-accent/50"
-            )} />
-            <div className="flex items-center gap-3 sm:gap-4 relative">
-              <div className={cn(
-                "p-2 sm:p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300",
-                lowStockItems.length > 0 
-                  ? "bg-gradient-to-br from-amber-500 to-amber-600" 
-                  : "bg-gradient-to-br from-muted-foreground/80 to-muted-foreground/60"
-              )}>
-                <Package className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Inventory</p>
-                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight truncate">{totalInventoryItems}</p>
-                {lowStockItems.length > 0 ? (
-                  <p className="text-[10px] sm:text-xs text-amber-600 font-medium">{lowStockItems.length} low stock</p>
-                ) : (
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">All stocked</p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          key="inventory"
+          label="Inventory"
+          value={totalInventoryItems}
+          hint={lowStockItems.length > 0 ? `${lowStockItems.length} low stock` : "All stocked"}
+          icon={Package}
+          tone={lowStockItems.length > 0 ? "warning" : "default"}
+          className={cn(lowStockItems.length > 0 && "border-warning/40")}
+        />
       );
     }
-    
+
     if (cards.length === 0) return null;
     
     return (
@@ -464,12 +405,12 @@ export default function Dashboard() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex justify-between items-center p-3 rounded-lg bg-green-500/5 border border-green-500/10">
+        <div className="flex justify-between items-center p-3 rounded-lg bg-success/5 border border-success/10">
           <div className="flex items-center gap-3">
-            <TrendingUp className="h-5 w-5 text-green-600" />
+            <TrendingUp className="h-5 w-5 text-success" />
             <span className="text-sm font-medium">Total Revenue</span>
           </div>
-          <span className="text-lg font-bold text-green-600">${allTimeIncome.toLocaleString()}</span>
+          <span className="text-lg font-bold text-success">${allTimeIncome.toLocaleString()}</span>
         </div>
         <div className="flex justify-between items-center p-3 rounded-lg bg-destructive/5 border border-destructive/10">
           <div className="flex items-center gap-3">
@@ -521,9 +462,9 @@ export default function Dashboard() {
               <div className="flex items-center gap-3">
                 <div className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm",
-                  index === 0 && "bg-amber-500/20 text-amber-600",
-                  index === 1 && "bg-slate-400/20 text-slate-600",
-                  index === 2 && "bg-orange-500/20 text-orange-600"
+                  index === 0 && "bg-warning/20 text-warning",
+                  index === 1 && "bg-muted/20 text-muted-foreground",
+                  index === 2 && "bg-warning/20 text-warning"
                 )}>
                   #{index + 1}
                 </div>
@@ -532,7 +473,7 @@ export default function Dashboard() {
                   <p className="text-xs text-muted-foreground truncate max-w-[120px]">{loc.address}</p>
                 </div>
               </div>
-              <span className="font-bold text-green-600">${loc.totalIncome.toLocaleString()}</span>
+              <span className="font-bold text-success">${loc.totalIncome.toLocaleString()}</span>
             </div>
           ))
         )}
@@ -543,13 +484,13 @@ export default function Dashboard() {
   const renderLowStockAlerts = () => (
     <Card className={cn(
       "glass-card h-full",
-      lowStockItems.length > 0 && "border-amber-500/30"
+      lowStockItems.length > 0 && "border-warning/30"
     )}>
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2">
           <AlertTriangle className={cn(
             "h-5 w-5",
-            lowStockItems.length > 0 ? "text-amber-500" : "text-muted-foreground"
+            lowStockItems.length > 0 ? "text-warning" : "text-muted-foreground"
           )} />
           Low Stock Alerts
         </CardTitle>
@@ -561,7 +502,7 @@ export default function Dashboard() {
       </CardHeader>
       <CardContent className="space-y-3">
         {lowStockItems.length === 0 ? (
-          <div className="text-center py-6 text-green-600 text-sm font-medium">
+          <div className="text-center py-6 text-success text-sm font-medium">
             ✓ All inventory items are well-stocked
           </div>
         ) : (
@@ -574,7 +515,7 @@ export default function Dashboard() {
             return (
               <div 
                 key={item.id} 
-                className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 space-y-2"
+                className="p-3 rounded-lg bg-warning/5 border border-warning/20 space-y-2"
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -660,7 +601,7 @@ export default function Dashboard() {
                     <div className={cn(
                       "p-2 rounded-lg",
                       entry.type === "income" 
-                        ? "bg-green-500/10 text-green-600" 
+                        ? "bg-success/10 text-success" 
                         : "bg-destructive/10 text-destructive"
                     )}>
                       {entry.type === "income" ? (
@@ -681,7 +622,7 @@ export default function Dashboard() {
                   <div className="text-right">
                     <p className={cn(
                       "font-bold",
-                      entry.type === "income" ? "text-green-600" : "text-destructive"
+                      entry.type === "income" ? "text-success" : "text-destructive"
                     )}>
                       {entry.type === "income" ? "+" : "-"}${entry.amount.toLocaleString()}
                     </p>
@@ -721,8 +662,8 @@ export default function Dashboard() {
         <Link key="revenue" to="/revenue">
           <Card className="glass-card hover:shadow-hover transition-all duration-300 cursor-pointer group">
             <CardContent className="p-3 sm:p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
-                <DollarSign className="h-5 w-5 text-green-600" />
+              <div className="p-2 rounded-lg bg-success/10 group-hover:bg-success/20 transition-colors">
+                <DollarSign className="h-5 w-5 text-success" />
               </div>
               <span className="font-medium text-sm">Log Revenue</span>
             </CardContent>
@@ -736,8 +677,8 @@ export default function Dashboard() {
         <Link key="commission" to="/commission-summary">
           <Card className="glass-card hover:shadow-hover transition-all duration-300 cursor-pointer group">
             <CardContent className="p-3 sm:p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
-                <BarChart3 className="h-5 w-5 text-amber-600" />
+              <div className="p-2 rounded-lg bg-warning/10 group-hover:bg-warning/20 transition-colors">
+                <BarChart3 className="h-5 w-5 text-warning" />
               </div>
               <span className="font-medium text-sm">Commission</span>
             </CardContent>
@@ -751,8 +692,8 @@ export default function Dashboard() {
         <Link key="inventory" to="/inventory">
           <Card className="glass-card hover:shadow-hover transition-all duration-300 cursor-pointer group">
             <CardContent className="p-3 sm:p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
-                <Package className="h-5 w-5 text-purple-600" />
+              <div className="p-2 rounded-lg bg-info/10 group-hover:bg-info/20 transition-colors">
+                <Package className="h-5 w-5 text-info" />
               </div>
               <span className="font-medium text-sm">Inventory</span>
             </CardContent>

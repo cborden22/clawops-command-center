@@ -21,16 +21,16 @@ const TASK_ICONS: Record<TaskType, React.ReactNode> = {
 };
 
 const TASK_COLORS: Record<TaskType, string> = {
-  restock: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  route: "bg-purple-500/10 text-purple-600 border-purple-500/20",
-  maintenance: "bg-red-500/10 text-red-600 border-red-500/20",
-  followup: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+  restock: "bg-info/10 text-info border-info/20",
+  route: "bg-info/10 text-info border-info/20",
+  maintenance: "bg-destructive/10 text-destructive border-destructive/20",
+  followup: "bg-warning/10 text-warning border-warning/20",
   custom: "bg-violet-500/10 text-violet-600 border-violet-500/20",
 };
 
 const STATUS_STYLES: Record<string, string> = {
   overdue: "ring-2 ring-destructive/50",
-  due_today: "ring-2 ring-amber-500/50",
+  due_today: "ring-2 ring-warning/50",
   due_soon: "",
   upcoming: "",
 };
@@ -57,19 +57,19 @@ export function WeeklyCalendarWidget({ tasksByDate }: WeeklyCalendarWidgetProps)
         </CardTitle>
         <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-muted-foreground flex-wrap">
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-blue-500" />
+            <div className="w-2 h-2 rounded-full bg-info" />
             <span>Restock</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-purple-500" />
+            <div className="w-2 h-2 rounded-full bg-info" />
             <span>Route</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-red-500" />
+            <div className="w-2 h-2 rounded-full bg-destructive" />
             <span>Maint.</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-amber-500" />
+            <div className="w-2 h-2 rounded-full bg-warning" />
             <span>Follow-up</span>
           </div>
           <div className="flex items-center gap-1">
@@ -96,7 +96,7 @@ export function WeeklyCalendarWidget({ tasksByDate }: WeeklyCalendarWidgetProps)
                     isToday
                       ? "border-primary bg-primary/5"
                       : "border-border/50 bg-muted/20",
-                    hasUrgent && !isToday && "border-amber-500/50 bg-amber-500/5"
+                    hasUrgent && !isToday && "border-warning/50 bg-warning/5"
                   )}
                 >
                   {/* Day label */}
@@ -159,7 +159,7 @@ export function WeeklyCalendarWidget({ tasksByDate }: WeeklyCalendarWidgetProps)
                     isToday
                       ? "border-primary bg-primary/5"
                       : "border-border/50 bg-muted/20",
-                    hasUrgent && !isToday && "border-amber-500/50 bg-amber-500/5"
+                    hasUrgent && !isToday && "border-warning/50 bg-warning/5"
                   )}
                 >
                   {/* Day Header */}

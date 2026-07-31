@@ -148,7 +148,7 @@ export function QuickInventoryForm({ onSuccess }: QuickInventoryFormProps) {
               variant={adjustmentType === "add" ? "default" : "outline"}
               className={cn(
                 "flex-1 h-12",
-                adjustmentType === "add" && "bg-emerald-600 hover:bg-emerald-700"
+                adjustmentType === "add" && "bg-success hover:bg-success"
               )}
               onClick={() => setAdjustmentType("add")}
             >

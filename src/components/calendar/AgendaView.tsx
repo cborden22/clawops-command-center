@@ -30,11 +30,11 @@ interface AgendaViewProps {
 }
 
 const taskTypeConfig: Record<TaskType, { icon: React.ComponentType<{ className?: string }>; color: string; label: string }> = {
-  restock: { icon: Package, color: "bg-emerald-500/20 text-emerald-600 border-emerald-500/30", label: "Restock" },
-  route: { icon: Car, color: "bg-blue-500/20 text-blue-600 border-blue-500/30", label: "Route" },
-  maintenance: { icon: Wrench, color: "bg-orange-500/20 text-orange-600 border-orange-500/30", label: "Maintenance" },
-  followup: { icon: Users, color: "bg-amber-500/20 text-amber-600 border-amber-500/30", label: "Follow-up" },
-  custom: { icon: CheckSquare, color: "bg-purple-500/20 text-purple-600 border-purple-500/30", label: "Task" },
+  restock: { icon: Package, color: "bg-success/20 text-success border-success/30", label: "Restock" },
+  route: { icon: Car, color: "bg-info/20 text-info border-info/30", label: "Route" },
+  maintenance: { icon: Wrench, color: "bg-warning/20 text-warning border-warning/30", label: "Maintenance" },
+  followup: { icon: Users, color: "bg-warning/20 text-warning border-warning/30", label: "Follow-up" },
+  custom: { icon: CheckSquare, color: "bg-info/20 text-info border-info/30", label: "Task" },
 };
 
 interface AgendaItem {
@@ -108,12 +108,12 @@ export function AgendaView({ scheduledTasks, onToggleCustomTask, onEditTask, onD
             <div className="flex items-center gap-2 mb-3">
               <h3 className={cn(
                 "text-sm font-semibold",
-                isToday(group.date) && "text-gold-500"
+                isToday(group.date) && "text-brand-500"
               )}>
                 {getDateLabel(group.date)}
               </h3>
               {isToday(group.date) && (
-                <Badge variant="outline" className="text-xs bg-gold-500/10 text-gold-500 border-gold-500/30">
+                <Badge variant="outline" className="text-xs bg-brand-500/10 text-brand-500 border-brand-500/30">
                   Today
                 </Badge>
               )}
@@ -165,7 +165,7 @@ export function AgendaView({ scheduledTasks, onToggleCustomTask, onEditTask, onD
                               >
                                 <Check className={cn(
                                   "h-4 w-4",
-                                  item.completed ? "text-green-500" : "text-muted-foreground"
+                                  item.completed ? "text-success" : "text-muted-foreground"
                                 )} />
                               </Button>
                             )}

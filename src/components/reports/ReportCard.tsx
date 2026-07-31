@@ -45,8 +45,8 @@ export function ReportCard({
             <span
               className={cn(
                 "text-xs font-medium px-2 py-0.5 rounded-full",
-                trend === "up" && "bg-green-500/10 text-green-600",
-                trend === "down" && "bg-red-500/10 text-red-600",
+                trend === "up" && "bg-success/10 text-success",
+                trend === "down" && "bg-destructive/10 text-destructive",
                 trend === "neutral" && "bg-muted text-muted-foreground"
               )}
             >
@@ -58,7 +58,7 @@ export function ReportCard({
       <CardContent>
         {metric !== undefined && (
           <div className="mb-2 min-w-0">
-            <p className="text-xl sm:text-2xl font-bold tracking-tight truncate">{metric}</p>
+            <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums truncate">{metric}</p>
             {metricLabel && (
               <p className="text-xs text-muted-foreground truncate">{metricLabel}</p>
             )}
@@ -93,9 +93,9 @@ export function ReportListItem({
         {rank !== undefined && (
           <span className={cn(
             "w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold",
-            rank === 1 && "bg-yellow-500/20 text-yellow-600",
-            rank === 2 && "bg-slate-400/20 text-slate-600",
-            rank === 3 && "bg-amber-600/20 text-amber-700",
+            rank === 1 && "bg-warning/20 text-warning",
+            rank === 2 && "bg-muted text-muted-foreground",
+            rank === 3 && "bg-brand-200 text-brand-800",
             rank > 3 && "bg-muted text-muted-foreground"
           )}>
             {rank}
@@ -104,10 +104,10 @@ export function ReportListItem({
         {Icon && !rank && (
           <span className={cn(
             "w-6 h-6 rounded-full flex items-center justify-center",
-            status === "success" && "bg-green-500/10 text-green-600",
-            status === "warning" && "bg-yellow-500/10 text-yellow-600",
-            status === "error" && "bg-red-500/10 text-red-600",
-            status === "info" && "bg-blue-500/10 text-blue-600",
+            status === "success" && "bg-success/10 text-success",
+            status === "warning" && "bg-warning/10 text-warning",
+            status === "error" && "bg-destructive/10 text-destructive",
+            status === "info" && "bg-info/10 text-info",
             !status && "bg-muted text-muted-foreground"
           )}>
             <Icon className="h-3.5 w-3.5" />
@@ -116,7 +116,7 @@ export function ReportListItem({
         <span className="text-sm font-medium truncate max-w-[150px]">{label}</span>
       </div>
       <div className="text-right">
-        <p className="text-sm font-semibold">{value}</p>
+        <p className="text-sm font-semibold tabular-nums">{value}</p>
         {subValue && (
           <p className="text-xs text-muted-foreground">{subValue}</p>
         )}

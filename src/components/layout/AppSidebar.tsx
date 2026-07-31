@@ -1,6 +1,22 @@
-import { useState, useEffect, useMemo } from "react"
-import { FileText, Receipt, Sparkles, Package, DollarSign, MapPin, LayoutDashboard, LogOut, Settings, ChevronRight, ChevronDown, Car, BarChart3, Wrench, Users, UsersRound, Calendar } from "lucide-react"
-import { NavLink, useLocation, useNavigate } from "react-router-dom"
+import { useMemo } from "react"
+import {
+  Sparkles,
+  Package,
+  DollarSign,
+  MapPin,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  ChevronRight,
+  Car,
+  BarChart3,
+  Wrench,
+  Users,
+  UsersRound,
+  Calendar,
+  Receipt,
+} from "lucide-react"
+import { NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions"
 import {
@@ -8,6 +24,7 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
   SidebarHeader,
@@ -22,108 +39,115 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
 
-const operationsItems = [
-  { title: "Leads", url: "/leads", icon: Users },
+type NavItem = {
+  title: string
+  url: string
+  icon: React.ComponentType<{ className?: string }>
+}
+
+// Daily-use destinations, flat and always visible.
+const primaryItems: NavItem[] = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Locations", url: "/locations", icon: MapPin },
-  { title: "Maintenance", url: "/maintenance", icon: Wrench },
+  { title: "Revenue", url: "/revenue", icon: DollarSign },
+  { title: "Inventory", url: "/inventory", icon: Package },
   { title: "Routes", url: "/mileage", icon: Car },
-  { title: "Inventory Tracker", url: "/inventory", icon: Package },
+  { title: "Leads", url: "/leads", icon: Users },
+  { title: "Maintenance", url: "/maintenance", icon: Wrench },
 ]
 
-const financialsItems = [
-  { title: "Revenue Tracker", url: "/revenue", icon: DollarSign },
+// Lower-frequency destinations, still one click away.
+const secondaryItems: NavItem[] = [
   { title: "Reports", url: "/reports", icon: BarChart3 },
-]
-
-const managementItems = [
-  { title: "Team", url: "/team", icon: UsersRound },
+  { title: "Receipts", url: "/receipts", icon: Receipt },
   { title: "Calendar", url: "/calendar", icon: Calendar },
+  { title: "Team", url: "/team", icon: UsersRound },
 ]
 
 export function AppSidebar() {
-  const location = useLocation()
   const navigate = useNavigate()
   const { user, signOut } = useAuth()
   const permissions = useMyTeamPermissions()
 
-  const filteredOperationsItems = useMemo(() => {
-    if (permissions.isLoading) return operationsItems
-    return operationsItems.filter(item => {
-      if (item.url === "/leads") return permissions.isOwner || permissions.canViewLeads
-      if (item.url === "/locations") return permissions.isOwner || permissions.canViewLocations
-      if (item.url === "/maintenance") return permissions.isOwner || permissions.canViewMaintenance
-      if (item.url === "/inventory") return permissions.isOwner || permissions.canViewInventory
-      if (item.url === "/mileage") return permissions.isOwner || permissions.canViewMileage
-      return true
-    })
+  const canSee = useMemo(() => {
+    return (url: string) => {
+      if (permissions.isLoading) return true
+      switch (url) {
+        case "/leads":
+          return permissions.isOwner || permissions.canViewLeads
+        case "/locations":
+          return permissions.isOwner || permissions.canViewLocations
+        case "/maintenance":
+          return permissions.isOwner || permissions.canViewMaintenance
+        case "/inventory":
+          return permissions.isOwner || permissions.canViewInventory
+        case "/mileage":
+          return permissions.isOwner || permissions.canViewMileage
+        case "/revenue":
+          return permissions.isOwner || permissions.canViewRevenue
+        case "/reports":
+          return permissions.isOwner || permissions.canViewReports
+        case "/receipts":
+          return permissions.isOwner || permissions.canViewRevenue
+        case "/team":
+        case "/calendar":
+          return permissions.isOwner
+        default:
+          return true
+      }
+    }
   }, [permissions])
 
-  const filteredFinancialsItems = useMemo(() => {
-    if (permissions.isLoading) return financialsItems
-    return financialsItems.filter(item => {
-      if (item.url === "/revenue") return permissions.isOwner || permissions.canViewRevenue
-      if (item.url === "/reports") return permissions.isOwner || permissions.canViewReports
-      return true
-    })
-  }, [permissions])
-
-  const showManagement = permissions.isOwner
-
-  const isInOperations = filteredOperationsItems.some(item => location.pathname === item.url)
-  const isInFinancials = filteredFinancialsItems.some(item => location.pathname === item.url)
-  const isInManagement = showManagement && managementItems.some(item => location.pathname === item.url)
-
-  const [operationsOpen, setOperationsOpen] = useState(isInOperations)
-  const [financialsOpen, setFinancialsOpen] = useState(isInFinancials)
-  const [managementOpen, setManagementOpen] = useState(isInManagement)
-
-  useEffect(() => {
-    if (isInOperations) setOperationsOpen(true)
-    if (isInFinancials) setFinancialsOpen(true)
-    if (isInManagement) setManagementOpen(true)
-  }, [isInOperations, isInFinancials, isInManagement])
+  const filteredPrimary = useMemo(
+    () => primaryItems.filter((item) => canSee(item.url)),
+    [canSee]
+  )
+  const filteredSecondary = useMemo(
+    () => secondaryItems.filter((item) => canSee(item.url)),
+    [canSee]
+  )
 
   const handleSignOut = async () => {
     await signOut()
   }
 
   const userInitials = user?.user_metadata?.full_name
-    ? user.user_metadata.full_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+    ? user.user_metadata.full_name
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
     : user?.email?.slice(0, 2).toUpperCase() || "U"
 
-  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"
+  const displayName =
+    user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"
 
-  const renderNavItem = (item: { title: string; url: string; icon: React.ComponentType<{ className?: string }> }) => (
-    <SidebarMenuItem key={item.title} className="p-0">
+  const renderNavItem = (item: NavItem) => (
+    <SidebarMenuItem key={item.url} className="p-0">
       <NavLink
         to={item.url}
+        end={item.url === "/"}
         className={({ isActive }) =>
-          `group flex items-center gap-3 p-3 rounded-xl transition-all duration-300 relative overflow-hidden ${
-            isActive 
-              ? "bg-gradient-to-r from-gold-500/20 to-gold-600/10 text-gold-500 font-semibold shadow-lg" 
-              : "hover:bg-white/5 hover:text-gold-400 hover:scale-105"
+          `group relative flex items-center gap-3 rounded-md pl-4 pr-3 py-2.5 text-sm transition-colors ${
+            isActive
+              ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
+              : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
           }`
         }
       >
         {({ isActive }) => (
           <>
-            <div className={`p-2 rounded-lg transition-all duration-300 ${
-              isActive 
-                ? "bg-gold-500 text-primary-foreground shadow-lg" 
-                : "bg-white/5 group-hover:bg-gold-500/20"
-            }`}>
-              <item.icon className="h-4 w-4" />
-            </div>
-            <span className="text-sm font-medium flex-1">{item.title}</span>
             {isActive && (
-              <div className="w-2 h-8 bg-gradient-to-b from-gold-500 to-gold-600 rounded-full shadow-glow ml-2" />
+              <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-primary" />
             )}
+            <item.icon
+              className={`h-4 w-4 shrink-0 ${
+                isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+              }`}
+            />
+            <span className="truncate">{item.title}</span>
           </>
         )}
       </NavLink>
@@ -131,137 +155,64 @@ export function AppSidebar() {
   )
 
   return (
-    <Sidebar className="glass-card border-r border-white/10">
+    <Sidebar className="border-r border-sidebar-border bg-sidebar">
       <SidebarContent>
-        <SidebarHeader className="p-6">
+        <SidebarHeader className="px-4 py-5">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Sparkles className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div className="absolute -inset-1 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl opacity-20 blur animate-glow" />
+            <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
+              <Sparkles className="h-4.5 w-4.5 text-primary-foreground" />
             </div>
-            <div>
-              <h1 className="font-bold text-xl bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
+            <div className="min-w-0">
+              <h1 className="font-semibold text-base text-sidebar-foreground truncate">
                 ClawOps
               </h1>
-              <p className="text-xs text-muted-foreground font-medium">Professional Suite</p>
+              <p className="text-xs text-muted-foreground truncate">
+                Operations suite
+              </p>
             </div>
           </div>
         </SidebarHeader>
 
-        <SidebarMenu className="px-4">
-          {/* Dashboard */}
-          <SidebarGroup>
+        <SidebarGroup className="px-2">
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-0.5">
+              {filteredPrimary.map(renderNavItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {filteredSecondary.length > 0 && (
+          <SidebarGroup className="px-2 mt-2 border-t border-sidebar-border pt-3">
+            <SidebarGroupLabel className="px-4 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Insights &amp; Admin
+            </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenuItem className="p-0">
-                <NavLink
-                  to="/"
-                  className={({ isActive }) =>
-                    `group flex items-center gap-3 p-3 rounded-xl transition-all duration-300 relative overflow-hidden ${
-                      isActive 
-                        ? "bg-gradient-to-r from-gold-500/20 to-gold-600/10 text-gold-500 font-semibold shadow-lg" 
-                        : "hover:bg-white/5 hover:text-gold-400 hover:scale-105"
-                    }`
-                  }
-                >
-                  {({ isActive }) => (
-                    <>
-                      <div className={`p-2 rounded-lg transition-all duration-300 ${
-                        isActive 
-                          ? "bg-gold-500 text-primary-foreground shadow-lg" 
-                          : "bg-white/5 group-hover:bg-gold-500/20"
-                      }`}>
-                        <LayoutDashboard className="h-4 w-4" />
-                      </div>
-                      <span className="text-sm font-medium flex-1">Dashboard</span>
-                      {isActive && (
-                        <div className="w-2 h-8 bg-gradient-to-b from-gold-500 to-gold-600 rounded-full shadow-glow ml-2" />
-                      )}
-                    </>
-                  )}
-                </NavLink>
-              </SidebarMenuItem>
+              <SidebarMenu className="gap-0.5">
+                {filteredSecondary.map(renderNavItem)}
+              </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-
-          {/* Operations */}
-          {filteredOperationsItems.length > 0 && (
-            <SidebarGroup>
-              <Collapsible open={operationsOpen} onOpenChange={setOperationsOpen}>
-                <CollapsibleTrigger asChild>
-                  <button className="flex items-center justify-between w-full px-2 py-2 text-xs font-semibold text-gold-500 hover:text-gold-400 transition-colors">
-                    <span>Operations</span>
-                    <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${operationsOpen ? 'rotate-0' : '-rotate-90'}`} />
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1">
-                  <SidebarGroupContent className="space-y-2">
-                    {filteredOperationsItems.map(renderNavItem)}
-                  </SidebarGroupContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </SidebarGroup>
-          )}
-
-          {/* Financials */}
-          {filteredFinancialsItems.length > 0 && (
-            <SidebarGroup>
-              <Collapsible open={financialsOpen} onOpenChange={setFinancialsOpen}>
-                <CollapsibleTrigger asChild>
-                  <button className="flex items-center justify-between w-full px-2 py-2 text-xs font-semibold text-gold-500 hover:text-gold-400 transition-colors">
-                    <span>Financials & Reports</span>
-                    <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${financialsOpen ? 'rotate-0' : '-rotate-90'}`} />
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1">
-                  <SidebarGroupContent className="space-y-2">
-                    {filteredFinancialsItems.map(renderNavItem)}
-                  </SidebarGroupContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </SidebarGroup>
-          )}
-
-          {/* Management */}
-          {showManagement && (
-            <SidebarGroup>
-              <Collapsible open={managementOpen} onOpenChange={setManagementOpen}>
-                <CollapsibleTrigger asChild>
-                  <button className="flex items-center justify-between w-full px-2 py-2 text-xs font-semibold text-gold-500 hover:text-gold-400 transition-colors">
-                    <span>Management</span>
-                    <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${managementOpen ? 'rotate-0' : '-rotate-90'}`} />
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1">
-                  <SidebarGroupContent className="space-y-2">
-                    {managementItems.map(renderNavItem)}
-                  </SidebarGroupContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </SidebarGroup>
-          )}
-        </SidebarMenu>
+        )}
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-white/10">
+      <SidebarFooter className="p-3 border-t border-sidebar-border">
         {user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start gap-3 h-auto p-3 hover:bg-white/5"
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 h-auto p-2 hover:bg-sidebar-accent"
               >
-                <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-gradient-to-br from-gold-500 to-gold-600 text-primary-foreground text-sm font-semibold">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1 text-left">
+                <div className="flex-1 min-w-0 text-left">
                   <p className="text-sm font-medium truncate">{displayName}</p>
                   <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -270,15 +221,18 @@ export function AppSidebar() {
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+              <DropdownMenuItem
+                onClick={handleSignOut}
+                className="text-destructive focus:text-destructive"
+              >
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-        <p className="text-xs text-muted-foreground text-center mt-4">
-          Copyright © {new Date().getFullYear()} ClawOps
+        <p className="text-[11px] text-muted-foreground text-center mt-3">
+          © {new Date().getFullYear()} ClawOps
         </p>
       </SidebarFooter>
     </Sidebar>

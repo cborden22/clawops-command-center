@@ -23,7 +23,7 @@ export function BusinessHealthWidget({
   locationGrowth,
 }: BusinessHealthWidgetProps) {
   const GrowthIcon = overallGrowth > 0 ? TrendingUp : overallGrowth < 0 ? TrendingDown : Minus;
-  const growthColor = overallGrowth > 0 ? "text-green-600" : overallGrowth < 0 ? "text-destructive" : "text-muted-foreground";
+  const growthColor = overallGrowth > 0 ? "text-success" : overallGrowth < 0 ? "text-destructive" : "text-muted-foreground";
 
   return (
     <Card className="glass-card h-full">
@@ -40,7 +40,7 @@ export function BusinessHealthWidget({
             <p className="text-xs text-muted-foreground mb-1">Rev/Machine/Wk</p>
             <p className="text-lg font-bold">${revenuePerMachineThisWeek.toFixed(0)}</p>
             <div className={cn("flex items-center justify-center gap-1 text-xs", 
-              weekOverWeekChange > 0 ? "text-green-600" : weekOverWeekChange < 0 ? "text-destructive" : "text-muted-foreground"
+              weekOverWeekChange > 0 ? "text-success" : weekOverWeekChange < 0 ? "text-destructive" : "text-muted-foreground"
             )}>
               {weekOverWeekChange > 0 ? <TrendingUp className="h-3 w-3" /> : weekOverWeekChange < 0 ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
               {Math.abs(weekOverWeekChange).toFixed(0)}%
@@ -62,9 +62,9 @@ export function BusinessHealthWidget({
 
         {/* Underperformers */}
         {underperformers.length > 0 && (
-          <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+          <div className="p-3 rounded-lg bg-warning/5 border border-warning/20">
             <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <AlertTriangle className="h-4 w-4 text-warning" />
               <span className="text-sm font-medium">Needs Attention</span>
             </div>
             <div className="space-y-1">
@@ -85,7 +85,7 @@ export function BusinessHealthWidget({
             {locationGrowth.filter(lg => lg.growthPercent > 0).slice(0, 3).map(lg => (
               <div key={lg.locationName} className="flex items-center justify-between text-sm">
                 <span className="truncate mr-2">{lg.locationName}</span>
-                <Badge variant="secondary" className="text-green-600 text-xs">
+                <Badge variant="secondary" className="text-success text-xs">
                   +{lg.growthPercent.toFixed(0)}%
                 </Badge>
               </div>

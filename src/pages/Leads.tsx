@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatCard } from '@/components/shared/StatCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, LayoutGrid, List, Users, TrendingUp, Calendar, Flame } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -145,60 +146,25 @@ export default function Leads() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="bg-card/80 backdrop-blur-sm">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-                <Users className="h-4 w-4 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-bold">{stats.total}</p>
-                <p className="text-xs text-muted-foreground truncate">Total Leads</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/80 backdrop-blur-sm">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10 shrink-0">
-                <TrendingUp className="h-4 w-4 text-green-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-bold">{stats.conversionRate}%</p>
-                <p className="text-xs text-muted-foreground truncate">Conversion Rate</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/80 backdrop-blur-sm">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10 shrink-0">
-                <Calendar className="h-4 w-4 text-amber-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-bold">{stats.followUpsDue}</p>
-                <p className="text-xs text-muted-foreground truncate">Follow-ups Due</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/80 backdrop-blur-sm">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-2 rounded-lg bg-red-500/10 shrink-0">
-                <Flame className="h-4 w-4 text-red-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-bold">
-                  {leads.filter(l => l.priority === 'hot' && l.status !== 'won' && l.status !== 'lost').length}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">Hot Leads</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard label="Total Leads" value={stats.total} icon={Users} />
+        <StatCard
+          label="Conversion Rate"
+          value={`${stats.conversionRate}%`}
+          icon={TrendingUp}
+          tone="success"
+        />
+        <StatCard
+          label="Follow-ups Due"
+          value={stats.followUpsDue}
+          icon={Calendar}
+          tone="warning"
+        />
+        <StatCard
+          label="Hot Leads"
+          value={leads.filter(l => l.priority === 'hot' && l.status !== 'won' && l.status !== 'lost').length}
+          icon={Flame}
+          tone="destructive"
+        />
       </div>
 
       {/* Filters & View Toggle */}

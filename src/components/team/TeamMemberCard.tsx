@@ -93,12 +93,12 @@ export function TeamMemberCard({
 
   const roleColors: Record<TeamRole, string> = {
     owner: "bg-primary text-primary-foreground",
-    manager: "bg-blue-500/20 text-blue-600 dark:text-blue-400",
-    technician: "bg-green-500/20 text-green-600 dark:text-green-400",
-    supervisor: "bg-purple-500/20 text-purple-600 dark:text-purple-400",
-    route_driver: "bg-orange-500/20 text-orange-600 dark:text-orange-400",
+    manager: "bg-info/20 text-info dark:text-info",
+    technician: "bg-success/20 text-success dark:text-success",
+    supervisor: "bg-info/20 text-info dark:text-info",
+    route_driver: "bg-warning/20 text-warning dark:text-warning",
     inventory_clerk: "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400",
-    sales_manager: "bg-pink-500/20 text-pink-600 dark:text-pink-400",
+    sales_manager: "bg-info/20 text-info dark:text-info",
   };
 
   const formatRoleLabel = (role: string) => {

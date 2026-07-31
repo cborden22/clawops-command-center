@@ -63,11 +63,11 @@ interface CalendarDisplayTask {
 }
 
 const taskTypeConfig: Record<ExtendedTaskType, { icon: React.ComponentType<{ className?: string }>; color: string; label: string }> = {
-  restock: { icon: Package, color: "bg-emerald-500/20 text-emerald-600 border-emerald-500/30", label: "Restock" },
-  route: { icon: Car, color: "bg-blue-500/20 text-blue-600 border-blue-500/30", label: "Route" },
-  maintenance: { icon: Wrench, color: "bg-orange-500/20 text-orange-600 border-orange-500/30", label: "Maintenance" },
-  followup: { icon: Users, color: "bg-amber-500/20 text-amber-600 border-amber-500/30", label: "Follow-up" },
-  custom: { icon: CheckSquare, color: "bg-purple-500/20 text-purple-600 border-purple-500/30", label: "Task" },
+  restock: { icon: Package, color: "bg-success/20 text-success border-success/30", label: "Restock" },
+  route: { icon: Car, color: "bg-info/20 text-info border-info/30", label: "Route" },
+  maintenance: { icon: Wrench, color: "bg-warning/20 text-warning border-warning/30", label: "Maintenance" },
+  followup: { icon: Users, color: "bg-warning/20 text-warning border-warning/30", label: "Follow-up" },
+  custom: { icon: CheckSquare, color: "bg-info/20 text-info border-info/30", label: "Task" },
 };
 
 export default function Calendar() {
@@ -304,7 +304,7 @@ export default function Calendar() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-brand-500 to-brand-600 bg-clip-text text-transparent">
             Calendar
           </h1>
           <p className="text-muted-foreground">
@@ -397,13 +397,13 @@ export default function Calendar() {
                           className={cn(
                             "min-h-[90px] sm:min-h-[100px] p-1.5 text-left border rounded-lg transition-all hover:bg-accent/50",
                             !isCurrentMonth && "opacity-40",
-                            isToday && "border-gold-500 bg-gold-500/10",
-                            isSelected && "ring-2 ring-gold-500"
+                            isToday && "border-brand-500 bg-brand-500/10",
+                            isSelected && "ring-2 ring-brand-500"
                           )}
                         >
                           <div className={cn(
                             "text-sm font-medium mb-1",
-                            isToday && "text-gold-500"
+                            isToday && "text-brand-500"
                           )}>
                             {format(day, "d")}
                           </div>
@@ -450,8 +450,8 @@ export default function Calendar() {
                           onClick={() => setSelectedDate(day)}
                           className={cn(
                             "min-h-[300px] p-2 text-left border rounded-lg transition-all hover:bg-accent/50",
-                            isToday && "border-gold-500 bg-gold-500/10",
-                            isSelected && "ring-2 ring-gold-500"
+                            isToday && "border-brand-500 bg-brand-500/10",
+                            isSelected && "ring-2 ring-brand-500"
                           )}
                         >
                           <div className="text-center mb-2">
@@ -460,7 +460,7 @@ export default function Calendar() {
                             </div>
                             <div className={cn(
                               "text-lg font-semibold",
-                              isToday && "text-gold-500"
+                              isToday && "text-brand-500"
                             )}>
                               {format(day, "d")}
                             </div>
@@ -511,7 +511,7 @@ export default function Calendar() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <CalendarIcon className="h-5 w-5 text-gold-500" />
+                  <CalendarIcon className="h-5 w-5 text-brand-500" />
                   {selectedDate ? format(selectedDate, "MMM d, yyyy") : "Select a day"}
                 </CardTitle>
                 {selectedDate && selectedDateTasks.length > 0 && (
@@ -577,7 +577,7 @@ export default function Calendar() {
                                   >
                                     <Check className={cn(
                                       "h-3.5 w-3.5",
-                                      isCompleted ? "text-green-500" : "text-muted-foreground"
+                                      isCompleted ? "text-success" : "text-muted-foreground"
                                     )} />
                                   </Button>
                                   <Button

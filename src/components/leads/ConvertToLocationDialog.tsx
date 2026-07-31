@@ -266,8 +266,8 @@ export function ConvertToLocationDialog({ lead, open, onOpenChange, onSuccess }:
 
         {isSuccess ? (
           <div className="py-8 text-center space-y-4">
-            <div className="mx-auto w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
+            <div className="mx-auto w-16 h-16 rounded-full bg-success/20 flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 text-success" />
             </div>
             <div>
               <h3 className="text-lg font-semibold">Location Created!</h3>

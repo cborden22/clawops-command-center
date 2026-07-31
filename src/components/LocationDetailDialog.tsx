@@ -808,19 +808,19 @@ export function LocationDetailDialog({
                                 </div>
                                 <div className="flex items-center gap-2">
                                   {comparison.status === "on-target" && (
-                                    <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200">
+                                    <Badge variant="outline" className="bg-success/10 text-success border-success/40">
                                       <Minus className="h-3 w-3 mr-1" />
                                       On Target
                                     </Badge>
                                   )}
                                   {comparison.status === "over" && (
-                                    <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200">
+                                    <Badge variant="outline" className="bg-warning/10 text-warning border-warning/40">
                                       <TrendingUp className="h-3 w-3 mr-1" />
                                       +{comparison.variance.toFixed(0)}%
                                     </Badge>
                                   )}
                                   {comparison.status === "under" && (
-                                    <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-200">
+                                    <Badge variant="outline" className="bg-info/10 text-info border-info/40">
                                       <TrendingDown className="h-3 w-3 mr-1" />
                                       -{comparison.variance.toFixed(0)}%
                                     </Badge>
@@ -969,7 +969,7 @@ export function LocationDetailDialog({
                 </div>
               ) : (
                 localCommissionSummaries.map((summary) => (
-                  <Card key={summary.id} className={`hover:shadow-md transition-shadow ${summary.commissionPaid ? 'border-l-4 border-l-emerald-500' : ''}`}>
+                  <Card key={summary.id} className={`hover:shadow-md transition-shadow ${summary.commissionPaid ? 'border-l-4 border-l-success' : ''}`}>
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
@@ -983,7 +983,7 @@ export function LocationDetailDialog({
                             />
                             <label
                               htmlFor={`paid-${summary.id}`}
-                              className={`text-sm cursor-pointer ${summary.commissionPaid ? 'text-emerald-600 font-medium' : 'text-muted-foreground'}`}
+                              className={`text-sm cursor-pointer ${summary.commissionPaid ? 'text-success font-medium' : 'text-muted-foreground'}`}
                             >
                               {summary.commissionPaid ? 'Paid' : 'Unpaid'}
                             </label>
@@ -1002,7 +1002,7 @@ export function LocationDetailDialog({
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge className={summary.commissionPaid ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-primary/20 text-primary hover:bg-primary/30'}>
+                          <Badge className={summary.commissionPaid ? 'bg-success/10 text-success hover:bg-success/10' : 'bg-primary/20 text-primary hover:bg-primary/30'}>
                             ${summary.commissionAmount.toFixed(2)}
                           </Badge>
                           <Button

@@ -325,7 +325,7 @@ export default function Settings() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-brand-500 to-brand-600 bg-clip-text text-transparent">
           Settings
         </h1>
         <p className="text-muted-foreground mt-1">
@@ -536,7 +536,7 @@ export default function Settings() {
             <CardContent className="space-y-4">
               <div className="flex flex-col sm:flex-row gap-6 items-start">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="p-3 bg-white rounded-xl border">
+                  <div className="p-3 bg-card rounded-xl border">
                     <QRCodeSVG
                       value="https://example.com/preview"
                       size={120}
@@ -552,7 +552,7 @@ export default function Settings() {
                 <div className="flex-1 space-y-3">
                   {qrLogoUrl ? (
                     <div className="flex items-center gap-3">
-                      <img src={qrLogoUrl} alt="Current QR logo" className="h-12 w-12 object-contain rounded border bg-white p-1" />
+                      <img src={qrLogoUrl} alt="Current QR logo" className="h-12 w-12 object-contain rounded border bg-card p-1" />
                       <div className="flex-1">
                         <p className="text-sm font-medium">Logo uploaded</p>
                         <p className="text-xs text-muted-foreground">Appears on all QR codes automatically</p>

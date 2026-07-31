@@ -22,17 +22,17 @@ export function RestockDueWidget({
     <Card className={cn(
       "glass-card",
       overdueRestocks.length > 0 && "border-destructive/30",
-      overdueRestocks.length === 0 && dueTodayRestocks.length > 0 && "border-amber-500/30"
+      overdueRestocks.length === 0 && dueTodayRestocks.length > 0 && "border-warning/30"
     )}>
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle className="text-lg flex items-center gap-2">
           {hasAlerts ? (
             <AlertTriangle className={cn(
               "h-5 w-5",
-              overdueRestocks.length > 0 ? "text-destructive" : "text-amber-500"
+              overdueRestocks.length > 0 ? "text-destructive" : "text-warning"
             )} />
           ) : (
-            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            <CheckCircle2 className="h-5 w-5 text-success" />
           )}
           Restock Reminders
           {hasAlerts && (
@@ -40,7 +40,7 @@ export function RestockDueWidget({
               variant="destructive" 
               className={cn(
                 "text-xs",
-                overdueRestocks.length === 0 && "bg-amber-500 hover:bg-amber-600"
+                overdueRestocks.length === 0 && "bg-warning hover:bg-warning"
               )}
             >
               {overdueRestocks.length + dueTodayRestocks.length}
@@ -55,7 +55,7 @@ export function RestockDueWidget({
       </CardHeader>
       <CardContent className="space-y-3">
         {!hasAlerts ? (
-          <div className="text-center py-6 text-green-600 text-sm font-medium">
+          <div className="text-center py-6 text-success text-sm font-medium">
             <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
             All restocks are up to date
           </div>
@@ -94,11 +94,11 @@ export function RestockDueWidget({
             {dueTodayRestocks.map((restock) => (
               <div
                 key={restock.locationId}
-                className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 space-y-2"
+                className="p-3 rounded-lg bg-warning/5 border border-warning/20 space-y-2"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <MapPin className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="font-medium text-sm">{restock.locationName}</p>
                       <p className="text-xs text-muted-foreground">
@@ -106,7 +106,7 @@ export function RestockDueWidget({
                       </p>
                     </div>
                   </div>
-                  <Badge className="text-xs flex-shrink-0 bg-amber-500 hover:bg-amber-600">
+                  <Badge className="text-xs flex-shrink-0 bg-warning hover:bg-warning">
                     Due today
                   </Badge>
                 </div>

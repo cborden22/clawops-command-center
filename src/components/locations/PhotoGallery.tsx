@@ -71,7 +71,7 @@ export function PhotoGallery({ locationId, className }: PhotoGalleryProps) {
                 className="w-full h-full object-cover"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+              <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/40 transition-colors flex items-center justify-center">
                 <Button
                   variant="destructive"
                   size="icon"
