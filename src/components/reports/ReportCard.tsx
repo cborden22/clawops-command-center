@@ -124,12 +124,3 @@ export function ReportListItem({
     </div>
   );
 }
-      <div className="text-right">
-        <p className="text-sm font-semibold">{value}</p>
-        {subValue && (
-          <p className="text-xs text-muted-foreground">{subValue}</p>
-        )}
-      </div>
-    </div>
-  );
-}
