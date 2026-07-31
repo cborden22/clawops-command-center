@@ -208,7 +208,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
         value={query}
         onValueChange={setQuery}
       />
-      <CommandList>
+      <CommandList className="max-h-[300px] sm:max-h-[400px] max-sm:max-h-[calc(100dvh-8rem)] max-sm:h-[calc(100dvh-8rem)] pb-[env(safe-area-inset-bottom)]">
         <CommandEmpty>No results found.</CommandEmpty>
 
         {query.length === 0 && recentItems.length > 0 && (
