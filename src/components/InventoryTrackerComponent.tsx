@@ -429,7 +429,12 @@ export function InventoryTrackerComponent() {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   if (!isLoaded) {
-    return <div className="flex items-center justify-center py-12">Loading...</div>;
+    return (
+      <div className="space-y-4">
+        <SkeletonGrid count={4} columns={4} />
+        <SkeletonList count={6} />
+      </div>
+    );
   }
 
   return (

@@ -28,6 +28,8 @@ import { toast } from "@/hooks/use-toast";
 import { useLocations } from "@/hooks/useLocationsDB";
 import { useMachineTypesDB } from "@/hooks/useMachineTypesDB";
 import { useRevenueEntries, EntryType, RevenueEntry } from "@/hooks/useRevenueEntriesDB";
+import { SkeletonGrid, SkeletonList } from "@/components/shared/SkeletonGrid";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -532,7 +534,12 @@ export function RevenueTrackerComponent() {
   const totalBusinessExpenses = businessExpenses.reduce((sum, e) => sum + e.amount, 0);
 
   if (!isLoaded || !entriesLoaded) {
-    return <div className="flex items-center justify-center py-12">Loading...</div>;
+    return (
+      <div className="space-y-6">
+        <SkeletonGrid count={4} columns={4} />
+        <SkeletonList count={6} />
+      </div>
+    );
   }
 
   return (
