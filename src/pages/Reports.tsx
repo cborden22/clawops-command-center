@@ -13,6 +13,7 @@ import { useReportsData, DateRange, getDateRangeFromPreset } from "@/hooks/useRe
 import { handleExport, ExportType } from "@/utils/csvExport";
 import { generatePDFFromHTML } from "@/utils/pdfGenerator";
 import { toast } from "@/hooks/use-toast";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 export default function Reports() {
   const [dateRange, setDateRange] = useState<DateRange>(() => 
