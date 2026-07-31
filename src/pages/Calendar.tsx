@@ -302,30 +302,25 @@ export default function Calendar() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-brand-500 to-brand-600 bg-clip-text text-transparent">
-            Calendar
-          </h1>
-          <p className="text-muted-foreground">
-            View and manage your scheduled tasks
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={handleToday}>
-            Today
-          </Button>
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "month" | "week" | "agenda")}>
-            <TabsList>
-              <TabsTrigger value="month">Month</TabsTrigger>
-              <TabsTrigger value="week">Week</TabsTrigger>
-              <TabsTrigger value="agenda">Agenda</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <AddTaskDialog defaultDate={selectedDate || new Date()} createTask={createTask} />
-        </div>
-      </div>
+      <PageHeader
+        title="Calendar"
+        description="View and manage your scheduled tasks"
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={handleToday}>
+              Today
+            </Button>
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "month" | "week" | "agenda")}>
+              <TabsList>
+                <TabsTrigger value="month">Month</TabsTrigger>
+                <TabsTrigger value="week">Week</TabsTrigger>
+                <TabsTrigger value="agenda">Agenda</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <AddTaskDialog defaultDate={selectedDate || new Date()} createTask={createTask} />
+          </div>
+        }
+      />
 
       {/* Task Summary */}
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
