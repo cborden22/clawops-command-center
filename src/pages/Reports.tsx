@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { format } from "date-fns";
-import { BarChart3, MapPin, Cpu, DollarSign, Package, Car, Target } from "lucide-react";
+import { MapPin, Cpu, DollarSign, Package, Car, Target } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DateRangeFilter } from "@/components/reports/DateRangeFilter";
 import { LocationReports } from "@/components/reports/LocationReports";
