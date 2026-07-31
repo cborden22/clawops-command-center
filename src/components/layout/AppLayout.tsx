@@ -6,6 +6,8 @@ import { useLocation } from "react-router-dom"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { UpdateNotification } from "@/components/shared/UpdateNotification"
 import { getPageTitle } from "@/lib/navigation"
+import { CommandPalette, useCommandPalette, CommandPaletteButton } from "@/components/shared/CommandPalette"
+import { KeyboardShortcutsDialog, useKeyboardShortcuts } from "@/components/shared/KeyboardShortcuts"
 
 interface AppLayoutProps {
   children: ReactNode
