@@ -21,6 +21,7 @@ import {
   startOfWeek, endOfWeek, subWeeks, startOfYear, endOfYear, subYears,
   startOfQuarter, endOfQuarter, subQuarters, differenceInDays, addDays, addWeeks, addMonths, addYears
 } from "date-fns";
+import { StatCard } from "@/components/shared/StatCard";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { toast } from "@/hooks/use-toast";
@@ -538,73 +539,29 @@ export function RevenueTrackerComponent() {
     <div className="space-y-6 animate-fade-in">
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-4 sm:pt-6 relative">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-success/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-2 sm:gap-4 relative">
-              <div className="p-2 sm:p-3 rounded-xl bg-success shadow-lg group-hover:scale-110 transition-transform duration-300 shrink-0">
-                <ArrowUpCircle className="h-4 w-4 sm:h-6 sm:w-6 text-primary-foreground" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Total Income</p>
-                <p className="text-lg sm:text-2xl font-bold text-foreground tracking-tight truncate">${totalIncome.toFixed(2)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-4 sm:pt-6 relative">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-destructive/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-2 sm:gap-4 relative">
-              <div className="p-2 sm:p-3 rounded-xl bg-destructive shadow-lg group-hover:scale-110 transition-transform duration-300 shrink-0">
-                <ArrowDownCircle className="h-4 w-4 sm:h-6 sm:w-6 text-primary-foreground" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Total Expenses</p>
-                <p className="text-lg sm:text-2xl font-bold text-foreground tracking-tight truncate">${totalExpenses.toFixed(2)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-4 sm:pt-6 relative">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-2 sm:gap-4 relative">
-              <div className={cn(
-                "p-2 sm:p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300 shrink-0",
-                netProfit >= 0 ? "bg-gradient-to-br from-primary to-primary/80" : "bg-warning"
-              )}>
-                <Wallet className="h-4 w-4 sm:h-6 sm:w-6 text-primary-foreground" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Net Profit</p>
-                <p className={cn(
-                  "text-lg sm:text-2xl font-bold tracking-tight truncate",
-                  netProfit >= 0 ? "text-foreground" : "text-warning"
-                )}>
-                  {netProfit < 0 ? "-" : ""}${Math.abs(netProfit).toFixed(2)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-4 sm:pt-6 relative">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-accent/50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-2 sm:gap-4 relative">
-              <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-muted to-muted/80 shadow-md group-hover:scale-110 transition-transform duration-300 shrink-0">
-                <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Avg Collection</p>
-                <p className="text-lg sm:text-2xl font-bold text-foreground tracking-tight truncate">${avgPerCollection.toFixed(2)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          label="Total Income"
+          value={`$${totalIncome.toFixed(2)}`}
+          icon={ArrowUpCircle}
+          tone="success"
+        />
+        <StatCard
+          label="Total Expenses"
+          value={`$${totalExpenses.toFixed(2)}`}
+          icon={ArrowDownCircle}
+          tone="destructive"
+        />
+        <StatCard
+          label="Net Profit"
+          value={`${netProfit < 0 ? "-" : ""}$${Math.abs(netProfit).toFixed(2)}`}
+          icon={Wallet}
+          tone={netProfit >= 0 ? "default" : "warning"}
+        />
+        <StatCard
+          label="Avg Collection"
+          value={`$${avgPerCollection.toFixed(2)}`}
+          icon={TrendingUp}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
