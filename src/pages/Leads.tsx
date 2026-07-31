@@ -217,8 +217,20 @@ export default function Leads() {
             <LeadCard key={lead.id} lead={lead} onClick={() => handleLeadClick(lead)} />
           ))}
           {filteredLeads.length === 0 && (
-            <div className="col-span-full text-center py-12 text-muted-foreground">
-              No leads found
+            <div className="col-span-full">
+              <EmptyState
+                icon={Users}
+                title="No leads found"
+                description={searchQuery ? "Try adjusting your search or filters." : "Add your first lead to start tracking potential locations."}
+                action={
+                  !searchQuery && (
+                    <Button onClick={() => setShowAddDialog(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Lead
+                    </Button>
+                  )
+                }
+              />
             </div>
           )}
         </div>
