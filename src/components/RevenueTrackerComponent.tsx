@@ -1224,10 +1224,25 @@ export function RevenueTrackerComponent() {
             </CardHeader>
             <CardContent className="pt-6">
               {filteredEntries.length === 0 ? (
-                <div className="text-center py-12">
-                  <DollarSign className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                  <p className="text-muted-foreground">No entries recorded yet</p>
-                </div>
+                entries.length === 0 ? (
+                  <EmptyState
+                    icon={DollarSign}
+                    title="No entries recorded yet"
+                    description="Log your first collection or expense to start tracking revenue."
+                  />
+                ) : (
+                  <EmptyState
+                    icon={DollarSign}
+                    title="No entries match these filters"
+                    description="Try a different period, location, or entry type."
+                    onClear={() => {
+                      setFilterPeriod("thisMonth");
+                      setFilterLocation("all");
+                      setFilterType("all");
+                      setEntriesPage(1);
+                    }}
+                  />
+                )
               ) : (
                 <>
                 <div className="rounded-xl border overflow-hidden">

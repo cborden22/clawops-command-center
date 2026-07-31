@@ -54,6 +54,7 @@ import { useMachineTypesDB } from "@/hooks/useMachineTypesDB";
 import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 interface MachineWithLocation {
   machineType: MachineType;
@@ -483,15 +484,11 @@ export function MachinesManager() {
 
           {/* Table or Empty State */}
           {allMachines.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="h-10 w-10 text-muted-foreground/50" />
-              </div>
-              <p className="font-medium text-muted-foreground">No machines yet</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">
-                Add machines to your locations to get started
-              </p>
-            </div>
+            <EmptyState
+              icon={Sparkles}
+              title="No machines yet"
+              description="Add machines to your locations to get started."
+            />
           ) : filteredMachines.length === 0 ? (
             <div className="text-center py-12">
               <Search className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />

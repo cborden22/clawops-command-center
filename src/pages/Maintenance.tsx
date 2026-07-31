@@ -43,6 +43,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useMaintenanceReports, MaintenanceReport } from "@/hooks/useMaintenanceReports";
 import { toast } from "@/hooks/use-toast";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 const ISSUE_TYPE_LABELS: Record<string, string> = {
   not_working: "Not Working",
@@ -456,10 +457,12 @@ export default function Maintenance() {
         <TabsContent value="in_progress" className="space-y-4 mt-4">
           {inProgressReports.length === 0 ? (
             <Card className="glass-card">
-              <CardContent className="py-12 text-center">
-                <Wrench className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-                <p className="font-medium">No Reports In Progress</p>
-                <p className="text-sm text-muted-foreground">Move open issues here when you start working on them</p>
+              <CardContent className="p-0">
+                <EmptyState
+                  icon={Wrench}
+                  title="No reports in progress"
+                  description="Move open issues here when you start working on them."
+                />
               </CardContent>
             </Card>
           ) : (
@@ -478,10 +481,12 @@ export default function Maintenance() {
         <TabsContent value="resolved" className="space-y-4 mt-4">
           {resolvedReports.length === 0 ? (
             <Card className="glass-card">
-              <CardContent className="py-12 text-center">
-                <CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-                <p className="font-medium">No Resolved Reports Yet</p>
-                <p className="text-sm text-muted-foreground">Completed issues will appear here</p>
+              <CardContent className="p-0">
+                <EmptyState
+                  icon={CheckCircle2}
+                  title="No resolved reports yet"
+                  description="Completed issues will appear here."
+                />
               </CardContent>
             </Card>
           ) : (

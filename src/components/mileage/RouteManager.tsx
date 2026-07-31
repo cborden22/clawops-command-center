@@ -26,6 +26,7 @@ import { RouteEditor } from "./RouteEditor";
 import { RoutePreview } from "./RoutePreview";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -132,13 +133,18 @@ export function RouteManager({
       {/* Routes List */}
       {routes.length === 0 ? (
         <Card className="glass-card">
-          <CardContent className="py-12 text-center">
-            <Route className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
-            <p className="text-muted-foreground mb-4">No routes saved yet</p>
-            <Button onClick={handleCreate} variant="outline" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Create Your First Route
-            </Button>
+          <CardContent className="p-0">
+            <EmptyState
+              icon={Route}
+              title="No routes saved yet"
+              description="Build a route to guide multi-stop collection runs."
+              action={
+                <Button onClick={handleCreate} variant="outline" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Create Your First Route
+                </Button>
+              }
+            />
           </CardContent>
         </Card>
       ) : (

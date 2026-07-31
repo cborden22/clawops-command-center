@@ -10,6 +10,7 @@ import { TeamMemberCard } from "@/components/team/TeamMemberCard";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { toast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/EmptyState";
 export default function Team() {
   const {
     teamMembers,
@@ -133,17 +134,17 @@ export default function Team() {
               ))}
             </div>
           ) : teamMembers.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium">No team members yet</h3>
-              <p className="text-muted-foreground mt-1 mb-4">
-                Invite technicians or managers to help run your operations
-              </p>
-              <Button onClick={handleInviteClick} className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                Invite Your First Member
-              </Button>
-            </div>
+            <EmptyState
+              icon={Users}
+              title="No team members yet"
+              description="Invite technicians or managers to help run your operations."
+              action={
+                <Button onClick={handleInviteClick} className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Invite Your First Member
+                </Button>
+              }
+            />
           ) : (
             <div className="space-y-4">
               {teamMembers.map((member) => (
