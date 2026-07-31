@@ -738,10 +738,13 @@ export function LocationTrackerComponent() {
               description={'Click "Add Location" to get started.'}
             />
           ) : filteredLocations.length === 0 ? (
-            <div className="text-center py-12">
-              <Search className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">No locations match your search</p>
-            </div>
+            <EmptyState
+              icon={Search}
+              title="No locations match your search"
+              description="Try a different name, address, or contact."
+              onClear={() => { setSearchQuery(""); setLocationsPage(1); }}
+              clearLabel="Clear search"
+            />
           ) : (
             <>
             <div className="rounded-xl border overflow-hidden">

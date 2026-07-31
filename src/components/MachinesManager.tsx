@@ -490,10 +490,13 @@ export function MachinesManager() {
               description="Add machines to your locations to get started."
             />
           ) : filteredMachines.length === 0 ? (
-            <div className="text-center py-12">
-              <Search className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-              <p className="text-muted-foreground">No machines match your search</p>
-            </div>
+            <EmptyState
+              icon={Search}
+              title="No machines match your search"
+              description="Try a different machine name or location."
+              onClear={() => { setSearchQuery(""); setMachinesPage(1); }}
+              clearLabel="Clear search"
+            />
           ) : (
             <>
             <div className="rounded-xl border overflow-hidden">

@@ -715,7 +715,8 @@ export function InventoryTrackerComponent() {
           <EmptyState
             icon={Search}
             title="No matching items"
-            description="Try a different search term or clear your category filter."
+            description="Try a different search term or category."
+            onClear={() => { setSearchQuery(""); setFilterCategory("all"); setInventoryPage(1); }}
           />
         </Card>
       ) : (
