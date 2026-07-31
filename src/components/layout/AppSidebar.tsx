@@ -70,7 +70,7 @@ export function AppSidebar() {
   const navigate = useNavigate()
   const { user, signOut } = useAuth()
   const permissions = useMyTeamPermissions()
-  const { isPro, isTrial, trialEnd, isComplimentary, subscriptionStatus, isLoading: subscriptionLoading } = useFeatureAccess()
+  const { isPro, isTrial, trialEnd, isComplimentary, isTeamMember, subscriptionStatus, isLoading: subscriptionLoading } = useFeatureAccess()
 
   const canSee = useMemo(() => {
     return (url: string) => {
