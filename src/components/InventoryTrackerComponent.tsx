@@ -696,15 +696,20 @@ export function InventoryTrackerComponent() {
 
       {/* Items List */}
       {items.length === 0 ? (
-        <Card className="p-8 text-center">
-          <Package className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-muted-foreground">No items yet</p>
-          <p className="text-sm text-muted-foreground/70">Add your first item above</p>
+        <Card>
+          <EmptyState
+            icon={Package}
+            title="No inventory items yet"
+            description="Add your first item above to start tracking stock levels."
+          />
         </Card>
       ) : filteredItems.length === 0 ? (
-        <Card className="p-8 text-center">
-          <Search className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
-          <p className="text-muted-foreground">No matching items</p>
+        <Card>
+          <EmptyState
+            icon={Search}
+            title="No matching items"
+            description="Try a different search term or clear your category filter."
+          />
         </Card>
       ) : (
         <>
