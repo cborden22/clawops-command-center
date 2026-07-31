@@ -40,12 +40,10 @@ const RevenueTracker = () => {
   return (
     <div className="bg-background">
       <div className="container mx-auto py-4 sm:py-8 px-4">
-        <div className="mb-4 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Revenue Tracker</h1>
-          <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">
-            Track collections and revenue across your claw machine locations
-          </p>
-        </div>
+        <PageHeader
+          title="Revenue Tracker"
+          description="Track collections and revenue across your claw machine locations"
+        />
 
         {dueCount > 0 && (
           <Alert className="mb-4 border-primary/30 bg-primary/5">
