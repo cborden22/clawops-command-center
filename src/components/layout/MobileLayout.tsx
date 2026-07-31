@@ -11,6 +11,7 @@ interface MobileLayoutProps {
 
 function MobileLayoutInner({ children }: MobileLayoutProps) {
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const { isRefreshing, triggerRefresh } = useMobileRefresh();
 
   return (
@@ -20,7 +21,11 @@ function MobileLayoutInner({ children }: MobileLayoutProps) {
         height: '100dvh',
       }}
     >
-      <MobileHeader onRefresh={triggerRefresh} isRefreshing={isRefreshing} />
+      <MobileHeader
+        onRefresh={triggerRefresh}
+        isRefreshing={isRefreshing}
+        onOpenCommandPalette={() => setCommandOpen(true)}
+      />
       <UpdateNotification />
       <main 
         className="flex-1 overflow-y-auto overflow-x-hidden"
@@ -34,6 +39,7 @@ function MobileLayoutInner({ children }: MobileLayoutProps) {
       </main>
       <MobileBottomNav onQuickAddOpen={() => setQuickAddOpen(true)} />
       <QuickAddSheet open={quickAddOpen} onOpenChange={setQuickAddOpen} />
+      <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
     </div>
   );
 }
