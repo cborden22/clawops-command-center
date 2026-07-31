@@ -766,8 +766,18 @@ export default function Dashboard() {
 
   if (!isLoaded) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-pulse text-muted-foreground">Loading dashboard...</div>
+      <div className="space-y-4 sm:space-y-6 px-4 sm:px-0 animate-fade-in">
+        <div className="space-y-1">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <SkeletonGrid cols={4} count={4} height="h-28" />
+        <div className="grid grid-cols-12 gap-4">
+          <div className="col-span-12 lg:col-span-8"><SkeletonWidget /></div>
+          <div className="col-span-12 lg:col-span-4"><SkeletonWidget /></div>
+          <div className="col-span-12 lg:col-span-6"><SkeletonWidget /></div>
+          <div className="col-span-12 lg:col-span-6"><SkeletonWidget /></div>
+        </div>
       </div>
     );
   }
