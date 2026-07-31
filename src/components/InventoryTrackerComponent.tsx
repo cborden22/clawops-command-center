@@ -47,6 +47,7 @@ import { format } from "date-fns";
 import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { BulkAddInventoryDialog } from "@/components/inventory/BulkAddInventoryDialog";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 
 interface CartItem {
   id: string;
@@ -603,7 +604,10 @@ export function InventoryTrackerComponent() {
                 = ${(parseFloat(newItemLastPrice) / newItemPackageQty).toFixed(2)}/ea
               </span>
             )}
-            <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">Alert at:</span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap ml-2 inline-flex items-center gap-1">
+              Alert at:
+              <HelpTooltip content="Low-stock threshold. When quantity drops to this number or below, the item is flagged for reorder." />
+            </span>
             <NumberInput
               min="0"
               value={newItemMinStock}
@@ -1458,7 +1462,10 @@ export function InventoryTrackerComponent() {
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-muted-foreground">Stock Alert</h4>
               <div className="space-y-1.5">
-                <Label className="text-xs">Alert when stock falls below</Label>
+                <Label className="text-xs flex items-center gap-1.5">
+                  Alert when stock falls below
+                  <HelpTooltip content="Low-stock threshold. When quantity drops to this number or below, the item is flagged for reorder." />
+                </Label>
                 <Input
                   type="number"
                   min="0"

@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/select";
 import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
 import { PaginationControls } from "@/components/shared/PaginationControls";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 
 const RESTOCK_FREQUENCY_OPTIONS = [
   { value: "none", label: "No Schedule", days: null },
@@ -577,7 +578,10 @@ export function LocationTrackerComponent() {
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="commissionRate">Commission Rate (%)</Label>
+                      <Label htmlFor="commissionRate" className="flex items-center gap-1.5">
+                        Commission Rate (%)
+                        <HelpTooltip content="Share of gross revenue paid to this location owner. A 25% rate on $400 collected means $100 commission." />
+                      </Label>
                       <NumberInput
                         id="commissionRate"
                         min="0"

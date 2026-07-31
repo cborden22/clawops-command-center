@@ -55,6 +55,7 @@ import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/Lis
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 
 interface MachineWithLocation {
   machineType: MachineType;
@@ -354,7 +355,10 @@ export function MachinesManager() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Win Probability (optional)</Label>
+                  <Label className="flex items-center gap-1.5">
+                    Win Probability (optional)
+                    <HelpTooltip content="How often the machine should pay out a prize. Enter 15 for roughly 1 winning play out of every 15." />
+                  </Label>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">1 in</span>
                     <NumberInput
@@ -376,7 +380,10 @@ export function MachinesManager() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Cost Per Play</Label>
+                  <Label className="flex items-center gap-1.5">
+                    Cost Per Play
+                    <HelpTooltip content="What a customer pays for a single play. Used with win probability to estimate machine profitability." />
+                  </Label>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">$</span>
                     <NumberInput
