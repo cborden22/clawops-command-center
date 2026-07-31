@@ -9,6 +9,7 @@ import { MapPin, Sparkles, Map, Receipt, FileText } from "lucide-react";
 import { useLocations } from "@/hooks/useLocationsDB";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 const LocationMap = React.lazy(() => import("./LocationMap"));
 
