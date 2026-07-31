@@ -239,7 +239,10 @@ export function AppSidebar() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0 text-left">
-                  <p className="text-sm font-medium truncate">{displayName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium truncate">{displayName}</p>
+                    {planBadge()}
+                  </div>
                   <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
