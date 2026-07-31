@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Zap } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 const RevenueTracker = () => {
   const { refetch } = useRevenueEntries();
