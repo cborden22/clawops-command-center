@@ -35,6 +35,7 @@ import { LocationSelector, LocationSelection, getLocationDisplayString } from "@
 import { ActiveTripCard } from "@/components/mileage/ActiveTripCard";
 import { MileageRoute, RouteStop } from "@/hooks/useRoutesDB";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 type FilterPeriod = 
   | "past7days" 
