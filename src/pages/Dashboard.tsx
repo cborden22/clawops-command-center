@@ -34,6 +34,8 @@ import { MaintenanceWidget } from "@/components/maintenance/MaintenanceWidget";
 import { WeeklyCalendarWidget } from "@/components/dashboard/WeeklyCalendarWidget";
 import { RestockDueWidget } from "@/components/dashboard/RestockDueWidget";
 import { CustomizerFAB, DashboardCustomizerDrawer } from "@/components/dashboard/DashboardCustomizer";
+import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
+
 
 import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isWithinInterval, startOfDay, addDays } from "date-fns";
@@ -783,7 +785,10 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <OnboardingChecklist />
+
       {/* Widgets Grid */}
+
       <div className="grid grid-cols-12 gap-4">
         {(() => {
           let visibleIdx = 0;
