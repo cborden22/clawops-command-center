@@ -19,6 +19,7 @@ import {
 import { NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions"
+import { useFeatureAccess } from "@/hooks/useFeatureAccess"
 import {
   Sidebar,
   SidebarContent,
