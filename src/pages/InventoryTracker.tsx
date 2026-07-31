@@ -7,6 +7,7 @@ import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, MapPin, Warehouse } from "lucide-react";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 const InventoryTracker = () => {
   const { refetch } = useInventory();
