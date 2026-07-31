@@ -434,7 +434,10 @@ export default function Settings() {
                     <p className="text-xs text-muted-foreground">Applied to new locations by default</p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
+                      <HelpTooltip content="When an item's total on-hand quantity falls below this number, it appears in low-stock alerts and reports." />
+                    </div>
                     <Input
                       id="lowStockThreshold"
                       type="number"
