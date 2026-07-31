@@ -317,10 +317,10 @@ export default function Maintenance() {
   if (error) {
     return (
       <div className="space-y-6 pb-24 md:pb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Maintenance Reports</h1>
-          <p className="text-muted-foreground">Manage and track machine issues reported by customers</p>
-        </div>
+        <PageHeader
+          title="Maintenance Reports"
+          description="Manage and track machine issues reported by customers"
+        />
         <Card className="glass-card border-destructive/30">
           <CardContent className="py-12 text-center">
             <AlertTriangle className="h-12 w-12 mx-auto mb-3 text-destructive" />
