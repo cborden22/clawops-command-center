@@ -783,7 +783,10 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <OnboardingChecklist />
+
       {/* Widgets Grid */}
+
       <div className="grid grid-cols-12 gap-4">
         {(() => {
           let visibleIdx = 0;
