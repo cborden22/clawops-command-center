@@ -1,5 +1,5 @@
 import { useLocation } from "react-router-dom";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { triggerHaptic, hapticPatterns } from "@/utils/haptics";
 import { getPageTitle } from "@/lib/navigation";
@@ -7,6 +7,7 @@ import { getPageTitle } from "@/lib/navigation";
 interface MobileHeaderProps {
   onRefresh?: () => Promise<void>;
   isRefreshing?: boolean;
+  onOpenCommandPalette?: () => void;
 }
 
 export function MobileHeader({ onRefresh, isRefreshing }: MobileHeaderProps) {
