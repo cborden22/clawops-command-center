@@ -48,11 +48,11 @@ const Locations = () => {
   return (
     <div className="bg-background">
       <div className="container mx-auto py-4 sm:py-8 px-4">
-        <div className="mb-4 sm:mb-6 hidden sm:block">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Locations</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Manage locations, machines, map view, commissions, and agreements
-          </p>
+        <div className="hidden sm:block">
+          <PageHeader
+            title="Locations"
+            description="Manage locations, machines, map view, commissions, and agreements"
+          />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
