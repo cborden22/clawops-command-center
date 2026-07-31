@@ -57,17 +57,10 @@ export default function Reports() {
   return (
     <div className="container mx-auto py-6 px-4 max-w-7xl">
       <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 rounded-xl bg-primary/10">
-            <BarChart3 className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Business Reports</h1>
-            <p className="text-muted-foreground text-sm">
-              Analyze performance across your claw machine business
-            </p>
-          </div>
-        </div>
+        <h1 className="text-2xl font-bold">Business Reports</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          Analyze performance across your claw machine business
+        </p>
       </div>
 
       <DateRangeFilter
@@ -78,22 +71,29 @@ export default function Reports() {
         onExportPDF={handleExportPDF}
       />
 
+      <p className="text-xs text-muted-foreground mb-4">
+        Showing {format(dateRange.start, "MMM d, yyyy")} – {format(dateRange.end, "MMM d, yyyy")}
+      </p>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="w-full justify-start overflow-x-auto flex-nowrap h-auto p-1 bg-muted/50">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <TabsTrigger
-                key={tab.value}
-                value={tab.value}
-                className="flex items-center gap-2 px-4 py-2 whitespace-nowrap data-[state=active]:bg-background"
-              >
-                <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{tab.label}</span>
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
+        <div className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto scrollbar-hide">
+          <TabsList className="inline-flex w-auto min-w-full justify-start h-auto p-1 gap-0.5 bg-muted/50">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 whitespace-nowrap text-xs sm:text-sm data-[state=active]:bg-background"
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span>{tab.label}</span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </div>
+
 
         <div ref={reportContentRef}>
 
