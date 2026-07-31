@@ -40,6 +40,7 @@ import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist"
 import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isWithinInterval, startOfDay, addDays } from "date-fns";
 import { StatCard } from "@/components/shared/StatCard";
+import { SkeletonGrid, SkeletonWidget } from "@/components/shared/SkeletonGrid";
 import { cn } from "@/lib/utils";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
