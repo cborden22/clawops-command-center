@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { cn } from "@/lib/utils";
 import { useLocations, Location, MachineType } from "@/hooks/useLocationsDB";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
@@ -725,19 +726,15 @@ export function LocationTrackerComponent() {
 
           {/* Table or Empty State */}
           {locations.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
-                <MapPin className="h-10 w-10 text-muted-foreground/50" />
-              </div>
-              <p className="font-medium text-muted-foreground">No locations yet</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">
-                Click "Add Location" to get started
-              </p>
-            </div>
+            <EmptyState
+              icon={MapPin}
+              title="No locations yet"
+              description={'Click "Add Location" to get started.'}
+            />
           ) : filteredLocations.length === 0 ? (
             <div className="text-center py-12">
               <Search className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-              <p className="text-muted-foreground">No locations match your search</p>
+              <p className="text-sm text-muted-foreground">No locations match your search</p>
             </div>
           ) : (
             <>
