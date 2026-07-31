@@ -604,7 +604,7 @@ const MileageTracker = () => {
               <CardContent className="pt-6 relative">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-success/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
                 <div className="flex items-center gap-4 relative">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <div className="p-3 rounded-xl bg-success shadow-lg group-hover:scale-110 transition-transform duration-300">
                     <DollarSign className="h-6 w-6 text-primary-foreground" />
                   </div>
                   <div>

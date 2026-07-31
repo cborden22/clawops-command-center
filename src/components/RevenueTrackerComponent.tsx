@@ -542,7 +542,7 @@ export function RevenueTrackerComponent() {
           <CardContent className="pt-4 sm:pt-6 relative">
             <div className="absolute top-0 right-0 w-24 h-24 bg-success/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
             <div className="flex items-center gap-2 sm:gap-4 relative">
-              <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg group-hover:scale-110 transition-transform duration-300 shrink-0">
+              <div className="p-2 sm:p-3 rounded-xl bg-success shadow-lg group-hover:scale-110 transition-transform duration-300 shrink-0">
                 <ArrowUpCircle className="h-4 w-4 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
               <div className="min-w-0">
@@ -557,7 +557,7 @@ export function RevenueTrackerComponent() {
           <CardContent className="pt-4 sm:pt-6 relative">
             <div className="absolute top-0 right-0 w-24 h-24 bg-destructive/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
             <div className="flex items-center gap-2 sm:gap-4 relative">
-              <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg group-hover:scale-110 transition-transform duration-300 shrink-0">
+              <div className="p-2 sm:p-3 rounded-xl bg-destructive shadow-lg group-hover:scale-110 transition-transform duration-300 shrink-0">
                 <ArrowDownCircle className="h-4 w-4 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
               <div className="min-w-0">
@@ -574,7 +574,7 @@ export function RevenueTrackerComponent() {
             <div className="flex items-center gap-2 sm:gap-4 relative">
               <div className={cn(
                 "p-2 sm:p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300 shrink-0",
-                netProfit >= 0 ? "bg-gradient-to-br from-primary to-primary/80" : "bg-gradient-to-br from-orange-500 to-orange-600"
+                netProfit >= 0 ? "bg-gradient-to-br from-primary to-primary/80" : "bg-warning"
               )}>
                 <Wallet className="h-4 w-4 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>

@@ -356,7 +356,7 @@ export default function Dashboard() {
           <CardContent className="pt-4 sm:pt-6 relative">
             <div className="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-success/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
             <div className="flex items-center gap-3 sm:gap-4 relative">
-              <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <div className="p-2 sm:p-3 rounded-xl bg-success shadow-lg group-hover:scale-110 transition-transform duration-300">
                 <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
               <div className="min-w-0">
@@ -420,7 +420,7 @@ export default function Dashboard() {
               <div className={cn(
                 "p-2 sm:p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300",
                 lowStockItems.length > 0 
-                  ? "bg-gradient-to-br from-amber-500 to-amber-600" 
+                  ? "bg-warning" 
                   : "bg-gradient-to-br from-muted-foreground/80 to-muted-foreground/60"
               )}>
                 <Package className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />

@@ -969,7 +969,7 @@ export function LocationDetailDialog({
                 </div>
               ) : (
                 localCommissionSummaries.map((summary) => (
-                  <Card key={summary.id} className={`hover:shadow-md transition-shadow ${summary.commissionPaid ? 'border-l-4 border-l-emerald-500' : ''}`}>
+                  <Card key={summary.id} className={`hover:shadow-md transition-shadow ${summary.commissionPaid ? 'border-l-4 border-l-success' : ''}`}>
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">

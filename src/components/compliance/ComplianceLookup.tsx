@@ -70,7 +70,7 @@ export const ComplianceLookup = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold bg-primary bg-clip-text text-transparent">
           Law & Compliance Quick Lookup
         </h1>
         <p className="text-muted-foreground">
@@ -82,7 +82,7 @@ export const ComplianceLookup = () => {
       </div>
 
       {/* Input Controls */}
-      <Card className="border-primary/20 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
+      <Card className="border-primary/20 bg-accent/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
