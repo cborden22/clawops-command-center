@@ -247,17 +247,12 @@ export default function Auth() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="relative">
-            <div className="w-12 h-12 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Sparkles className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div className="absolute -inset-1 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl opacity-20 blur animate-glow" />
+          <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
+            <Sparkles className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="font-bold text-2xl bg-gradient-to-r from-brand-500 to-brand-600 bg-clip-text text-transparent">
-              ClawOps
-            </h1>
-            <p className="text-xs text-muted-foreground font-medium">Professional Suite</p>
+            <h1 className="font-bold text-2xl text-foreground">ClawOps</h1>
+            <p className="text-xs text-muted-foreground font-medium">Operations suite</p>
           </div>
         </div>
 
