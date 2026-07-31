@@ -6,7 +6,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Command, Search, ArrowRight, Question, CornerDownLeft } from "lucide-react";
+import { Command, Search, ArrowRight, HelpCircle, CornerDownLeft } from "lucide-react";
 
 interface Shortcut {
   keys: string[];
