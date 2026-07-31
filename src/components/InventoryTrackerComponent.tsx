@@ -654,9 +654,9 @@ export function InventoryTrackerComponent() {
               totalCount={filteredItems.length}
             />
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5">
-              <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-[140px] h-8 text-sm">
                   <SelectValue />
