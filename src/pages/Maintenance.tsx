@@ -38,6 +38,7 @@ import {
   Plus,
 } from "lucide-react";
 import { AddMaintenanceReportDialog } from "@/components/maintenance/AddMaintenanceReportDialog";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useMaintenanceReports, MaintenanceReport } from "@/hooks/useMaintenanceReports";
