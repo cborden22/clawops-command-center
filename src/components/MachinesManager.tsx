@@ -54,6 +54,8 @@ import { useMachineTypesDB } from "@/hooks/useMachineTypesDB";
 import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 
 interface MachineWithLocation {
   machineType: MachineType;
@@ -353,7 +355,10 @@ export function MachinesManager() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Win Probability (optional)</Label>
+                  <Label className="flex items-center gap-1.5">
+                    Win Probability (optional)
+                    <HelpTooltip content="How often the machine should pay out a prize. Enter 15 for roughly 1 winning play out of every 15." />
+                  </Label>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">1 in</span>
                     <NumberInput
@@ -375,7 +380,10 @@ export function MachinesManager() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Cost Per Play</Label>
+                  <Label className="flex items-center gap-1.5">
+                    Cost Per Play
+                    <HelpTooltip content="What a customer pays for a single play. Used with win probability to estimate machine profitability." />
+                  </Label>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">$</span>
                     <NumberInput
@@ -483,20 +491,19 @@ export function MachinesManager() {
 
           {/* Table or Empty State */}
           {allMachines.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="h-10 w-10 text-muted-foreground/50" />
-              </div>
-              <p className="font-medium text-muted-foreground">No machines yet</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">
-                Add machines to your locations to get started
-              </p>
-            </div>
+            <EmptyState
+              icon={Sparkles}
+              title="No machines yet"
+              description="Add machines to your locations to get started."
+            />
           ) : filteredMachines.length === 0 ? (
-            <div className="text-center py-12">
-              <Search className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-              <p className="text-muted-foreground">No machines match your search</p>
-            </div>
+            <EmptyState
+              icon={Search}
+              title="No machines match your search"
+              description="Try a different machine name or location."
+              onClear={() => { setSearchQuery(""); setMachinesPage(1); }}
+              clearLabel="Clear search"
+            />
           ) : (
             <>
             <div className="rounded-xl border overflow-hidden">

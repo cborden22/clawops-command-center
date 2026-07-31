@@ -36,6 +36,7 @@ import { ActiveTripCard } from "@/components/mileage/ActiveTripCard";
 import { MileageRoute, RouteStop } from "@/hooks/useRoutesDB";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 type FilterPeriod = 
   | "past7days" 
@@ -804,10 +805,11 @@ const MileageTracker = () => {
                     </CardHeader>
                     <CardContent>
                       {entries.filter(e => e.miles > 0).slice(0, 5).length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <Car className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                          <p className="text-sm">No trips logged yet</p>
-                        </div>
+                        <EmptyState
+                          icon={Car}
+                          title="No trips logged yet"
+                          description="Start a trip to begin tracking mileage for this vehicle."
+                        />
                       ) : (
                         <div className="space-y-3">
                           {entries.filter(e => e.miles > 0).slice(0, 5).map(entry => (
@@ -851,9 +853,11 @@ const MileageTracker = () => {
                   </CardHeader>
                   <CardContent>
                     {entries.filter(e => e.miles > 0).slice(0, 3).length === 0 ? (
-                      <div className="text-center py-6 text-muted-foreground">
-                        <p className="text-sm">No completed trips yet</p>
-                      </div>
+                      <EmptyState
+                        title="No completed trips yet"
+                        description="Finish your active trip and it will show up here."
+                        className="py-6"
+                      />
                     ) : (
                       <div className="space-y-2">
                         {entries.filter(e => e.miles > 0).slice(0, 3).map(entry => (

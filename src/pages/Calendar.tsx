@@ -40,6 +40,7 @@ import { EditTaskDialog } from "@/components/calendar/EditTaskDialog";
 import { AgendaView } from "@/components/calendar/AgendaView";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/shared/EmptyState";
 
 type ExtendedTaskType = "restock" | "route" | "maintenance" | "followup" | "custom";
 type ExtendedTaskStatus = "overdue" | "due_today" | "due_soon" | "upcoming" | "completed";
@@ -603,11 +604,12 @@ export default function Calendar() {
                       })}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <CalendarIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                      <p className="text-sm mb-3">No tasks scheduled</p>
-                      <AddTaskDialog defaultDate={selectedDate} createTask={createTask} />
-                    </div>
+                    <EmptyState
+                      icon={CalendarIcon}
+                      title="No tasks scheduled"
+                      description="Add a task to plan work for this day."
+                      action={<AddTaskDialog defaultDate={selectedDate} createTask={createTask} />}
+                    />
                   )
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">

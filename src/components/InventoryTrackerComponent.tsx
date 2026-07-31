@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Package, AlertTriangle, Minus, Search, ShoppingCart, X, Check, Edit2, RotateCcw, ExternalLink, ChevronDown, ChevronUp, DollarSign, CalendarIcon, Warehouse as WarehouseIcon, ArrowUpDown, Filter } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { SkeletonGrid, SkeletonList } from "@/components/shared/SkeletonGrid";
 import { cn } from "@/lib/utils";
 import { useInventory, InventoryItem, saveStockRunHistory, updateStockRunReturns } from "@/hooks/useInventoryDB";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,6 +47,7 @@ import { format } from "date-fns";
 import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { BulkAddInventoryDialog } from "@/components/inventory/BulkAddInventoryDialog";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 
 interface CartItem {
   id: string;
@@ -428,7 +430,12 @@ export function InventoryTrackerComponent() {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   if (!isLoaded) {
-    return <div className="flex items-center justify-center py-12">Loading...</div>;
+    return (
+      <div className="space-y-4">
+        <SkeletonGrid count={4} columns={4} />
+        <SkeletonList count={6} />
+      </div>
+    );
   }
 
   return (
@@ -597,7 +604,10 @@ export function InventoryTrackerComponent() {
                 = ${(parseFloat(newItemLastPrice) / newItemPackageQty).toFixed(2)}/ea
               </span>
             )}
-            <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">Alert at:</span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap ml-2 inline-flex items-center gap-1">
+              Alert at:
+              <HelpTooltip content="Low-stock threshold. When quantity drops to this number or below, the item is flagged for reorder." />
+            </span>
             <NumberInput
               min="0"
               value={newItemMinStock}
@@ -709,7 +719,8 @@ export function InventoryTrackerComponent() {
           <EmptyState
             icon={Search}
             title="No matching items"
-            description="Try a different search term or clear your category filter."
+            description="Try a different search term or category."
+            onClear={() => { setSearchQuery(""); setFilterCategory("all"); setInventoryPage(1); }}
           />
         </Card>
       ) : (
@@ -1451,7 +1462,10 @@ export function InventoryTrackerComponent() {
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-muted-foreground">Stock Alert</h4>
               <div className="space-y-1.5">
-                <Label className="text-xs">Alert when stock falls below</Label>
+                <Label className="text-xs flex items-center gap-1.5">
+                  Alert when stock falls below
+                  <HelpTooltip content="Low-stock threshold. When quantity drops to this number or below, the item is flagged for reorder." />
+                </Label>
                 <Input
                   type="number"
                   min="0"

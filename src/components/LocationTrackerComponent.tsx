@@ -39,6 +39,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { SkeletonGrid, SkeletonList } from "@/components/shared/SkeletonGrid";
 import { cn } from "@/lib/utils";
 import { useLocations, Location, MachineType } from "@/hooks/useLocationsDB";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
@@ -53,6 +54,7 @@ import {
 } from "@/components/ui/select";
 import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
 import { PaginationControls } from "@/components/shared/PaginationControls";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 
 const RESTOCK_FREQUENCY_OPTIONS = [
   { value: "none", label: "No Schedule", days: null },
@@ -261,7 +263,12 @@ export function LocationTrackerComponent() {
   const totalMachines = locations.reduce((sum, loc) => sum + loc.machineCount, 0);
 
   if (!isLoaded) {
-    return <div className="flex items-center justify-center py-12">Loading...</div>;
+    return (
+      <div className="space-y-6">
+        <SkeletonGrid count={3} columns={3} />
+        <SkeletonGrid count={6} columns={3} />
+      </div>
+    );
   }
 
   return (
@@ -571,7 +578,10 @@ export function LocationTrackerComponent() {
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="commissionRate">Commission Rate (%)</Label>
+                      <Label htmlFor="commissionRate" className="flex items-center gap-1.5">
+                        Commission Rate (%)
+                        <HelpTooltip content="Share of gross revenue paid to this location owner. A 25% rate on $400 collected means $100 commission." />
+                      </Label>
                       <NumberInput
                         id="commissionRate"
                         min="0"
@@ -732,10 +742,13 @@ export function LocationTrackerComponent() {
               description={'Click "Add Location" to get started.'}
             />
           ) : filteredLocations.length === 0 ? (
-            <div className="text-center py-12">
-              <Search className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">No locations match your search</p>
-            </div>
+            <EmptyState
+              icon={Search}
+              title="No locations match your search"
+              description="Try a different name, address, or contact."
+              onClear={() => { setSearchQuery(""); setLocationsPage(1); }}
+              clearLabel="Clear search"
+            />
           ) : (
             <>
             <div className="rounded-xl border overflow-hidden">

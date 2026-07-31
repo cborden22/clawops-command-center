@@ -28,6 +28,8 @@ import { toast } from "@/hooks/use-toast";
 import { useLocations } from "@/hooks/useLocationsDB";
 import { useMachineTypesDB } from "@/hooks/useMachineTypesDB";
 import { useRevenueEntries, EntryType, RevenueEntry } from "@/hooks/useRevenueEntriesDB";
+import { SkeletonGrid, SkeletonList } from "@/components/shared/SkeletonGrid";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -532,7 +534,12 @@ export function RevenueTrackerComponent() {
   const totalBusinessExpenses = businessExpenses.reduce((sum, e) => sum + e.amount, 0);
 
   if (!isLoaded || !entriesLoaded) {
-    return <div className="flex items-center justify-center py-12">Loading...</div>;
+    return (
+      <div className="space-y-6">
+        <SkeletonGrid count={4} columns={4} />
+        <SkeletonList count={6} />
+      </div>
+    );
   }
 
   return (
@@ -1217,10 +1224,25 @@ export function RevenueTrackerComponent() {
             </CardHeader>
             <CardContent className="pt-6">
               {filteredEntries.length === 0 ? (
-                <div className="text-center py-12">
-                  <DollarSign className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                  <p className="text-muted-foreground">No entries recorded yet</p>
-                </div>
+                entries.length === 0 ? (
+                  <EmptyState
+                    icon={DollarSign}
+                    title="No entries recorded yet"
+                    description="Log your first collection or expense to start tracking revenue."
+                  />
+                ) : (
+                  <EmptyState
+                    icon={DollarSign}
+                    title="No entries match these filters"
+                    description="Try a different period, location, or entry type."
+                    onClear={() => {
+                      setFilterPeriod("thisMonth");
+                      setFilterLocation("all");
+                      setFilterType("all");
+                      setEntriesPage(1);
+                    }}
+                  />
+                )
               ) : (
                 <>
                 <div className="rounded-xl border overflow-hidden">
