@@ -4,6 +4,7 @@ import { MobileBottomNav } from "./MobileBottomNav";
 import { QuickAddSheet } from "../mobile/QuickAddSheet";
 import { MobileRefreshProvider, useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { UpdateNotification } from "@/components/shared/UpdateNotification";
+import { CommandPalette } from "@/components/shared/CommandPalette";
 
 interface MobileLayoutProps {
   children: ReactNode;
