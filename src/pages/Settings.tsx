@@ -325,14 +325,10 @@ export default function Settings() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-brand-500 to-brand-600 bg-clip-text text-transparent">
-          Settings
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Manage your account, business settings, and integrations
-        </p>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Manage your account, business settings, and integrations"
+      />
 
       <SubscriptionManager />
 
