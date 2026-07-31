@@ -1,8 +1,25 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, DollarSign, Package, Plus, MoreHorizontal, MapPin, Car, Settings, LogOut, Receipt, BarChart3, Wrench, Users, MessageSquare } from "lucide-react";
+import {
+  LayoutDashboard,
+  DollarSign,
+  Package,
+  Plus,
+  MoreHorizontal,
+  MapPin,
+  Car,
+  Settings,
+  LogOut,
+  Receipt,
+  BarChart3,
+  Wrench,
+  Users,
+  MessageSquare,
+  Calendar,
+  UsersRound,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +30,9 @@ interface MobileBottomNavProps {
   onQuickAddOpen: () => void;
 }
 
-const operationsItems = [
+type NavItem = { path: string; icon: React.ComponentType<{ className?: string }>; label: string };
+
+const operationsItems: NavItem[] = [
   { path: "/leads", icon: Users, label: "Leads" },
   { path: "/locations", icon: MapPin, label: "Locations" },
   { path: "/maintenance", icon: Wrench, label: "Maintenance" },
@@ -21,10 +40,15 @@ const operationsItems = [
   { path: "/inventory", icon: Package, label: "Inventory" },
 ];
 
-const financialsItems = [
+const financialsItems: NavItem[] = [
   { path: "/revenue", icon: DollarSign, label: "Revenue" },
   { path: "/reports", icon: BarChart3, label: "Reports" },
   { path: "/receipts", icon: Receipt, label: "Receipts" },
+];
+
+const managementItems: NavItem[] = [
+  { path: "/calendar", icon: Calendar, label: "Calendar" },
+  { path: "/team", icon: UsersRound, label: "Team" },
 ];
 
 export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
@@ -74,6 +98,11 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
     });
   }, [permissions]);
 
+  const filteredManagementItems = useMemo(
+    () => (permissions.isOwner ? managementItems : []),
+    [permissions]
+  );
+
   const handleTabClick = (tab: typeof mainTabs[0]) => {
     if (tab.isAction) {
       onQuickAddOpen();
@@ -92,24 +121,40 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
     setMoreOpen(false);
   };
 
-  const renderMoreItem = (item: typeof operationsItems[0]) => {
-    const Icon = item.icon;
-    const isActive = location.pathname === item.path;
+  const renderMoreSection = (title: string, items: NavItem[]) => {
+    if (items.length === 0) return null;
     return (
-      <Button
-        key={item.path}
-        variant={isActive ? "default" : "outline"}
-        className="h-16 flex-col gap-1.5 text-xs"
-        onClick={() => handleMoreItemClick(item)}
-      >
-        <Icon className="h-5 w-5" />
-        <span>{item.label}</span>
-      </Button>
+      <div className="space-y-2">
+        <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide px-1">
+          {title}
+        </h3>
+        <div className="grid grid-cols-3 gap-2">
+          {items.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <button
+                key={item.path}
+                onClick={() => handleMoreItemClick(item)}
+                className={cn(
+                  "min-h-[72px] rounded-lg border flex flex-col items-center justify-center gap-1.5 px-2 transition-colors",
+                  isActive
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-foreground hover:bg-accent/10"
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="text-xs font-medium text-center leading-tight">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
     );
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-t border-border mobile-safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border mobile-safe-bottom">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
         {mainTabs.map((tab) => {
           const isActive = !tab.isAction && !tab.isMenu && location.pathname === tab.path;
@@ -119,63 +164,42 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
             return (
               <Sheet key={tab.path} open={moreOpen} onOpenChange={setMoreOpen}>
                 <SheetTrigger asChild>
-                  <button className="flex flex-col items-center justify-center flex-1 py-2 min-w-0">
-                    <div className="p-1.5 rounded-lg transition-colors text-muted-foreground">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <span className="text-[10px] mt-0.5 text-muted-foreground truncate">
+                  <button
+                    className="flex flex-col items-center justify-center flex-1 py-2 min-w-0 min-h-[44px]"
+                    aria-label="More navigation"
+                  >
+                    <Icon className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-[10px] mt-1 text-muted-foreground truncate">
                       {tab.label}
                     </span>
                   </button>
                 </SheetTrigger>
-                <SheetContent side="bottom" className="rounded-t-2xl overflow-hidden">
-                  <div className="mobile-sheet-scroll max-h-[70vh]">
-                    {/* Operations */}
-                    {filteredOperationsItems.length > 0 && (
-                      <div className="space-y-3">
-                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
-                          Operations
-                        </h3>
-                        <div className="grid grid-cols-3 gap-3">
-                          {filteredOperationsItems.map(renderMoreItem)}
-                        </div>
-                      </div>
-                    )}
+                <SheetContent side="bottom" className="rounded-t-2xl overflow-hidden px-4 pb-6">
+                  <SheetHeader className="text-left pb-3">
+                    <SheetTitle className="text-base">All sections</SheetTitle>
+                  </SheetHeader>
+                  <div className="mobile-sheet-scroll max-h-[65vh] space-y-4">
+                    {renderMoreSection("Operations", filteredOperationsItems)}
+                    {renderMoreSection("Financials & Reports", filteredFinancialsItems)}
+                    {renderMoreSection("Management", filteredManagementItems)}
 
-                    {filteredOperationsItems.length > 0 && filteredFinancialsItems.length > 0 && (
-                      <Separator className="my-4" />
-                    )}
+                    <Separator />
 
-                    {/* Financials */}
-                    {filteredFinancialsItems.length > 0 && (
-                      <div className="space-y-3">
-                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">
-                          Financials & Reports
-                        </h3>
-                        <div className="grid grid-cols-3 gap-3">
-                          {filteredFinancialsItems.map(renderMoreItem)}
-                        </div>
-                      </div>
-                    )}
-
-                    <Separator className="my-4" />
-
-                    {/* Account */}
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
+                      <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                        Account
+                      </h3>
                       <Button
                         variant="outline"
-                        className="justify-start"
-                        onClick={() => {
-                          navigate("/settings");
-                          setMoreOpen(false);
-                        }}
+                        className="w-full justify-start min-h-[44px]"
+                        onClick={() => handleMoreItemClick({ path: "/settings" })}
                       >
                         <Settings className="h-4 w-4 mr-2" />
                         Settings
                       </Button>
                       <Button
                         variant="outline"
-                        className="justify-start"
+                        className="w-full justify-start min-h-[44px]"
                         onClick={() => {
                           setMoreOpen(false);
                           setFeedbackOpen(true);
@@ -184,16 +208,15 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
                         <MessageSquare className="h-4 w-4 mr-2" />
                         Report Issue
                       </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start min-h-[44px] text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={handleSignOut}
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Sign Out
+                      </Button>
                     </div>
-                    
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 mt-2"
-                      onClick={handleSignOut}
-                    >
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Sign Out
-                    </Button>
                   </div>
                 </SheetContent>
               </Sheet>
@@ -206,8 +229,9 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
                 key={tab.path}
                 onClick={() => handleTabClick(tab)}
                 className="flex flex-col items-center justify-center flex-1 py-2 min-w-0"
+                aria-label="Quick add"
               >
-                <div className="p-2.5 rounded-full bg-primary text-primary-foreground shadow-lg -mt-4 transition-transform hover:scale-105 active:scale-95">
+                <div className="p-2.5 rounded-full bg-primary text-primary-foreground shadow-md -mt-4 transition-transform active:scale-95">
                   <Icon className="h-6 w-6" />
                 </div>
               </button>
@@ -218,20 +242,13 @@ export function MobileBottomNav({ onQuickAddOpen }: MobileBottomNavProps) {
             <button
               key={tab.path}
               onClick={() => handleTabClick(tab)}
-              className="flex flex-col items-center justify-center flex-1 py-2 min-w-0"
+              className="flex flex-col items-center justify-center flex-1 py-2 min-w-0 min-h-[44px]"
             >
-              <div
-                className={cn(
-                  "p-1.5 rounded-lg transition-colors",
-                  isActive ? "bg-primary/10 text-primary" : "text-muted-foreground"
-                )}
-              >
-                <Icon className="h-5 w-5" />
-              </div>
+              <Icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
               <span
                 className={cn(
-                  "text-[10px] mt-0.5 truncate",
-                  isActive ? "text-primary font-medium" : "text-muted-foreground"
+                  "text-[10px] mt-1 truncate",
+                  isActive ? "text-primary font-semibold" : "text-muted-foreground"
                 )}
               >
                 {tab.label}
