@@ -1,6 +1,17 @@
-
-
 import type { Config } from "tailwindcss";
+
+const brandScale = {
+	50: 'hsl(var(--brand-50))',
+	100: 'hsl(var(--brand-100))',
+	200: 'hsl(var(--brand-200))',
+	300: 'hsl(var(--brand-300))',
+	400: 'hsl(var(--brand-400))',
+	500: 'hsl(var(--brand-500))',
+	600: 'hsl(var(--brand-600))',
+	700: 'hsl(var(--brand-700))',
+	800: 'hsl(var(--brand-800))',
+	900: 'hsl(var(--brand-900))',
+};
 
 export default {
 	darkMode: ["class"],
@@ -41,6 +52,18 @@ export default {
 					DEFAULT: 'hsl(var(--destructive))',
 					foreground: 'hsl(var(--destructive-foreground))'
 				},
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					foreground: 'hsl(var(--success-foreground))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))'
+				},
+				info: {
+					DEFAULT: 'hsl(var(--info))',
+					foreground: 'hsl(var(--info-foreground))'
+				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
 					foreground: 'hsl(var(--muted-foreground))'
@@ -67,26 +90,15 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				gold: {
-					50: 'hsl(var(--blue-50))',
-					100: 'hsl(var(--blue-100))',
-					500: 'hsl(var(--blue-500))',
-					600: 'hsl(var(--blue-600))',
-					700: 'hsl(var(--blue-700))',
-					900: 'hsl(var(--blue-900))',
-				},
-				blue: {
-					50: 'hsl(var(--blue-50))',
-					100: 'hsl(var(--blue-100))',
-					500: 'hsl(var(--blue-500))',
-					600: 'hsl(var(--blue-600))',
-					700: 'hsl(var(--blue-700))',
-					900: 'hsl(var(--blue-900))',
-				}
+				brand: brandScale,
+				/* Deprecated aliases — kept so legacy classes keep rendering in-theme. */
+				gold: brandScale,
+				blue: brandScale,
 			},
 			backgroundImage: {
 				'gradient-primary': 'var(--gradient-primary)',
 				'gradient-card': 'var(--gradient-card)',
+				'gradient-accent': 'var(--gradient-accent)',
 			},
 			boxShadow: {
 				'card': 'var(--shadow-card)',
@@ -94,7 +106,7 @@ export default {
 				'glow': 'var(--shadow-glow)',
 			},
 			transitionTimingFunction: {
-				'smooth': 'var(--transition-smooth)',
+				'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -103,28 +115,24 @@ export default {
 			},
 			keyframes: {
 				'accordion-down': {
-					from: {
-						height: '0'
-					},
-					to: {
-						height: 'var(--radix-accordion-content-height)'
-					}
+					from: { height: '0' },
+					to: { height: 'var(--radix-accordion-content-height)' }
 				},
 				'accordion-up': {
-					from: {
-						height: 'var(--radix-accordion-content-height)'
-					},
-					to: {
-						height: '0'
-					}
+					from: { height: 'var(--radix-accordion-content-height)' },
+					to: { height: '0' }
+				},
+				'fade-in': {
+					from: { opacity: '0', transform: 'translateY(4px)' },
+					to: { opacity: '1', transform: 'translateY(0)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'fade-in': 'fade-in 0.2s ease-out'
 			}
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
 } satisfies Config;
-
