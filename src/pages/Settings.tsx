@@ -37,6 +37,7 @@ import { FeedbackDialog } from "@/components/shared/FeedbackDialog";
 import { useQRLogo } from "@/hooks/useQRLogo";
 import { SubscriptionManager } from "@/components/settings/SubscriptionManager";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { HelpTooltip } from "@/components/shared/HelpTooltip";
 
 
 export default function Settings() {
