@@ -45,8 +45,8 @@ export function ReportCard({
             <span
               className={cn(
                 "text-xs font-medium px-2 py-0.5 rounded-full",
-                trend === "up" && "bg-green-500/10 text-green-600",
-                trend === "down" && "bg-red-500/10 text-red-600",
+                trend === "up" && "bg-success/10 text-success",
+                trend === "down" && "bg-destructive/10 text-destructive",
                 trend === "neutral" && "bg-muted text-muted-foreground"
               )}
             >
