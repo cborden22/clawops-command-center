@@ -658,7 +658,7 @@ export function InventoryTrackerComponent() {
             <div className="flex items-center gap-1.5 min-w-0">
               <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[140px] h-8 text-sm">
+                <SelectTrigger className="w-full sm:w-[140px] h-9 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -671,10 +671,10 @@ export function InventoryTrackerComponent() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <Select value={filterCategory} onValueChange={(v) => { setFilterCategory(v); setInventoryPage(1); }}>
-                <SelectTrigger className={cn("w-[140px] h-8 text-sm", filterCategory !== "all" && "border-primary")}>
+                <SelectTrigger className={cn("w-full sm:w-[140px] h-9 text-sm", filterCategory !== "all" && "border-primary")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
