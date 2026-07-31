@@ -419,7 +419,10 @@ export default function Settings() {
                 <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Defaults</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="defaultCommissionRate">Default Commission Rate (%)</Label>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="defaultCommissionRate">Default Commission Rate (%)</Label>
+                      <HelpTooltip content="Percentage paid to location owners from machine revenue. Applied automatically to new locations." />
+                    </div>
                     <Input
                       id="defaultCommissionRate"
                       type="number"
