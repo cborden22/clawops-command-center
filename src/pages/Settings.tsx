@@ -36,6 +36,7 @@ import { BudgetManager } from "@/components/settings/BudgetManager";
 import { FeedbackDialog } from "@/components/shared/FeedbackDialog";
 import { useQRLogo } from "@/hooks/useQRLogo";
 import { SubscriptionManager } from "@/components/settings/SubscriptionManager";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 
 export default function Settings() {
