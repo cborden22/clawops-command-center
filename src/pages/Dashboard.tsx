@@ -772,7 +772,7 @@ export default function Dashboard() {
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-4 w-72" />
         </div>
-        <SkeletonGrid cols={4} count={4} height="h-28" />
+        <SkeletonGrid columns={4} count={4} />
         <div className="grid grid-cols-12 gap-4">
           <div className="col-span-12 lg:col-span-8"><SkeletonWidget /></div>
           <div className="col-span-12 lg:col-span-4"><SkeletonWidget /></div>
