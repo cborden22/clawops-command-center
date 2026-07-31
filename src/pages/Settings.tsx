@@ -332,21 +332,23 @@ export default function Settings() {
 
       <SubscriptionManager />
 
-      <Tabs defaultValue="app" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="app" className="gap-2">
+      <Tabs defaultValue="app" className="flex flex-col lg:flex-row gap-6">
+        <TabsList className="grid w-full grid-cols-3 lg:w-56 lg:flex-col lg:h-fit lg:sticky lg:top-20">
+          <TabsTrigger value="app" className="gap-2 justify-start lg:px-4">
             <SettingsIcon className="h-4 w-4" />
             <span className="hidden sm:inline">App</span>
           </TabsTrigger>
-          <TabsTrigger value="profile" className="gap-2">
+          <TabsTrigger value="profile" className="gap-2 justify-start lg:px-4">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">Profile</span>
           </TabsTrigger>
-          <TabsTrigger value="security" className="gap-2">
+          <TabsTrigger value="security" className="gap-2 justify-start lg:px-4">
             <Shield className="h-4 w-4" />
             <span className="hidden sm:inline">Security</span>
           </TabsTrigger>
         </TabsList>
+
+        <div className="flex-1 min-w-0 space-y-6">
 
         {/* App Settings Tab */}
         <TabsContent value="app" className="space-y-6">
