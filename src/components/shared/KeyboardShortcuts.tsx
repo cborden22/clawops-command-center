@@ -99,7 +99,7 @@ export function KeyboardShortcutsDialog({
         </div>
 
         <div className="mt-4 rounded-lg bg-muted p-3 text-xs text-muted-foreground flex items-start gap-2">
-          <Question className="h-4 w-4 shrink-0 mt-0.5" />
+          <HelpCircle className="h-4 w-4 shrink-0 mt-0.5" />
           <p>
             Shortcuts are disabled while typing in form fields so you can enter
             values like "?" without triggering commands.
