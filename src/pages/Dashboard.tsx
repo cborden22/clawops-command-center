@@ -37,6 +37,7 @@ import { CustomizerFAB, DashboardCustomizerDrawer } from "@/components/dashboard
 
 import { Link } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, isWithinInterval, startOfDay, addDays } from "date-fns";
+import { StatCard } from "@/components/shared/StatCard";
 import { cn } from "@/lib/utils";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -332,114 +333,54 @@ export default function Dashboard() {
     
     if (showLocations) {
       cards.push(
-        <Card key="locations" className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-4 sm:pt-6 relative">
-            <div className="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-3 sm:gap-4 relative">
-              <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Active Locations</p>
-                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight truncate">{activeLocations.length}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">{totalMachines} machines</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          key="locations"
+          label="Active Locations"
+          value={activeLocations.length}
+          hint={`${totalMachines} machines`}
+          icon={MapPin}
+        />
       );
     }
-    
+
     if (showRevenue) {
       cards.push(
-        <Card key="income" className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
-          <CardContent className="pt-4 sm:pt-6 relative">
-            <div className="absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 bg-success/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-            <div className="flex items-center gap-3 sm:gap-4 relative">
-              <div className="p-2 sm:p-3 rounded-xl bg-success shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Month Income</p>
-                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight truncate">${totalIncome.toLocaleString()}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">{format(now, "MMMM")}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          key="income"
+          label="Month Income"
+          value={`$${totalIncome.toLocaleString()}`}
+          hint={format(now, "MMMM")}
+          icon={TrendingUp}
+          tone="success"
+        />
       );
       cards.push(
-        <Card key="profit" className={cn(
-          "glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden",
-          netProfit < 0 && "border-destructive/30"
-        )}>
-          <CardContent className="pt-4 sm:pt-6 relative">
-            <div className={cn(
-              "absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500",
-              netProfit >= 0 ? "bg-primary/10" : "bg-destructive/10"
-            )} />
-            <div className="flex items-center gap-3 sm:gap-4 relative">
-              <div className={cn(
-                "p-2 sm:p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300",
-                netProfit >= 0 
-                  ? "bg-gradient-to-br from-primary to-primary/80" 
-                  : "bg-gradient-to-br from-destructive to-destructive/80"
-              )}>
-                <Wallet className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Net Profit</p>
-                <p className={cn(
-                  "text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight truncate",
-                  netProfit >= 0 ? "text-foreground" : "text-destructive"
-                )}>
-                  ${Math.abs(netProfit).toLocaleString()}
-                </p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">
-                  {netProfit >= 0 ? "Profit" : "Loss"} this month
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          key="profit"
+          label="Net Profit"
+          value={`${netProfit < 0 ? "-" : ""}$${Math.abs(netProfit).toLocaleString()}`}
+          hint={netProfit >= 0 ? "Profit this month" : "Loss this month"}
+          icon={Wallet}
+          tone={netProfit >= 0 ? "default" : "destructive"}
+          className={cn(netProfit < 0 && "border-destructive/40")}
+        />
       );
     }
-    
+
     if (showInventory) {
       cards.push(
-        <Card key="inventory" className={cn(
-          "glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden",
-          lowStockItems.length > 0 && "border-warning/30 bg-warning/5"
-        )}>
-          <CardContent className="pt-4 sm:pt-6 relative">
-            <div className={cn(
-              "absolute top-0 right-0 w-20 h-20 sm:w-24 sm:h-24 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500",
-              lowStockItems.length > 0 ? "bg-warning/10" : "bg-accent/50"
-            )} />
-            <div className="flex items-center gap-3 sm:gap-4 relative">
-              <div className={cn(
-                "p-2 sm:p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300",
-                lowStockItems.length > 0 
-                  ? "bg-warning" 
-                  : "bg-gradient-to-br from-muted-foreground/80 to-muted-foreground/60"
-              )}>
-                <Package className="h-5 w-5 sm:h-6 sm:w-6 text-primary-foreground" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Inventory</p>
-                <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground tracking-tight truncate">{totalInventoryItems}</p>
-                {lowStockItems.length > 0 ? (
-                  <p className="text-[10px] sm:text-xs text-warning font-medium">{lowStockItems.length} low stock</p>
-                ) : (
-                  <p className="text-[10px] sm:text-xs text-muted-foreground">All stocked</p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          key="inventory"
+          label="Inventory"
+          value={totalInventoryItems}
+          hint={lowStockItems.length > 0 ? `${lowStockItems.length} low stock` : "All stocked"}
+          icon={Package}
+          tone={lowStockItems.length > 0 ? "warning" : "default"}
+          className={cn(lowStockItems.length > 0 && "border-warning/40")}
+        />
       );
     }
-    
+
     if (cards.length === 0) return null;
     
     return (
