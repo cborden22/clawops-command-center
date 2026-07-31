@@ -39,6 +39,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { SkeletonGrid, SkeletonList } from "@/components/shared/SkeletonGrid";
 import { cn } from "@/lib/utils";
 import { useLocations, Location, MachineType } from "@/hooks/useLocationsDB";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
