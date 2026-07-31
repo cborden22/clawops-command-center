@@ -602,10 +602,10 @@ const MileageTracker = () => {
             
             <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
               <CardContent className="pt-6 relative">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+                <div className="absolute top-0 right-0 w-24 h-24 bg-success/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
                 <div className="flex items-center gap-4 relative">
                   <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <DollarSign className="h-6 w-6 text-white" />
+                    <DollarSign className="h-6 w-6 text-primary-foreground" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Tax Deduction</p>
@@ -677,10 +677,10 @@ const MileageTracker = () => {
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">Vehicle *</Label>
                         {vehicles.length === 0 ? (
-                          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                            <p className="text-sm text-amber-600 dark:text-amber-400">
+                          <div className="p-3 rounded-lg bg-warning/10 border border-warning/30">
+                            <p className="text-sm text-warning dark:text-warning">
                               No vehicles added.{" "}
-                              <Button variant="link" className="p-0 h-auto text-amber-600 dark:text-amber-400 underline" onClick={handleNavigateToSettings}>
+                              <Button variant="link" className="p-0 h-auto text-warning dark:text-warning underline" onClick={handleNavigateToSettings}>
                                 Add one in Settings
                               </Button>
                             </p>

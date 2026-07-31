@@ -447,7 +447,7 @@ export function InventoryTrackerComponent() {
             <Button 
               onClick={() => setIsReturnMode(true)} 
               variant="outline"
-              className="flex-1 border-emerald-500 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+              className="flex-1 border-success/40 text-success hover:bg-success/10 hover:text-success"
               size="lg"
             >
               <RotateCcw className="h-5 w-5 mr-2" />
@@ -468,7 +468,7 @@ export function InventoryTrackerComponent() {
           <Button 
             onClick={cancelReturnMode} 
             variant="outline"
-            className="flex-1 border-emerald-500 text-emerald-600 hover:bg-emerald-50"
+            className="flex-1 border-success/40 text-success hover:bg-success/10"
             size="lg"
           >
             <X className="h-5 w-5 mr-2" />
@@ -479,8 +479,8 @@ export function InventoryTrackerComponent() {
 
       {/* Return Mode Banner */}
       {isReturnMode && lastStockRun && (
-        <Card className="p-3 border-emerald-200 bg-emerald-50">
-          <p className="text-sm text-emerald-700">
+        <Card className="p-3 border-success/40 bg-success/10">
+          <p className="text-sm text-success">
             <span className="font-medium">Last stock run:</span> {lastStockRun.items.length} items, {lastStockRun.items.reduce((sum, i) => sum + i.quantity, 0)} pieces total
           </p>
         </Card>
@@ -727,8 +727,8 @@ export function InventoryTrackerComponent() {
                   "p-3 transition-colors",
                   item.quantity <= item.minStock && !isReturnMode && "border-destructive/30 bg-destructive/5",
                   isStockRunMode && isInCart && "border-primary bg-primary/5",
-                  isReturnMode && isInReturnCart && "border-emerald-500 bg-emerald-50",
-                  isReturnMode && wasInLastRun && !isInReturnCart && "border-emerald-200"
+                  isReturnMode && isInReturnCart && "border-success/40 bg-success/10",
+                  isReturnMode && wasInLastRun && !isInReturnCart && "border-success/40"
                 )}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
@@ -753,12 +753,12 @@ export function InventoryTrackerComponent() {
                         </Badge>
                       )}
                       {isReturnMode && isInReturnCart && (
-                        <Badge className="text-xs shrink-0 bg-emerald-500">
+                        <Badge className="text-xs shrink-0 bg-success">
                           +{returnQty} returning
                         </Badge>
                       )}
                       {isReturnMode && wasInLastRun && !isInReturnCart && (
-                        <Badge variant="outline" className="text-xs shrink-0 border-emerald-300 text-emerald-600">
+                        <Badge variant="outline" className="text-xs shrink-0 border-success/40 text-success">
                           From last run
                         </Badge>
                       )}
@@ -926,12 +926,12 @@ export function InventoryTrackerComponent() {
                             value={customQtyValue}
                             onChange={(e) => setCustomQtyValue(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handleCustomReturnQtyAdd(item.id)}
-                            className="w-16 h-8 text-center border-emerald-300"
+                            className="w-16 h-8 text-center border-success/40"
                             autoFocus
                           />
                           <Button
                             size="sm"
-                            className="h-8 px-2 bg-emerald-500 hover:bg-emerald-600"
+                            className="h-8 px-2 bg-success hover:bg-success"
                             onClick={() => handleCustomReturnQtyAdd(item.id)}
                           >
                             <Check className="h-3 w-3" />
@@ -950,7 +950,7 @@ export function InventoryTrackerComponent() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 px-2 border-emerald-300 text-emerald-600 hover:bg-emerald-50"
+                            className="h-8 px-2 border-success/40 text-success hover:bg-success/10"
                             onClick={() => addToReturnCart(item.id, 5)}
                           >
                             +5
@@ -958,7 +958,7 @@ export function InventoryTrackerComponent() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 px-2 border-emerald-300 text-emerald-600 hover:bg-emerald-50"
+                            className="h-8 px-2 border-success/40 text-success hover:bg-success/10"
                             onClick={() => addToReturnCart(item.id, 10)}
                           >
                             +10
@@ -966,7 +966,7 @@ export function InventoryTrackerComponent() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 px-2 border-emerald-300 text-emerald-600 hover:bg-emerald-50"
+                            className="h-8 px-2 border-success/40 text-success hover:bg-success/10"
                             onClick={() => addToReturnCart(item.id, 20)}
                           >
                             +20
@@ -974,7 +974,7 @@ export function InventoryTrackerComponent() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 px-2 text-xs border-emerald-300 text-emerald-600 hover:bg-emerald-50"
+                            className="h-8 px-2 text-xs border-success/40 text-success hover:bg-success/10"
                             onClick={() => addToReturnCart(item.id, item.packageQuantity)}
                           >
                             +{item.packageQuantity} {item.packageType}
@@ -982,7 +982,7 @@ export function InventoryTrackerComponent() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 px-2 border-emerald-300 text-emerald-600 hover:bg-emerald-50"
+                            className="h-8 px-2 border-success/40 text-success hover:bg-success/10"
                             onClick={() => setCustomQtyItemId(item.id)}
                           >
                             Cust
@@ -1158,7 +1158,7 @@ export function InventoryTrackerComponent() {
       {/* Floating Cart Summary - Return Stock */}
       {isReturnMode && returnCart.length > 0 && (
         <div className="fixed bottom-20 left-4 right-4 z-50">
-          <Card className="p-4 bg-emerald-500 text-white shadow-lg">
+          <Card className="p-4 bg-success text-primary-foreground shadow-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <RotateCcw className="h-5 w-5" />
@@ -1290,7 +1290,7 @@ export function InventoryTrackerComponent() {
       <Sheet open={showReturnSheet} onOpenChange={setShowReturnSheet}>
         <SheetContent side="bottom" className="h-[80vh]">
           <SheetHeader>
-            <SheetTitle className="text-emerald-600">Confirm Stock Return</SheetTitle>
+            <SheetTitle className="text-success">Confirm Stock Return</SheetTitle>
             <SheetDescription>
               Review items to add back to inventory
             </SheetDescription>
@@ -1298,7 +1298,7 @@ export function InventoryTrackerComponent() {
           
           <div className="py-4 space-y-3 overflow-y-auto max-h-[calc(80vh-180px)]">
             {returnCart.map((returnItem) => (
-              <Card key={returnItem.id} className="p-3 border-emerald-200">
+              <Card key={returnItem.id} className="p-3 border-success/40">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">{returnItem.name}</p>
@@ -1310,7 +1310,7 @@ export function InventoryTrackerComponent() {
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-8 w-8 border-emerald-300"
+                      className="h-8 w-8 border-success/40"
                       onClick={() => updateReturnCartQuantity(returnItem.id, returnItem.quantity - 1)}
                     >
                       <Minus className="h-3 w-3" />
@@ -1320,12 +1320,12 @@ export function InventoryTrackerComponent() {
                       min="1"
                       value={returnItem.quantity}
                       onChange={(e) => updateReturnCartQuantity(returnItem.id, parseInt(e.target.value) || 0)}
-                      className="w-16 h-8 text-center font-bold border-emerald-300"
+                      className="w-16 h-8 text-center font-bold border-success/40"
                     />
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-8 w-8 border-emerald-300"
+                      className="h-8 w-8 border-success/40"
                       onClick={() => updateReturnCartQuantity(returnItem.id, returnItem.quantity + 1)}
                     >
                       <Plus className="h-3 w-3" />
@@ -1346,12 +1346,12 @@ export function InventoryTrackerComponent() {
 
           <SheetFooter className="flex-col gap-2 sm:flex-col">
             <div className="text-center py-2">
-              <p className="text-lg font-bold text-emerald-600">+{totalReturnItems} total pieces</p>
+              <p className="text-lg font-bold text-success">+{totalReturnItems} total pieces</p>
               <p className="text-sm text-muted-foreground">returning to {returnCart.length} products</p>
             </div>
             <Button 
               onClick={handleConfirmReturn} 
-              className="w-full bg-emerald-500 hover:bg-emerald-600" 
+              className="w-full bg-success hover:bg-success" 
               size="lg"
               disabled={returnCart.length === 0}
             >

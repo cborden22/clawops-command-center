@@ -81,7 +81,7 @@ export function BudgetTrackingWidget({ budgets, expenses }: BudgetTrackingWidget
               <span className="text-sm font-medium capitalize">{bp.category}</span>
               <div className="flex items-center gap-2">
                 {bp.status === "over" && <AlertTriangle className="h-3.5 w-3.5 text-destructive" />}
-                {bp.status === "warning" && <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />}
+                {bp.status === "warning" && <AlertTriangle className="h-3.5 w-3.5 text-warning" />}
                 <span className="text-xs text-muted-foreground">
                   ${bp.spent.toFixed(0)} / ${bp.monthlyBudget.toFixed(0)}
                 </span>
@@ -92,7 +92,7 @@ export function BudgetTrackingWidget({ budgets, expenses }: BudgetTrackingWidget
               className={cn(
                 "h-2",
                 bp.status === "over" && "[&>div]:bg-destructive",
-                bp.status === "warning" && "[&>div]:bg-amber-500",
+                bp.status === "warning" && "[&>div]:bg-warning",
               )}
             />
             {bp.status === "over" && (

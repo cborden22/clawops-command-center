@@ -178,9 +178,9 @@ export function ActiveTripCard({
               <p className="text-xs text-muted-foreground mb-1">Miles</p>
               <p className="text-2xl font-bold text-foreground">{calculatedMiles.toFixed(1)}</p>
             </div>
-            <div className="p-3 rounded-lg bg-green-500/10 text-center">
+            <div className="p-3 rounded-lg bg-success/10 text-center">
               <p className="text-xs text-muted-foreground mb-1">Est. Deduction</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+              <p className="text-2xl font-bold text-success dark:text-success">
                 ${estimatedDeduction.toFixed(2)}
               </p>
             </div>

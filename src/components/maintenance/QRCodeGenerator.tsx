@@ -254,7 +254,7 @@ export function QRCodeGenerator({
           {/* QR Code Display */}
           <div
             ref={qrRef}
-            className="flex justify-center p-6 bg-white rounded-xl border"
+            className="flex justify-center p-6 bg-card rounded-xl border"
           >
             <QRCodeSVG
               value={reportUrl}
@@ -294,7 +294,7 @@ export function QRCodeGenerator({
                 className="shrink-0"
               >
                 {copied ? (
-                  <Check className="h-4 w-4 text-green-600" />
+                  <Check className="h-4 w-4 text-success" />
                 ) : (
                   <Copy className="h-4 w-4" />
                 )}

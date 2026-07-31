@@ -52,15 +52,15 @@ const ISSUE_TYPE_LABELS: Record<string, string> = {
 };
 
 const SEVERITY_CONFIG: Record<string, { label: string; className: string }> = {
-  low: { label: "Low", className: "bg-slate-500/10 text-slate-600 border-slate-500/20" },
-  medium: { label: "Medium", className: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
+  low: { label: "Low", className: "bg-muted/10 text-muted-foreground border-muted/20" },
+  medium: { label: "Medium", className: "bg-warning/10 text-warning border-warning/20" },
   high: { label: "High", className: "bg-destructive/10 text-destructive border-destructive/20" },
 };
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ElementType; className: string }> = {
-  open: { label: "Open", icon: AlertTriangle, className: "text-amber-600" },
-  in_progress: { label: "In Progress", icon: Wrench, className: "text-blue-600" },
-  resolved: { label: "Resolved", icon: CheckCircle2, className: "text-green-600" },
+  open: { label: "Open", icon: AlertTriangle, className: "text-warning" },
+  in_progress: { label: "In Progress", icon: Wrench, className: "text-info" },
+  resolved: { label: "Resolved", icon: CheckCircle2, className: "text-success" },
 };
 
 interface ReportCardProps {
@@ -91,9 +91,9 @@ function ReportCard({ report, onStatusChange, onResolutionNotesChange, onDelete 
           <div className="flex items-start gap-3 min-w-0 flex-1">
             <div className={cn(
               "p-2 rounded-lg shrink-0",
-              report.status === "open" && "bg-amber-500/10",
-              report.status === "in_progress" && "bg-blue-500/10",
-              report.status === "resolved" && "bg-green-500/10"
+              report.status === "open" && "bg-warning/10",
+              report.status === "in_progress" && "bg-info/10",
+              report.status === "resolved" && "bg-success/10"
             )}>
               <StatusIcon className={cn("h-5 w-5", STATUS_CONFIG[report.status]?.className)} />
             </div>
@@ -364,8 +364,8 @@ export default function Maintenance() {
         <Card className="glass-card">
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10">
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <div className="p-2 rounded-lg bg-warning/10">
+                <AlertTriangle className="h-5 w-5 text-warning" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{totalOpen}</p>
@@ -377,8 +377,8 @@ export default function Maintenance() {
         <Card className="glass-card">
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <Wrench className="h-5 w-5 text-blue-600" />
+              <div className="p-2 rounded-lg bg-info/10">
+                <Wrench className="h-5 w-5 text-info" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{totalInProgress}</p>
@@ -390,8 +390,8 @@ export default function Maintenance() {
         <Card className="glass-card">
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <div className="p-2 rounded-lg bg-success/10">
+                <CheckCircle2 className="h-5 w-5 text-success" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{totalResolved}</p>
@@ -435,8 +435,8 @@ export default function Maintenance() {
           {openReports.length === 0 ? (
             <Card className="glass-card">
               <CardContent className="py-12 text-center">
-                <CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-green-500/50" />
-                <p className="font-medium text-green-600">All Clear!</p>
+                <CheckCircle2 className="h-12 w-12 mx-auto mb-3 text-success/50" />
+                <p className="font-medium text-success">All Clear!</p>
                 <p className="text-sm text-muted-foreground">No open issues to address</p>
               </CardContent>
             </Card>

@@ -144,9 +144,9 @@ export function RoutesReports({ data }: RoutesReportsProps) {
               <p className="text-sm text-muted-foreground mb-1">IRS Rate (2024)</p>
               <p className="text-2xl font-bold">$0.67/mi</p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-green-500/5 border border-green-500/20">
+            <div className="text-center p-4 rounded-lg bg-success/5 border border-success/20">
               <p className="text-sm text-muted-foreground mb-1">Tax Deduction</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-success">
                 {formatCurrency(mileageAnalysis.taxDeduction)}
               </p>
             </div>

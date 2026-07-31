@@ -108,9 +108,9 @@ export function GpsTracker({
   // Show error state
   if (error && !isTracking) {
     return (
-      <Card className="border-amber-500/50 bg-amber-500/5">
+      <Card className="border-warning/50 bg-warning/5">
         <CardContent className="pt-6 space-y-4">
-          <div className="flex items-center gap-3 text-amber-600 dark:text-amber-400">
+          <div className="flex items-center gap-3 text-warning dark:text-warning">
             <AlertTriangle className="h-6 w-6" />
             <div>
               <h3 className="font-semibold">GPS Issue</h3>
@@ -137,7 +137,7 @@ export function GpsTracker({
         <div className="flex items-center gap-2">
           <div className={cn(
             "h-3 w-3 rounded-full animate-pulse",
-            isTracking ? "bg-red-500" : "bg-muted"
+            isTracking ? "bg-destructive" : "bg-muted"
           )} />
           <span className="font-semibold text-foreground">
             {isTracking ? "Tracking Active" : "Tracking Stopped"}
@@ -170,7 +170,7 @@ export function GpsTracker({
           <div className="grid grid-cols-2 gap-4 mt-6">
             <div className="text-center p-3 rounded-lg bg-background/50">
               <p className="text-sm text-muted-foreground">Est. Deduction</p>
-              <p className="text-xl font-semibold text-green-600 dark:text-green-400">
+              <p className="text-xl font-semibold text-success dark:text-success">
                 ${estimatedDeduction.toFixed(2)}
               </p>
             </div>
@@ -193,10 +193,10 @@ export function GpsTracker({
           <Signal className={cn(
             "h-5 w-5",
             signalStrength === "Excellent" || signalStrength === "Good" 
-              ? "text-green-500" 
+              ? "text-success" 
               : signalStrength === "Fair" 
-                ? "text-amber-500" 
-                : "text-red-500"
+                ? "text-warning" 
+                : "text-destructive"
           )} />
           <span className="text-sm font-medium">Signal: {signalStrength}</span>
         </div>
@@ -218,7 +218,7 @@ export function GpsTracker({
 
       {/* Error Warning (non-blocking) */}
       {error && isTracking && (
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-sm">
+        <div className="flex items-center gap-2 p-2 rounded-lg bg-warning/10 border border-warning/30 text-warning dark:text-warning text-sm">
           <AlertTriangle className="h-4 w-4 flex-shrink-0" />
           <span>{error}</span>
         </div>

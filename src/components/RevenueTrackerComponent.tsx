@@ -540,10 +540,10 @@ export function RevenueTrackerComponent() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
           <CardContent className="pt-4 sm:pt-6 relative">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+            <div className="absolute top-0 right-0 w-24 h-24 bg-success/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
             <div className="flex items-center gap-2 sm:gap-4 relative">
               <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-green-500 to-green-600 shadow-lg group-hover:scale-110 transition-transform duration-300 shrink-0">
-                <ArrowUpCircle className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+                <ArrowUpCircle className="h-4 w-4 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Total Income</p>
@@ -555,10 +555,10 @@ export function RevenueTrackerComponent() {
         
         <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
           <CardContent className="pt-4 sm:pt-6 relative">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
+            <div className="absolute top-0 right-0 w-24 h-24 bg-destructive/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
             <div className="flex items-center gap-2 sm:gap-4 relative">
               <div className="p-2 sm:p-3 rounded-xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg group-hover:scale-110 transition-transform duration-300 shrink-0">
-                <ArrowDownCircle className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+                <ArrowDownCircle className="h-4 w-4 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Total Expenses</p>
@@ -576,13 +576,13 @@ export function RevenueTrackerComponent() {
                 "p-2 sm:p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300 shrink-0",
                 netProfit >= 0 ? "bg-gradient-to-br from-primary to-primary/80" : "bg-gradient-to-br from-orange-500 to-orange-600"
               )}>
-                <Wallet className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+                <Wallet className="h-4 w-4 sm:h-6 sm:w-6 text-primary-foreground" />
               </div>
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Net Profit</p>
                 <p className={cn(
                   "text-lg sm:text-2xl font-bold tracking-tight truncate",
-                  netProfit >= 0 ? "text-foreground" : "text-orange-500"
+                  netProfit >= 0 ? "text-foreground" : "text-warning"
                 )}>
                   {netProfit < 0 ? "-" : ""}${Math.abs(netProfit).toFixed(2)}
                 </p>
@@ -740,8 +740,8 @@ export function RevenueTrackerComponent() {
                           {selectedMachineData.winProbability && (
                             <p className={cn(
                               "font-medium",
-                              compareToExpected(currentCollectionStats.trueWinRate, selectedMachineData.winProbability).status === "over" ? "text-orange-500" :
-                              compareToExpected(currentCollectionStats.trueWinRate, selectedMachineData.winProbability).status === "under" ? "text-green-500" :
+                              compareToExpected(currentCollectionStats.trueWinRate, selectedMachineData.winProbability).status === "over" ? "text-warning" :
+                              compareToExpected(currentCollectionStats.trueWinRate, selectedMachineData.winProbability).status === "under" ? "text-success" :
                               "text-muted-foreground"
                             )}>
                               Expected: 1 in {selectedMachineData.winProbability} • {compareToExpected(currentCollectionStats.trueWinRate, selectedMachineData.winProbability).message}
@@ -929,8 +929,8 @@ export function RevenueTrackerComponent() {
                     className={cn(
                       "w-full h-11",
                       entryType === "income" 
-                        ? "bg-green-600 hover:bg-green-700 text-white" 
-                        : "bg-red-600 hover:bg-red-700 text-white"
+                        ? "bg-success hover:bg-success text-primary-foreground" 
+                        : "bg-destructive hover:bg-destructive text-primary-foreground"
                     )}
                     disabled={
                       isUploadingReceipt ||
@@ -1176,11 +1176,11 @@ export function RevenueTrackerComponent() {
                 </div>
                 <div className="flex justify-center gap-6 mt-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-green-600" />
+                    <div className="w-3 h-3 rounded-full bg-success" />
                     <span className="text-sm text-muted-foreground">Income</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                    <div className="w-3 h-3 rounded-full bg-destructive" />
                     <span className="text-sm text-muted-foreground">Expenses</span>
                   </div>
                 </div>
@@ -1311,7 +1311,7 @@ export function RevenueTrackerComponent() {
                           </TableCell>
                           <TableCell className={cn(
                             "text-right font-bold",
-                            entry.type === "income" ? "text-green-600" : "text-red-500"
+                            entry.type === "income" ? "text-success" : "text-destructive"
                           )}>
                             {entry.type === "expense" ? "-" : ""}${entry.amount.toFixed(2)}
                           </TableCell>
@@ -1398,12 +1398,12 @@ export function RevenueTrackerComponent() {
             <DialogTitle className="flex items-center gap-2">
               {editingEntry?.type === "income" ? (
                 <>
-                  <ArrowUpCircle className="h-5 w-5 text-green-600" />
+                  <ArrowUpCircle className="h-5 w-5 text-success" />
                   Edit Income Entry
                 </>
               ) : (
                 <>
-                  <ArrowDownCircle className="h-5 w-5 text-red-500" />
+                  <ArrowDownCircle className="h-5 w-5 text-destructive" />
                   Edit Expense Entry
                 </>
               )}

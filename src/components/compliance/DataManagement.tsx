@@ -167,17 +167,17 @@ export const DataManagement: React.FC<DataManagementProps> = ({ onDataUpdate }) 
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">5</div>
-              <div className="text-sm text-blue-600">States with Data</div>
+            <div className="text-center p-4 bg-info/10 rounded-lg">
+              <div className="text-2xl font-bold text-info">5</div>
+              <div className="text-sm text-info">States with Data</div>
             </div>
-            <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">45</div>
-              <div className="text-sm text-yellow-600">Need Research</div>
+            <div className="text-center p-4 bg-warning/10 rounded-lg">
+              <div className="text-2xl font-bold text-warning">45</div>
+              <div className="text-sm text-warning">Need Research</div>
             </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">90%</div>
-              <div className="text-sm text-green-600">Accuracy Target</div>
+            <div className="text-center p-4 bg-success/10 rounded-lg">
+              <div className="text-2xl font-bold text-success">90%</div>
+              <div className="text-sm text-success">Accuracy Target</div>
             </div>
           </div>
         </CardContent>
@@ -270,25 +270,25 @@ export const DataManagement: React.FC<DataManagementProps> = ({ onDataUpdate }) 
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <h4 className="font-medium text-blue-800">Primary Sources</h4>
-              <ul className="text-sm text-blue-700 mt-1">
+            <div className="p-3 bg-info/10 rounded-lg">
+              <h4 className="font-medium text-info">Primary Sources</h4>
+              <ul className="text-sm text-info mt-1">
                 <li>• State revenue/gaming departments</li>
                 <li>• Official state statutes and codes</li>
                 <li>• Published regulatory guidance</li>
               </ul>
             </div>
-            <div className="p-3 bg-yellow-50 rounded-lg">
-              <h4 className="font-medium text-yellow-800">Verification Required</h4>
-              <ul className="text-sm text-yellow-700 mt-1">
+            <div className="p-3 bg-warning/10 rounded-lg">
+              <h4 className="font-medium text-warning">Verification Required</h4>
+              <ul className="text-sm text-warning mt-1">
                 <li>• Cross-reference multiple sources</li>
                 <li>• Check for recent law changes</li>
                 <li>• Verify local ordinance variations</li>
               </ul>
             </div>
-            <div className="p-3 bg-green-50 rounded-lg">
-              <h4 className="font-medium text-green-800">Quality Standards</h4>
-              <ul className="text-sm text-green-700 mt-1">
+            <div className="p-3 bg-success/10 rounded-lg">
+              <h4 className="font-medium text-success">Quality Standards</h4>
+              <ul className="text-sm text-success mt-1">
                 <li>• Include specific citations</li>
                 <li>• Note confidence level</li>
                 <li>• Document research date</li>

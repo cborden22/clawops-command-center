@@ -150,10 +150,10 @@ export function LocationReports({ data }: LocationReportsProps) {
                 {locationPerformance.map((loc) => (
                   <tr key={loc.id} className="border-b border-border/50 hover:bg-muted/50">
                     <td className="py-2 font-medium">{loc.name}</td>
-                    <td className="text-right py-2 text-green-600">{formatCurrency(loc.income)}</td>
-                    <td className="text-right py-2 text-red-600">{formatCurrency(loc.expenses)}</td>
-                    <td className="text-right py-2 text-orange-600">{formatCurrency(loc.commissions)}</td>
-                    <td className={`text-right py-2 font-semibold ${loc.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <td className="text-right py-2 text-success">{formatCurrency(loc.income)}</td>
+                    <td className="text-right py-2 text-destructive">{formatCurrency(loc.expenses)}</td>
+                    <td className="text-right py-2 text-warning">{formatCurrency(loc.commissions)}</td>
+                    <td className={`text-right py-2 font-semibold ${loc.profit >= 0 ? 'text-success' : 'text-destructive'}`}>
                       {formatCurrency(loc.profit)}
                     </td>
                     <td className="text-right py-2">{loc.machineCount}</td>

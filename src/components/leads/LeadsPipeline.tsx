@@ -30,9 +30,9 @@ interface LeadsPipelineProps {
 
 const statusColumns: { status: LeadStatus; label: string; icon: React.ComponentType<{ className?: string }>; color: string }[] = [
   { status: 'new', label: 'New', icon: Sparkles, color: 'bg-primary/20 text-primary border-primary/30' },
-  { status: 'contacted', label: 'Contacted', icon: Phone, color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
-  { status: 'negotiating', label: 'Negotiating', icon: HandshakeIcon, color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
-  { status: 'won', label: 'Won', icon: Trophy, color: 'bg-green-500/20 text-green-400 border-green-500/30' },
+  { status: 'contacted', label: 'Contacted', icon: Phone, color: 'bg-info/20 text-info border-info/30' },
+  { status: 'negotiating', label: 'Negotiating', icon: HandshakeIcon, color: 'bg-info/20 text-info border-info/30' },
+  { status: 'won', label: 'Won', icon: Trophy, color: 'bg-success/20 text-success border-success/30' },
   { status: 'lost', label: 'Lost', icon: XCircle, color: 'bg-destructive/20 text-destructive border-destructive/30' },
 ];
 

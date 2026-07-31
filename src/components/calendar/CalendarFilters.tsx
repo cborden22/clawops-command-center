@@ -10,11 +10,11 @@ interface CalendarFiltersProps {
 }
 
 const filterConfig: { type: TaskTypeFilter; icon: React.ComponentType<{ className?: string }>; label: string; color: string }[] = [
-  { type: "restock", icon: Package, label: "Restocks", color: "bg-emerald-500/20 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/30" },
-  { type: "route", icon: Car, label: "Routes", color: "bg-blue-500/20 text-blue-600 border-blue-500/30 hover:bg-blue-500/30" },
-  { type: "maintenance", icon: Wrench, label: "Maintenance", color: "bg-orange-500/20 text-orange-600 border-orange-500/30 hover:bg-orange-500/30" },
-  { type: "followup", icon: Users, label: "Follow-ups", color: "bg-amber-500/20 text-amber-600 border-amber-500/30 hover:bg-amber-500/30" },
-  { type: "custom", icon: CheckSquare, label: "Tasks", color: "bg-purple-500/20 text-purple-600 border-purple-500/30 hover:bg-purple-500/30" },
+  { type: "restock", icon: Package, label: "Restocks", color: "bg-success/20 text-success border-success/30 hover:bg-success/30" },
+  { type: "route", icon: Car, label: "Routes", color: "bg-info/20 text-info border-info/30 hover:bg-info/30" },
+  { type: "maintenance", icon: Wrench, label: "Maintenance", color: "bg-warning/20 text-warning border-warning/30 hover:bg-warning/30" },
+  { type: "followup", icon: Users, label: "Follow-ups", color: "bg-warning/20 text-warning border-warning/30 hover:bg-warning/30" },
+  { type: "custom", icon: CheckSquare, label: "Tasks", color: "bg-info/20 text-info border-info/30 hover:bg-info/30" },
 ];
 
 export function CalendarFilters({ activeFilters, onToggleFilter }: CalendarFiltersProps) {

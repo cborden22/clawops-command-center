@@ -56,12 +56,12 @@ export function LeadsWidget() {
             <p className="text-xl font-bold">{stats.total}</p>
             <p className="text-[10px] text-muted-foreground">Total</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-green-500/10">
-            <p className="text-xl font-bold text-green-500">{stats.conversionRate}%</p>
+          <div className="text-center p-2 rounded-lg bg-success/10">
+            <p className="text-xl font-bold text-success">{stats.conversionRate}%</p>
             <p className="text-[10px] text-muted-foreground">Win Rate</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-amber-500/10">
-            <p className="text-xl font-bold text-amber-500">{stats.followUpsDue}</p>
+          <div className="text-center p-2 rounded-lg bg-warning/10">
+            <p className="text-xl font-bold text-warning">{stats.followUpsDue}</p>
             <p className="text-[10px] text-muted-foreground">Follow-ups</p>
           </div>
         </div>
@@ -72,15 +72,15 @@ export function LeadsWidget() {
             {stats.byStatus.new} New
           </Badge>
           <span className="text-muted-foreground">→</span>
-          <Badge variant="outline" className="bg-blue-500/10 text-blue-400">
+          <Badge variant="outline" className="bg-info/10 text-info">
             {stats.byStatus.contacted}
           </Badge>
           <span className="text-muted-foreground">→</span>
-          <Badge variant="outline" className="bg-purple-500/10 text-purple-400">
+          <Badge variant="outline" className="bg-info/10 text-info">
             {stats.byStatus.negotiating}
           </Badge>
           <span className="text-muted-foreground">→</span>
-          <Badge variant="outline" className="bg-green-500/10 text-green-400">
+          <Badge variant="outline" className="bg-success/10 text-success">
             {stats.byStatus.won} Won
           </Badge>
         </div>
@@ -91,7 +91,7 @@ export function LeadsWidget() {
             {hotLeads.length > 0 && (
               <div className="space-y-1">
                 <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                  <Flame className="h-3 w-3 text-red-500" />
+                  <Flame className="h-3 w-3 text-destructive" />
                   Hot Leads
                 </p>
                 {hotLeads.map((lead) => (
@@ -114,7 +114,7 @@ export function LeadsWidget() {
             {followUpsDue.length > 0 && hotLeads.length === 0 && (
               <div className="space-y-1">
                 <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                  <Calendar className="h-3 w-3 text-amber-500" />
+                  <Calendar className="h-3 w-3 text-warning" />
                   Follow-ups Due
                 </p>
                 {followUpsDue.map((lead) => {

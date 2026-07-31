@@ -162,17 +162,17 @@ export function MachineReports({ data }: MachineReportsProps) {
                     </td>
                     <td className="text-center py-2">
                       {machine.performance === "hot" && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-orange-500/10 text-orange-600">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-warning/10 text-warning">
                           <Flame className="h-3 w-3" /> Hot
                         </span>
                       )}
                       {machine.performance === "cold" && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-blue-500/10 text-blue-600">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-info/10 text-info">
                           <Snowflake className="h-3 w-3" /> Cold
                         </span>
                       )}
                       {machine.performance === "normal" && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-green-500/10 text-green-600">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-success/10 text-success">
                           Normal
                         </span>
                       )}

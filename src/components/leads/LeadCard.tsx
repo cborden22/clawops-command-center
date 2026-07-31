@@ -12,9 +12,9 @@ interface LeadCardProps {
 }
 
 const priorityConfig: Record<LeadPriority, { icon: React.ComponentType<{ className?: string }>; label: string; className: string }> = {
-  hot: { icon: Flame, label: 'Hot', className: 'bg-red-500/20 text-red-400 border-red-500/30' },
-  warm: { icon: Sun, label: 'Warm', className: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
-  cold: { icon: Snowflake, label: 'Cold', className: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+  hot: { icon: Flame, label: 'Hot', className: 'bg-destructive/20 text-destructive border-destructive/30' },
+  warm: { icon: Sun, label: 'Warm', className: 'bg-warning/20 text-warning border-warning/30' },
+  cold: { icon: Snowflake, label: 'Cold', className: 'bg-info/20 text-info border-info/30' },
 };
 
 export function LeadCard({ lead, onClick, isDragging }: LeadCardProps) {
@@ -29,7 +29,7 @@ export function LeadCard({ lead, onClick, isDragging }: LeadCardProps) {
       return { label: 'Overdue', className: 'text-destructive' };
     }
     if (isToday(date)) {
-      return { label: 'Today', className: 'text-amber-400' };
+      return { label: 'Today', className: 'text-warning' };
     }
     if (isTomorrow(date)) {
       return { label: 'Tomorrow', className: 'text-muted-foreground' };

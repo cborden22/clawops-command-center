@@ -43,7 +43,7 @@ export default function Team() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-gold-500 to-gold-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-brand-500 to-brand-600 bg-clip-text text-transparent">
             Team Management
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -75,8 +75,8 @@ export default function Team() {
         <Card className="glass-card">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500/20 rounded-lg">
-                <Shield className="h-5 w-5 text-green-500" />
+              <div className="p-2 bg-success/20 rounded-lg">
+                <Shield className="h-5 w-5 text-success" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{activeCount}</p>
@@ -89,8 +89,8 @@ export default function Team() {
         <Card className="glass-card">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-500/20 rounded-lg">
-                <UserPlus className="h-5 w-5 text-yellow-500" />
+              <div className="p-2 bg-warning/20 rounded-lg">
+                <UserPlus className="h-5 w-5 text-warning" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{pendingCount}</p>
@@ -102,12 +102,12 @@ export default function Team() {
       </div>
 
       {/* Info Card */}
-      <Card className="glass-card border-blue-500/20 bg-blue-500/5">
+      <Card className="glass-card border-info/20 bg-info/5">
         <CardContent className="p-4">
           <div className="flex gap-3">
-            <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+            <Info className="h-5 w-5 text-info flex-shrink-0 mt-0.5" />
             <div className="text-sm">
-              <p className="font-medium text-blue-600">How team invitations work</p>
+              <p className="font-medium text-info">How team invitations work</p>
               <p className="text-muted-foreground mt-1">
                 When you invite someone, they'll receive an email with a link to create an account or sign in.
                 Once they sign up with the invited email address, they'll automatically gain access to your shared data based on the permissions you set.

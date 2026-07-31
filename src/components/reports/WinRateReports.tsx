@@ -147,17 +147,17 @@ export function WinRateReports({ data }: WinRateReportsProps) {
                     </td>
                     <td className="text-center py-2">
                       {machine.performance === "hot" && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-orange-500/10 text-orange-600">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-warning/10 text-warning">
                           <Flame className="h-3 w-3" /> Hot
                         </span>
                       )}
                       {machine.performance === "cold" && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-blue-500/10 text-blue-600">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-info/10 text-info">
                           <Snowflake className="h-3 w-3" /> Cold
                         </span>
                       )}
                       {machine.performance === "normal" && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-green-500/10 text-green-600">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-success/10 text-success">
                           Optimal
                         </span>
                       )}
@@ -186,30 +186,30 @@ export function WinRateReports({ data }: WinRateReportsProps) {
           className="lg:col-span-3"
         >
           <div className="grid md:grid-cols-3 gap-4 py-4">
-            <div className="p-4 rounded-lg bg-orange-500/5 border border-orange-500/20 text-center">
+            <div className="p-4 rounded-lg bg-warning/5 border border-warning/20 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Flame className="h-5 w-5 text-orange-500" />
-                <span className="font-semibold text-orange-600">Very Generous</span>
+                <Flame className="h-5 w-5 text-warning" />
+                <span className="font-semibold text-warning">Very Generous</span>
               </div>
               <p className="text-2xl font-bold">1 in 7-8</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Customers win frequently. May reduce profitability.
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/20 text-center">
+            <div className="p-4 rounded-lg bg-success/5 border border-success/20 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Target className="h-5 w-5 text-green-500" />
-                <span className="font-semibold text-green-600">Optimal</span>
+                <Target className="h-5 w-5 text-success" />
+                <span className="font-semibold text-success">Optimal</span>
               </div>
               <p className="text-2xl font-bold">1 in 8-9</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Balanced for player satisfaction and profit.
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-blue-500/5 border border-blue-500/20 text-center">
+            <div className="p-4 rounded-lg bg-info/5 border border-info/20 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
-                <Snowflake className="h-5 w-5 text-blue-500" />
-                <span className="font-semibold text-blue-600">Tight</span>
+                <Snowflake className="h-5 w-5 text-info" />
+                <span className="font-semibold text-info">Tight</span>
               </div>
               <p className="text-2xl font-bold">1 in 10+</p>
               <p className="text-xs text-muted-foreground mt-1">

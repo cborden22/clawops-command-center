@@ -185,8 +185,8 @@ export default function ReportIssue() {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="p-4 rounded-full bg-green-500/10 mb-4">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            <div className="p-4 rounded-full bg-success/10 mb-4">
+              <CheckCircle2 className="h-8 w-8 text-success" />
             </div>
             <h2 className="text-xl font-semibold mb-2">Thank You!</h2>
             <p className="text-muted-foreground mb-6">
@@ -239,7 +239,7 @@ export default function ReportIssue() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <AlertTriangle className="h-5 w-5 text-warning" />
               Report an Issue
             </CardTitle>
           </CardHeader>

@@ -49,10 +49,10 @@ export const DeviceWizard: React.FC<DeviceWizardProps> = ({ isOpen, onClose }) =
   };
 
   const getClassificationColor = (classification: string) => {
-    if (classification.includes('Likely Amusement')) return 'bg-green-500';
-    if (classification.includes('Possible Gambling')) return 'bg-red-500';
-    if (classification.includes('Prohibited')) return 'bg-red-600';
-    return 'bg-yellow-500';
+    if (classification.includes('Likely Amusement')) return 'bg-success';
+    if (classification.includes('Possible Gambling')) return 'bg-destructive';
+    if (classification.includes('Prohibited')) return 'bg-destructive';
+    return 'bg-warning';
   };
 
   return (
@@ -89,7 +89,7 @@ export const DeviceWizard: React.FC<DeviceWizardProps> = ({ isOpen, onClose }) =
                     variant="outline"
                     className="h-20 text-lg"
                   >
-                    <CheckCircle className="h-6 w-6 mr-2 text-green-500" />
+                    <CheckCircle className="h-6 w-6 mr-2 text-success" />
                     Yes
                   </Button>
                   <Button
@@ -97,7 +97,7 @@ export const DeviceWizard: React.FC<DeviceWizardProps> = ({ isOpen, onClose }) =
                     variant="outline"
                     className="h-20 text-lg"
                   >
-                    <XCircle className="h-6 w-6 mr-2 text-red-500" />
+                    <XCircle className="h-6 w-6 mr-2 text-destructive" />
                     No
                   </Button>
                 </div>
@@ -146,7 +146,7 @@ export const DeviceWizard: React.FC<DeviceWizardProps> = ({ isOpen, onClose }) =
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Classification Result</span>
-                  <Badge className={`${getClassificationColor(result.classification)} text-white`}>
+                  <Badge className={`${getClassificationColor(result.classification)} text-primary-foreground`}>
                     {result.classification}
                   </Badge>
                 </CardTitle>
@@ -157,7 +157,7 @@ export const DeviceWizard: React.FC<DeviceWizardProps> = ({ isOpen, onClose }) =
             {result.risk_flags.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-red-600">
+                  <CardTitle className="flex items-center gap-2 text-destructive">
                     <AlertTriangle className="h-5 w-5" />
                     Risk Flags
                   </CardTitle>
@@ -166,7 +166,7 @@ export const DeviceWizard: React.FC<DeviceWizardProps> = ({ isOpen, onClose }) =
                   <ul className="space-y-2">
                     {result.risk_flags.map((flag, idx) => (
                       <li key={idx} className="flex items-start gap-2">
-                        <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5" />
+                        <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
                         <span className="text-sm">{flag}</span>
                       </li>
                     ))}
@@ -180,7 +180,7 @@ export const DeviceWizard: React.FC<DeviceWizardProps> = ({ isOpen, onClose }) =
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <CheckCircle className="h-5 w-5 text-success" />
                     Requirements
                   </CardTitle>
                 </CardHeader>
@@ -188,7 +188,7 @@ export const DeviceWizard: React.FC<DeviceWizardProps> = ({ isOpen, onClose }) =
                   <ul className="space-y-2">
                     {result.requirements.map((req, idx) => (
                       <li key={idx} className="flex items-start gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                        <CheckCircle className="h-4 w-4 text-success mt-0.5" />
                         <span className="text-sm">{req}</span>
                       </li>
                     ))}
@@ -213,7 +213,7 @@ export const DeviceWizard: React.FC<DeviceWizardProps> = ({ isOpen, onClose }) =
                       href={source.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-blue-500 hover:underline text-sm"
+                      className="flex items-center gap-2 text-info hover:underline text-sm"
                     >
                       <ExternalLink className="h-4 w-4" />
                       {source.title}

@@ -9,20 +9,20 @@ import { researchTracker, researchPriorities } from '@/data/complianceResearch';
 export const ResearchTracker = () => {
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'complete': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'partial': return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'needs_research': return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'conflicting': return <AlertTriangle className="h-4 w-4 text-orange-500" />;
+      case 'complete': return <CheckCircle className="h-4 w-4 text-success" />;
+      case 'partial': return <Clock className="h-4 w-4 text-warning" />;
+      case 'needs_research': return <XCircle className="h-4 w-4 text-destructive" />;
+      case 'conflicting': return <AlertTriangle className="h-4 w-4 text-warning" />;
       default: return null;
     }
   };
 
   const getConfidenceColor = (level: string) => {
     switch (level) {
-      case 'high': return 'bg-green-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'low': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      case 'high': return 'bg-success';
+      case 'medium': return 'bg-warning';
+      case 'low': return 'bg-destructive';
+      default: return 'bg-muted';
     }
   };
 
@@ -47,29 +47,29 @@ export const ResearchTracker = () => {
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">
+              <div className="text-center p-3 bg-success/10 rounded-lg">
+                <div className="text-2xl font-bold text-success">
                   {researchTracker.filter(s => s.research_status === 'complete').length}
                 </div>
-                <div className="text-sm text-green-600">Complete</div>
+                <div className="text-sm text-success">Complete</div>
               </div>
-              <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                <div className="text-2xl font-bold text-yellow-600">
+              <div className="text-center p-3 bg-warning/10 rounded-lg">
+                <div className="text-2xl font-bold text-warning">
                   {researchTracker.filter(s => s.research_status === 'partial').length}
                 </div>
-                <div className="text-sm text-yellow-600">Partial</div>
+                <div className="text-sm text-warning">Partial</div>
               </div>
-              <div className="text-center p-3 bg-red-50 rounded-lg">
-                <div className="text-2xl font-bold text-red-600">
+              <div className="text-center p-3 bg-destructive/10 rounded-lg">
+                <div className="text-2xl font-bold text-destructive">
                   {researchTracker.filter(s => s.research_status === 'needs_research').length}
                 </div>
-                <div className="text-sm text-red-600">Needed</div>
+                <div className="text-sm text-destructive">Needed</div>
               </div>
-              <div className="text-center p-3 bg-orange-50 rounded-lg">
-                <div className="text-2xl font-bold text-orange-600">
+              <div className="text-center p-3 bg-warning/10 rounded-lg">
+                <div className="text-2xl font-bold text-warning">
                   {researchTracker.filter(s => s.research_status === 'conflicting').length}
                 </div>
-                <div className="text-sm text-orange-600">Conflicting</div>
+                <div className="text-sm text-warning">Conflicting</div>
               </div>
             </div>
           </div>
@@ -95,7 +95,7 @@ export const ResearchTracker = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <Badge className={`${getConfidenceColor(state.confidence_level)} text-white text-xs`}>
+                    <Badge className={`${getConfidenceColor(state.confidence_level)} text-primary-foreground text-xs`}>
                       {state.confidence_level}
                     </Badge>
                     <div className="text-xs text-muted-foreground mt-1">

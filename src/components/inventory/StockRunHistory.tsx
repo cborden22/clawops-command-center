@@ -221,7 +221,7 @@ export function StockRunHistory({ refreshTrigger }: StockRunHistoryProps) {
                         {returnedTotal > 0 && (
                           <Badge
                             variant="outline"
-                            className="border-emerald-300 text-emerald-600 text-xs"
+                            className="border-success/40 text-success text-xs"
                           >
                             <RotateCcw className="h-3 w-3 mr-1" />
                             {returnedTotal}
@@ -260,7 +260,7 @@ export function StockRunHistory({ refreshTrigger }: StockRunHistoryProps) {
                                     {item.quantity}
                                   </span>
                                   {returnedItem && (
-                                    <span className="text-emerald-600 text-xs">
+                                    <span className="text-success text-xs">
                                       (+{returnedItem.quantity} returned)
                                     </span>
                                   )}
@@ -273,7 +273,7 @@ export function StockRunHistory({ refreshTrigger }: StockRunHistoryProps) {
                         {record.returned_items &&
                           record.returned_items.length > 0 && (
                             <div className="pt-2 border-t">
-                              <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide mb-1">
+                              <p className="text-xs font-medium text-success uppercase tracking-wide mb-1">
                                 Total Returned: {returnedTotal} items
                               </p>
                             </div>

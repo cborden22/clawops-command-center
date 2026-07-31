@@ -15,11 +15,11 @@ interface LeadActivityTimelineProps {
 }
 
 const activityTypeConfig: Record<ActivityType, { icon: React.ComponentType<{ className?: string }>; label: string; color: string }> = {
-  call: { icon: Phone, label: 'Call', color: 'bg-green-500/20 text-green-400 border-green-500/30' },
-  email: { icon: Mail, label: 'Email', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
-  meeting: { icon: Users, label: 'Meeting', color: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
-  site_visit: { icon: MapPin, label: 'Site Visit', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
-  note: { icon: FileText, label: 'Note', color: 'bg-gray-500/20 text-gray-400 border-gray-500/30' },
+  call: { icon: Phone, label: 'Call', color: 'bg-success/20 text-success border-success/30' },
+  email: { icon: Mail, label: 'Email', color: 'bg-info/20 text-info border-info/30' },
+  meeting: { icon: Users, label: 'Meeting', color: 'bg-info/20 text-info border-info/30' },
+  site_visit: { icon: MapPin, label: 'Site Visit', color: 'bg-warning/20 text-warning border-warning/30' },
+  note: { icon: FileText, label: 'Note', color: 'bg-muted/20 text-muted-foreground border-muted/30' },
 };
 
 export function LeadActivityTimeline({ leadId, activities, onAddActivity, isLoading }: LeadActivityTimelineProps) {

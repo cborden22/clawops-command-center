@@ -145,11 +145,11 @@ export function InventoryReports({ data }: InventoryReportsProps) {
                       <td className="text-right py-2 font-semibold">{formatCurrency(value)}</td>
                       <td className="text-center py-2">
                         {isLowStock ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-yellow-500/10 text-yellow-600">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-warning/10 text-warning">
                             <AlertTriangle className="h-3 w-3" /> Low
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-green-500/10 text-green-600">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-success/10 text-success">
                             OK
                           </span>
                         )}

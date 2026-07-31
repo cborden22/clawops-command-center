@@ -85,21 +85,21 @@ export function CollectionReportsSheet({ open, onOpenChange }: CollectionReports
     switch (status) {
       case "on-target":
         return (
-          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200">
+          <Badge variant="outline" className="bg-success/10 text-success border-success/40">
             <Minus className="h-3 w-3 mr-1" />
             On Target
           </Badge>
         );
       case "over":
         return (
-          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-200">
+          <Badge variant="outline" className="bg-warning/10 text-warning border-warning/40">
             <TrendingUp className="h-3 w-3 mr-1" />
             Over Paying
           </Badge>
         );
       case "under":
         return (
-          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-200">
+          <Badge variant="outline" className="bg-info/10 text-info border-info/40">
             <TrendingDown className="h-3 w-3 mr-1" />
             Under Paying
           </Badge>

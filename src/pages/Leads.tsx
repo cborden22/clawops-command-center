@@ -161,8 +161,8 @@ export default function Leads() {
         <Card className="bg-card/80 backdrop-blur-sm">
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10 shrink-0">
-                <TrendingUp className="h-4 w-4 text-green-500" />
+              <div className="p-2 rounded-lg bg-success/10 shrink-0">
+                <TrendingUp className="h-4 w-4 text-success" />
               </div>
               <div className="min-w-0">
                 <p className="text-xl sm:text-2xl font-bold">{stats.conversionRate}%</p>
@@ -174,8 +174,8 @@ export default function Leads() {
         <Card className="bg-card/80 backdrop-blur-sm">
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10 shrink-0">
-                <Calendar className="h-4 w-4 text-amber-500" />
+              <div className="p-2 rounded-lg bg-warning/10 shrink-0">
+                <Calendar className="h-4 w-4 text-warning" />
               </div>
               <div className="min-w-0">
                 <p className="text-xl sm:text-2xl font-bold">{stats.followUpsDue}</p>
@@ -187,8 +187,8 @@ export default function Leads() {
         <Card className="bg-card/80 backdrop-blur-sm">
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-2 rounded-lg bg-red-500/10 shrink-0">
-                <Flame className="h-4 w-4 text-red-500" />
+              <div className="p-2 rounded-lg bg-destructive/10 shrink-0">
+                <Flame className="h-4 w-4 text-destructive" />
               </div>
               <div className="min-w-0">
                 <p className="text-xl sm:text-2xl font-bold">
