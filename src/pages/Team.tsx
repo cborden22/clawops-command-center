@@ -9,6 +9,7 @@ import { InviteMemberDialog } from "@/components/team/InviteMemberDialog";
 import { TeamMemberCard } from "@/components/team/TeamMemberCard";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { toast } from "@/hooks/use-toast";
+import { PageHeader } from "@/components/shared/PageHeader";
 export default function Team() {
   const {
     teamMembers,
