@@ -261,7 +261,12 @@ export function LocationTrackerComponent() {
   const totalMachines = locations.reduce((sum, loc) => sum + loc.machineCount, 0);
 
   if (!isLoaded) {
-    return <div className="flex items-center justify-center py-12">Loading...</div>;
+    return (
+      <div className="space-y-6">
+        <SkeletonGrid count={3} columns={3} />
+        <SkeletonGrid count={6} columns={3} />
+      </div>
+    );
   }
 
   return (
