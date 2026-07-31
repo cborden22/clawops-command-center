@@ -1,17 +1,30 @@
 import { ReactNode } from "react";
 import { LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {
   icon?: LucideIcon;
   title: string;
   description?: string;
+  /** Primary call to action (e.g. a create button). */
   action?: ReactNode;
+  /** When provided, renders a "Clear filters" action — use for filtered-but-empty lists. */
+  onClear?: () => void;
+  clearLabel?: string;
   className?: string;
 }
 
 /** Consistent empty state: icon, one-line explanation, primary action. */
-export function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+  onClear,
+  clearLabel = "Clear filters",
+  className,
+}: EmptyStateProps) {
   return (
     <div
       className={cn(
@@ -30,7 +43,16 @@ export function EmptyState({ icon: Icon, title, description, action, className }
           <p className="text-sm text-muted-foreground max-w-sm mx-auto">{description}</p>
         )}
       </div>
-      {action}
+      {(action || onClear) && (
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {action}
+          {onClear && (
+            <Button variant="outline" size="sm" onClick={onClear}>
+              {clearLabel}
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
