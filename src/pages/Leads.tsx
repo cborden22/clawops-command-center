@@ -131,19 +131,16 @@ export default function Leads() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Leads Pipeline</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Track and manage your potential locations
-          </p>
-        </div>
-        <Button onClick={() => setShowAddDialog(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Lead
-        </Button>
-      </div>
+      <PageHeader
+        title="Leads Pipeline"
+        description="Track and manage your potential locations"
+        actions={
+          <Button onClick={() => setShowAddDialog(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Lead
+          </Button>
+        }
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
