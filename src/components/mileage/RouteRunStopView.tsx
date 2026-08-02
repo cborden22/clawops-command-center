@@ -11,13 +11,17 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import {
   MapPin, ChevronRight, ChevronLeft, DollarSign, StickyNote, Coins,
-  TrendingUp, TrendingDown, Target, CalendarDays,
+  TrendingUp, TrendingDown, Target, CalendarDays, Navigation, CheckCircle2, Camera,
 } from "lucide-react";
 import { RouteStop } from "@/hooks/useRoutesDB";
 import { StopCollectionData, StopResult } from "@/hooks/useRouteRun";
 import { supabase } from "@/integrations/supabase/client";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 import { format, differenceInDays } from "date-fns";
+import { StopPhotoCapture, CapturedPhoto } from "./StopPhotoCapture";
+import type { PhotoVerificationMode } from "@/hooks/useMyTeamPermissions";
+import type { NearestLocation } from "@/hooks/useGeofence";
+import { formatDistance } from "@/lib/geo";
 
 const QUARTER_VALUE = 0.25;
 const DEFAULT_COST_PER_PLAY = 0.50;
@@ -43,6 +47,11 @@ interface RouteRunStopViewProps {
   onComplete: (result: StopResult) => Promise<void>;
   onGoBack?: () => void;
   isCompleting: boolean;
+  /** Live arrival info for this stop's location (geofencing only). */
+  arrival?: NearestLocation | null;
+  /** Photo proof requirement for the signed-in user. */
+  photoMode?: PhotoVerificationMode;
+  routeRunId?: string | null;
 }
 
 export function RouteRunStopView({
@@ -52,6 +61,9 @@ export function RouteRunStopView({
   onComplete,
   onGoBack,
   isCompleting,
+  arrival = null,
+  photoMode = "none",
+  routeRunId = null,
 }: RouteRunStopViewProps) {
   const { compareToExpected } = useMachineCollections();
   const [machines, setMachines] = useState<LocationMachine[]>([]);
@@ -63,6 +75,8 @@ export function RouteRunStopView({
   const [resolvedLocationName, setResolvedLocationName] = useState<string | null>(null);
   const [spreadRevenue, setSpreadRevenue] = useState(true);
   const [lastCollectionDate, setLastCollectionDate] = useState<string | null>(null);
+  const [stopPhotos, setStopPhotos] = useState<CapturedPhoto[]>([]);
+  const [machinePhotos, setMachinePhotos] = useState<Record<string, CapturedPhoto[]>>({});
 
   const locationName = resolvedLocationName || stop.customLocationName || `Stop ${stopIndex + 1}`;
   const isLastStop = stopIndex === totalStops - 1;
@@ -85,6 +99,8 @@ export function RouteRunStopView({
       setResolvedLocationName(null);
       setLastCollectionDate(null);
       setSpreadRevenue(true);
+      setStopPhotos([]);
+      setMachinePhotos({});
 
       if (!stop.locationId) {
         setMachines([]);
@@ -168,7 +184,18 @@ export function RouteRunStopView({
     fetchLocationData();
   }, [stop.locationId, stopIndex]);
 
+  const requiresStopPhoto = photoMode === "per_stop";
+  const requiresMachinePhotos = photoMode === "per_machine" && machines.length > 0;
+
+  const missingMachinePhotos = requiresMachinePhotos
+    ? machines.filter((m) => (machinePhotos[m.id]?.length || 0) === 0).length
+    : 0;
+
+  const photoRequirementMet =
+    (!requiresStopPhoto || stopPhotos.length > 0) && missingMachinePhotos === 0;
+
   const handleComplete = async () => {
+    if (!photoRequirementMet) return;
     const collData: StopCollectionData[] = machines.map((m) => ({
       machineId: m.id,
       coinsInserted: parseInt(collections[m.id]?.coins || "0") || 0,
@@ -268,6 +295,26 @@ export function RouteRunStopView({
               {stopIndex + 1}/{totalStops}
             </Badge>
           </div>
+
+          {arrival && (
+            <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
+              {arrival.inside ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 text-chart-2 shrink-0" />
+                  <span className="text-xs font-medium text-foreground">
+                    You&apos;re on site at {arrival.location.name}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Navigation className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-xs text-muted-foreground">
+                    {formatDistance(arrival.distanceMeters)} from this stop
+                  </span>
+                </>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -355,6 +402,21 @@ export function RouteRunStopView({
                     />
                   </div>
 
+                  {photoMode === "per_machine" && (
+                    <StopPhotoCapture
+                      locationId={stop.locationId}
+                      machineId={machine.id}
+                      routeRunId={routeRunId}
+                      stopIndex={stopIndex}
+                      label="Collection screen photo"
+                      required
+                      photos={machinePhotos[machine.id] || []}
+                      onChange={(photos) =>
+                        setMachinePhotos((prev) => ({ ...prev, [machine.id]: photos }))
+                      }
+                    />
+                  )}
+
                   {calc.prizes > 0 && calc.totalPlays > 0 && (
                     <div className="rounded-md bg-muted/40 border border-border px-3 py-2 space-y-1.5">
                       <div className="flex items-center gap-2">
@@ -434,6 +496,30 @@ export function RouteRunStopView({
         </Card>
       )}
 
+      {/* Photo verification (per stop) */}
+      {photoMode === "per_stop" && (
+        <Card className="glass-card">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Camera className="h-4 w-4 text-primary" />
+              Verification Photo
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Your account owner requires a photo of the collection screen at this stop.
+            </p>
+            <StopPhotoCapture
+              locationId={stop.locationId}
+              routeRunId={routeRunId}
+              stopIndex={stopIndex}
+              label="Collection screen photo"
+              required
+              photos={stopPhotos}
+              onChange={setStopPhotos}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Notes */}
       <Card className="glass-card">
         <CardContent className="p-4 space-y-2">
@@ -476,6 +562,14 @@ export function RouteRunStopView({
       )}
 
       {/* Navigation Buttons - sticky on mobile */}
+      {!photoRequirementMet && (
+        <p className="text-xs text-destructive text-center">
+          {requiresStopPhoto && stopPhotos.length === 0
+            ? "Add a verification photo to complete this stop."
+            : `${missingMachinePhotos} machine${missingMachinePhotos === 1 ? "" : "s"} still need a verification photo.`}
+        </p>
+      )}
+
       <div className="sticky bottom-4 z-10 pt-2 flex gap-3">
         {stopIndex > 0 && onGoBack && (
           <Button
@@ -490,7 +584,7 @@ export function RouteRunStopView({
         )}
         <Button
           onClick={handleComplete}
-          disabled={isCompleting || loadingData}
+          disabled={isCompleting || loadingData || !photoRequirementMet}
           className="flex-1 h-14 text-base gap-2 shadow-lg"
         >
           {isCompleting ? (
