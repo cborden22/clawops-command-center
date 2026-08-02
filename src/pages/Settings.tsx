@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useReminderPreferences } from "@/hooks/useReminderPreferences";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,6 +52,12 @@ export default function Settings() {
   // App Settings saving state
   
   
+  const {
+    preferences: reminderPrefs,
+    isLoaded: reminderPrefsLoaded,
+    updatePreferences: updateReminderPrefs,
+  } = useReminderPreferences();
+
   // Email notification preferences
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
   const [isLoadingNotificationPref, setIsLoadingNotificationPref] = useState(true);
@@ -515,7 +522,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label htmlFor="emailNotifications">Email Notifications</Label>
-                    <p className="text-sm text-muted-foreground">Receive email alerts for maintenance reports</p>
+                    <p className="text-sm text-muted-foreground">Receive maintenance alerts and the daily reminder digest</p>
                   </div>
                   <Switch
                     id="emailNotifications"
@@ -524,6 +531,73 @@ export default function Settings() {
                     disabled={isLoadingNotificationPref}
                   />
                 </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="leadFollowupReminders">Lead Follow-up Reminders</Label>
+                    <p className="text-sm text-muted-foreground">Alert me about follow-up dates on open leads</p>
+                  </div>
+                  <Switch
+                    id="leadFollowupReminders"
+                    checked={reminderPrefs.leadFollowupEnabled}
+                    onCheckedChange={(checked) => updateReminderPrefs({ leadFollowupEnabled: checked })}
+                    disabled={!reminderPrefsLoaded}
+                  />
+                </div>
+
+                {reminderPrefs.leadFollowupEnabled && (
+                  <div className="flex items-center justify-between gap-4">
+                    <Label htmlFor="leadFollowupDays" className="text-sm text-muted-foreground font-normal">
+                      Remind me this many days before a follow-up
+                    </Label>
+                    <Input
+                      id="leadFollowupDays"
+                      type="number"
+                      min={0}
+                      max={30}
+                      className="w-20 tabular-nums"
+                      value={reminderPrefs.leadFollowupDaysBefore}
+                      onFocus={(e) => e.currentTarget.select()}
+                      onChange={(e) =>
+                        updateReminderPrefs({ leadFollowupDaysBefore: Math.max(0, parseInt(e.target.value) || 0) })
+                      }
+                    />
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="installReminders">Installation Reminders</Label>
+                    <p className="text-sm text-muted-foreground">Alert me about target install dates and machines not yet marked installed</p>
+                  </div>
+                  <Switch
+                    id="installReminders"
+                    checked={reminderPrefs.installEnabled}
+                    onCheckedChange={(checked) => updateReminderPrefs({ installEnabled: checked })}
+                    disabled={!reminderPrefsLoaded}
+                  />
+                </div>
+
+                {reminderPrefs.installEnabled && (
+                  <div className="flex items-center justify-between gap-4">
+                    <Label htmlFor="installDays" className="text-sm text-muted-foreground font-normal">
+                      Remind me this many days before an install date
+                    </Label>
+                    <Input
+                      id="installDays"
+                      type="number"
+                      min={0}
+                      max={30}
+                      className="w-20 tabular-nums"
+                      value={reminderPrefs.installDaysBefore}
+                      onFocus={(e) => e.currentTarget.select()}
+                      onChange={(e) =>
+                        updateReminderPrefs({ installDaysBefore: Math.max(0, parseInt(e.target.value) || 0) })
+                      }
+                    />
+                  </div>
+                )}
+
               </div>
             </CardContent>
           </Card>

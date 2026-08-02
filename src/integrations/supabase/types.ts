@@ -441,6 +441,7 @@ export type Database = {
           priority: string | null
           source: string | null
           status: string
+          target_install_date: string | null
           updated_at: string
           user_id: string
         }
@@ -461,6 +462,7 @@ export type Database = {
           priority?: string | null
           source?: string | null
           status?: string
+          target_install_date?: string | null
           updated_at?: string
           user_id: string
         }
@@ -481,6 +483,7 @@ export type Database = {
           priority?: string | null
           source?: string | null
           status?: string
+          target_install_date?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1151,6 +1154,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reminder_dismissals: {
+        Row: {
+          created_at: string
+          dismissed_at: string
+          id: string
+          snoozed_until: string | null
+          source_id: string
+          source_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dismissed_at?: string
+          id?: string
+          snoozed_until?: string | null
+          source_id: string
+          source_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dismissed_at?: string
+          id?: string
+          snoozed_until?: string | null
+          source_id?: string
+          source_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reminder_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          install_days_before: number
+          install_enabled: boolean
+          lead_followup_days_before: number
+          lead_followup_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          install_days_before?: number
+          install_enabled?: boolean
+          lead_followup_days_before?: number
+          lead_followup_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          install_days_before?: number
+          install_enabled?: boolean
+          lead_followup_days_before?: number
+          lead_followup_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       revenue_entries: {
         Row: {
