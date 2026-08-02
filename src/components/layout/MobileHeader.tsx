@@ -32,6 +32,7 @@ export function MobileHeader({ onRefresh, isRefreshing, onOpenCommandPalette }: 
       <div className="flex items-center justify-between h-14 px-4">
         <h1 className="text-lg font-semibold truncate">{title}</h1>
         <div className="flex items-center -mr-2">
+          <NotificationBell />
           {onOpenCommandPalette && (
             <button
               onClick={onOpenCommandPalette}
