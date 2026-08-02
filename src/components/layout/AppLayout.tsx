@@ -53,6 +53,9 @@ export function AppLayout({ children }: AppLayoutProps) {
 
             <CommandPaletteButton onClick={() => setCommandOpen(true)} />
 
+            <NotificationBell />
+
+
             <button
               onClick={() => setShortcutsOpen(true)}
               className="hidden md:flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:bg-accent/10 hover:text-foreground transition-colors"
