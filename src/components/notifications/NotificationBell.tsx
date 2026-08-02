@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -8,10 +8,33 @@ import { useReminders } from "@/hooks/useReminders";
 import { NotificationList } from "./NotificationList";
 import { cn } from "@/lib/utils";
 
+const SEEN_COUNT_KEY = "clawops_reminders_seen_count";
+
 export function NotificationBell({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
   const { count } = useReminders();
+  const [lastSeenCount, setLastSeenCount] = useState<number>(() => {
+    try {
+      const raw = localStorage.getItem(SEEN_COUNT_KEY);
+      return raw ? Number(raw) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  const unreadCount = Math.max(0, count - lastSeenCount);
+
+  useEffect(() => {
+    if (!open) return;
+    // Mark reminders as seen the moment the panel opens.
+    setLastSeenCount(count);
+    try {
+      localStorage.setItem(SEEN_COUNT_KEY, String(count));
+    } catch {
+      // ignore storage errors
+    }
+  }, [open, count]);
 
   const trigger = (
     <button
