@@ -3,6 +3,7 @@ import { RefreshCw, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { triggerHaptic, hapticPatterns } from "@/utils/haptics";
 import { getPageTitle } from "@/lib/navigation";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface MobileHeaderProps {
   onRefresh?: () => Promise<void>;
