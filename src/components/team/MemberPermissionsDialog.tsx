@@ -11,6 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Shield } from "lucide-react";
 import { TeamMember, TeamMemberPermissions } from "@/hooks/useTeamMembers";
 
@@ -194,6 +201,32 @@ export function MemberPermissionsDialog({
               checked={permissions.can_assign_tasks}
               onCheckedChange={() => togglePermission("can_assign_tasks")}
             />
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <div>
+              <Label className="text-sm font-medium">Collection Photo Proof</Label>
+              <p className="text-xs text-muted-foreground">
+                Require a photo of the collection screen before a route stop can be completed
+              </p>
+            </div>
+            <Select
+              value={permissions.photo_verification || "none"}
+              onValueChange={(value) =>
+                setPermissions((prev) => ({ ...prev, photo_verification: value }))
+              }
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-[100]">
+                <SelectItem value="none">Not required</SelectItem>
+                <SelectItem value="per_stop">One photo per stop</SelectItem>
+                <SelectItem value="per_machine">One photo per machine</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

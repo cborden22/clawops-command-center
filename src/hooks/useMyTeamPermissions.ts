@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+export type PhotoVerificationMode = "none" | "per_stop" | "per_machine";
+
 export interface MyPermissions {
   isLoading: boolean;
   isOwner: boolean;              // true if viewing own data (not a team member)
@@ -16,6 +18,7 @@ export interface MyPermissions {
   canViewReports: boolean;
   canViewMileage: boolean;       // can see routes/mileage
   canAssignTasks: boolean;       // can assign tasks to team members
+  photoVerification: PhotoVerificationMode; // photo proof required on route stops
 }
 
 const DEFAULT_OWNER_PERMISSIONS: MyPermissions = {
@@ -32,6 +35,7 @@ const DEFAULT_OWNER_PERMISSIONS: MyPermissions = {
   canViewReports: true,
   canViewMileage: true,
   canAssignTasks: true,
+  photoVerification: "none",
 };
 
 const DEFAULT_RESTRICTED_PERMISSIONS: MyPermissions = {
@@ -48,6 +52,7 @@ const DEFAULT_RESTRICTED_PERMISSIONS: MyPermissions = {
   canViewReports: false,
   canViewMileage: false,
   canAssignTasks: false,
+  photoVerification: "none",
 };
 
 /**
@@ -130,6 +135,7 @@ export function useMyTeamPermissions(): MyPermissions {
           canViewReports: permData.can_view_reports ?? false,
           canViewMileage: permData.can_view_mileage ?? false,
           canAssignTasks: permData.can_assign_tasks ?? false,
+          photoVerification: (permData.photo_verification as PhotoVerificationMode) ?? "none",
         });
       } catch (error) {
         console.error("Unexpected error fetching permissions:", error);
