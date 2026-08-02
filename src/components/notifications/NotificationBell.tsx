@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -8,10 +8,33 @@ import { useReminders } from "@/hooks/useReminders";
 import { NotificationList } from "./NotificationList";
 import { cn } from "@/lib/utils";
 
+const SEEN_COUNT_KEY = "clawops_reminders_seen_count";
+
 export function NotificationBell({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
   const { count } = useReminders();
+  const [lastSeenCount, setLastSeenCount] = useState<number>(() => {
+    try {
+      const raw = localStorage.getItem(SEEN_COUNT_KEY);
+      return raw ? Number(raw) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  const unreadCount = Math.max(0, count - lastSeenCount);
+
+  useEffect(() => {
+    if (!open) return;
+    // Mark reminders as seen the moment the panel opens.
+    setLastSeenCount(count);
+    try {
+      localStorage.setItem(SEEN_COUNT_KEY, String(count));
+    } catch {
+      // ignore storage errors
+    }
+  }, [open, count]);
 
   const trigger = (
     <button
@@ -22,12 +45,12 @@ export function NotificationBell({ className }: { className?: string }) {
         isMobile ? "p-3 min-w-[44px] min-h-[44px] touch-manipulation active:scale-95" : "h-8 w-8 border border-border bg-card hover:bg-accent/10",
         className
       )}
-      aria-label={count > 0 ? `${count} reminders` : "Reminders"}
+      aria-label={unreadCount > 0 ? `${unreadCount} new reminders` : "Reminders"}
     >
       <Bell className="h-5 w-5 md:h-4 md:w-4" />
-      {count > 0 && (
+      {unreadCount > 0 && (
         <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold flex items-center justify-center">
-          {count > 9 ? "9+" : count}
+          {unreadCount > 9 ? "9+" : unreadCount}
         </span>
       )}
     </button>
