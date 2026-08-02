@@ -31,6 +31,8 @@ import { useActiveTrip } from "@/hooks/useActiveTrip";
 import { useRouteRun } from "@/hooks/useRouteRun";
 import { RouteManager } from "@/components/mileage/RouteManager";
 import { RouteRunPage } from "@/components/mileage/RouteRunPage";
+import { ArrivalBanner } from "@/components/mileage/ArrivalBanner";
+import { useGeofence } from "@/hooks/useGeofence";
 import { LocationSelector, LocationSelection, getLocationDisplayString } from "@/components/mileage/LocationSelector";
 import { ActiveTripCard } from "@/components/mileage/ActiveTripCard";
 import { MileageRoute, RouteStop } from "@/hooks/useRoutesDB";
@@ -88,6 +90,8 @@ const MileageTracker = () => {
     goToStop,
   } = useRouteRun();
   
+  const { status: geoStatus, error: geoError, nearest, requestLocation } = useGeofence();
+
   // Route run state
   const [routeRunRoute, setRouteRunRoute] = useState<MileageRoute | null>(null);
   
@@ -897,14 +901,34 @@ const MileageTracker = () => {
                   refetchMileage={refetchMileage}
                 />
               ) : (
-                <RouteManager
+                <div className="space-y-4">
+                  <ArrivalBanner
+                    status={geoStatus}
+                    error={geoError}
+                    nearest={nearest}
+                    onRequestLocation={requestLocation}
+                    actionLabel={
+                      nearest?.inside &&
+                      routes.some((r) => r.stops.some((s) => s.locationId === nearest.location.id))
+                        ? "Start the route for this stop"
+                        : undefined
+                    }
+                    onAction={(arrived) => {
+                      const match = routes.find((r) =>
+                        r.stops.some((s) => s.locationId === arrived.location.id)
+                      );
+                      if (match) handleRunRoute(match);
+                    }}
+                  />
+                  <RouteManager
                   routes={routes}
                   onAddRoute={addRoute}
                   onUpdateRoute={updateRoute}
                   onDeleteRoute={deleteRoute}
                   onRunRoute={handleRunRoute}
-                  hasActiveRun={!!activeRun}
-                />
+                    hasActiveRun={!!activeRun}
+                  />
+                </div>
               )}
             </TabsContent>
 
