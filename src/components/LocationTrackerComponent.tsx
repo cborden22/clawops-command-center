@@ -55,6 +55,9 @@ import {
 import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
 
 const RESTOCK_FREQUENCY_OPTIONS = [
   { value: "none", label: "No Schedule", days: null },
