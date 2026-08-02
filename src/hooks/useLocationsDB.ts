@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { geocodeAddress } from "@/lib/geocode";
 import { slugify, generateUnitCode } from "@/utils/slugify";
 import { useTeamContext } from "@/contexts/TeamContext";
 
@@ -84,6 +85,10 @@ export interface Location {
   collectionFrequencyDays?: number;
   restockDayOfWeek?: number; // 0=Sunday, 6=Saturday
   lastCollectionDate?: string;
+  // Arrival detection (geofencing only — never used for mileage)
+  latitude?: number;
+  longitude?: number;
+  geofenceRadiusM?: number;
 }
 
 export function useLocations() {
@@ -223,6 +228,9 @@ export function useLocations() {
           collectionFrequencyDays: loc.collection_frequency_days || undefined,
           restockDayOfWeek: loc.restock_day_of_week ?? undefined,
           lastCollectionDate: loc.last_collection_date || undefined,
+          latitude: loc.latitude !== null && loc.latitude !== undefined ? Number(loc.latitude) : undefined,
+          longitude: loc.longitude !== null && loc.longitude !== undefined ? Number(loc.longitude) : undefined,
+          geofenceRadiusM: loc.geofence_radius_m ? Number(loc.geofence_radius_m) : undefined,
         };
       });
 
@@ -254,6 +262,14 @@ export function useLocations() {
     try {
       // Auto-generate slug from location name
       const generatedSlug = slugify(locationData.name);
+
+      // Auto-geocode the address so arrival detection works out of the box
+      let coords: { lat: number; lng: number } | null = null;
+      if (locationData.latitude && locationData.longitude) {
+        coords = { lat: locationData.latitude, lng: locationData.longitude };
+      } else if (locationData.address?.trim()) {
+        coords = await geocodeAddress(locationData.address);
+      }
       
       const { data: newLoc, error: locError } = await supabase
         .from("locations")
@@ -268,6 +284,9 @@ export function useLocations() {
           commission_rate: locationData.commissionRate,
           notes: locationData.notes,
           is_active: locationData.isActive,
+          latitude: coords?.lat ?? null,
+          longitude: coords?.lng ?? null,
+          geofence_radius_m: locationData.geofenceRadiusM ?? 150,
         })
         .select()
         .single();
@@ -331,7 +350,20 @@ export function useLocations() {
         // Regenerate slug if name changes
         updateData.slug = slugify(updates.name);
       }
-      if (updates.address !== undefined) updateData.address = updates.address;
+      if (updates.address !== undefined) {
+        updateData.address = updates.address;
+        // Re-geocode when the address changes so the geofence stays accurate
+        if (updates.latitude === undefined && updates.longitude === undefined && updates.address.trim()) {
+          const coords = await geocodeAddress(updates.address);
+          if (coords) {
+            updateData.latitude = coords.lat;
+            updateData.longitude = coords.lng;
+          }
+        }
+      }
+      if (updates.latitude !== undefined) updateData.latitude = updates.latitude ?? null;
+      if (updates.longitude !== undefined) updateData.longitude = updates.longitude ?? null;
+      if (updates.geofenceRadiusM !== undefined) updateData.geofence_radius_m = updates.geofenceRadiusM ?? 150;
       if (updates.contactPerson !== undefined) updateData.contact_person = updates.contactPerson;
       if (updates.contactPhone !== undefined) updateData.contact_phone = updates.contactPhone;
       if (updates.contactEmail !== undefined) updateData.contact_email = updates.contactEmail;
