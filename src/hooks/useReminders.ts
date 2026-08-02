@@ -48,7 +48,7 @@ const diffInDays = (date: Date) => {
 export function useReminders() {
   const { user } = useAuth();
   const { leads, isLoading: leadsLoading } = useLeadsDB();
-  const { locations, isLoaded: locationsLoaded } = useLocationsDB();
+  const { locations, isLoaded: locationsLoaded } = useLocations();
   const { preferences, isLoaded: prefsLoaded } = useReminderPreferences();
   const [dismissals, setDismissals] = useState<DismissalRow[]>([]);
 
