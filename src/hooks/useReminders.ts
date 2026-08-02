@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLeadsDB } from "@/hooks/useLeadsDB";
-import { useLocationsDB } from "@/hooks/useLocationsDB";
+import { useLocations } from "@/hooks/useLocationsDB";
 import { useReminderPreferences } from "@/hooks/useReminderPreferences";
 
 export type ReminderSourceType = "lead_followup" | "lead_install" | "machine_install";
