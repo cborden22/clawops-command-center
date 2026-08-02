@@ -90,6 +90,7 @@ const emptyFormData = {
   isActive: true,
   collectionFrequencyDays: undefined as number | undefined,
   restockDayOfWeek: undefined as number | undefined,
+  geofenceRadiusM: 150 as number,
 };
 
 export function LocationTrackerComponent() {
@@ -185,6 +186,7 @@ export function LocationTrackerComponent() {
       isActive: location.isActive,
       collectionFrequencyDays: location.collectionFrequencyDays,
       restockDayOfWeek: location.restockDayOfWeek,
+      geofenceRadiusM: location.geofenceRadiusM ?? 150,
     });
     setShowAddDialog(true);
   };
@@ -631,6 +633,26 @@ export function LocationTrackerComponent() {
                           setFormData((prev) => ({
                             ...prev,
                             commissionRate: parseFloat(e.target.value) || 0,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="geofenceRadius" className="flex items-center gap-1.5">
+                        Arrival Radius (meters)
+                        <HelpTooltip content="How close you must be for the app to detect that you've arrived at this location. Coordinates are looked up automatically from the address." />
+                      </Label>
+                      <NumberInput
+                        id="geofenceRadius"
+                        min="50"
+                        max="2000"
+                        step="10"
+                        placeholder="150"
+                        value={formData.geofenceRadiusM || ""}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            geofenceRadiusM: parseInt(e.target.value) || 150,
                           }))
                         }
                       />
