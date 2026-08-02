@@ -31,6 +31,7 @@ export interface TeamMemberPermissions {
   can_view_documents: boolean;
   can_view_mileage?: boolean;
   can_assign_tasks?: boolean;
+  photo_verification?: string; // 'none' | 'per_stop' | 'per_machine'
 }
 
 export interface InviteData {
