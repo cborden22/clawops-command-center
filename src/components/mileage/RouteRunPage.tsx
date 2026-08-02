@@ -18,6 +18,9 @@ import { RouteRun, useRouteRun, StopResult } from "@/hooks/useRouteRun";
 import { RouteRunSetup } from "./RouteRunSetup";
 import { RouteRunStopView } from "./RouteRunStopView";
 import { RouteRunSummary } from "./RouteRunSummary";
+import { ArrivalBanner } from "./ArrivalBanner";
+import { useGeofence } from "@/hooks/useGeofence";
+import { useMyTeamPermissions } from "@/hooks/useMyTeamPermissions";
 
 type Phase = "setup" | "running" | "summary";
 
@@ -59,6 +62,9 @@ export function RouteRunPage({
   const [isCompleting, setIsCompleting] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
   const [runStops, setRunStops] = useState<import("@/hooks/useRoutesDB").RouteStop[] | null>(null);
+  const { status, error, nearest, distanceTo, requestLocation } = useGeofence();
+  const { isOwner, photoVerification } = useMyTeamPermissions();
+  const photoMode = isOwner ? "none" : photoVerification;
 
   const effectiveStops = runStops || route.stops;
 
@@ -108,12 +114,33 @@ export function RouteRunPage({
     }
   };
 
+  // Offer to jump to the stop matching the location we've arrived at.
+  const arrivedStopIndex = nearest?.inside
+    ? effectiveStops.findIndex((s) => s.locationId === nearest.location.id)
+    : -1;
+  const showJump =
+    phase === "running" &&
+    activeRun !== null &&
+    arrivedStopIndex >= 0 &&
+    arrivedStopIndex !== activeRun.currentStopIndex;
+
   return (
     <div className="space-y-4">
       <Button variant="ghost" size="sm" onClick={onExit} className="gap-2 -ml-2">
         <ArrowLeft className="h-4 w-4" />
         Back to Routes
       </Button>
+
+      {phase !== "summary" && (
+        <ArrivalBanner
+          status={status}
+          error={error}
+          nearest={nearest}
+          onRequestLocation={requestLocation}
+          actionLabel={showJump ? `Jump to stop ${arrivedStopIndex + 1}` : undefined}
+          onAction={showJump ? () => onGoToStop(arrivedStopIndex) : undefined}
+        />
+      )}
 
       {phase === "setup" && (
         <RouteRunSetup
@@ -134,6 +161,9 @@ export function RouteRunPage({
             onComplete={handleCompleteStop}
             onGoBack={activeRun.currentStopIndex > 0 ? handleGoBack : undefined}
             isCompleting={isCompleting}
+            arrival={distanceTo(currentStop.locationId)}
+            photoMode={photoMode}
+            routeRunId={activeRun.id}
           />
 
           <AlertDialog>
