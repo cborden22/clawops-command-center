@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useReminderPreferences } from "@/hooks/useReminderPreferences";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,6 +52,12 @@ export default function Settings() {
   // App Settings saving state
   
   
+  const {
+    preferences: reminderPrefs,
+    isLoaded: reminderPrefsLoaded,
+    updatePreferences: updateReminderPrefs,
+  } = useReminderPreferences();
+
   // Email notification preferences
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
   const [isLoadingNotificationPref, setIsLoadingNotificationPref] = useState(true);
