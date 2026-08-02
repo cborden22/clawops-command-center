@@ -50,6 +50,64 @@ export type Database = {
         }
         Relationships: []
       }
+      collection_photos: {
+        Row: {
+          created_at: string
+          id: string
+          location_id: string | null
+          machine_id: string | null
+          route_run_id: string | null
+          stop_index: number | null
+          storage_path: string
+          taken_by_user_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          location_id?: string | null
+          machine_id?: string | null
+          route_run_id?: string | null
+          stop_index?: number | null
+          storage_path: string
+          taken_by_user_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          location_id?: string | null
+          machine_id?: string | null
+          route_run_id?: string | null
+          stop_index?: number | null
+          storage_path?: string
+          taken_by_user_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_photos_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_photos_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "location_machines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_photos_route_run_id_fkey"
+            columns: ["route_run_id"]
+            isOneToOne: false
+            referencedRelation: "route_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commission_summaries: {
         Row: {
           commission_amount: number | null
@@ -618,9 +676,12 @@ export type Database = {
           contact_person: string | null
           contact_phone: string | null
           created_at: string | null
+          geofence_radius_m: number
           id: string
           is_active: boolean | null
           last_collection_date: string | null
+          latitude: number | null
+          longitude: number | null
           name: string
           notes: string | null
           restock_day_of_week: number | null
@@ -636,9 +697,12 @@ export type Database = {
           contact_person?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          geofence_radius_m?: number
           id?: string
           is_active?: boolean | null
           last_collection_date?: string | null
+          latitude?: number | null
+          longitude?: number | null
           name: string
           notes?: string | null
           restock_day_of_week?: number | null
@@ -654,9 +718,12 @@ export type Database = {
           contact_person?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          geofence_radius_m?: number
           id?: string
           is_active?: boolean | null
           last_collection_date?: string | null
+          latitude?: number | null
+          longitude?: number | null
           name?: string
           notes?: string | null
           restock_day_of_week?: number | null
@@ -1431,6 +1498,7 @@ export type Database = {
           can_view_revenue: boolean | null
           created_at: string | null
           id: string
+          photo_verification: string
           team_member_id: string
           updated_at: string | null
         }
@@ -1447,6 +1515,7 @@ export type Database = {
           can_view_revenue?: boolean | null
           created_at?: string | null
           id?: string
+          photo_verification?: string
           team_member_id: string
           updated_at?: string | null
         }
@@ -1463,6 +1532,7 @@ export type Database = {
           can_view_revenue?: boolean | null
           created_at?: string | null
           id?: string
+          photo_verification?: string
           team_member_id?: string
           updated_at?: string | null
         }
