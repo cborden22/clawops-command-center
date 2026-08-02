@@ -242,7 +242,17 @@ export function LeadDetailDialog({
                     <p className="text-xs text-muted-foreground">Follow-up</p>
                   </div>
                 )}
+                {lead.target_install_date && (
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <Calendar className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+                    <p className="text-sm font-medium">
+                      {format(new Date(`${lead.target_install_date}T00:00:00`), 'MMM d, yyyy')}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Target install</p>
+                  </div>
+                )}
               </div>
+
 
               {/* Notes */}
               {lead.notes && (
