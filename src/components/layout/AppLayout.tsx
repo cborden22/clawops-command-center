@@ -8,6 +8,7 @@ import { UpdateNotification } from "@/components/shared/UpdateNotification"
 import { getPageTitle } from "@/lib/navigation"
 import { CommandPalette, useCommandPalette, CommandPaletteButton } from "@/components/shared/CommandPalette"
 import { KeyboardShortcutsDialog, useKeyboardShortcuts } from "@/components/shared/KeyboardShortcuts"
+import { NotificationBell } from "@/components/notifications/NotificationBell"
 
 interface AppLayoutProps {
   children: ReactNode
