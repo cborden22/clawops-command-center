@@ -70,6 +70,7 @@ const DEFAULT_WIDGET_ORDER: WidgetConfig[] = [
   { id: 'collectionDue', label: 'Restock Reminders', visible: true, size: 'md' },
   { id: 'maintenance', label: 'Maintenance', visible: true, size: 'md' },
   { id: 'leads', label: 'Leads Pipeline', visible: true, size: 'md' },
+  { id: 'reminders', label: 'Upcoming & Overdue', visible: true, size: 'md' },
   { id: 'allTimeSummary', label: 'All-Time Summary', visible: true, size: 'sm' },
   { id: 'topLocations', label: 'Top Locations', visible: true, size: 'sm' },
   { id: 'lowStockAlerts', label: 'Low Stock Alerts', visible: true, size: 'sm' },
@@ -180,6 +181,7 @@ export default function Dashboard() {
       
       // Permission-based filtering
       if (widget.id === 'leads') return permissions.canViewLeads;
+      if (widget.id === 'reminders') return permissions.canViewLeads || permissions.canViewLocations;
       if (widget.id === 'maintenance') return permissions.canViewMaintenance;
       if (widget.id === 'collectionDue') return permissions.canViewLocations;
       if (widget.id === 'recentTransactions') return permissions.canViewRevenue;
@@ -760,6 +762,7 @@ export default function Dashboard() {
     collectionDue: renderCollectionDue,
     maintenance: renderMaintenance,
     leads: renderLeads,
+    reminders: () => <RemindersWidget />,
     allTimeSummary: renderAllTimeSummary,
     topLocations: renderTopLocations,
     lowStockAlerts: renderLowStockAlerts,
