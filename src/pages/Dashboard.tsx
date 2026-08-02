@@ -50,7 +50,9 @@ import { useBusinessHealth } from "@/hooks/useBusinessHealth";
 import { useExpenseBudgets } from "@/hooks/useExpenseBudgets";
 import { useMachineCollections } from "@/hooks/useMachineCollections";
 
-type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance' | 'leads' | 'businessHealth' | 'budgetTracking';
+import { RemindersWidget } from "@/components/dashboard/RemindersWidget";
+
+type WidgetId = 'primaryStats' | 'weeklyCalendar' | 'collectionDue' | 'allTimeSummary' | 'topLocations' | 'lowStockAlerts' | 'recentTransactions' | 'quickActions' | 'maintenance' | 'leads' | 'businessHealth' | 'budgetTracking' | 'reminders';
 
 
 interface WidgetConfig {
