@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { HelpTooltip } from '@/components/shared/HelpTooltip';
 
 interface LeadFormProps {
   lead?: Lead;
@@ -55,6 +56,7 @@ export function LeadForm({ lead, onSubmit, onCancel, isSubmitting }: LeadFormPro
     estimated_revenue: lead?.estimated_revenue || undefined,
     source: lead?.source || '',
     next_follow_up: lead?.next_follow_up || undefined,
+    target_install_date: lead?.target_install_date || undefined,
     notes: lead?.notes || '',
   });
 
@@ -238,6 +240,50 @@ export function LeadForm({ lead, onSubmit, onCancel, isSubmitting }: LeadFormPro
             </PopoverContent>
           </Popover>
         </div>
+      </div>
+
+      {/* Installation deadline */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-1.5">
+          Target Install Date
+          <HelpTooltip content="The date you've promised to install machines at this location. You'll get reminders as the date approaches." />
+        </Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                'w-full justify-start text-left font-normal',
+                !formData.target_install_date && 'text-muted-foreground'
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {formData.target_install_date
+                ? format(new Date(`${formData.target_install_date}T00:00:00`), 'PPP')
+                : 'Pick a date'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={
+                formData.target_install_date
+                  ? new Date(`${formData.target_install_date}T00:00:00`)
+                  : undefined
+              }
+              onSelect={(date) =>
+                updateField(
+                  'target_install_date',
+                  date
+                    ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+                    : null
+                )
+              }
+              initialFocus
+              className={cn('p-3 pointer-events-auto')}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Notes */}

@@ -22,6 +22,7 @@ export interface Lead {
   estimated_revenue: number | null;
   source: string | null;
   next_follow_up: string | null;
+  target_install_date: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -49,6 +50,7 @@ export interface CreateLeadInput {
   estimated_revenue?: number;
   source?: string;
   next_follow_up?: string;
+  target_install_date?: string | null;
   notes?: string;
 }
 
