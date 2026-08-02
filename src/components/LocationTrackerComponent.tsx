@@ -55,6 +55,9 @@ import {
 import { ListSizeSelector, useListSize, ListSize } from "@/components/shared/ListSizeSelector";
 import { PaginationControls } from "@/components/shared/PaginationControls";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
 
 const RESTOCK_FREQUENCY_OPTIONS = [
   { value: "none", label: "No Schedule", days: null },
@@ -187,7 +190,7 @@ export function LocationTrackerComponent() {
   };
 
   const handleAddMachineType = () => {
-    const newMachines = [...formData.machines, { type: machineTypeOptions[0]?.value || "claw", label: machineTypeOptions[0]?.label || "Claw Machine", count: 1, customLabel: "", winProbability: undefined }];
+    const newMachines = [...formData.machines, { type: machineTypeOptions[0]?.value || "claw", label: machineTypeOptions[0]?.label || "Claw Machine", count: 1, customLabel: "", winProbability: undefined, installedAt: format(new Date(), "yyyy-MM-dd") }];
     const newTotal = newMachines.reduce((sum, m) => sum + m.count, 0);
     setFormData((prev) => ({
       ...prev,
@@ -546,6 +549,41 @@ export function LocationTrackerComponent() {
                                   }
                                   className="w-20 h-8 bg-background text-sm"
                                 />
+                              </div>
+                              <div className="flex items-center gap-2 ml-auto">
+                                <Label className="text-xs text-muted-foreground whitespace-nowrap">Installed:</Label>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      className={cn(
+                                        "h-8 justify-start text-left font-normal text-xs bg-background",
+                                        !machine.installedAt && "text-muted-foreground"
+                                      )}
+                                    >
+                                      <Calendar className="mr-1 h-3 w-3" />
+                                      {machine.installedAt
+                                        ? format(new Date(machine.installedAt + "T00:00:00"), "MMM d, yyyy")
+                                        : "Set date"}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0 z-[100] bg-background" align="start">
+                                    <CalendarPicker
+                                      mode="single"
+                                      selected={machine.installedAt ? new Date(machine.installedAt + "T00:00:00") : undefined}
+                                      onSelect={(date) =>
+                                        handleMachineTypeChange(
+                                          index,
+                                          "installedAt",
+                                          date ? format(date, "yyyy-MM-dd") : ""
+                                        )
+                                      }
+                                      initialFocus
+                                      className={cn("p-3 pointer-events-auto")}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
                               </div>
                             </div>
                           </div>
