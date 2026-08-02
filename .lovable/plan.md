@@ -1,34 +1,39 @@
-## Polish Pass — all four candidates
+# Reminders for Lead Follow-ups & Installation Deadlines
 
-### 1. Skeleton loading states
-Reuse the existing `SkeletonGrid` / `SkeletonList` / `SkeletonWidget` primitives (already built, currently only used on the Dashboard).
+Nothing slips: a single reminders system that watches lead follow-up dates and installation deadlines, surfaces them in-app, and sends one daily email digest.
 
-- **Revenue** (`RevenueTrackerComponent.tsx`): show `SkeletonGrid` for the stat cards and `SkeletonList` for the entry list while revenue data loads, instead of rendering an empty shell.
-- **Inventory** (`InventoryTrackerComponent.tsx`): skeleton stat row + skeleton table/list rows during initial fetch.
-- **Locations** (`LocationTrackerComponent.tsx`): skeleton cards matching the location card grid.
-- Only show skeletons on *initial* load, not on background refetches, so the screen doesn't flash on manual refresh.
+## What gets tracked
 
-### 2. Empty-state audit
-`EmptyState` exists but is only used in Inventory, Locations and Leads. Audit and apply consistently, each with an icon, one-line explanation and a primary CTA:
-- Revenue entries, Mileage entries/routes, Calendar agenda, Maintenance reports, Reports (no data in range), Team members, Receipts.
-- Distinguish "nothing yet" (CTA to create) from "no results for this filter" (CTA to clear filters) — add a `variant` or optional `onClear` action to `EmptyState`.
+1. **Lead follow-ups** — the existing follow-up date on each lead (open leads only; won/lost are ignored).
+2. **Target install date on leads** — a new date field on a lead, meant for the install you promised after closing. Shown in the lead form and lead detail.
+3. **Machines never marked installed** — machines on a location that still have no install date recorded get flagged as an open installation task.
 
-### 3. Contextual help tooltips
-Extend usage of the existing `HelpTooltip` to genuinely ambiguous fields only:
-- Revenue: commission rate, revenue split, accrual/last collection date, bag label.
-- Inventory: reorder threshold, package equivalence, cost vs. price, SKU.
-- Machines: win probability, cost per play.
-- Mileage: odometer-based tracking note, IRS rate.
-- Team: what each predefined role can do.
+## In-app experience
 
-### 4. Mobile command palette
-- Full-height sheet-style presentation on small screens instead of a centered desktop dialog.
-- Larger touch targets (min 44px rows), bigger input, keyboard-safe padding.
-- Hide desktop-only hints (`⌘K`, arrow-key legend) on mobile; show a "Cancel" affordance.
-- Debounce record search and cap results per group so the list stays scannable on a phone.
-- Keep body-scroll locked and ensure the palette clears the mobile bottom nav.
+- **Bell icon** in the desktop header and mobile header with an unread-style count badge of everything currently due, upcoming, or overdue.
+- **Notification panel** listing each item with type icon, title (business or location/machine), date, and an "Overdue / Due today / In N days" label. Clicking an item jumps to the lead or location.
+- Each item can be **snoozed** (push the reminder out) or **dismissed** so it stops appearing without changing the underlying date.
+- **Dashboard widget** "Upcoming & Overdue" showing the next few items, matching existing widget styling and included in the dashboard customizer.
 
-### Technical notes
-- No new dependencies; all components already exist (`SkeletonGrid`, `EmptyState`, `HelpTooltip`, `cmdk`).
-- Presentation-layer only — no data-fetch, RLS, or business-logic changes.
-- Verify with a typecheck plus Playwright screenshots at mobile (390px) and desktop widths.
+## Configuration (Settings → Notifications)
+
+- **Lead time in days before due** — separate values for lead follow-ups and installation deadlines (e.g. remind me 3 days before). Defaults to 3.
+- **Per-type toggles** — turn lead follow-up reminders and installation reminders on/off independently.
+- **Email digest toggle** — reuses the existing email notification preference; digest only goes to users who have it on.
+
+## Daily email digest
+
+One email per user per day, only when there is something due, upcoming, or overdue. Grouped into "Overdue" and "Coming up", each line linking back into the app. Sent by a scheduled job that runs once a day; nothing is sent when there's nothing to report.
+
+## Technical notes
+
+- **Migration**
+  - `leads.target_install_date` (date, nullable).
+  - `reminder_preferences` table: `user_id`, per-type enabled flags, `lead_followup_days_before`, `install_days_before`, timestamps. RLS scoped to `auth.uid()`, with GRANTs for `authenticated` and `service_role`.
+  - `reminder_dismissals` table: `user_id`, `source_type` (`lead_followup` | `lead_install` | `machine_install`), `source_id`, `snoozed_until` (nullable), `dismissed_at`. Unique on (`user_id`, `source_type`, `source_id`). Same RLS/GRANT pattern.
+- **`src/hooks/useReminders.ts`** — derives reminder items client-side from `useLeadsDB` and `useLocationsDB` (memoized per the project's performance pattern), applies preferences, filters dismissals/snoozes, and returns grouped `overdue` / `today` / `upcoming` lists plus a count.
+- **`src/hooks/useReminderPreferences.ts`** — read/write of the preferences row with sane defaults when absent.
+- **UI**: `src/components/notifications/NotificationBell.tsx` (popover on desktop, sheet on mobile), `NotificationList.tsx`, `src/components/dashboard/RemindersWidget.tsx`; wired into `AppLayout`/`MobileHeader`, `Dashboard.tsx`, `DashboardCustomizer`, and a Notifications section in `Settings.tsx`.
+- **Lead form**: add the target install date input to `LeadForm.tsx` / `LeadDetailDialog.tsx` with a help tooltip.
+- **Email**: new `send-reminder-digest` edge function using the service role to compute per-owner due items and send via the existing Resend setup and ClawOps branding, scheduled daily with pg_cron + pg_net. Respects `profiles.email_notifications_enabled`, per-type toggles, and dismissals.
+- No GPS/native APIs; all dates handled with the existing timezone-safe date-only parsing.
