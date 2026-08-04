@@ -1,8 +1,9 @@
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, MapPin, Building2, ArrowDown } from "lucide-react";
+import { Trash2, MapPin, Building2, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
 import { Location } from "@/hooks/useLocationsDB";
 
 interface RouteStopItemProps {
@@ -10,15 +11,21 @@ interface RouteStopItemProps {
   locationId?: string;
   customLocationName?: string;
   milesFromPrevious: number;
+  isAuto: boolean;
+  isCalculating?: boolean;
+  autoFailed?: boolean;
   locations: Location[];
   onUpdate: (data: {
     locationId?: string;
     customLocationName?: string;
-    milesFromPrevious: number;
+    milesFromPrevious?: number;
+    isAuto?: boolean;
   }) => void;
   onRemove: () => void;
+  onMove: (direction: "up" | "down") => void;
   canRemove: boolean;
-  showMilesConnector?: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
 }
 
 export function RouteStopItem({
@@ -26,106 +33,45 @@ export function RouteStopItem({
   locationId,
   customLocationName,
   milesFromPrevious,
+  isAuto,
+  isCalculating = false,
+  autoFailed = false,
   locations,
   onUpdate,
   onRemove,
+  onMove,
   canRemove,
-  showMilesConnector = false,
+  canMoveUp,
+  canMoveDown,
 }: RouteStopItemProps) {
-  const isFirstStop = index === 0;
-  const activeLocations = locations.filter(l => l.isActive);
+  const activeLocations = locations.filter((l) => l.isActive);
+  const selectedLocation = locationId ? locations.find((l) => l.id === locationId) : undefined;
 
   const handleLocationSelect = (value: string) => {
     if (value === "custom") {
-      onUpdate({
-        locationId: undefined,
-        customLocationName: customLocationName || "",
-        milesFromPrevious,
-      });
+      onUpdate({ locationId: undefined, customLocationName: customLocationName || "", isAuto: true });
     } else {
-      onUpdate({
-        locationId: value,
-        customLocationName: undefined,
-        milesFromPrevious,
-      });
+      onUpdate({ locationId: value, customLocationName: undefined, isAuto: true });
     }
-  };
-
-  const handleCustomNameChange = (value: string) => {
-    onUpdate({
-      locationId: undefined,
-      customLocationName: value,
-      milesFromPrevious,
-    });
-  };
-
-  const handleMilesChange = (value: string) => {
-    onUpdate({
-      locationId,
-      customLocationName,
-      milesFromPrevious: parseFloat(value) || 0,
-    });
-  };
-
-  const getLocationName = () => {
-    if (locationId) {
-      const loc = locations.find(l => l.id === locationId);
-      return loc?.name || "Unknown Location";
-    }
-    return customLocationName || "";
   };
 
   return (
-    <div className="relative">
-      {/* Miles connector from previous stop */}
-      {showMilesConnector && (
-        <div className="flex items-center justify-center gap-2 py-2 text-muted-foreground">
-          <ArrowDown className="h-4 w-4" />
-          <span className="text-xs font-medium">{milesFromPrevious > 0 ? `${milesFromPrevious} mi` : "— mi"}</span>
-        </div>
-      )}
+    <div className="rounded-xl border border-border bg-card p-3 hover:border-primary/30 transition-colors">
+      <div className="flex items-center gap-2">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+          {index + 1}
+        </span>
 
-      {/* Stop card */}
-      <div className="relative p-4 bg-card rounded-xl border border-border hover:border-primary/30 transition-colors">
-        {/* Header with stop number and delete button */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-              {index + 1}
-            </span>
-            <span className="text-sm font-medium text-foreground">
-              {isFirstStop ? "Starting Point" : `Stop ${index + 1}`}
-            </span>
-          </div>
-          {canRemove && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive"
-              onClick={onRemove}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-
-        {/* Location selector */}
-        <div className="space-y-3">
+        <div className="min-w-0 flex-1">
           <Select
             value={locationId || (customLocationName !== undefined ? "custom" : "")}
             onValueChange={handleLocationSelect}
           >
-            <SelectTrigger className="w-full h-10">
+            <SelectTrigger className="h-10 w-full">
               <SelectValue placeholder="Select location..." />
             </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4} className="z-50 bg-popover">
-              <SelectItem value="custom">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-3.5 w-3.5" />
-                  <span>Custom Location</span>
-                </div>
-              </SelectItem>
-              {activeLocations.map(loc => (
+            <SelectContent position="popper" sideOffset={4} className="z-[100] bg-popover">
+              {activeLocations.map((loc) => (
                 <SelectItem key={loc.id} value={loc.id}>
                   <div className="flex items-center gap-2">
                     <Building2 className="h-3.5 w-3.5" />
@@ -133,35 +79,101 @@ export function RouteStopItem({
                   </div>
                 </SelectItem>
               ))}
+              <SelectItem value="custom">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5" />
+                  <span>Custom stop</span>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
+        </div>
 
-          {/* Custom location input */}
-          {!locationId && customLocationName !== undefined && (
-            <Input
-              placeholder="Enter location name or address..."
-              value={customLocationName}
-              onChange={(e) => handleCustomNameChange(e.target.value)}
-              className="h-10"
-            />
-          )}
+        <div className="flex shrink-0 flex-col gap-0.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            disabled={!canMoveUp}
+            onClick={() => onMove("up")}
+          >
+            <ArrowUp className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            disabled={!canMoveDown}
+            onClick={() => onMove("down")}
+          >
+            <ArrowDown className="h-3.5 w-3.5" />
+          </Button>
+        </div>
 
-          {/* Miles from previous (for non-first stops) */}
-          {!isFirstStop && (
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-              <span className="text-sm text-muted-foreground whitespace-nowrap">Miles from previous:</span>
-              <NumberInput
-                placeholder="0"
-                value={milesFromPrevious > 0 ? milesFromPrevious.toString() : ""}
-                onChange={(e) => handleMilesChange(e.target.value)}
-                step="0.1"
-                min="0"
-                className="w-24 h-9"
-              />
-            </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+          disabled={!canRemove}
+          onClick={onRemove}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {!locationId && customLocationName !== undefined && (
+        <Input
+          placeholder="Enter stop name or address..."
+          value={customLocationName}
+          onChange={(e) => onUpdate({ locationId: undefined, customLocationName: e.target.value, isAuto: true })}
+          onKeyDown={(e) => e.stopPropagation()}
+          className="mt-2 h-9"
+        />
+      )}
+
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+          {selectedLocation?.address || (locationId ? "No address on file" : "Address helps auto-calculate miles")}
+        </p>
+
+        <div className="flex shrink-0 items-center gap-1.5">
+          {isCalculating ? (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> calculating
+            </span>
+          ) : (
+            <Badge variant={isAuto ? "secondary" : "outline"} className="text-[10px]">
+              {isAuto ? "Auto" : "Manual"}
+            </Badge>
           )}
+          <NumberInput
+            placeholder="0"
+            value={milesFromPrevious > 0 ? String(milesFromPrevious) : ""}
+            onChange={(e) =>
+              onUpdate({
+                locationId,
+                customLocationName,
+                milesFromPrevious: parseFloat(e.target.value) || 0,
+                isAuto: false,
+              })
+            }
+            onKeyDown={(e) => e.stopPropagation()}
+            step="0.1"
+            min="0"
+            className="h-9 w-20 tabular-nums"
+          />
+          <span className="text-xs text-muted-foreground">mi</span>
         </div>
       </div>
+
+      {autoFailed && (
+        <p className="mt-1.5 text-[11px] text-muted-foreground">
+          Couldn't look up this leg automatically — enter the miles manually.
+        </p>
+      )}
     </div>
   );
 }
