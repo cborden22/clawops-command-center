@@ -83,6 +83,7 @@ export function MachinesManager() {
     customLabel: "",
     winProbability: undefined as number | undefined,
     costPerPlay: 0.50,
+    commissionRate: undefined as number | undefined,
     installedAt: new Date().toISOString().split('T')[0],
   });
   const [machinesListSize, setMachinesListSize] = useListSize("machines-list-size", 20);
