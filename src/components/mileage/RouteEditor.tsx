@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Route, Loader2, Calendar, Warehouse as WarehouseIcon, RefreshCw, MapPin } from "lucide-react";
 import { MileageRoute, RouteStopInput } from "@/hooks/useRoutesDB";
