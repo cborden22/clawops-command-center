@@ -202,6 +202,7 @@ export function MachinesManager() {
       customLabel: "",
       winProbability: undefined,
       costPerPlay: 0.50,
+      commissionRate: undefined,
       installedAt: new Date().toISOString().split('T')[0],
     });
   };
