@@ -421,6 +421,39 @@ export function MachinesManager() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    Commission % (optional)
+                    <HelpTooltip content="Percentage of this machine's revenue paid to the location. Leave blank to use the location's default rate." />
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <NumberInput
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      placeholder={
+                        locations.find((l) => l.id === formData.locationId)?.commissionRate
+                          ? String(locations.find((l) => l.id === formData.locationId)?.commissionRate)
+                          : "25"
+                      }
+                      value={formData.commissionRate ?? ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          commissionRate: e.target.value ? parseFloat(e.target.value) : undefined,
+                        }))
+                      }
+                      className="flex-1"
+                    />
+                    <span className="text-sm text-muted-foreground">%</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Overrides the location rate for split-rate commission reports
+                  </p>
+                </div>
+
+
+
+                <div className="space-y-2">
                   <Label>Install Date</Label>
                   <Popover>
                     <PopoverTrigger asChild>
