@@ -177,6 +177,7 @@ export function MachinesManager() {
           : machine.machineType.label,
       winProbability: machine.machineType.winProbability,
       costPerPlay: machine.machineType.costPerPlay ?? 0.50,
+      commissionRate: machine.machineType.commissionRate,
       installedAt: machine.machineType.installedAt || new Date().toISOString().split('T')[0],
     });
     setShowAddDialog(true);
