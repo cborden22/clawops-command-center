@@ -562,7 +562,15 @@ export function MachinesManager() {
                   })().map((machine, idx) => (
                     <TableRow key={`${machine.location.id}-${machine.index}-${idx}`} className="group transition-colors">
                       <TableCell>
-                        <p className="font-medium">{machine.machineType.label}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{machine.machineType.label}</p>
+                          {machine.machineType.commissionRate !== undefined &&
+                            machine.machineType.commissionRate !== machine.location.commissionRate && (
+                              <Badge variant="outline" className="text-xs">
+                                {machine.machineType.commissionRate}%
+                              </Badge>
+                            )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
