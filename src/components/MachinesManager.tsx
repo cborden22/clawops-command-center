@@ -139,6 +139,7 @@ export function MachinesManager() {
         count: formData.count,
         winProbability: formData.winProbability,
         costPerPlay: formData.costPerPlay,
+        commissionRate: formData.commissionRate,
         installedAt: formData.installedAt,
       };
 
@@ -151,7 +152,7 @@ export function MachinesManager() {
       // Add new machine
       const updatedMachines = [
         ...(location.machines || []),
-        { type: formData.type, label, count: formData.count, winProbability: formData.winProbability, costPerPlay: formData.costPerPlay, installedAt: formData.installedAt },
+        { type: formData.type, label, count: formData.count, winProbability: formData.winProbability, costPerPlay: formData.costPerPlay, commissionRate: formData.commissionRate, installedAt: formData.installedAt },
       ];
 
       await updateLocation(location.id, { machines: updatedMachines });
