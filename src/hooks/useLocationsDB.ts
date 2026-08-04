@@ -168,6 +168,7 @@ export function useLocations() {
               customLabel,
               winProbability: m.win_probability ? Number(m.win_probability) : undefined,
               costPerPlay: m.cost_per_play ? Number(m.cost_per_play) : 0.50,
+              commissionRate: m.commission_rate !== null && m.commission_rate !== undefined ? Number(m.commission_rate) : undefined,
               unitCode: m.unit_code || undefined, // Include unit code for QR URLs
               installedAt: m.installed_at || undefined, // Include install date
             };
