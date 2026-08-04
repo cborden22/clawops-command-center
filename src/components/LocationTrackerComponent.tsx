@@ -238,6 +238,9 @@ export function LocationTrackerComponent() {
       if (field === "winProbability") {
         return { ...m, winProbability: value ? Number(value) : undefined };
       }
+      if (field === "commissionRate") {
+        return { ...m, commissionRate: value ? Number(value) : undefined };
+      }
       return { ...m, [field]: value };
     });
     const newTotal = newMachines.reduce((sum, m) => sum + m.count, 0);
