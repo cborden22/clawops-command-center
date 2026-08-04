@@ -555,7 +555,26 @@ export function LocationTrackerComponent() {
                                   className="w-20 h-8 bg-background text-sm"
                                 />
                               </div>
+                              <div className="flex items-center gap-1">
+                                <Label className="text-xs text-muted-foreground whitespace-nowrap">Commission %:</Label>
+                                <NumberInput
+                                  min="0"
+                                  max="100"
+                                  step="0.1"
+                                  placeholder={formData.commissionRate ? String(formData.commissionRate) : "25"}
+                                  value={machine.commissionRate ?? ""}
+                                  onChange={(e) =>
+                                    handleMachineTypeChange(
+                                      index,
+                                      "commissionRate",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-20 h-8 bg-background text-sm"
+                                />
+                              </div>
                               <div className="flex items-center gap-2 ml-auto">
+
                                 <Label className="text-xs text-muted-foreground whitespace-nowrap">Installed:</Label>
                                 <Popover>
                                   <PopoverTrigger asChild>
