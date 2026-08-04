@@ -63,7 +63,7 @@ export function SplitRateCommissionGenerator() {
       const count = Math.max(1, m.count || 1)
       for (let i = 0; i < count; i++) {
         const label = m.customLabel || m.label
-        seeded.push(newRow(count > 1 ? `${label} #${i + 1}` : label, location.commissionRate || 0))
+        seeded.push(newRow(count > 1 ? `${label} #${i + 1}` : label, m.commissionRate ?? location.commissionRate ?? 0))
       }
     })
     setRows(seeded.length > 0 ? seeded : [newRow("", location.commissionRate || 0)])
