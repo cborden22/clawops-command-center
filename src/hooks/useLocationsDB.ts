@@ -52,6 +52,7 @@ export interface MachineType {
   customLabel?: string;
   winProbability?: number; // Stored as "1 in X" (e.g., 15 means 1 in 15 odds)
   costPerPlay?: number; // Dollar value per play (e.g., 0.50, 1.00, 2.00)
+  commissionRate?: number; // Per-machine commission % (falls back to location rate when unset)
   unitCode?: string; // Auto-generated unit code for QR URLs (e.g., "claw-1")
   installedAt?: string; // Date when machine was installed at location (YYYY-MM-DD)
 }
