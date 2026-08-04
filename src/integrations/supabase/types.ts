@@ -616,6 +616,7 @@ export type Database = {
       }
       location_machines: {
         Row: {
+          commission_rate: number | null
           cost_per_play: number | null
           count: number | null
           custom_label: string | null
@@ -630,6 +631,7 @@ export type Database = {
           win_probability: number | null
         }
         Insert: {
+          commission_rate?: number | null
           cost_per_play?: number | null
           count?: number | null
           custom_label?: string | null
@@ -644,6 +646,7 @@ export type Database = {
           win_probability?: number | null
         }
         Update: {
+          commission_rate?: number | null
           cost_per_play?: number | null
           count?: number | null
           custom_label?: string | null

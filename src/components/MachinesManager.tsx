@@ -83,6 +83,7 @@ export function MachinesManager() {
     customLabel: "",
     winProbability: undefined as number | undefined,
     costPerPlay: 0.50,
+    commissionRate: undefined as number | undefined,
     installedAt: new Date().toISOString().split('T')[0],
   });
   const [machinesListSize, setMachinesListSize] = useListSize("machines-list-size", 20);
@@ -138,6 +139,7 @@ export function MachinesManager() {
         count: formData.count,
         winProbability: formData.winProbability,
         costPerPlay: formData.costPerPlay,
+        commissionRate: formData.commissionRate,
         installedAt: formData.installedAt,
       };
 
@@ -150,7 +152,7 @@ export function MachinesManager() {
       // Add new machine
       const updatedMachines = [
         ...(location.machines || []),
-        { type: formData.type, label, count: formData.count, winProbability: formData.winProbability, costPerPlay: formData.costPerPlay, installedAt: formData.installedAt },
+        { type: formData.type, label, count: formData.count, winProbability: formData.winProbability, costPerPlay: formData.costPerPlay, commissionRate: formData.commissionRate, installedAt: formData.installedAt },
       ];
 
       await updateLocation(location.id, { machines: updatedMachines });
@@ -176,6 +178,7 @@ export function MachinesManager() {
           : machine.machineType.label,
       winProbability: machine.machineType.winProbability,
       costPerPlay: machine.machineType.costPerPlay ?? 0.50,
+      commissionRate: machine.machineType.commissionRate,
       installedAt: machine.machineType.installedAt || new Date().toISOString().split('T')[0],
     });
     setShowAddDialog(true);
@@ -200,6 +203,7 @@ export function MachinesManager() {
       customLabel: "",
       winProbability: undefined,
       costPerPlay: 0.50,
+      commissionRate: undefined,
       installedAt: new Date().toISOString().split('T')[0],
     });
   };
@@ -417,6 +421,39 @@ export function MachinesManager() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    Commission % (optional)
+                    <HelpTooltip content="Percentage of this machine's revenue paid to the location. Leave blank to use the location's default rate." />
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <NumberInput
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      placeholder={
+                        locations.find((l) => l.id === formData.locationId)?.commissionRate
+                          ? String(locations.find((l) => l.id === formData.locationId)?.commissionRate)
+                          : "25"
+                      }
+                      value={formData.commissionRate ?? ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          commissionRate: e.target.value ? parseFloat(e.target.value) : undefined,
+                        }))
+                      }
+                      className="flex-1"
+                    />
+                    <span className="text-sm text-muted-foreground">%</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Overrides the location rate for split-rate commission reports
+                  </p>
+                </div>
+
+
+
+                <div className="space-y-2">
                   <Label>Install Date</Label>
                   <Popover>
                     <PopoverTrigger asChild>
@@ -525,7 +562,15 @@ export function MachinesManager() {
                   })().map((machine, idx) => (
                     <TableRow key={`${machine.location.id}-${machine.index}-${idx}`} className="group transition-colors">
                       <TableCell>
-                        <p className="font-medium">{machine.machineType.label}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{machine.machineType.label}</p>
+                          {machine.machineType.commissionRate !== undefined &&
+                            machine.machineType.commissionRate !== machine.location.commissionRate && (
+                              <Badge variant="outline" className="text-xs">
+                                {machine.machineType.commissionRate}%
+                              </Badge>
+                            )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
