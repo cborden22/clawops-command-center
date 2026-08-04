@@ -192,7 +192,7 @@ export function LocationTrackerComponent() {
   };
 
   const handleAddMachineType = () => {
-    const newMachines = [...formData.machines, { type: machineTypeOptions[0]?.value || "claw", label: machineTypeOptions[0]?.label || "Claw Machine", count: 1, customLabel: "", winProbability: undefined, installedAt: format(new Date(), "yyyy-MM-dd") }];
+    const newMachines = [...formData.machines, { type: machineTypeOptions[0]?.value || "claw", label: machineTypeOptions[0]?.label || "Claw Machine", count: 1, customLabel: "", winProbability: undefined, commissionRate: formData.commissionRate || undefined, installedAt: format(new Date(), "yyyy-MM-dd") }];
     const newTotal = newMachines.reduce((sum, m) => sum + m.count, 0);
     setFormData((prev) => ({
       ...prev,
