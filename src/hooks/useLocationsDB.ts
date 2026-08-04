@@ -411,6 +411,7 @@ export function useLocations() {
               custom_label: customLabel || null,
               win_probability: m.winProbability || null,
               cost_per_play: m.costPerPlay ?? 0.50,
+              commission_rate: m.commissionRate ?? null,
               unit_code: unitCode,
               installed_at: m.installedAt || null,
             };
