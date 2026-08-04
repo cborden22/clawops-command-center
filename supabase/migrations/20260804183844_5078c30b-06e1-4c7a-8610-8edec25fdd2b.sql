@@ -1,0 +1,1 @@
+ALTER TABLE public.location_machines ADD COLUMN IF NOT EXISTS commission_rate numeric;
