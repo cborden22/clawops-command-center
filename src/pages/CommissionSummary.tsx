@@ -45,22 +45,10 @@ export default function CommissionSummary() {
         </div>
       </div>
 
-      <Tabs defaultValue="standard" className="space-y-4">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="standard">Standard</TabsTrigger>
-          <TabsTrigger value="split">Split Rate</TabsTrigger>
-        </TabsList>
-        <TabsContent value="standard">
-          <div className="glass-card rounded-2xl border-white/10 accent-glow">
-            <CommissionSummaryGenerator />
-          </div>
-        </TabsContent>
-        <TabsContent value="split">
-          <div className="glass-card rounded-2xl border-white/10 accent-glow">
-            <SplitRateCommissionGenerator />
-          </div>
-        </TabsContent>
-      </Tabs>
+      <div className="glass-card rounded-2xl border-white/10 accent-glow">
+        <CommissionSummaryGenerator />
+      </div>
+
     </div>
   )
 }
