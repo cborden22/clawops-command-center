@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
-import { FileText, Download, Calendar as CalendarIcon, Building2, User, DollarSign, Calculator, MapPin, AlertCircle } from "lucide-react"
+import { FileText, Download, Calendar as CalendarIcon, Building2, User, DollarSign, Calculator, MapPin, AlertCircle, Plus, Trash2 } from "lucide-react"
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from "date-fns"
 import { cn } from "@/lib/utils"
 import { generatePDFFromHTML } from "@/utils/pdfGenerator"
@@ -33,11 +33,29 @@ interface LocationData {
   notes: string
 }
 
+interface MachineRow {
+  id: string
+  name: string
+  revenue: number
+  rate: number
+}
+
+type EntryMode = "total" | "machines"
+
+const newRow = (name = "", rate = 0): MachineRow => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  name,
+  revenue: 0,
+  rate,
+})
+
 export function CommissionSummaryGenerator() {
   const { toast } = useToast()
   const { user } = useAuth()
   const { activeLocations, getLocationById, isLoaded, addCommissionSummary } = useLocations()
   const [showRevenue, setShowRevenue] = useState(true)
+  const [entryMode, setEntryMode] = useState<EntryMode>("total")
+  const [rows, setRows] = useState<MachineRow[]>([newRow()])
   const [locationData, setLocationData] = useState<LocationData>({
     locationId: "",
     name: "",
@@ -51,20 +69,35 @@ export function CommissionSummaryGenerator() {
     notes: ""
   })
 
+  // Build machine rows from a saved location's machines
+  const seedRowsFromLocation = (locationId: string): MachineRow[] => {
+    const location = getLocationById(locationId)
+    if (!location) return [newRow()]
+    const seeded: MachineRow[] = []
+    location.machines.forEach((m) => {
+      const count = Math.max(1, m.count || 1)
+      for (let i = 0; i < count; i++) {
+        const label = m.customLabel || m.label
+        seeded.push(newRow(count > 1 ? `${label} #${i + 1}` : label, m.commissionRate ?? location.commissionRate ?? 0))
+      }
+    })
+    return seeded.length > 0 ? seeded : [newRow("", location.commissionRate || 0)]
+  }
+
   // When a location is selected, populate the form fields
   const handleLocationSelect = (locationId: string) => {
     const location = getLocationById(locationId)
-    if (location) {
-      setLocationData(prev => ({
-        ...prev,
-        locationId: location.id,
-        name: location.name,
-        contactPerson: location.contactPerson,
-        machineCount: location.machineCount,
-        commissionPercentage: location.commissionRate,
-        commissionAmount: (prev.totalRevenue * location.commissionRate) / 100
-      }))
-    }
+    if (!location) return
+    setLocationData(prev => ({
+      ...prev,
+      locationId: location.id,
+      name: location.name,
+      contactPerson: location.contactPerson,
+      machineCount: location.machineCount,
+      commissionPercentage: location.commissionRate,
+      commissionAmount: (prev.totalRevenue * location.commissionRate) / 100
+    }))
+    setRows(seedRowsFromLocation(location.id))
   }
 
   const updateCommissionFromPercentage = (revenue: number, percentage: number) => {
@@ -75,6 +108,47 @@ export function CommissionSummaryGenerator() {
       commissionPercentage: percentage,
       commissionAmount: calculatedAmount 
     }))
+  }
+
+  // --- Per-machine helpers ---
+  const rowCommission = (r: MachineRow) => (r.revenue * r.rate) / 100
+  const rowsRevenue = rows.reduce((sum, r) => sum + (r.revenue || 0), 0)
+  const rowsCommission = rows.reduce((sum, r) => sum + rowCommission(r), 0)
+  const blendedRate = rowsRevenue > 0 ? (rowsCommission / rowsRevenue) * 100 : 0
+
+  const updateRow = (id: string, patch: Partial<MachineRow>) => {
+    setRows(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r)))
+  }
+
+  const removeRow = (id: string) => {
+    setRows(prev => (prev.length > 1 ? prev.filter(r => r.id !== id) : prev))
+  }
+
+  const usingMachines = entryMode === "machines"
+  const effectiveRevenue = usingMachines ? rowsRevenue : locationData.totalRevenue
+  const effectiveRate = usingMachines ? blendedRate : locationData.commissionPercentage
+  const effectiveCommission = usingMachines ? rowsCommission : locationData.commissionAmount
+  const effectiveMachineCount = usingMachines ? rows.length : locationData.machineCount
+
+  const switchMode = (mode: EntryMode) => {
+    if (mode === entryMode) return
+    if (mode === "machines") {
+      // Seed from the selected location if rows are still untouched
+      const untouched = rows.every(r => !r.name && !r.revenue && !r.rate)
+      if (untouched && locationData.locationId) {
+        setRows(seedRowsFromLocation(locationData.locationId))
+      }
+    } else {
+      // Carry the computed totals into the single-total fields
+      setLocationData(prev => ({
+        ...prev,
+        totalRevenue: rowsRevenue,
+        commissionPercentage: Number(blendedRate.toFixed(2)),
+        commissionAmount: rowsCommission,
+        machineCount: rows.length,
+      }))
+    }
+    setEntryMode(mode)
   }
 
   // Quick date presets
@@ -128,113 +202,130 @@ export function CommissionSummaryGenerator() {
     const safeContactPerson = sanitizeForHTML(locationData.contactPerson);
     const safeNotes = sanitizeForHTML(locationData.notes);
 
-    // Template with revenue shown (current behavior)
+    const infoTable = `
+        <div style="margin-bottom: 30px;">
+          <h2 style="font-size: 18px; margin: 0 0 20px 0; color: #374151; font-weight: 600;">Location Information</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 12px 0; font-weight: 600; color: #374151; width: 40%; border-bottom: 1px solid #f3f4f6;">Business Name:</td>
+              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${safeName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Contact Person:</td>
+              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${safeContactPerson || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Period:</td>
+              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${periodText}</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px 0; font-weight: 600; color: #374151;">Number of Machines:</td>
+              <td style="padding: 12px 0; color: #1f2937;">${effectiveMachineCount}</td>
+            </tr>
+          </table>
+        </div>`
+
+    const breakdownRowsHTML = rows
+      .filter((r) => r.revenue > 0 || r.rate > 0)
+      .map((r) => {
+        const label = sanitizeForHTML(r.name || "Machine")
+        return `
+          <tr>
+            <td style="padding: 10px 8px; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${label}</td>
+            ${showRevenue ? `<td style="padding: 10px 8px; color: #1f2937; text-align: right; border-bottom: 1px solid #f3f4f6;">$${r.revenue.toFixed(2)}</td>` : ""}
+            <td style="padding: 10px 8px; color: #1f2937; text-align: right; border-bottom: 1px solid #f3f4f6;">${r.rate}%</td>
+            <td style="padding: 10px 8px; color: #1f2937; text-align: right; font-weight: 600; border-bottom: 1px solid #f3f4f6;">$${rowCommission(r).toFixed(2)}</td>
+          </tr>`
+      })
+      .join("")
+
+    const breakdownSection = usingMachines ? `
+        <div style="margin-bottom: 30px;">
+          <h2 style="font-size: 18px; margin: 0 0 12px 0; color: #374151; font-weight: 600;">Commission Breakdown by Machine</h2>
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <thead>
+              <tr style="background: #f9fafb;">
+                <th style="padding: 10px 8px; text-align: left; color: #374151; border-bottom: 2px solid #e5e7eb;">Machine</th>
+                ${showRevenue ? `<th style="padding: 10px 8px; text-align: right; color: #374151; border-bottom: 2px solid #e5e7eb;">Revenue</th>` : ""}
+                <th style="padding: 10px 8px; text-align: right; color: #374151; border-bottom: 2px solid #e5e7eb;">Rate</th>
+                <th style="padding: 10px 8px; text-align: right; color: #374151; border-bottom: 2px solid #e5e7eb;">Commission</th>
+              </tr>
+            </thead>
+            <tbody>${breakdownRowsHTML}</tbody>
+            <tfoot>
+              <tr>
+                <td style="padding: 12px 8px; font-weight: 700; color: #1f2937;">Totals</td>
+                ${showRevenue ? `<td style="padding: 12px 8px; text-align: right; font-weight: 700; color: #1f2937;">$${effectiveRevenue.toFixed(2)}</td>` : ""}
+                <td style="padding: 12px 8px; text-align: right; font-weight: 700; color: #1f2937;">${showRevenue ? `${blendedRate.toFixed(1)}%` : "&mdash;"}</td>
+                <td style="padding: 12px 8px; text-align: right; font-weight: 700; color: #1f2937;">$${effectiveCommission.toFixed(2)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>` : ""
+
+    const footerNote = (label: string) => `
+        ${safeNotes ? `
+        <div style="margin: 30px 0;">
+          <h3 style="font-size: 16px; color: #374151; margin: 0 0 15px 0; font-weight: 600;">Additional Notes</h3>
+          <div style="color: #4b5563; line-height: 1.6; margin: 0; padding: 20px; background: #f9fafb; border-radius: 6px; border-left: 4px solid #e5e7eb;">${safeNotes}</div>
+        </div>
+        ` : ''}
+
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+            This commission ${label} was generated by ClawOps Business Dashboard
+          </p>
+        </div>`
+
+    // Template with revenue shown
     const contentWithRevenue = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333; line-height: 1.6;">
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 40px 20px; color: #333; line-height: 1.6;">
         <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px;">
           <h1 style="font-size: 28px; margin: 0; color: #1f2937; font-weight: bold;">COMMISSION SUMMARY</h1>
           <p style="color: #6b7280; margin: 10px 0; font-size: 14px;">Generated on ${currentDate}</p>
         </div>
 
-        <div style="margin-bottom: 30px;">
-          <h2 style="font-size: 18px; margin: 0 0 20px 0; color: #374151; font-weight: 600;">Location Information</h2>
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 12px 0; font-weight: 600; color: #374151; width: 40%; border-bottom: 1px solid #f3f4f6;">Business Name:</td>
-              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${safeName}</td>
-            </tr>
-            <tr>
-              <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Contact Person:</td>
-              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${safeContactPerson || 'N/A'}</td>
-            </tr>
-            <tr>
-              <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Period:</td>
-              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${periodText}</td>
-            </tr>
-            <tr>
-              <td style="padding: 12px 0; font-weight: 600; color: #374151;">Number of Machines:</td>
-              <td style="padding: 12px 0; color: #1f2937;">${locationData.machineCount}</td>
-            </tr>
-          </table>
-        </div>
+        ${infoTable}
+
+        ${breakdownSection}
 
         <div style="text-align: center; margin: 40px 0; padding: 30px; background: #f9fafb; border-radius: 8px;">
           <div style="margin-bottom: 25px;">
             <p style="color: #6b7280; margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">TOTAL REVENUE</p>
-            <p style="font-size: 32px; font-weight: bold; margin: 10px 0; color: #1f2937;">$${locationData.totalRevenue.toFixed(2)}</p>
+            <p style="font-size: 32px; font-weight: bold; margin: 10px 0; color: #1f2937;">$${effectiveRevenue.toFixed(2)}</p>
           </div>
 
           <div style="background: #dcfce7; padding: 25px; border-radius: 8px; border: 2px solid #22c55e;">
             <p style="color: #15803d; margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">COMMISSION PAYMENT</p>
-            <p style="font-size: 36px; font-weight: bold; margin: 15px 0; color: #15803d;">$${locationData.commissionAmount.toFixed(2)}</p>
+            <p style="font-size: 36px; font-weight: bold; margin: 15px 0; color: #15803d;">$${effectiveCommission.toFixed(2)}</p>
           </div>
         </div>
 
-        ${safeNotes ? `
-        <div style="margin: 30px 0;">
-          <h3 style="font-size: 16px; color: #374151; margin: 0 0 15px 0; font-weight: 600;">Additional Notes</h3>
-          <div style="color: #4b5563; line-height: 1.6; margin: 0; padding: 20px; background: #f9fafb; border-radius: 6px; border-left: 4px solid #e5e7eb;">${safeNotes}</div>
-        </div>
-        ` : ''}
-
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
-          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-            This commission summary was generated by ClawOps Business Dashboard
-          </p>
-        </div>
+        ${footerNote("summary")}
       </div>
     `
 
     // Template without revenue (simplified commission statement)
     const contentWithoutRevenue = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333; line-height: 1.6;">
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 40px 20px; color: #333; line-height: 1.6;">
         <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px;">
           <h1 style="font-size: 28px; margin: 0; color: #1f2937; font-weight: bold;">COMMISSION STATEMENT</h1>
           <p style="color: #6b7280; margin: 10px 0; font-size: 14px;">Generated on ${currentDate}</p>
         </div>
 
-        <div style="margin-bottom: 30px;">
-          <h2 style="font-size: 18px; margin: 0 0 20px 0; color: #374151; font-weight: 600;">Location Information</h2>
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 12px 0; font-weight: 600; color: #374151; width: 40%; border-bottom: 1px solid #f3f4f6;">Business Name:</td>
-              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${safeName}</td>
-            </tr>
-            <tr>
-              <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Contact Person:</td>
-              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${safeContactPerson || 'N/A'}</td>
-            </tr>
-            <tr>
-              <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Period:</td>
-              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${periodText}</td>
-            </tr>
-            <tr>
-              <td style="padding: 12px 0; font-weight: 600; color: #374151;">Number of Machines:</td>
-              <td style="padding: 12px 0; color: #1f2937;">${locationData.machineCount}</td>
-            </tr>
-          </table>
-        </div>
+        ${infoTable}
+
+        ${breakdownSection}
 
         <div style="text-align: center; margin: 40px 0;">
           <div style="background: #dcfce7; padding: 40px 30px; border-radius: 12px; border: 2px solid #22c55e;">
             <p style="color: #15803d; margin: 0 0 15px 0; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">COMMISSION PAYMENT</p>
-            <p style="font-size: 48px; font-weight: bold; margin: 0 0 15px 0; color: #15803d;">$${locationData.commissionAmount.toFixed(2)}</p>
+            <p style="font-size: 48px; font-weight: bold; margin: 0 0 15px 0; color: #15803d;">$${effectiveCommission.toFixed(2)}</p>
             <p style="color: #16a34a; margin: 0; font-size: 14px;">For the period ${periodText}</p>
           </div>
         </div>
 
-        ${safeNotes ? `
-        <div style="margin: 30px 0;">
-          <h3 style="font-size: 16px; color: #374151; margin: 0 0 15px 0; font-weight: 600;">Additional Notes</h3>
-          <div style="color: #4b5563; line-height: 1.6; margin: 0; padding: 20px; background: #f9fafb; border-radius: 6px; border-left: 4px solid #e5e7eb;">${safeNotes}</div>
-        </div>
-        ` : ''}
-
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
-          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-            This commission statement was generated by ClawOps Business Dashboard
-          </p>
-        </div>
+        ${footerNote("statement")}
       </div>
     `
 
@@ -252,17 +343,27 @@ export function CommissionSummaryGenerator() {
       })
       
       let savedToLocation = false
+
+      const breakdownNote = usingMachines
+        ? rows
+            .filter((r) => r.revenue > 0 || r.rate > 0)
+            .map((r) => `${r.name || "Machine"}: $${r.revenue.toFixed(2)} @ ${r.rate}% = $${rowCommission(r).toFixed(2)}`)
+            .join("; ")
+        : ""
+      const combinedNotes = [locationData.notes, breakdownNote ? `Breakdown — ${breakdownNote}` : ""]
+        .filter(Boolean)
+        .join("\n")
       
       // Save commission summary to location if a location was selected
       if (locationData.locationId && locationData.startDate && locationData.endDate) {
         const result = await addCommissionSummary(locationData.locationId, {
           startDate: format(locationData.startDate, "yyyy-MM-dd"),
           endDate: format(locationData.endDate, "yyyy-MM-dd"),
-          totalRevenue: locationData.totalRevenue,
-          commissionPercentage: locationData.commissionPercentage,
-          commissionAmount: locationData.commissionAmount,
-          machineCount: locationData.machineCount,
-          notes: locationData.notes,
+          totalRevenue: effectiveRevenue,
+          commissionPercentage: Number(effectiveRate.toFixed(2)),
+          commissionAmount: effectiveCommission,
+          machineCount: effectiveMachineCount,
+          notes: combinedNotes,
           commissionPaid: false,
           commissionPaidAt: null,
         })
@@ -271,11 +372,11 @@ export function CommissionSummaryGenerator() {
       
       // Automatically log the commission as an expense in Revenue Tracker
       // Works whether location is selected or manually entered
-      if (user && locationData.commissionAmount > 0 && locationData.startDate && locationData.endDate) {
+      if (user && effectiveCommission > 0 && locationData.startDate && locationData.endDate) {
         await addRevenueExpense(
           user.id,
           locationData.locationId || "manual",
-          locationData.commissionAmount,
+          effectiveCommission,
           "Commission Payout",
           `Commission for ${locationData.name} (${periodText})`,
           locationData.endDate
@@ -298,7 +399,7 @@ export function CommissionSummaryGenerator() {
     }
   }
 
-  const isFormValid = locationData.name && locationData.startDate && locationData.endDate
+  const isFormValid = !!locationData.name && !!locationData.startDate && !!locationData.endDate
 
   if (!isLoaded) {
     return <div className="flex items-center justify-center py-12">Loading...</div>
@@ -312,7 +413,7 @@ export function CommissionSummaryGenerator() {
           Generate Report
         </CardTitle>
         <CardDescription>
-          Select a location or fill in details manually to create a commission summary PDF
+          Enter one revenue total, or break it down machine by machine when rates differ
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -390,16 +491,18 @@ export function CommissionSummaryGenerator() {
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="machineCount">Number of Machines</Label>
-            <NumberInput
-              id="machineCount"
-              min="1"
-              className="md:w-1/4"
-              value={locationData.machineCount}
-              onChange={(e) => setLocationData(prev => ({ ...prev, machineCount: parseInt(e.target.value) || 1 }))}
-            />
-          </div>
+          {!usingMachines && (
+            <div className="space-y-2">
+              <Label htmlFor="machineCount">Number of Machines</Label>
+              <NumberInput
+                id="machineCount"
+                min="1"
+                className="md:w-1/4"
+                value={locationData.machineCount}
+                onChange={(e) => setLocationData(prev => ({ ...prev, machineCount: parseInt(e.target.value) || 1 }))}
+              />
+            </div>
+          )}
         </div>
 
         <div className="border-t border-border" />
@@ -483,19 +586,41 @@ export function CommissionSummaryGenerator() {
 
         <div className="border-t border-border" />
 
-        {/* Section 3: Financial Data */}
+        {/* Section 3: Sales & Commission */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            <DollarSign className="h-4 w-4" />
-            Financial Details
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <DollarSign className="h-4 w-4" />
+              Sales &amp; Commission
+            </div>
+            <div className="inline-flex rounded-lg border border-border p-1 bg-muted/30">
+              <Button
+                type="button"
+                variant={entryMode === "total" ? "default" : "ghost"}
+                size="sm"
+                className="h-8"
+                onClick={() => switchMode("total")}
+              >
+                Single total
+              </Button>
+              <Button
+                type="button"
+                variant={entryMode === "machines" ? "default" : "ghost"}
+                size="sm"
+                className="h-8"
+                onClick={() => switchMode("machines")}
+              >
+                Per machine
+              </Button>
+            </div>
           </div>
 
           {/* Toggle for showing revenue on PDF */}
           <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
             <div className="space-y-0.5">
-              <Label htmlFor="showRevenue">Show total revenue on PDF</Label>
+              <Label htmlFor="showRevenue">Show revenue on PDF</Label>
               <p className="text-xs text-muted-foreground">
-                When disabled, only the commission amount will appear
+                When disabled, only rates and commission amounts will appear
               </p>
             </div>
             <Switch
@@ -504,33 +629,102 @@ export function CommissionSummaryGenerator() {
               onCheckedChange={setShowRevenue}
             />
           </div>
-          
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="totalRevenue">Total Revenue ($)</Label>
-              <NumberInput
-                id="totalRevenue"
-                step="0.01"
-                placeholder="0.00"
-                value={locationData.totalRevenue || ""}
-                onChange={(e) => updateCommissionFromPercentage(parseFloat(e.target.value) || 0, locationData.commissionPercentage)}
-              />
-              <p className="text-xs text-muted-foreground">Total machine revenue for the period</p>
+
+          {!usingMachines ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="totalRevenue">Total Revenue ($)</Label>
+                <NumberInput
+                  id="totalRevenue"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={locationData.totalRevenue || ""}
+                  onChange={(e) => updateCommissionFromPercentage(parseFloat(e.target.value) || 0, locationData.commissionPercentage)}
+                />
+                <p className="text-xs text-muted-foreground">Total machine revenue for the period</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="commissionPercentage">Commission Rate (%)</Label>
+                <NumberInput
+                  id="commissionPercentage"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  placeholder="0.0"
+                  value={locationData.commissionPercentage || ""}
+                  onChange={(e) => updateCommissionFromPercentage(locationData.totalRevenue, parseFloat(e.target.value) || 0)}
+                />
+                <p className="text-xs text-muted-foreground">Location's share of revenue</p>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="commissionPercentage">Commission Rate (%)</Label>
-              <NumberInput
-                id="commissionPercentage"
-                step="0.1"
-                min="0"
-                max="100"
-                placeholder="0.0"
-                value={locationData.commissionPercentage || ""}
-                onChange={(e) => updateCommissionFromPercentage(locationData.totalRevenue, parseFloat(e.target.value) || 0)}
-              />
-              <p className="text-xs text-muted-foreground">Location's share of revenue</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  Enter the sales for each machine — rates seed from each machine's saved commission %
+                </p>
+                <Button variant="outline" size="sm" onClick={() => setRows(prev => [...prev, newRow()])}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Row
+                </Button>
+              </div>
+
+              {/* Header (desktop) */}
+              <div className="hidden md:grid grid-cols-[1fr_130px_100px_110px_40px] gap-3 px-1 text-xs font-medium text-muted-foreground">
+                <span>Machine</span>
+                <span>Revenue ($)</span>
+                <span>Rate (%)</span>
+                <span className="text-right">Commission</span>
+                <span />
+              </div>
+
+              <div className="space-y-3">
+                {rows.map((row) => (
+                  <div
+                    key={row.id}
+                    className="grid grid-cols-1 md:grid-cols-[1fr_130px_100px_110px_40px] gap-3 items-center rounded-lg border border-border/60 p-3 md:border-0 md:p-0"
+                  >
+                    <Input
+                      placeholder="Machine name (e.g. Boxing Machine)"
+                      value={row.name}
+                      onChange={(e) => updateRow(row.id, { name: e.target.value })}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    />
+                    <div className="grid grid-cols-2 gap-3 md:contents">
+                      <NumberInput
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={row.revenue || ""}
+                        onChange={(e) => updateRow(row.id, { revenue: parseFloat(e.target.value) || 0 })}
+                      />
+                      <NumberInput
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        placeholder="0"
+                        value={row.rate || ""}
+                        onChange={(e) => updateRow(row.id, { rate: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <p className="text-right font-semibold tabular-nums text-primary">
+                      ${rowCommission(row).toFixed(2)}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="justify-self-end text-muted-foreground hover:text-destructive"
+                      onClick={() => removeRow(row.id)}
+                      disabled={rows.length === 1}
+                      aria-label="Remove machine row"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Live Commission Preview */}
           <div className="rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 p-6">
@@ -541,17 +735,18 @@ export function CommissionSummaryGenerator() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Commission to Pay</p>
-                  <p className="text-xs text-muted-foreground">
-                    {locationData.commissionPercentage > 0 
-                      ? `${locationData.commissionPercentage}% of $${locationData.totalRevenue.toFixed(2)}`
-                      : "Enter revenue and rate above"
-                    }
+                  <p className="text-xs text-muted-foreground tabular-nums">
+                    {usingMachines
+                      ? `$${effectiveRevenue.toFixed(2)} revenue · ${blendedRate.toFixed(1)}% blended rate`
+                      : locationData.commissionPercentage > 0
+                        ? `${locationData.commissionPercentage}% of $${locationData.totalRevenue.toFixed(2)}`
+                        : "Enter revenue and rate above"}
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-3xl font-bold text-primary">
-                  ${locationData.commissionAmount.toFixed(2)}
+                <p className="text-3xl font-bold text-primary tabular-nums">
+                  ${effectiveCommission.toFixed(2)}
                 </p>
               </div>
             </div>
