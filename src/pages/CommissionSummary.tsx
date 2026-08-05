@@ -1,8 +1,7 @@
 
 import { CommissionSummaryGenerator } from "@/components/CommissionSummaryGenerator"
-import { SplitRateCommissionGenerator } from "@/components/SplitRateCommissionGenerator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Receipt, TrendingUp, DollarSign, Target } from "lucide-react"
+
 
 
 export default function CommissionSummary() {
