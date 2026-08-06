@@ -53,8 +53,10 @@ const newRow = (name = "", rate = 0): MachineRow => ({
 export function CommissionSummaryGenerator() {
   const { toast } = useToast()
   const { user } = useAuth()
+  const { settings: appSettings } = useAppSettings()
   const { activeLocations, getLocationById, isLoaded, addCommissionSummary } = useLocations()
   const [showRevenue, setShowRevenue] = useState(true)
+  const [includePromo, setIncludePromo] = useState(appSettings.promoEnabled)
   const [entryMode, setEntryMode] = useState<EntryMode>("total")
   const [rows, setRows] = useState<MachineRow[]>([newRow()])
   const [locationData, setLocationData] = useState<LocationData>({
