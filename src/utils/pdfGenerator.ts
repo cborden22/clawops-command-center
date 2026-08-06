@@ -22,7 +22,8 @@ export async function generatePDFFromHTML(
     filename,
     margin = 10,
     format = 'a4',
-    orientation = 'portrait'
+    orientation = 'portrait',
+    singlePage = false
   } = options;
 
   // Create a temporary container for the HTML
