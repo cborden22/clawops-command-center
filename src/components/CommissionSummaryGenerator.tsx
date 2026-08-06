@@ -18,6 +18,7 @@ import { sanitizeForHTML } from "@/utils/htmlSanitize"
 import { useLocations } from "@/hooks/useLocationsDB"
 import { addRevenueExpense } from "@/hooks/useRevenueEntriesDB"
 import { useAuth } from "@/contexts/AuthContext"
+import { useAppSettings } from "@/contexts/AppSettingsContext"
 import { Link } from "react-router-dom"
 
 interface LocationData {
