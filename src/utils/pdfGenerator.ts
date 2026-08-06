@@ -6,6 +6,8 @@ interface PDFOptions {
   margin?: number;
   format?: 'a4' | 'letter';
   orientation?: 'portrait' | 'landscape';
+  /** Force everything onto a single page, scaling down to fit if needed */
+  singlePage?: boolean;
 }
 
 /**
