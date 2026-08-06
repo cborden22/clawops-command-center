@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -408,6 +409,84 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Referral Promo */}
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-primary" />
+                Referral Promo
+              </CardTitle>
+              <CardDescription>
+                Print a referral offer at the bottom of every commission summary PDF
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+                <div className="space-y-0.5">
+                  <Label htmlFor="promoEnabled">Include promo on commission PDFs</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Turn your statements into a referral ask
+                  </p>
+                </div>
+                <Switch
+                  id="promoEnabled"
+                  checked={appSettings.promoEnabled}
+                  onCheckedChange={(v) => updateSetting("promoEnabled", v)}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="promoHeadline">Headline</Label>
+                  <Input
+                    id="promoHeadline"
+                    value={appSettings.promoHeadline}
+                    onChange={(e) => updateSetting("promoHeadline", e.target.value)}
+                    placeholder="Refer a Business, Earn $50"
+                    maxLength={80}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="promoBonusAmount">Bonus Amount ($)</Label>
+                  <Input
+                    id="promoBonusAmount"
+                    type="number"
+                    min="0"
+                    value={appSettings.promoBonusAmount}
+                    onChange={(e) => updateSetting("promoBonusAmount", Number(e.target.value))}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="promoMessage">Message</Label>
+                <Textarea
+                  id="promoMessage"
+                  value={appSettings.promoMessage}
+                  onChange={(e) => updateSetting("promoMessage", e.target.value)}
+                  rows={3}
+                  maxLength={400}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="promoContact">Contact Line</Label>
+                <Input
+                  id="promoContact"
+                  value={appSettings.promoContact}
+                  onChange={(e) => updateSetting("promoContact", e.target.value)}
+                  placeholder={appSettings.businessPhone || appSettings.businessEmail || "(555) 123-4567"}
+                  maxLength={120}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Leave blank to use your business phone or email
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+
 
           {/* Defaults, Display & Notifications - Consolidated */}
           <Card className="glass-card">
