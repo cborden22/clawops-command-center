@@ -648,6 +648,25 @@ export function CommissionSummaryGenerator() {
             />
           </div>
 
+          {/* Toggle for referral promo */}
+          <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+            <div className="space-y-0.5">
+              <Label htmlFor="includePromo">Include referral promo</Label>
+              <p className="text-xs text-muted-foreground">
+                {appSettings.promoMessage
+                  ? `Prints: "${appSettings.promoHeadline || "Referral offer"}"`
+                  : "Set up your promo text in Settings"}
+              </p>
+            </div>
+            <Switch
+              id="includePromo"
+              checked={includePromo}
+              onCheckedChange={setIncludePromo}
+            />
+          </div>
+
+
+
           {!usingMachines ? (
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
