@@ -211,24 +211,24 @@ export function CommissionSummaryGenerator() {
     const safeNotes = sanitizeForHTML(locationData.notes);
 
     const infoTable = `
-        <div style="margin-bottom: 30px;">
-          <h2 style="font-size: 18px; margin: 0 0 20px 0; color: #374151; font-weight: 600;">Location Information</h2>
+        <div style="margin-bottom: 18px;">
+          <h2 style="font-size: 17px; margin: 0 0 10px 0; color: #374151; font-weight: 600;">Location Information</h2>
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
-              <td style="padding: 12px 0; font-weight: 600; color: #374151; width: 40%; border-bottom: 1px solid #f3f4f6;">Business Name:</td>
-              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${safeName}</td>
+              <td style="padding: 7px 0; font-weight: 600; color: #374151; width: 40%; border-bottom: 1px solid #f3f4f6;">Business Name:</td>
+              <td style="padding: 7px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${safeName}</td>
             </tr>
             <tr>
-              <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Contact Person:</td>
-              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${safeContactPerson || 'N/A'}</td>
+              <td style="padding: 7px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Contact Person:</td>
+              <td style="padding: 7px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${safeContactPerson || 'N/A'}</td>
             </tr>
             <tr>
-              <td style="padding: 12px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Period:</td>
-              <td style="padding: 12px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${periodText}</td>
+              <td style="padding: 7px 0; font-weight: 600; color: #374151; border-bottom: 1px solid #f3f4f6;">Period:</td>
+              <td style="padding: 7px 0; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${periodText}</td>
             </tr>
             <tr>
-              <td style="padding: 12px 0; font-weight: 600; color: #374151;">Number of Machines:</td>
-              <td style="padding: 12px 0; color: #1f2937;">${effectiveMachineCount}</td>
+              <td style="padding: 7px 0; font-weight: 600; color: #374151;">Number of Machines:</td>
+              <td style="padding: 7px 0; color: #1f2937;">${effectiveMachineCount}</td>
             </tr>
           </table>
         </div>`
@@ -239,33 +239,33 @@ export function CommissionSummaryGenerator() {
         const label = sanitizeForHTML(r.name || "Machine")
         return `
           <tr>
-            <td style="padding: 10px 8px; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${label}</td>
-            ${showRevenue ? `<td style="padding: 10px 8px; color: #1f2937; text-align: right; border-bottom: 1px solid #f3f4f6;">$${r.revenue.toFixed(2)}</td>` : ""}
-            <td style="padding: 10px 8px; color: #1f2937; text-align: right; border-bottom: 1px solid #f3f4f6;">${r.rate}%</td>
-            <td style="padding: 10px 8px; color: #1f2937; text-align: right; font-weight: 600; border-bottom: 1px solid #f3f4f6;">$${rowCommission(r).toFixed(2)}</td>
+            <td style="padding: 6px 8px; color: #1f2937; border-bottom: 1px solid #f3f4f6;">${label}</td>
+            ${showRevenue ? `<td style="padding: 6px 8px; color: #1f2937; text-align: right; border-bottom: 1px solid #f3f4f6;">$${r.revenue.toFixed(2)}</td>` : ""}
+            <td style="padding: 6px 8px; color: #1f2937; text-align: right; border-bottom: 1px solid #f3f4f6;">${r.rate}%</td>
+            <td style="padding: 6px 8px; color: #1f2937; text-align: right; font-weight: 600; border-bottom: 1px solid #f3f4f6;">$${rowCommission(r).toFixed(2)}</td>
           </tr>`
       })
       .join("")
 
     const breakdownSection = usingMachines ? `
-        <div style="margin-bottom: 30px;">
-          <h2 style="font-size: 18px; margin: 0 0 12px 0; color: #374151; font-weight: 600;">Commission Breakdown by Machine</h2>
+        <div style="margin-bottom: 18px;">
+          <h2 style="font-size: 17px; margin: 0 0 8px 0; color: #374151; font-weight: 600;">Commission Breakdown by Machine</h2>
           <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
             <thead>
               <tr style="background: #f9fafb;">
-                <th style="padding: 10px 8px; text-align: left; color: #374151; border-bottom: 2px solid #e5e7eb;">Machine</th>
-                ${showRevenue ? `<th style="padding: 10px 8px; text-align: right; color: #374151; border-bottom: 2px solid #e5e7eb;">Revenue</th>` : ""}
-                <th style="padding: 10px 8px; text-align: right; color: #374151; border-bottom: 2px solid #e5e7eb;">Rate</th>
-                <th style="padding: 10px 8px; text-align: right; color: #374151; border-bottom: 2px solid #e5e7eb;">Commission</th>
+                <th style="padding: 6px 8px; text-align: left; color: #374151; border-bottom: 2px solid #e5e7eb;">Machine</th>
+                ${showRevenue ? `<th style="padding: 6px 8px; text-align: right; color: #374151; border-bottom: 2px solid #e5e7eb;">Revenue</th>` : ""}
+                <th style="padding: 6px 8px; text-align: right; color: #374151; border-bottom: 2px solid #e5e7eb;">Rate</th>
+                <th style="padding: 6px 8px; text-align: right; color: #374151; border-bottom: 2px solid #e5e7eb;">Commission</th>
               </tr>
             </thead>
             <tbody>${breakdownRowsHTML}</tbody>
             <tfoot>
               <tr>
-                <td style="padding: 12px 8px; font-weight: 700; color: #1f2937;">Totals</td>
-                ${showRevenue ? `<td style="padding: 12px 8px; text-align: right; font-weight: 700; color: #1f2937;">$${effectiveRevenue.toFixed(2)}</td>` : ""}
-                <td style="padding: 12px 8px; text-align: right; font-weight: 700; color: #1f2937;">${showRevenue ? `${blendedRate.toFixed(1)}%` : "&mdash;"}</td>
-                <td style="padding: 12px 8px; text-align: right; font-weight: 700; color: #1f2937;">$${effectiveCommission.toFixed(2)}</td>
+                <td style="padding: 8px 8px; font-weight: 700; color: #1f2937;">Totals</td>
+                ${showRevenue ? `<td style="padding: 8px 8px; text-align: right; font-weight: 700; color: #1f2937;">$${effectiveRevenue.toFixed(2)}</td>` : ""}
+                <td style="padding: 8px 8px; text-align: right; font-weight: 700; color: #1f2937;">${showRevenue ? `${blendedRate.toFixed(1)}%` : "&mdash;"}</td>
+                <td style="padding: 8px 8px; text-align: right; font-weight: 700; color: #1f2937;">$${effectiveCommission.toFixed(2)}</td>
               </tr>
             </tfoot>
           </table>
@@ -277,7 +277,7 @@ export function CommissionSummaryGenerator() {
       appSettings.promoContact || appSettings.businessPhone || appSettings.businessEmail || ""
     )
     const promoSection = includePromo && promoMessage ? `
-        <div style="margin: 30px 0; padding: 24px; border: 2px dashed #22c55e; border-radius: 10px; background: #f0fdf4; text-align: center;">
+        <div style="margin: 18px 0; padding: 14px; border: 2px dashed #22c55e; border-radius: 10px; background: #f0fdf4; text-align: center;">
           ${promoHeadline ? `<p style="margin: 0 0 10px 0; font-size: 16px; font-weight: 700; color: #15803d; text-transform: uppercase; letter-spacing: 1px;">${promoHeadline}</p>` : ""}
           <p style="margin: 0; color: #166534; font-size: 14px; line-height: 1.6;">${promoMessage}</p>
           ${promoContact ? `<p style="margin: 12px 0 0 0; color: #15803d; font-size: 13px; font-weight: 600;">Contact us: ${promoContact}</p>` : ""}
@@ -285,16 +285,16 @@ export function CommissionSummaryGenerator() {
 
     const footerNote = (label: string) => `
         ${safeNotes ? `
-        <div style="margin: 30px 0;">
-          <h3 style="font-size: 16px; color: #374151; margin: 0 0 15px 0; font-weight: 600;">Additional Notes</h3>
-          <div style="color: #4b5563; line-height: 1.6; margin: 0; padding: 20px; background: #f9fafb; border-radius: 6px; border-left: 4px solid #e5e7eb;">${safeNotes}</div>
+        <div style="margin: 18px 0;">
+          <h3 style="font-size: 15px; color: #374151; margin: 0 0 8px 0; font-weight: 600;">Additional Notes</h3>
+          <div style="color: #4b5563; line-height: 1.6; margin: 0; padding: 12px; background: #f9fafb; border-radius: 6px; border-left: 4px solid #e5e7eb;">${safeNotes}</div>
         </div>
         ` : ''}
 
         ${promoSection}
 
 
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
+        <div style="margin-top: 22px; padding-top: 12px; border-top: 1px solid #e5e7eb; text-align: center;">
           <p style="color: #9ca3af; font-size: 12px; margin: 0;">
             This commission ${label} was generated by ClawOps Business Dashboard
           </p>
@@ -302,25 +302,25 @@ export function CommissionSummaryGenerator() {
 
     // Template with revenue shown
     const contentWithRevenue = `
-      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 40px 20px; color: #333; line-height: 1.6;">
-        <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px;">
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px 20px; color: #333; line-height: 1.45;">
+        <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px;">
           <h1 style="font-size: 28px; margin: 0; color: #1f2937; font-weight: bold;">COMMISSION SUMMARY</h1>
-          <p style="color: #6b7280; margin: 10px 0; font-size: 14px;">Generated on ${currentDate}</p>
+          <p style="color: #6b7280; margin: 6px 0 0 0; font-size: 13px;">Generated on ${currentDate}</p>
         </div>
 
         ${infoTable}
 
         ${breakdownSection}
 
-        <div style="text-align: center; margin: 40px 0; padding: 30px; background: #f9fafb; border-radius: 8px;">
-          <div style="margin-bottom: 25px;">
+        <div style="text-align: center; margin: 20px 0; padding: 18px; background: #f9fafb; border-radius: 8px;">
+          <div style="margin-bottom: 14px;">
             <p style="color: #6b7280; margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">TOTAL REVENUE</p>
-            <p style="font-size: 32px; font-weight: bold; margin: 10px 0; color: #1f2937;">$${effectiveRevenue.toFixed(2)}</p>
+            <p style="font-size: 30px; font-weight: bold; margin: 6px 0 0 0; color: #1f2937;">$${effectiveRevenue.toFixed(2)}</p>
           </div>
 
-          <div style="background: #dcfce7; padding: 25px; border-radius: 8px; border: 2px solid #22c55e;">
+          <div style="background: #dcfce7; padding: 16px; border-radius: 8px; border: 2px solid #22c55e;">
             <p style="color: #15803d; margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">COMMISSION PAYMENT</p>
-            <p style="font-size: 36px; font-weight: bold; margin: 15px 0; color: #15803d;">$${effectiveCommission.toFixed(2)}</p>
+            <p style="font-size: 34px; font-weight: bold; margin: 8px 0 0 0; color: #15803d;">$${effectiveCommission.toFixed(2)}</p>
           </div>
         </div>
 
@@ -330,20 +330,20 @@ export function CommissionSummaryGenerator() {
 
     // Template without revenue (simplified commission statement)
     const contentWithoutRevenue = `
-      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 40px 20px; color: #333; line-height: 1.6;">
-        <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px;">
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px 20px; color: #333; line-height: 1.45;">
+        <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px;">
           <h1 style="font-size: 28px; margin: 0; color: #1f2937; font-weight: bold;">COMMISSION STATEMENT</h1>
-          <p style="color: #6b7280; margin: 10px 0; font-size: 14px;">Generated on ${currentDate}</p>
+          <p style="color: #6b7280; margin: 6px 0 0 0; font-size: 13px;">Generated on ${currentDate}</p>
         </div>
 
         ${infoTable}
 
         ${breakdownSection}
 
-        <div style="text-align: center; margin: 40px 0;">
-          <div style="background: #dcfce7; padding: 40px 30px; border-radius: 12px; border: 2px solid #22c55e;">
+        <div style="text-align: center; margin: 22px 0;">
+          <div style="background: #dcfce7; padding: 26px 24px; border-radius: 12px; border: 2px solid #22c55e;">
             <p style="color: #15803d; margin: 0 0 15px 0; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">COMMISSION PAYMENT</p>
-            <p style="font-size: 48px; font-weight: bold; margin: 0 0 15px 0; color: #15803d;">$${effectiveCommission.toFixed(2)}</p>
+            <p style="font-size: 44px; font-weight: bold; margin: 0 0 10px 0; color: #15803d;">$${effectiveCommission.toFixed(2)}</p>
             <p style="color: #16a34a; margin: 0; font-size: 14px;">For the period ${periodText}</p>
           </div>
         </div>
@@ -362,7 +362,8 @@ export function CommissionSummaryGenerator() {
         filename,
         margin: 12,
         format: 'letter',
-        orientation: 'portrait'
+        orientation: 'portrait',
+        singlePage: true
       })
       
       let savedToLocation = false
