@@ -41,6 +41,12 @@ const DEFAULT_SETTINGS: AppSettings = {
   darkMode: true,
   compactView: false,
   autoBackup: true,
+  promoEnabled: false,
+  promoHeadline: "Refer a Business, Earn $50",
+  promoBonusAmount: 50,
+  promoMessage:
+    "Know another business that could use a machine? Refer them to us and receive a $50 bonus once their machine is installed.",
+  promoContact: "",
 };
 
 interface AppSettingsContextType {
