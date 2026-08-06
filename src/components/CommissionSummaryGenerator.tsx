@@ -266,6 +266,18 @@ export function CommissionSummaryGenerator() {
           </table>
         </div>` : ""
 
+    const promoHeadline = sanitizeForHTML(appSettings.promoHeadline || "")
+    const promoMessage = sanitizeForHTML(appSettings.promoMessage || "")
+    const promoContact = sanitizeForHTML(
+      appSettings.promoContact || appSettings.businessPhone || appSettings.businessEmail || ""
+    )
+    const promoSection = includePromo && promoMessage ? `
+        <div style="margin: 30px 0; padding: 24px; border: 2px dashed #22c55e; border-radius: 10px; background: #f0fdf4; text-align: center;">
+          ${promoHeadline ? `<p style="margin: 0 0 10px 0; font-size: 16px; font-weight: 700; color: #15803d; text-transform: uppercase; letter-spacing: 1px;">${promoHeadline}</p>` : ""}
+          <p style="margin: 0; color: #166534; font-size: 14px; line-height: 1.6;">${promoMessage}</p>
+          ${promoContact ? `<p style="margin: 12px 0 0 0; color: #15803d; font-size: 13px; font-weight: 600;">Contact us: ${promoContact}</p>` : ""}
+        </div>` : ""
+
     const footerNote = (label: string) => `
         ${safeNotes ? `
         <div style="margin: 30px 0;">
@@ -273,6 +285,9 @@ export function CommissionSummaryGenerator() {
           <div style="color: #4b5563; line-height: 1.6; margin: 0; padding: 20px; background: #f9fafb; border-radius: 6px; border-left: 4px solid #e5e7eb;">${safeNotes}</div>
         </div>
         ` : ''}
+
+        ${promoSection}
+
 
         <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center;">
           <p style="color: #9ca3af; font-size: 12px; margin: 0;">
