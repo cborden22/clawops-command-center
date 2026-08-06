@@ -18,6 +18,11 @@ export interface AppSettings {
   darkMode: boolean;
   compactView: boolean;
   autoBackup: boolean;
+  promoEnabled: boolean;
+  promoHeadline: string;
+  promoBonusAmount: number;
+  promoMessage: string;
+  promoContact: string;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
