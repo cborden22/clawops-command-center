@@ -6,6 +6,8 @@ interface PDFOptions {
   margin?: number;
   format?: 'a4' | 'letter';
   orientation?: 'portrait' | 'landscape';
+  /** Force everything onto a single page, scaling down to fit if needed */
+  singlePage?: boolean;
 }
 
 /**
@@ -20,7 +22,8 @@ export async function generatePDFFromHTML(
     filename,
     margin = 10,
     format = 'a4',
-    orientation = 'portrait'
+    orientation = 'portrait',
+    singlePage = false
   } = options;
 
   // Create a temporary container for the HTML
@@ -52,22 +55,33 @@ export async function generatePDFFromHTML(
 
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = pageWidth - margin * 2;
+    const maxWidth = pageWidth - margin * 2;
+    const maxHeight = pageHeight - margin * 2;
+    const imgWidth = maxWidth;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    let heightLeft = imgHeight;
-    let position = margin;
+    if (singlePage) {
+      // Scale down proportionally so everything fits on one page (front only)
+      const ratio = imgHeight > maxHeight ? maxHeight / imgHeight : 1;
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
+      const x = (pageWidth - finalWidth) / 2;
+      pdf.addImage(imgData, 'JPEG', x, margin, finalWidth, finalHeight);
+    } else {
+      let heightLeft = imgHeight;
+      let position = margin;
 
-    // Add first page
-    pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight - margin * 2;
-
-    // Add additional pages if needed
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight + margin;
-      pdf.addPage();
+      // Add first page
       pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight - margin * 2;
+      heightLeft -= maxHeight;
+
+      // Add additional pages if needed
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight + margin;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
+        heightLeft -= maxHeight;
+      }
     }
 
     pdf.save(filename);
