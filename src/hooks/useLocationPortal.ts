@@ -7,17 +7,27 @@ export interface PortalSettings {
   token: string | null;
 }
 
+const ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"; // no look-alike characters
+
 function generateToken() {
-  const bytes = new Uint8Array(24);
+  const bytes = new Uint8Array(12);
   crypto.getRandomValues(bytes);
   return Array.from(bytes)
-    .map((b) => b.toString(36).padStart(2, "0"))
-    .join("")
-    .slice(0, 32);
+    .map((b) => ALPHABET[b % ALPHABET.length])
+    .join("");
+}
+
+/** Public-facing origin for shared links (never a preview/lovable URL). */
+function publicOrigin() {
+  const origin = window.location.origin;
+  if (/lovable\.(app|dev)|localhost|127\.0\.0\.1/.test(origin)) {
+    return "https://clawops.com";
+  }
+  return origin;
 }
 
 export function portalUrl(token: string) {
-  return `${window.location.origin}/portal/${token}`;
+  return `${publicOrigin()}/p/${token}`;
 }
 
 /** Owner-side controls for a location's public owner portal link. */
