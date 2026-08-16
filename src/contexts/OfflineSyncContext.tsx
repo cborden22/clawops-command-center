@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from "react";
-import { drainQueue, enqueue, queueCount, QueuedOp, isOffline } from "@/lib/offlineQueue";
+import { drainQueue, enqueue, queueCount, QueuedOpInput, isOffline } from "@/lib/offlineQueue";
 import { toast } from "@/hooks/use-toast";
 
 interface OfflineSyncContextType {
@@ -7,7 +7,7 @@ interface OfflineSyncContextType {
   pendingCount: number;
   isSyncing: boolean;
   /** Queue a write for later. Returns after it is durably stored. */
-  queueWrite: (op: Omit<QueuedOp, "id" | "createdAt">) => Promise<void>;
+  queueWrite: (op: QueuedOpInput) => Promise<void>;
   syncNow: () => Promise<void>;
   refreshCount: () => Promise<void>;
 }
@@ -50,7 +50,7 @@ export function OfflineSyncProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const queueWrite = useCallback(
-    async (op: Omit<QueuedOp, "id" | "createdAt">) => {
+    async (op: QueuedOpInput) => {
       await enqueue(op);
       await refreshCount();
     },

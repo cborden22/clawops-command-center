@@ -32,11 +32,14 @@ export type QueuedOp =
       label: string;
     };
 
+type DistributiveOmit<T, K extends keyof any> = T extends any ? Omit<T, K> : never;
+export type QueuedOpInput = DistributiveOmit<QueuedOp, "id" | "createdAt">;
+
 function newId() {
   return `op_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export async function enqueue(op: Omit<QueuedOp, "id" | "createdAt">): Promise<string> {
+export async function enqueue(op: QueuedOpInput): Promise<string> {
   const id = newId();
   const full = { ...op, id, createdAt: Date.now() } as QueuedOp;
   await set(id, full, store);
