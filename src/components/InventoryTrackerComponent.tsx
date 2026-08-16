@@ -252,12 +252,16 @@ export function InventoryTrackerComponent() {
     }
   };
 
-  const handleDeleteItem = async (id: string) => {
+  const handleDeleteItem = (id: string) => {
     const item = items.find(i => i.id === id);
-    await deleteItem(id);
-    toast({
-      title: "Removed",
-      description: `${item?.name || "Item"} removed.`,
+    setPendingDeleteIds(prev => [...prev, id]);
+    deleteWithUndo({
+      message: `${item?.name || "Item"} deleted`,
+      onCommit: async () => {
+        await deleteItem(id);
+        setPendingDeleteIds(prev => prev.filter(p => p !== id));
+      },
+      onUndo: () => setPendingDeleteIds(prev => prev.filter(p => p !== id)),
     });
   };
 
