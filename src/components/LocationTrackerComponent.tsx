@@ -37,6 +37,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { deleteWithUndo } from "@/lib/undoToast";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { SkeletonGrid, SkeletonList } from "@/components/shared/SkeletonGrid";
