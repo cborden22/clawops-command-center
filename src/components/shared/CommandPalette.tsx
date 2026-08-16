@@ -46,6 +46,7 @@ interface NavItem {
 }
 
 const jumpItems: NavItem[] = [
+  { id: "today", title: "Today", url: "/today", icon: Clock },
   { id: "dashboard", title: "Dashboard", url: "/", icon: LayoutDashboard },
   { id: "locations", title: "Locations", url: "/locations", icon: MapPin, requires: "canViewLocations" },
   { id: "revenue", title: "Revenue", url: "/revenue", icon: DollarSign, requires: "canViewRevenue" },
