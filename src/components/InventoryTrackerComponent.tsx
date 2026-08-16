@@ -709,6 +709,20 @@ export function InventoryTrackerComponent() {
               onChange={(size) => { setInventoryListSize(size); setInventoryPage(1); }}
               totalCount={filteredItems.length}
             />
+            {!isStockRunMode && !isReturnMode && (
+              <Button
+                variant={selection.selectionMode ? "secondary" : "outline"}
+                size="sm"
+                className="h-9 shrink-0"
+                onClick={() =>
+                  selection.selectionMode
+                    ? selection.exitSelection()
+                    : selection.setSelectionMode(true)
+                }
+              >
+                {selection.selectionMode ? "Done" : "Select"}
+              </Button>
+            )}
           </div>
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
