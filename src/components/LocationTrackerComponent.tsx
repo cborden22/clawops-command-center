@@ -259,9 +259,15 @@ export function LocationTrackerComponent() {
   const totalMachinesFromTypes = formData.machines.reduce((sum, m) => sum + m.count, 0);
 
   const handleDelete = (location: Location) => {
+    setPendingDeleteLocationIds((prev) => [...prev, location.id]);
     deleteWithUndo({
       message: `${location.name} deleted`,
-      onCommit: () => deleteLocation(location.id),
+      onCommit: async () => {
+        await deleteLocation(location.id);
+        setPendingDeleteLocationIds((prev) => prev.filter((p) => p !== location.id));
+      },
+      onUndo: () =>
+        setPendingDeleteLocationIds((prev) => prev.filter((p) => p !== location.id)),
     });
   };
 
