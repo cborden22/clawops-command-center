@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { MileageRoute, RouteStop } from "@/hooks/useRoutesDB";
+import { enqueue, isOffline } from "@/lib/offlineQueue";
 
 export interface StopCollectionData {
   machineId: string;
@@ -179,10 +180,96 @@ export function useRouteRun() {
   const completeStop = async (stopResult: StopResult): Promise<boolean> => {
     if (!user || !activeRun) return false;
 
-    try {
-      const newStopData = [...activeRun.stopData, stopResult];
-      const newIndex = activeRun.currentStopIndex + 1;
+    const newStopData = [...activeRun.stopData, stopResult];
+    const newIndex = activeRun.currentStopIndex + 1;
 
+    // Offline: durably queue every write, advance the run locally.
+    if (isOffline()) {
+      const QUARTER_VALUE = 0.25;
+      let stopTotalRevenue = 0;
+
+      await enqueue({
+        kind: "update",
+        table: "route_runs",
+        payload: { current_stop_index: newIndex, stop_data: newStopData as any },
+        match: { id: activeRun.id },
+        label: `Stop ${newIndex} progress`,
+      });
+
+      for (const coll of stopResult.collections) {
+        if (coll.coinsInserted > 0 || coll.prizesWon > 0) {
+          await enqueue({
+            kind: "insert",
+            table: "machine_collections",
+            payload: {
+              user_id: user.id,
+              location_id: stopResult.locationId!,
+              machine_id: coll.machineId,
+              collection_date: new Date().toISOString(),
+              coins_inserted: coll.coinsInserted,
+              prizes_won: coll.prizesWon,
+              bag_label: coll.bagLabel || null,
+            },
+            label: `Collection at ${stopResult.locationName}`,
+          });
+          stopTotalRevenue += coll.coinsInserted * QUARTER_VALUE;
+        }
+      }
+
+      if (stopTotalRevenue > 0 && stopResult.locationId) {
+        await enqueue({
+          kind: "insert",
+          table: "revenue_entries",
+          payload: {
+            user_id: user.id,
+            location_id: stopResult.locationId,
+            amount: stopTotalRevenue,
+            date: new Date().toISOString(),
+            type: "income",
+            category: "Collections",
+            notes: stopResult.notes || `Route collection at ${stopResult.locationName}`,
+            service_period_start:
+              stopResult.spreadRevenue && stopResult.servicePeriodStart
+                ? stopResult.servicePeriodStart
+                : null,
+            service_period_end:
+              stopResult.spreadRevenue && stopResult.servicePeriodEnd
+                ? stopResult.servicePeriodEnd
+                : null,
+          },
+          label: `Revenue for ${stopResult.locationName}`,
+        });
+        await enqueue({
+          kind: "update",
+          table: "locations",
+          payload: { last_collection_date: new Date().toISOString() },
+          match: { id: stopResult.locationId },
+          label: `Last collection date`,
+        });
+      }
+
+      if (stopResult.commissionPaid && stopResult.commissionSummaryId) {
+        await enqueue({
+          kind: "update",
+          table: "commission_summaries",
+          payload: { commission_paid: true, commission_paid_at: new Date().toISOString() },
+          match: { id: stopResult.commissionSummaryId },
+          label: `Commission paid`,
+        });
+      }
+
+      setActiveRun((prev) =>
+        prev ? { ...prev, currentStopIndex: newIndex, stopData: newStopData } : null
+      );
+
+      toast({
+        title: "Saved offline",
+        description: "This stop will sync automatically when you're back online.",
+      });
+      return true;
+    }
+
+    try {
       const { error } = await supabase
         .from("route_runs")
         .update({
@@ -192,6 +279,7 @@ export function useRouteRun() {
         .eq("id", activeRun.id);
 
       if (error) throw error;
+
 
       // Calculate total revenue for this stop
       const QUARTER_VALUE = 0.25;

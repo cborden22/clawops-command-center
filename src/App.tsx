@@ -11,7 +11,9 @@ import { PermissionGuard } from "@/components/auth/PermissionGuard";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { TrialPaywall } from "@/components/trial/TrialPaywall";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
+import { OfflineSyncProvider } from "@/contexts/OfflineSyncContext";
 import Dashboard from "./pages/Dashboard";
+import Today from "./pages/Today";
 import CalendarPage from "./pages/Calendar";
 import InventoryTracker from "./pages/InventoryTracker";
 import RevenueTracker from "./pages/RevenueTracker";
@@ -83,6 +85,7 @@ function ProtectedAppRoutes() {
   return (
     <AuthProvider>
       <TeamContextProvider>
+        <OfflineSyncProvider>
         <Routes>
         <Route
           path="/auth"
@@ -102,6 +105,17 @@ function ProtectedAppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/today"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Today />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/locations"
           element={
@@ -237,6 +251,7 @@ function ProtectedAppRoutes() {
         <Route path="/ar-preview" element={<Navigate to="/locations" replace />} />
         <Route path="*" element={<NotFound />} />
         </Routes>
+        </OfflineSyncProvider>
       </TeamContextProvider>
     </AuthProvider>
   );

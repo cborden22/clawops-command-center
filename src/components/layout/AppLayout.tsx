@@ -9,6 +9,7 @@ import { getPageTitle } from "@/lib/navigation"
 import { CommandPalette, useCommandPalette, CommandPaletteButton } from "@/components/shared/CommandPalette"
 import { KeyboardShortcutsDialog, useKeyboardShortcuts } from "@/components/shared/KeyboardShortcuts"
 import { NotificationBell } from "@/components/notifications/NotificationBell"
+import { OfflineIndicator } from "@/components/shared/OfflineIndicator"
 
 interface AppLayoutProps {
   children: ReactNode
@@ -50,6 +51,8 @@ export function AppLayout({ children }: AppLayoutProps) {
             <h1 className="text-sm font-semibold text-foreground truncate">{title}</h1>
 
             <div className="flex-1" />
+
+            <OfflineIndicator className="mr-1" />
 
             <CommandPaletteButton onClick={() => setCommandOpen(true)} />
 

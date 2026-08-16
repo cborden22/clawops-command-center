@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
+  Sun,
   DollarSign,
   Package,
   Plus,
@@ -33,6 +34,7 @@ interface MobileBottomNavProps {
 type NavItem = { path: string; icon: React.ComponentType<{ className?: string }>; label: string };
 
 const operationsItems: NavItem[] = [
+  { path: "/today", icon: Sun, label: "Today" },
   { path: "/leads", icon: Users, label: "Leads" },
   { path: "/locations", icon: MapPin, label: "Locations" },
   { path: "/maintenance", icon: Wrench, label: "Maintenance" },

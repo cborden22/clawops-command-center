@@ -1,5 +1,6 @@
 export const pageTitles: Record<string, string> = {
   "/": "Dashboard",
+  "/today": "Today",
   "/revenue": "Revenue",
   "/inventory": "Inventory",
   "/locations": "Locations",
