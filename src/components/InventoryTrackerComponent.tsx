@@ -410,9 +410,12 @@ export function InventoryTrackerComponent() {
     }
   };
 
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
+
   const filteredItems = useMemo(() => {
     let result = items.filter(item =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !pendingDeleteIds.includes(item.id)
     );
     if (filterCategory !== "all") {
       result = result.filter(item => (item.category || "General") === filterCategory);
@@ -429,10 +432,43 @@ export function InventoryTrackerComponent() {
       }
     });
     return result;
-  }, [items, searchQuery, filterCategory, sortBy]);
+  }, [items, searchQuery, filterCategory, sortBy, pendingDeleteIds]);
+
+  const selection = useBulkSelection(filteredItems);
+
+  const handleBulkExport = () => {
+    const rows = selection.selectedItems.map(item => [
+      item.name,
+      item.category || "General",
+      String(item.quantity),
+      String(item.minStock),
+      item.lastPrice != null ? String(item.lastPrice) : "",
+    ]);
+    downloadCSV(
+      generateCSV(["Item", "Category", "Quantity", "Min Stock", "Last Price"], rows),
+      `inventory_selection_${new Date().toISOString().slice(0, 10)}`
+    );
+    toast({ title: "Exported", description: `${rows.length} items exported to CSV.` });
+  };
+
+  const handleBulkDelete = () => {
+    const ids = [...selection.selectedIds];
+    const count = ids.length;
+    selection.exitSelection();
+    setPendingDeleteIds(prev => [...prev, ...ids]);
+    deleteWithUndo({
+      message: `${count} item${count === 1 ? "" : "s"} deleted`,
+      onCommit: async () => {
+        for (const id of ids) await deleteItem(id);
+        setPendingDeleteIds(prev => prev.filter(p => !ids.includes(p)));
+      },
+      onUndo: () => setPendingDeleteIds(prev => prev.filter(p => !ids.includes(p))),
+    });
+  };
 
   const lowStockItems = items.filter((item) => item.quantity <= item.minStock);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+
 
   if (!isLoaded) {
     return (
