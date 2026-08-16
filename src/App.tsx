@@ -30,6 +30,7 @@ import NotFound from "./pages/NotFound";
 import ReportIssue from "./pages/ReportIssue";
 import ResetPassword from "./pages/ResetPassword";
 import Sales from "./pages/Sales";
+import OwnerPortal from "./pages/OwnerPortal";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -280,6 +281,8 @@ const App: React.FC = () => {
                 } />
                 {/* Public sales page */}
                 <Route path="/sales" element={<Sales />} />
+                {/* Public owner portal */}
+                <Route path="/portal/:token" element={<OwnerPortal />} />
                 {/* All other routes */}
                 <Route path="/*" element={<ProtectedAppRoutes />} />
               </Routes>

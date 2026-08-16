@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { OwnerPortalCard } from "@/components/locations/OwnerPortalCard";
 import { PhotoGallery } from "@/components/locations/PhotoGallery";
 import { format } from "date-fns";
 import {
@@ -719,6 +720,8 @@ export function LocationDetailDialog({
                   </div>
                 </CardContent>
               </Card>
+
+              <OwnerPortalCard locationId={location.id} />
 
               {/* Photo Gallery */}
               <Card>

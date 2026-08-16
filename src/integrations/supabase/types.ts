@@ -687,6 +687,8 @@ export type Database = {
           longitude: number | null
           name: string
           notes: string | null
+          portal_enabled: boolean
+          portal_token: string | null
           restock_day_of_week: number | null
           slug: string | null
           updated_at: string | null
@@ -708,6 +710,8 @@ export type Database = {
           longitude?: number | null
           name: string
           notes?: string | null
+          portal_enabled?: boolean
+          portal_token?: string | null
           restock_day_of_week?: number | null
           slug?: string | null
           updated_at?: string | null
@@ -729,6 +733,8 @@ export type Database = {
           longitude?: number | null
           name?: string
           notes?: string | null
+          portal_enabled?: boolean
+          portal_token?: string | null
           restock_day_of_week?: number | null
           slug?: string | null
           updated_at?: string | null
@@ -1802,6 +1808,30 @@ export type Database = {
       get_effective_owner_id: {
         Args: { current_user_id: string }
         Returns: string
+      }
+      get_location_portal: {
+        Args: { portal_token_input: string }
+        Returns: {
+          address: string
+          location_id: string
+          location_name: string
+          machines: Json
+        }[]
+      }
+      get_location_portal_statements: {
+        Args: { portal_token_input: string }
+        Returns: {
+          commission_amount: number
+          commission_paid: boolean
+          commission_paid_at: string
+          commission_percentage: number
+          created_at: string
+          end_date: string
+          id: string
+          machine_count: number
+          start_date: string
+          total_revenue: number
+        }[]
       }
       get_machine_by_slug: {
         Args: { location_slug: string; machine_unit_code: string }
