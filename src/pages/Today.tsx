@@ -159,8 +159,7 @@ const Today = () => {
               icon={RouteIcon}
               title="No route scheduled for today"
               description="Build a route or start one manually to get a guided run with collections, photos, and mileage."
-              actionLabel="Go to Routes"
-              onAction={() => navigate("/mileage")}
+              action={<Button onClick={() => navigate("/mileage")}>Go to Routes</Button>}
             />
           </CardContent>
         </Card>
