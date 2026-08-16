@@ -249,6 +249,7 @@ function ProtectedAppRoutes() {
         <Route path="/ar-preview" element={<Navigate to="/locations" replace />} />
         <Route path="*" element={<NotFound />} />
         </Routes>
+        </OfflineSyncProvider>
       </TeamContextProvider>
     </AuthProvider>
   );
