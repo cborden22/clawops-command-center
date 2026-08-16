@@ -53,6 +53,7 @@
     "embla-carousel-react": "^8.3.0",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.13.0",
+    "idb-keyval": "^6.3.0",
     "input-otp": "^1.2.4",
     "jspdf": "^4.0.0",
     "leaflet": "^1.9.4",
