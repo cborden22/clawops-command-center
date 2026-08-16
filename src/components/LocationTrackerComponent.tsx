@@ -127,11 +127,14 @@ export function LocationTrackerComponent() {
     }
   }, [locations]);
 
+  const [pendingDeleteLocationIds, setPendingDeleteLocationIds] = useState<string[]>([]);
+
   const filteredLocations = locations.filter(
     (loc) =>
-      loc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      loc.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      loc.contactPerson.toLowerCase().includes(searchQuery.toLowerCase())
+      !pendingDeleteLocationIds.includes(loc.id) &&
+      (loc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        loc.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        loc.contactPerson.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleSubmit = async () => {
