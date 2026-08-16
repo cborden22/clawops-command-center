@@ -254,11 +254,10 @@ export function LocationTrackerComponent() {
   // Calculate total machine count from machine types
   const totalMachinesFromTypes = formData.machines.reduce((sum, m) => sum + m.count, 0);
 
-  const handleDelete = async (location: Location) => {
-    await deleteLocation(location.id);
-    toast({
-      title: "Location Removed",
-      description: `${location.name} has been removed.`,
+  const handleDelete = (location: Location) => {
+    deleteWithUndo({
+      message: `${location.name} deleted`,
+      onCommit: () => deleteLocation(location.id),
     });
   };
 
