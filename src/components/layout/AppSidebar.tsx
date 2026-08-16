@@ -5,6 +5,7 @@ import {
   DollarSign,
   MapPin,
   LayoutDashboard,
+  Sun,
   LogOut,
   Settings,
   ChevronRight,
