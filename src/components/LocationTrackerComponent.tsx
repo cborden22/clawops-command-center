@@ -37,6 +37,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { deleteWithUndo } from "@/lib/undoToast";
 import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { SkeletonGrid, SkeletonList } from "@/components/shared/SkeletonGrid";
@@ -126,11 +127,14 @@ export function LocationTrackerComponent() {
     }
   }, [locations]);
 
+  const [pendingDeleteLocationIds, setPendingDeleteLocationIds] = useState<string[]>([]);
+
   const filteredLocations = locations.filter(
     (loc) =>
-      loc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      loc.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      loc.contactPerson.toLowerCase().includes(searchQuery.toLowerCase())
+      !pendingDeleteLocationIds.includes(loc.id) &&
+      (loc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        loc.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        loc.contactPerson.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleSubmit = async () => {
@@ -254,11 +258,16 @@ export function LocationTrackerComponent() {
   // Calculate total machine count from machine types
   const totalMachinesFromTypes = formData.machines.reduce((sum, m) => sum + m.count, 0);
 
-  const handleDelete = async (location: Location) => {
-    await deleteLocation(location.id);
-    toast({
-      title: "Location Removed",
-      description: `${location.name} has been removed.`,
+  const handleDelete = (location: Location) => {
+    setPendingDeleteLocationIds((prev) => [...prev, location.id]);
+    deleteWithUndo({
+      message: `${location.name} deleted`,
+      onCommit: async () => {
+        await deleteLocation(location.id);
+        setPendingDeleteLocationIds((prev) => prev.filter((p) => p !== location.id));
+      },
+      onUndo: () =>
+        setPendingDeleteLocationIds((prev) => prev.filter((p) => p !== location.id)),
     });
   };
 

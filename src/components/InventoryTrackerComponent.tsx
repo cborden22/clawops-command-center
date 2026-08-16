@@ -16,6 +16,11 @@ import { useWarehouses } from "@/hooks/useWarehousesDB";
 import { useAppSettings } from "@/contexts/AppSettingsContext";
 import { useCustomCategories } from "@/hooks/useCustomCategories";
 import { CategorySelect } from "@/components/inventory/CategorySelect";
+import { Checkbox } from "@/components/ui/checkbox";
+import { BulkActionBar } from "@/components/shared/BulkActionBar";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
+import { deleteWithUndo } from "@/lib/undoToast";
+import { generateCSV, downloadCSV } from "@/utils/csvExport";
 import {
   Sheet,
   SheetContent,
@@ -247,12 +252,16 @@ export function InventoryTrackerComponent() {
     }
   };
 
-  const handleDeleteItem = async (id: string) => {
+  const handleDeleteItem = (id: string) => {
     const item = items.find(i => i.id === id);
-    await deleteItem(id);
-    toast({
-      title: "Removed",
-      description: `${item?.name || "Item"} removed.`,
+    setPendingDeleteIds(prev => [...prev, id]);
+    deleteWithUndo({
+      message: `${item?.name || "Item"} deleted`,
+      onCommit: async () => {
+        await deleteItem(id);
+        setPendingDeleteIds(prev => prev.filter(p => p !== id));
+      },
+      onUndo: () => setPendingDeleteIds(prev => prev.filter(p => p !== id)),
     });
   };
 
@@ -405,9 +414,12 @@ export function InventoryTrackerComponent() {
     }
   };
 
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
+
   const filteredItems = useMemo(() => {
     let result = items.filter(item =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !pendingDeleteIds.includes(item.id)
     );
     if (filterCategory !== "all") {
       result = result.filter(item => (item.category || "General") === filterCategory);
@@ -424,10 +436,43 @@ export function InventoryTrackerComponent() {
       }
     });
     return result;
-  }, [items, searchQuery, filterCategory, sortBy]);
+  }, [items, searchQuery, filterCategory, sortBy, pendingDeleteIds]);
+
+  const selection = useBulkSelection(filteredItems);
+
+  const handleBulkExport = () => {
+    const rows = selection.selectedItems.map(item => [
+      item.name,
+      item.category || "General",
+      String(item.quantity),
+      String(item.minStock),
+      item.lastPrice != null ? String(item.lastPrice) : "",
+    ]);
+    downloadCSV(
+      generateCSV(["Item", "Category", "Quantity", "Min Stock", "Last Price"], rows),
+      `inventory_selection_${new Date().toISOString().slice(0, 10)}`
+    );
+    toast({ title: "Exported", description: `${rows.length} items exported to CSV.` });
+  };
+
+  const handleBulkDelete = () => {
+    const ids = [...selection.selectedIds];
+    const count = ids.length;
+    selection.exitSelection();
+    setPendingDeleteIds(prev => [...prev, ...ids]);
+    deleteWithUndo({
+      message: `${count} item${count === 1 ? "" : "s"} deleted`,
+      onCommit: async () => {
+        for (const id of ids) await deleteItem(id);
+        setPendingDeleteIds(prev => prev.filter(p => !ids.includes(p)));
+      },
+      onUndo: () => setPendingDeleteIds(prev => prev.filter(p => !ids.includes(p))),
+    });
+  };
 
   const lowStockItems = items.filter((item) => item.quantity <= item.minStock);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+
 
   if (!isLoaded) {
     return (
@@ -664,6 +709,20 @@ export function InventoryTrackerComponent() {
               onChange={(size) => { setInventoryListSize(size); setInventoryPage(1); }}
               totalCount={filteredItems.length}
             />
+            {!isStockRunMode && !isReturnMode && (
+              <Button
+                variant={selection.selectionMode ? "secondary" : "outline"}
+                size="sm"
+                className="h-9 shrink-0"
+                onClick={() =>
+                  selection.selectionMode
+                    ? selection.exitSelection()
+                    : selection.setSelectionMode(true)
+                }
+              >
+                {selection.selectionMode ? "Done" : "Select"}
+              </Button>
+            )}
           </div>
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
@@ -745,10 +804,19 @@ export function InventoryTrackerComponent() {
                   item.quantity <= item.minStock && !isReturnMode && "border-destructive/30 bg-destructive/5",
                   isStockRunMode && isInCart && "border-primary bg-primary/5",
                   isReturnMode && isInReturnCart && "border-success/40 bg-success/10",
-                  isReturnMode && wasInLastRun && !isInReturnCart && "border-success/40"
+                  isReturnMode && wasInLastRun && !isInReturnCart && "border-success/40",
+                  selection.selectionMode && selection.isSelected(item.id) && "border-primary bg-primary/5"
                 )}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                  {selection.selectionMode && !isStockRunMode && !isReturnMode && (
+                    <Checkbox
+                      checked={selection.isSelected(item.id)}
+                      onCheckedChange={() => selection.toggle(item.id)}
+                      aria-label={`Select ${item.name}`}
+                      className="shrink-0"
+                    />
+                  )}
                   {/* Info section */}
                   <div className="flex-1 min-w-0 space-y-1">
                     {/* Name + badges */}
@@ -1125,6 +1193,21 @@ export function InventoryTrackerComponent() {
           )}
         </>
       )}
+
+      <BulkActionBar
+        count={selection.selectedIds.length}
+        onClear={selection.exitSelection}
+        onSelectAll={selection.selectAllVisible}
+        allSelected={selection.allVisibleSelected}
+      >
+        <Button variant="outline" size="sm" className="h-8" onClick={handleBulkExport}>
+          Export CSV
+        </Button>
+        <Button variant="destructive" size="sm" className="h-8" onClick={handleBulkDelete}>
+          <Trash2 className="h-3.5 w-3.5 mr-1" />
+          Delete
+        </Button>
+      </BulkActionBar>
 
       {/* Low Stock Summary - Only show when not in any mode */}
       {!isStockRunMode && !isReturnMode && lowStockItems.length > 0 && (
