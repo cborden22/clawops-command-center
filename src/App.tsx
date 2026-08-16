@@ -83,6 +83,7 @@ function ProtectedAppRoutes() {
   return (
     <AuthProvider>
       <TeamContextProvider>
+        <OfflineSyncProvider>
         <Routes>
         <Route
           path="/auth"
@@ -102,6 +103,17 @@ function ProtectedAppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/today"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <Today />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/locations"
           element={
