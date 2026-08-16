@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { MileageRoute, RouteStop } from "@/hooks/useRoutesDB";
+import { enqueue, isOffline } from "@/lib/offlineQueue";
 
 export interface StopCollectionData {
   machineId: string;
