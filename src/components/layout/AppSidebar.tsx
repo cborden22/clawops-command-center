@@ -50,6 +50,7 @@ type NavItem = {
 // Daily-use destinations, flat and always visible.
 const primaryItems: NavItem[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Today", url: "/today", icon: Sun },
   { title: "Locations", url: "/locations", icon: MapPin },
   { title: "Revenue", url: "/revenue", icon: DollarSign },
   { title: "Inventory", url: "/inventory", icon: Package },
