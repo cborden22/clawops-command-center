@@ -1194,6 +1194,21 @@ export function InventoryTrackerComponent() {
         </>
       )}
 
+      <BulkActionBar
+        count={selection.selectedIds.length}
+        onClear={selection.exitSelection}
+        onSelectAll={selection.selectAllVisible}
+        allSelected={selection.allVisibleSelected}
+      >
+        <Button variant="outline" size="sm" className="h-8" onClick={handleBulkExport}>
+          Export CSV
+        </Button>
+        <Button variant="destructive" size="sm" className="h-8" onClick={handleBulkDelete}>
+          <Trash2 className="h-3.5 w-3.5 mr-1" />
+          Delete
+        </Button>
+      </BulkActionBar>
+
       {/* Low Stock Summary - Only show when not in any mode */}
       {!isStockRunMode && !isReturnMode && lowStockItems.length > 0 && (
         <Card className="p-4 border-destructive/20 bg-destructive/5">
