@@ -804,10 +804,19 @@ export function InventoryTrackerComponent() {
                   item.quantity <= item.minStock && !isReturnMode && "border-destructive/30 bg-destructive/5",
                   isStockRunMode && isInCart && "border-primary bg-primary/5",
                   isReturnMode && isInReturnCart && "border-success/40 bg-success/10",
-                  isReturnMode && wasInLastRun && !isInReturnCart && "border-success/40"
+                  isReturnMode && wasInLastRun && !isInReturnCart && "border-success/40",
+                  selection.selectionMode && selection.isSelected(item.id) && "border-primary bg-primary/5"
                 )}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                  {selection.selectionMode && !isStockRunMode && !isReturnMode && (
+                    <Checkbox
+                      checked={selection.isSelected(item.id)}
+                      onCheckedChange={() => selection.toggle(item.id)}
+                      aria-label={`Select ${item.name}`}
+                      className="shrink-0"
+                    />
+                  )}
                   {/* Info section */}
                   <div className="flex-1 min-w-0 space-y-1">
                     {/* Name + badges */}
