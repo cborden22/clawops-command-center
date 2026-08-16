@@ -282,6 +282,7 @@ const App: React.FC = () => {
                 {/* Public sales page */}
                 <Route path="/sales" element={<Sales />} />
                 {/* Public owner portal */}
+                <Route path="/p/:token" element={<OwnerPortal />} />
                 <Route path="/portal/:token" element={<OwnerPortal />} />
                 {/* All other routes */}
                 <Route path="/*" element={<ProtectedAppRoutes />} />
