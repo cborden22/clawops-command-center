@@ -31,6 +31,14 @@ import ReportIssue from "./pages/ReportIssue";
 import ResetPassword from "./pages/ResetPassword";
 import Sales from "./pages/Sales";
 import OwnerPortal from "./pages/OwnerPortal";
+import Terms from "./pages/legal/Terms";
+import Privacy from "./pages/legal/Privacy";
+import Cookies from "./pages/legal/Cookies";
+import Refunds from "./pages/legal/Refunds";
+import Subprocessors from "./pages/legal/Subprocessors";
+import DPA from "./pages/legal/DPA";
+import SecurityPolicy from "./pages/legal/SecurityPolicy";
+import { CookieBanner } from "@/components/legal/CookieBanner";
 
 const queryClient = new QueryClient({
   defaultOptions: {
