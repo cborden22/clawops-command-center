@@ -1156,6 +1156,8 @@ export type Database = {
           full_name: string | null
           id: string
           qr_logo_url: string | null
+          terms_accepted_at: string | null
+          terms_accepted_version: string | null
           updated_at: string | null
           user_id: string
         }
@@ -1166,6 +1168,8 @@ export type Database = {
           full_name?: string | null
           id?: string
           qr_logo_url?: string | null
+          terms_accepted_at?: string | null
+          terms_accepted_version?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -1176,6 +1180,8 @@ export type Database = {
           full_name?: string | null
           id?: string
           qr_logo_url?: string | null
+          terms_accepted_at?: string | null
+          terms_accepted_version?: string | null
           updated_at?: string | null
           user_id?: string
         }

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { TIERS } from "@/config/subscriptionTiers";
+import { LegalFooter } from "@/components/legal/LegalFooter";
 import {
   MapPin,
   DollarSign,
@@ -271,11 +272,7 @@ export default function Sales() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} ClawOps. All rights reserved.
-        </div>
-      </footer>
+      <LegalFooter />
     </div>
   );
 }

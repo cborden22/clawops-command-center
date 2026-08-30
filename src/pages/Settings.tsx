@@ -40,6 +40,7 @@ import { useQRLogo } from "@/hooks/useQRLogo";
 import { SubscriptionManager } from "@/components/settings/SubscriptionManager";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
+import { PrivacyDataSection } from "@/components/settings/PrivacyDataSection";
 
 
 export default function Settings() {
@@ -949,19 +950,7 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          <Card className="glass-card border-destructive/20">
-            <CardHeader>
-              <CardTitle className="text-destructive">Danger Zone</CardTitle>
-              <CardDescription>
-                Irreversible actions for your account
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="destructive" onClick={handleDeleteAccount}>
-                Delete Account
-              </Button>
-            </CardContent>
-          </Card>
+          <PrivacyDataSection />
         </TabsContent>
         </div>
       </Tabs>
