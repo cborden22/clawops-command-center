@@ -272,8 +272,16 @@ export default function Sales() {
 
       {/* Footer */}
       <footer className="border-t border-border py-8">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} ClawOps. All rights reserved.
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground space-y-3">
+          <nav className="flex flex-wrap justify-center gap-x-4 gap-y-2">
+            {LEGAL_LINKS.map((l) => (
+              <a key={l.href} href={l.href} className="hover:text-foreground transition-colors">
+                {l.label}
+              </a>
+            ))}
+          </nav>
+          <p>{COMPANY.displayName} · {COMPANY.addressLine}</p>
+          <p>© {new Date().getFullYear()} {COMPANY.legalName}. All rights reserved.</p>
         </div>
       </footer>
     </div>
