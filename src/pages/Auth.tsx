@@ -11,6 +11,9 @@ import { Sparkles, Mail, Lock, User, Eye, EyeOff, ArrowLeft, RefreshCw } from "l
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
 import PasswordRequirements from "@/components/shared/PasswordRequirements";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Link } from "react-router-dom";
+import { LEGAL_VERSION } from "@/config/legal";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string()
