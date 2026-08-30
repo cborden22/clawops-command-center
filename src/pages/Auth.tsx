@@ -166,12 +166,21 @@ export default function Auth() {
       return;
     }
 
+    if (!acceptedTerms) {
+      toast({
+        title: "Agreement Required",
+        description: "Please accept the Terms of Service and Privacy Policy to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (isTrial) {
       localStorage.setItem("clawops_trial_intent", "true");
     }
 
     setIsLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword, signupFullName);
+    const { error } = await signUp(signupEmail, signupPassword, signupFullName, LEGAL_VERSION);
     setIsLoading(false);
 
     if (error) {
