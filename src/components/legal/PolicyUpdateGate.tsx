@@ -46,7 +46,7 @@ export function PolicyUpdateGate() {
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()} hideClose>
+      <DialogContent className="sm:max-w-md [&>button]:hidden" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>We've updated our policies</DialogTitle>
           <DialogDescription>
