@@ -501,7 +501,27 @@ export default function Auth() {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full premium-button" disabled={isLoading}>
+                  <div className="flex items-start gap-3 rounded-md border border-border p-3">
+                    <Checkbox
+                      id="accept-terms"
+                      checked={acceptedTerms}
+                      onCheckedChange={(v) => setAcceptedTerms(v === true)}
+                      className="mt-0.5"
+                    />
+                    <Label htmlFor="accept-terms" className="text-xs font-normal leading-relaxed text-muted-foreground">
+                      I agree to the{" "}
+                      <Link to="/legal/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        Terms of Service
+                      </Link>{" "}
+                      and{" "}
+                      <Link to="/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        Privacy Policy
+                      </Link>
+                      , including automatic renewal of my subscription after the free trial.
+                    </Label>
+                  </div>
+
+                  <Button type="submit" className="w-full premium-button" disabled={isLoading || !acceptedTerms}>
                     {isLoading ? "Creating account..." : isTrial ? "Create Account & Continue" : "Create Account"}
                   </Button>
                 </form>
