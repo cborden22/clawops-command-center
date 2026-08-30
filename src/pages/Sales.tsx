@@ -1,3 +1,4 @@
+import { COMPANY, LEGAL_LINKS } from "@/config/legal";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
