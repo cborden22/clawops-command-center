@@ -1,6 +1,7 @@
 import { COMPANY, LEGAL_LINKS } from "@/config/legal";
 import { useState } from "react";
 import marketingVideo from "@/assets/clawops-marketing-30s.mp4.asset.json";
+import marketingPoster from "@/assets/clawops-marketing-poster.jpg.asset.json";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -147,6 +148,7 @@ export default function Sales() {
             <div className="overflow-hidden rounded-2xl border border-primary/25 shadow-[0_20px_80px_-20px_hsl(var(--primary)/0.5)] ring-1 ring-primary/10">
               <video
                 src={marketingVideo.url}
+                poster={marketingPoster.url}
                 controls
                 autoPlay
                 muted
