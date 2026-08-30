@@ -103,9 +103,11 @@ const allFeatures = [
   "Commission summaries",
 ];
 
+const MARKETING_VIDEO_URL = "/videos/clawops-marketing-30s.mp4";
+
 export default function Sales() {
   const [annual, setAnnual] = useState(false);
-  const [videoSrc, setVideoSrc] = useState(marketingVideo.url);
+  const [videoSrc, setVideoSrc] = useState(MARKETING_VIDEO_URL);
   const [videoRetried, setVideoRetried] = useState(false);
 
   const proPrice = annual ? TIERS.PRO.annual.amount : TIERS.PRO.monthly.amount;
