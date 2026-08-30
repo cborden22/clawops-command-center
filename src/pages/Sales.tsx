@@ -153,6 +153,11 @@ export default function Sales() {
               <video
                 src={videoSrc}
                 poster={marketingPoster.url}
+                // React sets `muted` as an attribute, not a property — set it
+                // explicitly so muted autoplay is allowed on first load.
+                ref={(el) => {
+                  if (el) el.muted = true;
+                }}
                 controls
                 autoPlay
                 muted
