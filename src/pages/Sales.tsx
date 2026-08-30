@@ -175,6 +175,9 @@ export default function Sales() {
         </div>
       </section>
 
+      {/* Interactive product tour */}
+      <ProductTour />
+
       {/* Features */}
       <section className="py-20 sm:py-28">
         <div className="container mx-auto px-4">
