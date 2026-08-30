@@ -11,6 +11,9 @@ import { Sparkles, Mail, Lock, User, Eye, EyeOff, ArrowLeft, RefreshCw } from "l
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
 import PasswordRequirements from "@/components/shared/PasswordRequirements";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Link } from "react-router-dom";
+import { LEGAL_VERSION } from "@/config/legal";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string()
@@ -38,6 +41,7 @@ export default function Auth() {
   const [signupFullName, setSignupFullName] = useState("");
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -162,6 +166,15 @@ export default function Auth() {
       return;
     }
 
+    if (!acceptedTerms) {
+      toast({
+        title: "Agreement Required",
+        description: "Please accept the Terms of Service and Privacy Policy to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (isTrial) {
       localStorage.setItem("clawops_trial_intent", "true");
     }
@@ -203,6 +216,7 @@ export default function Auth() {
       setSignupPassword("");
       setSignupConfirmPassword("");
       setSignupFullName("");
+      setAcceptedTerms(false);
     }
   };
 
@@ -488,7 +502,22 @@ export default function Auth() {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full premium-button" disabled={isLoading}>
+                  <div className="flex items-start gap-2 pt-1">
+                    <Checkbox
+                      id="accept-terms"
+                      checked={acceptedTerms}
+                      onCheckedChange={(v) => setAcceptedTerms(v === true)}
+                      className="mt-0.5"
+                    />
+                    <Label htmlFor="accept-terms" className="text-xs font-normal leading-relaxed text-muted-foreground">
+                      I agree to the{" "}
+                      <Link to="/legal/terms" target="_blank" className="underline hover:text-foreground">Terms of Service</Link>,{" "}
+                      <Link to="/privacy" target="_blank" className="underline hover:text-foreground">Privacy Policy</Link>, and{" "}
+                      <Link to="/refunds" target="_blank" className="underline hover:text-foreground">Refund Policy</Link>.
+                    </Label>
+                  </div>
+
+                  <Button type="submit" className="w-full premium-button" disabled={isLoading || !acceptedTerms}>
                     {isLoading ? "Creating account..." : isTrial ? "Create Account & Continue" : "Create Account"}
                   </Button>
                 </form>

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { getCanonicalRedirectOrigin } from "@/lib/authRedirect";
+import { LEGAL_VERSION } from "@/config/legal";
 
 interface AuthContextType {
   user: User | null;
@@ -51,6 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: redirectUrl,
         data: {
           full_name: fullName,
+          terms_accepted_version: LEGAL_VERSION,
+          terms_accepted_at: new Date().toISOString(),
         },
       },
     });
