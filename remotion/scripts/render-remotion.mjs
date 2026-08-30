@@ -33,7 +33,7 @@ await renderMedia({
   outputLocation: out,
   puppeteerInstance: browser,
   muted: true,
-  concurrency: 1,
+  concurrency: Number(process.env.RC ?? 4),
   onProgress: ({ progress }) => {
     if (Math.round(progress * 100) % 10 === 0) console.log("progress", Math.round(progress * 100));
   },
