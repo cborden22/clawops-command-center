@@ -128,8 +128,9 @@ export default function Sales() {
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden py-20 sm:py-32">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
+      <section className="relative overflow-hidden pb-20 pt-16 sm:pb-28 sm:pt-24">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-primary/5 to-transparent" />
+        <div className="pointer-events-none absolute -top-40 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
         <div className="container relative mx-auto px-4 text-center">
           <Badge variant="secondary" className="mb-6">
             <Zap className="mr-1 h-3 w-3" /> Built for Claw Machine Operators
@@ -141,28 +142,9 @@ export default function Sales() {
             Track locations, revenue, inventory, maintenance, mileage, and leads — all in one place.
             Try every feature free for 7 days.
           </p>
-          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            <Button size="lg" asChild>
-              <Link to="/auth?tab=signup&trial=true">
-                Start Your Free Trial <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <a href="#pricing">See Pricing</a>
-            </Button>
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">7-day free trial · Card required · No charge until it ends</p>
-        </div>
-      </section>
 
-      {/* Product Video */}
-      <section className="py-12 sm:py-16">
-        <div className="container mx-auto px-4">
-          <div className="mx-auto max-w-4xl">
-            <h2 className="mb-6 text-center text-2xl font-bold tracking-tight sm:text-3xl">
-              See ClawOps in <span className="text-primary">Action</span>
-            </h2>
-            <div className="overflow-hidden rounded-2xl border border-primary/20 shadow-[0_0_60px_-15px_hsl(var(--primary)/0.4)]">
+          <div className="mx-auto mt-12 max-w-5xl">
+            <div className="overflow-hidden rounded-2xl border border-primary/25 shadow-[0_20px_80px_-20px_hsl(var(--primary)/0.5)] ring-1 ring-primary/10">
               <video
                 src={marketingVideo.url}
                 controls
@@ -175,10 +157,19 @@ export default function Sales() {
                 className="aspect-video w-full bg-black"
               />
             </div>
-            <p className="mt-4 text-center text-sm text-muted-foreground">
-              A 30-second tour of the full operator workflow — locations, routes, revenue, and commissions.
-            </p>
           </div>
+
+          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+            <Button size="lg" asChild>
+              <Link to="/auth?tab=signup&trial=true">
+                Start Your Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <a href="#pricing">See Pricing</a>
+            </Button>
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">7-day free trial · Card required · No charge until it ends</p>
         </div>
       </section>
 
