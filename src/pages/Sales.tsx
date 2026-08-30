@@ -1,6 +1,5 @@
 import { COMPANY, LEGAL_LINKS } from "@/config/legal";
 import { useState } from "react";
-import marketingVideo from "@/assets/clawops-marketing-30s.mp4.asset.json";
 import marketingPoster from "@/assets/clawops-marketing-poster.jpg.asset.json";
 import { Link } from "react-router-dom";
 import ProductTour from "@/components/sales/ProductTour";
