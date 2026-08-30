@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { LegalFooter } from "@/components/legal/LegalFooter";
 
 interface PortalMachine {
   id: string;
@@ -227,10 +226,9 @@ const OwnerPortal = () => {
           </CardContent>
         </Card>
 
-        <p className="text-xs text-muted-foreground text-center pb-4">
+        <p className="text-xs text-muted-foreground text-center pb-8">
           This page is read-only and shared privately with you by your machine operator.
         </p>
-        <LegalFooter />
       </main>
     </div>
   );

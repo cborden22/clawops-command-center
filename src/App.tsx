@@ -31,14 +31,6 @@ import ReportIssue from "./pages/ReportIssue";
 import ResetPassword from "./pages/ResetPassword";
 import Sales from "./pages/Sales";
 import OwnerPortal from "./pages/OwnerPortal";
-import Terms from "./pages/legal/Terms";
-import Privacy from "./pages/legal/Privacy";
-import CookiesPage from "./pages/legal/Cookies";
-import Refunds from "./pages/legal/Refunds";
-import Subprocessors from "./pages/legal/Subprocessors";
-import DPA from "./pages/legal/DPA";
-import SecurityPage from "./pages/legal/SecurityPage";
-import { CookieBanner } from "@/components/legal/CookieBanner";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -292,18 +284,9 @@ const App: React.FC = () => {
                 {/* Public owner portal */}
                 <Route path="/p/:token" element={<OwnerPortal />} />
                 <Route path="/portal/:token" element={<OwnerPortal />} />
-                {/* Public legal pages */}
-                <Route path="/legal/terms" element={<Terms />} />
-                <Route path="/legal/privacy" element={<Privacy />} />
-                <Route path="/legal/cookies" element={<CookiesPage />} />
-                <Route path="/legal/refunds" element={<Refunds />} />
-                <Route path="/legal/subprocessors" element={<Subprocessors />} />
-                <Route path="/legal/dpa" element={<DPA />} />
-                <Route path="/legal/security" element={<SecurityPage />} />
                 {/* All other routes */}
                 <Route path="/*" element={<ProtectedAppRoutes />} />
               </Routes>
-              <CookieBanner />
             </BrowserRouter>
           </TooltipProvider>
         </AppSettingsProvider>

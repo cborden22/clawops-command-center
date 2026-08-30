@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, fullName?: string, termsAcceptedVersion?: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
    resetPasswordForEmail: (email: string) => Promise<{ error: Error | null }>;
@@ -41,14 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (
-    email: string,
-    password: string,
-    fullName?: string,
-    termsAcceptedVersion?: string
-  ) => {
+  const signUp = async (email: string, password: string, fullName?: string) => {
     const redirectUrl = `${getCanonicalRedirectOrigin()}/`;
-
+    
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -56,7 +51,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: redirectUrl,
         data: {
           full_name: fullName,
-          terms_accepted_version: termsAcceptedVersion,
         },
       },
     });
