@@ -80,6 +80,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
       <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      <PolicyUpdateGate />
     </SidebarProvider>
   )
 }
