@@ -148,7 +148,7 @@ export default function Sales() {
           <div className="mx-auto mt-12 max-w-5xl">
             <div className="overflow-hidden rounded-2xl border border-primary/25 shadow-[0_20px_80px_-20px_hsl(var(--primary)/0.5)] ring-1 ring-primary/10">
               <video
-                src={marketingVideo.url}
+                src={videoSrc}
                 poster={marketingPoster.url}
                 controls
                 autoPlay
@@ -158,6 +158,13 @@ export default function Sales() {
                 preload="metadata"
                 aria-label="ClawOps product overview video"
                 className="aspect-video w-full bg-black"
+                onError={() => {
+                  // Self-heal a first-load abort (e.g. service worker takeover):
+                  // retry the media load exactly once.
+                  if (videoRetried) return;
+                  setVideoRetried(true);
+                  setVideoSrc(`${marketingVideo.url}?retry=1`);
+                }}
               />
             </div>
           </div>
