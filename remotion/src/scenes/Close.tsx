@@ -7,7 +7,8 @@ export const Close: React.FC = () => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
   const vertical = height > width;
-  const s = useSpringIn(6, 20);
+  const d = (n: number) => (vertical ? Math.round(n * 0.45) : n);
+  const s = useSpringIn(vertical ? 2 : 6, 20);
   const glow = interpolate(frame, [0, 60], [0, 1], { extrapolateRight: "clamp" });
   const fade = (d: number) =>
     interpolate(frame - d, [0, 24], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
@@ -38,13 +39,13 @@ export const Close: React.FC = () => {
       </div>
       <div style={{ height: 26 }} />
       <div style={{ display: "flex", justifyContent: "center" }}>
-        <GoldRule delay={26} width={vertical ? 300 : 380} />
+        <GoldRule delay={d(26)} width={vertical ? 300 : 380} />
       </div>
       <div style={{ height: 30 }} />
       <div
         style={{
-          opacity: fade(34),
-          transform: `translateY(${(1 - fade(34)) * 18}px)`,
+          opacity: fade(d(34)),
+          transform: `translateY(${(1 - fade(d(34))) * 18}px)`,
           fontFamily: body,
           fontWeight: 500,
           fontSize: vertical ? 36 : 34,
@@ -56,7 +57,7 @@ export const Close: React.FC = () => {
       <div style={{ height: 34 }} />
       <div
         style={{
-          opacity: fade(52),
+          opacity: fade(d(52)),
           display: "inline-flex",
           alignItems: "center",
           gap: 14,
@@ -74,7 +75,7 @@ export const Close: React.FC = () => {
       <div style={{ height: 22 }} />
       <div
         style={{
-          opacity: fade(64),
+          opacity: fade(d(64)),
           fontFamily: body,
           fontSize: vertical ? 26 : 24,
           color: C.muted,
