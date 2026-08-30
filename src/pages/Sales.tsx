@@ -3,6 +3,7 @@ import { useState } from "react";
 import marketingVideo from "@/assets/clawops-marketing-30s.mp4.asset.json";
 import marketingPoster from "@/assets/clawops-marketing-poster.jpg.asset.json";
 import { Link } from "react-router-dom";
+import ProductTour from "@/components/sales/ProductTour";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -174,6 +175,9 @@ export default function Sales() {
           <p className="mt-4 text-sm text-muted-foreground">7-day free trial · Card required · No charge until it ends</p>
         </div>
       </section>
+
+      {/* Interactive product tour */}
+      <ProductTour />
 
       {/* Features */}
       <section className="py-20 sm:py-28">
