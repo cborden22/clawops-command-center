@@ -10,6 +10,7 @@ import { CommandPalette, useCommandPalette, CommandPaletteButton } from "@/compo
 import { KeyboardShortcutsDialog, useKeyboardShortcuts } from "@/components/shared/KeyboardShortcuts"
 import { NotificationBell } from "@/components/notifications/NotificationBell"
 import { OfflineIndicator } from "@/components/shared/OfflineIndicator"
+import { PolicyUpdateGate } from "@/components/legal/PolicyUpdateGate"
 
 interface AppLayoutProps {
   children: ReactNode
@@ -26,6 +27,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     return (
       <>
         <MobileLayout>{children}</MobileLayout>
+        <PolicyUpdateGate />
         <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
         <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       </>
@@ -78,6 +80,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
       <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      <PolicyUpdateGate />
     </SidebarProvider>
   )
 }
