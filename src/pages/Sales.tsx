@@ -106,6 +106,8 @@ const allFeatures = [
 
 export default function Sales() {
   const [annual, setAnnual] = useState(false);
+  const [videoSrc, setVideoSrc] = useState(marketingVideo.url);
+  const [videoRetried, setVideoRetried] = useState(false);
 
   const proPrice = annual ? TIERS.PRO.annual.amount : TIERS.PRO.monthly.amount;
   const proPeriod = annual ? "/yr" : "/mo";
