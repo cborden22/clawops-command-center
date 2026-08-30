@@ -1,6 +1,5 @@
 import { COMPANY, LEGAL_LINKS } from "@/config/legal";
 import { useState } from "react";
-import marketingVideo from "@/assets/clawops-marketing-30s.mp4.asset.json";
 import marketingPoster from "@/assets/clawops-marketing-poster.jpg.asset.json";
 import { Link } from "react-router-dom";
 import ProductTour from "@/components/sales/ProductTour";
@@ -104,8 +103,12 @@ const allFeatures = [
   "Commission summaries",
 ];
 
+const MARKETING_VIDEO_URL = "/videos/clawops-marketing-30s.mp4";
+
 export default function Sales() {
   const [annual, setAnnual] = useState(false);
+  const [videoSrc, setVideoSrc] = useState(MARKETING_VIDEO_URL);
+  const [videoRetried, setVideoRetried] = useState(false);
 
   const proPrice = annual ? TIERS.PRO.annual.amount : TIERS.PRO.monthly.amount;
   const proPeriod = annual ? "/yr" : "/mo";
@@ -148,8 +151,13 @@ export default function Sales() {
           <div className="mx-auto mt-12 max-w-5xl">
             <div className="overflow-hidden rounded-2xl border border-primary/25 shadow-[0_20px_80px_-20px_hsl(var(--primary)/0.5)] ring-1 ring-primary/10">
               <video
-                src={marketingVideo.url}
+                src={videoSrc}
                 poster={marketingPoster.url}
+                // React sets `muted` as an attribute, not a property — set it
+                // explicitly so muted autoplay is allowed on first load.
+                ref={(el) => {
+                  if (el) el.muted = true;
+                }}
                 controls
                 autoPlay
                 muted
@@ -158,6 +166,12 @@ export default function Sales() {
                 preload="metadata"
                 aria-label="ClawOps product overview video"
                 className="aspect-video w-full bg-black"
+                onError={() => {
+                  // Self-heal a first-load abort: retry the media load exactly once.
+                  if (videoRetried) return;
+                  setVideoRetried(true);
+                  setVideoSrc(`${MARKETING_VIDEO_URL}?retry=1`);
+                }}
               />
             </div>
           </div>
