@@ -40,6 +40,7 @@ import { useQRLogo } from "@/hooks/useQRLogo";
 import { SubscriptionManager } from "@/components/settings/SubscriptionManager";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { HelpTooltip } from "@/components/shared/HelpTooltip";
+import { PrivacyDataSection } from "@/components/settings/PrivacyDataSection";
 
 
 export default function Settings() {
