@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     const userId = userData.user.id;
 
     for (const table of USER_TABLES) {
-      const column = table === "profiles" ? "id" : "user_id";
+      const column = "user_id";
       const { error } = await admin.from(table).delete().eq(column, userId);
       if (error) console.log(`delete-account: skip ${table}: ${error.message}`);
     }

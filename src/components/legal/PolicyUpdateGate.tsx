@@ -18,7 +18,7 @@ export function PolicyUpdateGate() {
       const { data } = await supabase
         .from("profiles")
         .select("terms_accepted_version")
-        .eq("id", user.id)
+        .eq("user_id", user.id)
         .maybeSingle();
       if (!cancelled && data && data.terms_accepted_version !== LEGAL_VERSION) {
         setOpen(true);
@@ -39,7 +39,7 @@ export function PolicyUpdateGate() {
         terms_accepted_version: LEGAL_VERSION,
         terms_accepted_at: new Date().toISOString(),
       })
-      .eq("id", user.id);
+      .eq("user_id", user.id);
     setSaving(false);
     setOpen(false);
   };
