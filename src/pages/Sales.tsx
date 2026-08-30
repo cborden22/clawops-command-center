@@ -162,11 +162,10 @@ export default function Sales() {
                 aria-label="ClawOps product overview video"
                 className="aspect-video w-full bg-black"
                 onError={() => {
-                  // Self-heal a first-load abort (e.g. service worker takeover):
-                  // retry the media load exactly once.
+                  // Self-heal a first-load abort: retry the media load exactly once.
                   if (videoRetried) return;
                   setVideoRetried(true);
-                  setVideoSrc(`${marketingVideo.url}?retry=1`);
+                  setVideoSrc(`${MARKETING_VIDEO_URL}?retry=1`);
                 }}
               />
             </div>
