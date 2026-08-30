@@ -1,5 +1,6 @@
 import { COMPANY, LEGAL_LINKS } from "@/config/legal";
 import { useState } from "react";
+import marketingVideo from "@/assets/clawops-marketing-30s.mp4.asset.json";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -151,6 +152,33 @@ export default function Sales() {
             </Button>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">7-day free trial · Card required · No charge until it ends</p>
+        </div>
+      </section>
+
+      {/* Product Video */}
+      <section className="py-12 sm:py-16">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-4xl">
+            <h2 className="mb-6 text-center text-2xl font-bold tracking-tight sm:text-3xl">
+              See ClawOps in <span className="text-primary">Action</span>
+            </h2>
+            <div className="overflow-hidden rounded-2xl border border-primary/20 shadow-[0_0_60px_-15px_hsl(var(--primary)/0.4)]">
+              <video
+                src={marketingVideo.url}
+                controls
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                aria-label="ClawOps product overview video"
+                className="aspect-video w-full bg-black"
+              />
+            </div>
+            <p className="mt-4 text-center text-sm text-muted-foreground">
+              A 30-second tour of the full operator workflow — locations, routes, revenue, and commissions.
+            </p>
+          </div>
         </div>
       </section>
 
