@@ -108,13 +108,18 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return jsonResponse({ error: "No authorization header" }, 401);
+    const token = authHeader?.replace("Bearer ", "").trim();
+    if (!token) {
+      logStep("No auth token - returning empty status");
+      return jsonResponse(emptyStatus({ user_created_at: null }));
+    }
 
-    const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication failed: ${userError.message}`);
-    const user = userData.user;
-    if (!user?.email) return jsonResponse({ error: "User not authenticated" }, 401);
+    const user = userData?.user;
+    if (userError || !user?.email) {
+      logStep("No valid session - returning empty status", { message: userError?.message });
+      return jsonResponse(emptyStatus({ user_created_at: null }));
+    }
 
     const userCreatedAt = await getUserCreatedAt(supabaseClient, user.id, user.created_at ?? null);
 
