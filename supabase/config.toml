@@ -29,3 +29,5 @@ verify_jwt = false
 
 [functions.customer-portal]
 verify_jwt = false
+[functions.seed-demo-account]
+verify_jwt = false
