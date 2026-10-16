@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { format } from "date-fns";
-import { MapPin, Cpu, DollarSign, Package, Car, Target } from "lucide-react";
+import { MapPin, Cpu, DollarSign, Package, Car, Target, HandCoins } from "lucide-react";
+import { CommissionPayoutReport } from "@/components/reports/CommissionPayoutReport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DateRangeFilter } from "@/components/reports/DateRangeFilter";
 import { LocationReports } from "@/components/reports/LocationReports";
@@ -50,6 +51,7 @@ export default function Reports() {
     { value: "locations", label: "Locations", icon: MapPin },
     { value: "machines", label: "Machines", icon: Cpu },
     { value: "financial", label: "Financial", icon: DollarSign },
+    { value: "commissions", label: "Commissions", icon: HandCoins },
     { value: "inventory", label: "Inventory", icon: Package },
     { value: "routes", label: "Routes", icon: Car },
     { value: "winrate", label: "Win Rate", icon: Target },
@@ -106,6 +108,10 @@ export default function Reports() {
 
         <TabsContent value="financial" className="mt-6">
           <FinancialReports data={reportData} />
+        </TabsContent>
+
+        <TabsContent value="commissions" className="mt-6">
+          <CommissionPayoutReport data={reportData} />
         </TabsContent>
 
         <TabsContent value="inventory" className="mt-6">

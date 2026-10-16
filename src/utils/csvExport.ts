@@ -337,10 +337,10 @@ export function handleExport(exportType: ExportType, data: ReportsData, dateStr:
   }
 }
 
-export function exportCommissionPayouts(data: ReportsData, dateStr: string): void {
+export function exportCommissionPayouts(data: ReportsData, dateStr: string, onlyIds?: Set<string>): void {
   const locMap = new Map(data.locations.map((l: any) => [l.id, l]));
   const headers = ["Location", "Contact", "Period Start", "Period End", "Revenue", "Rate %", "Commission", "Status", "Paid On"];
-  const rows = data.allCommissionSummaries.map((c: any) => {
+  const rows = data.allCommissionSummaries.filter((c: any) => !onlyIds || onlyIds.has(c.id)).map((c: any) => {
     const l: any = locMap.get(c.location_id);
     return [
       l?.name ?? "Unknown", l?.contact_person ?? "", c.start_date, c.end_date,
