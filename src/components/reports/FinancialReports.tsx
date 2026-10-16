@@ -2,7 +2,6 @@ import { DollarSign, TrendingUp, TrendingDown, PiggyBank, Receipt, Wallet } from
 import { ReportCard, ReportListItem } from "./ReportCard";
 import { useReportsData } from "@/hooks/useReportsData";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { CommissionPayoutReport } from "./CommissionPayoutReport";
 
 interface FinancialReportsProps {
   data: ReturnType<typeof useReportsData>;
@@ -201,7 +200,6 @@ export function FinancialReports({ data }: FinancialReportsProps) {
         </ReportCard>
       </div>
 
-      <CommissionPayoutReport data={data} />
     </div>
   );
 }
