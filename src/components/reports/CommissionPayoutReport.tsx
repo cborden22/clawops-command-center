@@ -1,7 +1,16 @@
 import { useMemo, useState } from "react";
-import { format, differenceInCalendarDays, parseISO, isWithinInterval } from "date-fns";
+import {
+  format, differenceInCalendarDays, parseISO, isWithinInterval, startOfMonth, endOfMonth,
+  subMonths, startOfYear, endOfYear, subYears, endOfDay,
+} from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
-import { HandCoins, CheckCircle2, Clock, History } from "lucide-react";
+import { HandCoins, CheckCircle2, Clock, History, CalendarIcon, Download } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
+import { exportCommissionPayouts } from "@/utils/csvExport";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,10 +25,49 @@ const fmtDate = (d: string) => {
   try { return format(parseISO(d), "MMM d, yyyy"); } catch { return d; }
 };
 
+type Preset = "this_month" | "last_month" | "last_3" | "this_year" | "last_year" | "all" | "custom";
+const presetRange = (p: Preset): { start: Date; end: Date } | null => {
+  const now = new Date();
+  switch (p) {
+    case "this_month": return { start: startOfMonth(now), end: endOfDay(now) };
+    case "last_month": { const m = subMonths(now, 1); return { start: startOfMonth(m), end: endOfMonth(m) }; }
+    case "last_3": return { start: startOfMonth(subMonths(now, 2)), end: endOfDay(now) };
+    case "this_year": return { start: startOfYear(now), end: endOfDay(now) };
+    case "last_year": { const y = subYears(now, 1); return { start: startOfYear(y), end: endOfYear(y) }; }
+    case "all": return { start: new Date(2000, 0, 1), end: endOfDay(now) };
+    default: return null;
+  }
+};
+
+function DatePick({ value, onChange }: { value: Date; onChange: (d: Date) => void }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="justify-start text-left font-normal w-[150px]">
+          <CalendarIcon className="h-4 w-4 mr-2" />
+          {format(value, "MMM d, yyyy")}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar mode="single" selected={value} onSelect={(d) => d && onChange(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function CommissionPayoutReport({ data }: { data: ReportsData }) {
   const qc = useQueryClient();
   const [busyId, setBusyId] = useState<string | null>(null);
-  const { allCommissionSummaries, locations, dateRange } = data;
+  const { allCommissionSummaries, locations } = data;
+  const [preset, setPreset] = useState<Preset>("custom");
+  const [dateRange, setDateRange] = useState({ start: data.dateRange.start, end: data.dateRange.end });
+  const [onlyInRange, setOnlyInRange] = useState(false);
+
+  const applyPreset = (p: Preset) => {
+    setPreset(p);
+    const r = presetRange(p);
+    if (r) setDateRange(r);
+  };
 
   const locMap = useMemo(
     () => new Map((locations as any[]).map((l) => [l.id, l])),
@@ -30,16 +78,17 @@ export function CommissionPayoutReport({ data }: { data: ReportsData }) {
     useMemo(() => {
       const all = allCommissionSummaries as any[];
       const amt = (c: any) => Number(c.commission_amount || 0);
+      const inR = (d: string) => {
+        try { return isWithinInterval(parseISO(d), { start: dateRange.start, end: endOfDay(dateRange.end) }); }
+        catch { return false; }
+      };
       const outstanding = all
         .filter((c) => !c.commission_paid && amt(c) > 0)
+        .filter((c) => !onlyInRange || inR(c.start_date) || inR(c.end_date))
         .sort((a, b) => a.end_date.localeCompare(b.end_date));
       const paid = all.filter((c) => c.commission_paid);
       const paidInRange = paid
-        .filter((c) => {
-          const d = c.commission_paid_at || c.end_date;
-          try { return isWithinInterval(parseISO(d), { start: dateRange.start, end: dateRange.end }); }
-          catch { return false; }
-        })
+        .filter((c) => inR(c.commission_paid_at || c.end_date))
         .sort((a, b) => (b.commission_paid_at || b.end_date).localeCompare(a.commission_paid_at || a.end_date));
       const groups = new Map<string, { name: string; contact: string; total: number; rows: any[] }>();
       paidInRange.forEach((c) => {
@@ -58,7 +107,7 @@ export function CommissionPayoutReport({ data }: { data: ReportsData }) {
         paidAll: paid.reduce((s, c) => s + amt(c), 0),
         historyGroups: [...groups.values()].sort((a, b) => b.total - a.total),
       };
-    }, [allCommissionSummaries, dateRange, locMap]);
+    }, [allCommissionSummaries, dateRange, locMap, onlyInRange]);
 
   const markPaid = async (id: string) => {
     setBusyId(id);
@@ -75,11 +124,41 @@ export function CommissionPayoutReport({ data }: { data: ReportsData }) {
     qc.invalidateQueries({ queryKey: ["reports-commissions"] });
   };
 
+  const exportCsv = () => {
+    const ids = new Set([...outstanding, ...paidInRange].map((c: any) => c.id));
+    exportCommissionPayouts(data, `${format(dateRange.start, "yyyy-MM-dd")}_${format(dateRange.end, "yyyy-MM-dd")}`, ids);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <HandCoins className="h-5 w-5 text-primary" />
         <h2 className="text-lg font-semibold">Commission Payouts</h2>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-3">
+        <Select value={preset} onValueChange={(v) => applyPreset(v as Preset)}>
+          <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="this_month">This Month</SelectItem>
+            <SelectItem value="last_month">Last Month</SelectItem>
+            <SelectItem value="last_3">Last 3 Months</SelectItem>
+            <SelectItem value="this_year">This Year</SelectItem>
+            <SelectItem value="last_year">Last Year</SelectItem>
+            <SelectItem value="all">All Time</SelectItem>
+            <SelectItem value="custom">Custom</SelectItem>
+          </SelectContent>
+        </Select>
+        <DatePick value={dateRange.start} onChange={(d) => { setPreset("custom"); setDateRange((r) => ({ ...r, start: d })); }} />
+        <span className="text-muted-foreground text-sm">to</span>
+        <DatePick value={dateRange.end} onChange={(d) => { setPreset("custom"); setDateRange((r) => ({ ...r, end: d })); }} />
+        <label className="flex items-center gap-2 text-sm ml-auto">
+          <Switch checked={onlyInRange} onCheckedChange={setOnlyInRange} />
+          Only outstanding in this range
+        </label>
+        <Button variant="outline" size="sm" onClick={exportCsv}>
+          <Download className="h-4 w-4 mr-1" /> Export CSV
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
