@@ -282,7 +282,7 @@ export type ExportType =
   | "financial_summary" | "expense_categories"
   | "inventory_status" | "stock_usage" | "low_stock"
   | "mileage_log" | "vehicle_summary" | "miles_by_purpose"
-  | "win_rate_machines" | "win_rate_locations";
+  | "win_rate_machines" | "win_rate_locations" | "commission_payouts";
 
 export function handleExport(exportType: ExportType, data: ReportsData, dateStr: string): void {
   switch (exportType) {
@@ -331,5 +331,24 @@ export function handleExport(exportType: ExportType, data: ReportsData, dateStr:
     case "win_rate_locations":
       exportWinRateByLocation(data, dateStr);
       break;
+    case "commission_payouts":
+      exportCommissionPayouts(data, dateStr);
+      break;
   }
+}
+
+export function exportCommissionPayouts(data: ReportsData, dateStr: string): void {
+  const locMap = new Map(data.locations.map((l: any) => [l.id, l]));
+  const headers = ["Location", "Contact", "Period Start", "Period End", "Revenue", "Rate %", "Commission", "Status", "Paid On"];
+  const rows = data.allCommissionSummaries.map((c: any) => {
+    const l: any = locMap.get(c.location_id);
+    return [
+      l?.name ?? "Unknown", l?.contact_person ?? "", c.start_date, c.end_date,
+      formatCurrency(Number(c.total_revenue || 0)), String(c.commission_percentage ?? ""),
+      formatCurrency(Number(c.commission_amount || 0)),
+      c.commission_paid ? "Paid" : "Outstanding",
+      c.commission_paid_at ? format(new Date(c.commission_paid_at), "yyyy-MM-dd") : "",
+    ];
+  });
+  downloadCSV(generateCSV(headers, rows), `commission_payouts_${dateStr}`);
 }
