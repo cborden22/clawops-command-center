@@ -449,6 +449,8 @@ export function useReportsData(dateRange: DateRange) {
     mileageAnalysis,
     winRateAnalysis,
     filteredData,
+    allCommissionSummaries: commissionSummaries,
+    dateRange,
     isLoading: !user,
   };
 }
