@@ -199,6 +199,9 @@ export function DateRangeFilter({
               <DropdownMenuItem onClick={() => onExportCSV("expense_categories")}>
                 Expense Categories
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExportCSV("commission_payouts")}>
+                Commission Payouts
+              </DropdownMenuItem>
               
               <DropdownMenuSeparator />
               <DropdownMenuLabel>Inventory</DropdownMenuLabel>
