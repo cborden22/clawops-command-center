@@ -56,9 +56,9 @@ export function StatCard({
       )}
       onClick={onClick}
     >
-      <CardContent className="p-4 min-w-0">
+      <CardContent className="p-4 sm:p-5 min-w-0 h-full flex flex-col">
         <div className="flex items-start justify-between gap-2 min-w-0">
-          <p className="text-xs font-medium text-muted-foreground truncate">{label}</p>
+          <p className="text-xs font-medium text-muted-foreground leading-snug line-clamp-2">{label}</p>
           {Icon && (
             <span
               className={cn(
@@ -70,7 +70,7 @@ export function StatCard({
             </span>
           )}
         </div>
-        <p className="mt-2 text-xl sm:text-2xl lg:text-[1.75rem] font-bold tracking-tight tabular-nums truncate">
+        <p className="mt-3 text-xl sm:text-2xl font-semibold tracking-tight tabular-nums truncate">
           {value}
         </p>
         {(hint || trendValue) && (

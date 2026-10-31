@@ -789,15 +789,18 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in px-4 sm:px-0">
+    <div className="space-y-6 sm:space-y-8 animate-fade-in px-4 sm:px-0">
       {/* Welcome Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            Dashboard
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-border pb-5">
+        <div className="min-w-0">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+            {format(now, "EEEE, MMMM d")}
+          </p>
+          <h1 className="mt-1 text-3xl sm:text-4xl text-foreground">
+            {now.getHours() < 12 ? "Good morning" : now.getHours() < 17 ? "Good afternoon" : "Good evening"}
           </h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            {`Welcome back! Here's your business overview for ${format(now, "MMMM yyyy")}.`}
+          <p className="mt-1 text-muted-foreground text-sm sm:text-base">
+            Here's how the route is doing this month.
           </p>
         </div>
       </div>
@@ -806,7 +809,7 @@ export default function Dashboard() {
 
       {/* Widgets Grid */}
 
-      <div className="grid grid-cols-12 gap-4">
+      <div className="grid grid-cols-12 gap-4 sm:gap-5">
         {(() => {
           let visibleIdx = 0;
           return filteredWidgets.map((widget) => {
