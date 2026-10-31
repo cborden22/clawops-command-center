@@ -343,17 +343,17 @@ export default function Settings() {
       <SubscriptionManager />
 
       <Tabs defaultValue="app" className="flex flex-col lg:flex-row gap-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-56 lg:flex-col lg:h-fit lg:sticky lg:top-20">
-          <TabsTrigger value="app" className="gap-2 justify-start lg:px-4">
-            <SettingsIcon className="h-4 w-4" />
+        <TabsList className="flex w-full flex-row items-stretch lg:w-56 lg:flex-col lg:items-stretch lg:h-fit lg:sticky lg:top-20 gap-1.5 p-0 lg:p-2 bg-transparent lg:bg-muted/40 rounded-lg">
+          <TabsTrigger value="app" className="flex-1 lg:flex-none gap-2 justify-center lg:justify-start lg:px-4">
+            <SettingsIcon className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">App</span>
           </TabsTrigger>
-          <TabsTrigger value="profile" className="gap-2 justify-start lg:px-4">
-            <User className="h-4 w-4" />
+          <TabsTrigger value="profile" className="flex-1 lg:flex-none gap-2 justify-center lg:justify-start lg:px-4">
+            <User className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">Profile</span>
           </TabsTrigger>
-          <TabsTrigger value="security" className="gap-2 justify-start lg:px-4">
-            <Shield className="h-4 w-4" />
+          <TabsTrigger value="security" className="flex-1 lg:flex-none gap-2 justify-center lg:justify-start lg:px-4">
+            <Shield className="h-4 w-4 shrink-0" />
             <span className="hidden sm:inline">Security</span>
           </TabsTrigger>
         </TabsList>
