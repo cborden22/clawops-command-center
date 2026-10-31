@@ -8,7 +8,7 @@
 
 @layer base {
   :root {
-    --background: 210 33% 98%;
+    --background: 40 23% 97%;
     --foreground: 222 60% 15%;
 
     --card: 0 0% 100%;
@@ -20,10 +20,10 @@
     --primary: 212 52% 25%;
     --primary-foreground: 212 33% 97%;
 
-    --secondary: 212 33% 93%;
+    --secondary: 40 14% 91%;
     --secondary-foreground: 222 60% 15%;
 
-    --muted: 212 30% 95%;
+    --muted: 40 16% 93%;
     --muted-foreground: 214 18% 42%;
 
     --accent: 209 46% 43%;
@@ -41,8 +41,8 @@
     --info: 209 46% 43%;
     --info-foreground: 0 0% 100%;
 
-    --border: 213 25% 88%;
-    --input: 213 25% 88%;
+    --border: 35 12% 86%;
+    --input: 35 12% 84%;
     --ring: 209 46% 43%;
 
     /* Brand scale — Navy Trust */
@@ -62,7 +62,7 @@
     --gradient-header: linear-gradient(90deg, hsl(0 0% 100%), hsl(210 33% 98%));
     --gradient-accent: linear-gradient(135deg, hsl(209 46% 43% / 0.1), hsl(212 52% 25% / 0.04));
 
-    --shadow-card: 0 1px 2px hsl(222 60% 15% / 0.05), 0 4px 12px hsl(222 60% 15% / 0.05);
+    --shadow-card: 0 1px 0 hsl(30 10% 20% / 0.04), 0 1px 3px hsl(30 10% 20% / 0.05);
     --shadow-hover: 0 2px 4px hsl(222 60% 15% / 0.06), 0 10px 24px hsl(222 60% 15% / 0.09);
     --shadow-glow: 0 0 0 3px hsl(209 46% 43% / 0.18);
 
@@ -167,6 +167,9 @@
   body {
     @apply bg-background text-foreground font-inter;
     min-height: 100vh;
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
@@ -176,6 +179,16 @@
     position: fixed;
     width: 100%;
   }
+
+  h1, h2 {
+    @apply font-display tracking-tight;
+    font-weight: 600;
+    text-wrap: balance;
+  }
+  h3, h4, p, li, label {
+    overflow-wrap: anywhere;
+  }
+  p { text-wrap: pretty; }
 
   /* Numeric data should never wobble between renders */
   .tabular,
