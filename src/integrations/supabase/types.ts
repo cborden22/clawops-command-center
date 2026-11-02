@@ -1091,11 +1091,49 @@ export type Database = {
         }
         Relationships: []
       }
+      nayax_sync_runs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          machines_checked: number
+          rows_upserted: number
+          started_at: string
+          status: string
+          trigger: string
+          user_id: string | null
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          machines_checked?: number
+          rows_upserted?: number
+          started_at?: string
+          status?: string
+          trigger?: string
+          user_id?: string | null
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          machines_checked?: number
+          rows_upserted?: number
+          started_at?: string
+          status?: string
+          trigger?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       nayax_transactions: {
         Row: {
           amount: number
+          card_brand: string | null
           id: string
           machine_id: string | null
+          machine_name: string | null
           nayax_machine_id: string | null
           nayax_transaction_id: string
           payment_method: string | null
@@ -1107,8 +1145,10 @@ export type Database = {
         }
         Insert: {
           amount: number
+          card_brand?: string | null
           id?: string
           machine_id?: string | null
+          machine_name?: string | null
           nayax_machine_id?: string | null
           nayax_transaction_id: string
           payment_method?: string | null
@@ -1120,8 +1160,10 @@ export type Database = {
         }
         Update: {
           amount?: number
+          card_brand?: string | null
           id?: string
           machine_id?: string | null
+          machine_name?: string | null
           nayax_machine_id?: string | null
           nayax_transaction_id?: string
           payment_method?: string | null
@@ -1808,7 +1850,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      nayax_daily_rollup: {
+        Row: {
+          machine_id: string | null
+          machine_name: string | null
+          nayax_machine_id: string | null
+          revenue: number | null
+          sale_day: string | null
+          user_id: string | null
+          vend_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nayax_transactions_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "location_machines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_effective_owner_id: {
