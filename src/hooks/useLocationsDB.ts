@@ -55,6 +55,7 @@ export interface MachineType {
   commissionRate?: number; // Per-machine commission % (falls back to location rate when unset)
   unitCode?: string; // Auto-generated unit code for QR URLs (e.g., "claw-1")
   installedAt?: string; // Date when machine was installed at location (YYYY-MM-DD)
+  nayaxId?: string; // Nayax card reader machine ID for sales sync
 }
 
 export const MACHINE_TYPE_OPTIONS: { value: MachineType["type"]; label: string }[] = [
@@ -171,6 +172,7 @@ export function useLocations() {
               commissionRate: m.commission_rate !== null && m.commission_rate !== undefined ? Number(m.commission_rate) : undefined,
               unitCode: m.unit_code || undefined, // Include unit code for QR URLs
               installedAt: m.installed_at || undefined, // Include install date
+              nayaxId: m.nayax_machine_id || undefined, // Include Nayax ID
             };
           });
 
@@ -320,6 +322,7 @@ export function useLocations() {
             commission_rate: m.commissionRate ?? null,
             unit_code: unitCode,
             installed_at: m.installedAt || null,
+            nayax_machine_id: m.nayaxId || null,
           };
         });
 
@@ -414,6 +417,7 @@ export function useLocations() {
               commission_rate: m.commissionRate ?? null,
               unit_code: unitCode,
               installed_at: m.installedAt || null,
+              nayax_machine_id: m.nayaxId || null,
             };
           });
 
