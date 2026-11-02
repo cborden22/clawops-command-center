@@ -35,6 +35,7 @@ import { toast } from "@/hooks/use-toast";
 import { VehicleManager } from "@/components/settings/VehicleManager";
 import { MachineTypeManager } from "@/components/settings/MachineTypeManager";
 import { BudgetManager } from "@/components/settings/BudgetManager";
+import { NayaxSyncCard } from "@/components/settings/NayaxSyncCard";
 
 import { FeedbackDialog } from "@/components/shared/FeedbackDialog";
 import { useQRLogo } from "@/hooks/useQRLogo";
@@ -767,6 +768,8 @@ export default function Settings() {
               <MessageSquare className="h-4 w-4" /> Report an Issue
             </Button>
           </div>
+
+          <NayaxSyncCard />
 
           <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
         </TabsContent>
