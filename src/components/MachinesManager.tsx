@@ -85,6 +85,7 @@ export function MachinesManager() {
     costPerPlay: 0.50,
     commissionRate: undefined as number | undefined,
     installedAt: new Date().toISOString().split('T')[0],
+    nayaxId: "",
   });
   const [machinesListSize, setMachinesListSize] = useListSize("machines-list-size", 20);
   const [machinesPage, setMachinesPage] = useState(1);
@@ -141,6 +142,7 @@ export function MachinesManager() {
         costPerPlay: formData.costPerPlay,
         commissionRate: formData.commissionRate,
         installedAt: formData.installedAt,
+        nayaxId: formData.nayaxId.trim() || undefined,
       };
 
       await updateLocation(location.id, { machines: updatedMachines });
@@ -152,7 +154,7 @@ export function MachinesManager() {
       // Add new machine
       const updatedMachines = [
         ...(location.machines || []),
-        { type: formData.type, label, count: formData.count, winProbability: formData.winProbability, costPerPlay: formData.costPerPlay, commissionRate: formData.commissionRate, installedAt: formData.installedAt },
+        { type: formData.type, label, count: formData.count, winProbability: formData.winProbability, costPerPlay: formData.costPerPlay, commissionRate: formData.commissionRate, installedAt: formData.installedAt, nayaxId: formData.nayaxId.trim() || undefined },
       ];
 
       await updateLocation(location.id, { machines: updatedMachines });
@@ -180,6 +182,7 @@ export function MachinesManager() {
       costPerPlay: machine.machineType.costPerPlay ?? 0.50,
       commissionRate: machine.machineType.commissionRate,
       installedAt: machine.machineType.installedAt || new Date().toISOString().split('T')[0],
+      nayaxId: machine.machineType.nayaxId || "",
     });
     setShowAddDialog(true);
   };
@@ -205,6 +208,7 @@ export function MachinesManager() {
       costPerPlay: 0.50,
       commissionRate: undefined,
       installedAt: new Date().toISOString().split('T')[0],
+      nayaxId: "",
     });
   };
 
@@ -451,6 +455,24 @@ export function MachinesManager() {
                   </p>
                 </div>
 
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    Nayax Machine ID
+                    <HelpTooltip content="Found in your Nayax account for each card-reader machine. Machines with an ID are picked up automatically by the nightly sales sync." />
+                  </Label>
+                  <Input
+                    placeholder="e.g., 1234567"
+                    value={formData.nayaxId}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, nayaxId: e.target.value }))
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Optional — links this machine to card reader sales for automatic syncing
+                  </p>
+                </div>
+
 
 
                 <div className="space-y-2">
@@ -571,6 +593,11 @@ export function MachinesManager() {
                               </Badge>
                             )}
                         </div>
+                        {machine.machineType.nayaxId && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Nayax ID: {machine.machineType.nayaxId}
+                          </p>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
