@@ -1064,6 +1064,21 @@ export type Database = {
         }
         Relationships: []
       }
+      nayax_cron_config: {
+        Row: {
+          id: number
+          secret: string
+        }
+        Insert: {
+          id?: number
+          secret?: string
+        }
+        Update: {
+          id?: number
+          secret?: string
+        }
+        Relationships: []
+      }
       nayax_settings: {
         Row: {
           created_at: string
