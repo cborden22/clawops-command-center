@@ -546,6 +546,14 @@ export function LocationTrackerComponent() {
                               }
                               className="bg-background text-sm"
                             />
+                            <Input
+                              placeholder="Nayax machine ID (optional, for card reader sync)"
+                              value={machine.nayaxId || ""}
+                              onChange={(e) =>
+                                handleMachineTypeChange(index, "nayaxId", e.target.value)
+                              }
+                              className="bg-background text-sm"
+                            />
                             <div className="flex items-center gap-2">
                               <Label className="text-xs text-muted-foreground whitespace-nowrap">Win Probability:</Label>
                               <div className="flex items-center gap-1">
