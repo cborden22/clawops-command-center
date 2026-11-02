@@ -455,6 +455,24 @@ export function MachinesManager() {
                   </p>
                 </div>
 
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    Nayax Machine ID
+                    <HelpTooltip content="Found in your Nayax account for each card-reader machine. Machines with an ID are picked up automatically by the nightly sales sync." />
+                  </Label>
+                  <Input
+                    placeholder="e.g., 1234567"
+                    value={formData.nayaxId}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, nayaxId: e.target.value }))
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Optional — links this machine to card reader sales for automatic syncing
+                  </p>
+                </div>
+
 
 
                 <div className="space-y-2">
@@ -575,6 +593,11 @@ export function MachinesManager() {
                               </Badge>
                             )}
                         </div>
+                        {machine.machineType.nayaxId && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Nayax ID: {machine.machineType.nayaxId}
+                          </p>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">
