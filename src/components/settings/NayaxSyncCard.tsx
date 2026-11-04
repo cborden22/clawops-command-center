@@ -80,6 +80,23 @@ export function NayaxSyncCard() {
     });
   };
 
+  const [gmailBusy, setGmailBusy] = useState(false);
+  const checkGmail = async () => {
+    setGmailBusy(true);
+    const { data, error } = await supabase.functions.invoke("nayax-gmail-sync", { body: {} });
+    setGmailBusy(false);
+    await load();
+    if (error || data?.error) {
+      let msg = data?.error;
+      try { msg = msg ?? (await (error as any)?.context?.json())?.error; } catch { /* ignore */ }
+      return toast({ title: "Gmail check failed", description: msg ?? "Please try again.", variant: "destructive" });
+    }
+    toast({
+      title: data.emails ? `Imported ${data.rows} sales from ${data.emails} email${data.emails > 1 ? "s" : ""}` : "No new Nayax reports in Gmail",
+      description: data.emails ? `$${Number(data.total).toFixed(2)} total.` : "Hourly checks will keep looking.",
+    });
+  };
+
   const hookUrl = token ? `${FN_URL}?token=${token}` : "";
 
   return (
@@ -102,7 +119,7 @@ export function NayaxSyncCard() {
         </div>
         {run && (
           <p className="text-sm text-muted-foreground">
-            {run.rows_upserted} sales matched to {run.machines_checked} machines ({run.trigger === "email" ? "hourly email" : "upload"})
+            {run.rows_upserted} sales matched to {run.machines_checked} machines ({run.trigger === "gmail" ? "Gmail" : run.trigger === "email" ? "hourly email" : "upload"})
           </p>
         )}
         {run?.error && <p className="text-sm text-destructive break-words">{run.error}</p>}
@@ -127,8 +144,20 @@ export function NayaxSyncCard() {
         <Button variant="outline" className="w-full" onClick={() => setBulkOpen(true)}>Edit machine Nayax IDs</Button>
         <BulkNayaxIdEditor open={bulkOpen} onOpenChange={setBulkOpen} onSaved={load} />
 
+        <div className="space-y-2 rounded-lg border border-border p-4">
+          <p className="flex items-center gap-2 text-sm font-medium"><Mail className="h-4 w-4 text-primary" /> Gmail reports</p>
+          <p className="text-xs text-muted-foreground">
+            Have Nayax email your hourly Transactions report (CSV) to your connected Gmail. ClawOps checks the inbox every hour,
+            imports new reports, and tags each email "ClawOps-Imported" so it's never counted twice.
+          </p>
+          <Button className="w-full" disabled={gmailBusy} onClick={checkGmail}>
+            {gmailBusy ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+            {gmailBusy ? "Checking Gmail..." : "Check Gmail now"}
+          </Button>
+        </div>
+
         <div className="space-y-2">
-          <p className="flex items-center gap-2 text-sm font-medium"><Mail className="h-4 w-4 text-primary" /> Hourly email reports</p>
+          <p className="flex items-center gap-2 text-sm font-medium"><Mail className="h-4 w-4 text-primary" /> Other email services (advanced)</p>
           {token ? (
             <>
               <div className="flex gap-2">
