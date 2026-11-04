@@ -40,9 +40,9 @@ const ALIASES: Record<string, string[]> = {
   txId: ["transactionid", "transactionnumber", "txid", "transid", "nayaxtransactionid"],
   machineId: ["machineid", "nayaxmachineid", "devicemachineid"],
   machineName: ["machinename", "machine", "machinedescription"],
-  amount: ["settlementvalue", "settlementamount", "amount", "authorizationvalue", "value", "price", "totalamount"],
-  method: ["paymentmethod", "paymentmethoddescription", "paymenttype", "recognitionmethod"],
-  date: ["authorizationdatetimegmt", "authorizationdatetime", "machineauthorizationtime", "settlementdatetimegmt", "transactiondate", "datetime", "date"],
+  amount: ["sevalue", "settlementvalue", "settlementamount", "payedvalue", "amount", "authorizationvalue", "value", "price", "totalamount"],
+  method: ["paymentmethod", "paymentmethoddescription", "paymenttype", "recognitiondescription", "recognitionmethod"],
+  date: ["authorizationdatetimegmt", "authorizationdatetime", "authorizationdateandtime", "authorizationtime", "machineautime", "machineauthorizationtime", "settlementtime", "machinesetime", "settlementdatetimegmt", "transactiondate", "datetime", "date"],
   brand: ["cardbrand", "brand", "cardtype"],
 };
 
