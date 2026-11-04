@@ -15,6 +15,13 @@
       "when": 1793637382653,
       "tag": "0001_nayax_cron_config",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793806420343,
+      "tag": "0002_nayax_email_ingest",
+      "breakpoints": true
     }
   ]
 }
