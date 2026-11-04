@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Upload, CreditCard, Copy, RefreshCw, Mail } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { BulkNayaxIdEditor } from "@/components/nayax/BulkNayaxIdEditor";
 
 type Run = {
   status: string;
@@ -32,6 +33,7 @@ export function NayaxSyncCard() {
   const [token, setToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -121,6 +123,9 @@ export function NayaxSyncCard() {
           <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ""; }} />
         </div>
+
+        <Button variant="outline" className="w-full" onClick={() => setBulkOpen(true)}>Edit machine Nayax IDs</Button>
+        <BulkNayaxIdEditor open={bulkOpen} onOpenChange={setBulkOpen} onSaved={load} />
 
         <div className="space-y-2">
           <p className="flex items-center gap-2 text-sm font-medium"><Mail className="h-4 w-4 text-primary" /> Hourly email reports</p>
