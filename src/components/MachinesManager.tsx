@@ -48,6 +48,8 @@ import {
 } from "lucide-react";
 import { QRCodeGenerator } from "@/components/maintenance/QRCodeGenerator";
 import { BatchQRPrintDialog } from "@/components/maintenance/BatchQRPrintDialog";
+import { BulkNayaxIdEditor } from "@/components/nayax/BulkNayaxIdEditor";
+import { Hash } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useLocations, Location, MachineType } from "@/hooks/useLocationsDB";
 import { useMachineTypesDB } from "@/hooks/useMachineTypesDB";
@@ -64,7 +66,7 @@ interface MachineWithLocation {
 }
 
 export function MachinesManager() {
-  const { locations, updateLocation, isLoaded } = useLocations();
+  const { locations, updateLocation, isLoaded, refetch } = useLocations();
   const { machineTypeOptions } = useMachineTypesDB();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -90,6 +92,7 @@ export function MachinesManager() {
   const [machinesListSize, setMachinesListSize] = useListSize("machines-list-size", 20);
   const [machinesPage, setMachinesPage] = useState(1);
   const [showBatchQR, setShowBatchQR] = useState(false);
+  const [showBulkIds, setShowBulkIds] = useState(false);
 
   // Flatten all machines from all locations
   const allMachines: MachineWithLocation[] = locations.flatMap((location) =>
@@ -260,6 +263,12 @@ export function MachinesManager() {
             All Machines
           </CardTitle>
           <div className="flex items-center gap-2 flex-wrap">
+            {allMachines.length > 0 && (
+              <Button variant="outline" onClick={() => setShowBulkIds(true)} className="gap-2">
+                <Hash className="h-4 w-4" />
+                <span className="hidden sm:inline">Edit Nayax IDs</span>
+              </Button>
+            )}
             {allMachines.length > 0 && (
               <Button variant="outline" onClick={() => setShowBatchQR(true)} className="gap-2">
                 <Printer className="h-4 w-4" />
@@ -683,6 +692,8 @@ export function MachinesManager() {
           unitCode={qrMachine.unitCode}
         />
       )}
+
+      <BulkNayaxIdEditor open={showBulkIds} onOpenChange={setShowBulkIds} onSaved={() => refetch()} />
 
       {/* Batch QR Print Dialog */}
       <BatchQRPrintDialog
