@@ -1373,6 +1373,7 @@ export type Database = {
           id: string
           location_id: string | null
           machine_type: string | null
+          nayax_day: string | null
           notes: string | null
           receipt_url: string | null
           service_period_end: string | null
@@ -1389,6 +1390,7 @@ export type Database = {
           id?: string
           location_id?: string | null
           machine_type?: string | null
+          nayax_day?: string | null
           notes?: string | null
           receipt_url?: string | null
           service_period_end?: string | null
@@ -1405,6 +1407,7 @@ export type Database = {
           id?: string
           location_id?: string | null
           machine_type?: string | null
+          nayax_day?: string | null
           notes?: string | null
           receipt_url?: string | null
           service_period_end?: string | null
@@ -1947,6 +1950,10 @@ export type Database = {
           permission_name: string
         }
         Returns: boolean
+      }
+      refresh_nayax_revenue: {
+        Args: { _day: string; _machine: string; _user: string }
+        Returns: undefined
       }
     }
     Enums: {
