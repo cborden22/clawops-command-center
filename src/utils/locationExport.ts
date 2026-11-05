@@ -43,10 +43,10 @@ export function buildLocationCSV(location: Location, collections: MachineCollect
   for (const s of location.commissionSummaries || []) {
     rows.push([s.startDate, s.endDate, String(s.machineCount), money(s.totalRevenue), String(s.commissionPercentage), money(s.commissionAmount), s.commissionPaid ? "Yes" : "No", s.commissionPaidAt ? s.commissionPaidAt.slice(0, 10) : ""]);
   }
-  return generateCSV([], rows);
+  return generateCSV(["ClawOps location export", new Date().toISOString().slice(0, 10)], rows);
 }
 
 export function exportLocationCSV(location: Location, collections: MachineCollection[]) {
   const slug = location.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
-  downloadCSV(buildLocationCSV(location, collections), `${slug}-location-export-${new Date().toISOString().slice(0, 10)}.csv`);
+  downloadCSV(buildLocationCSV(location, collections), `${slug}-location-export-${new Date().toISOString().slice(0, 10)}`);
 }
