@@ -33,6 +33,22 @@ function csvParts(part: any, out: { name: string; id?: string; data?: string }[]
   return out;
 }
 
+function bodies(part: any, out: string[] = []) {
+  if (part?.mimeType?.startsWith("text/") && part.body?.data && !part.filename) out.push(b64urlDecode(part.body.data));
+  for (const p of part?.parts ?? []) bodies(p, out);
+  return out;
+}
+
+// Only trust Nayax's own report download links.
+function reportLinks(payload: any): string[] {
+  const links = new Set<string>();
+  for (const html of bodies(payload)) {
+    const clean = html.replace(/=\r?\n/g, "").replace(/&amp;/g, "&");
+    for (const m of clean.matchAll(/https:\/\/my\.nayax\.com\/core\/reports\/download\?file=[A-Za-z0-9_\-%.~]+/g)) links.add(m[0]);
+  }
+  return [...links];
+}
+
 async function labelId(): Promise<string> {
   const { labels } = await gmail("/labels");
   const hit = (labels ?? []).find((l: any) => l.name === LABEL);
@@ -76,7 +92,7 @@ Deno.serve(async (req) => {
 
   try {
     const lid = await labelId();
-    const q = `has:attachment (filename:csv OR filename:txt) nayax -label:${LABEL} newer_than:14d`;
+    const q = `(from:notifier@nayax.com OR subject:"Nayax Transactions Report") -label:${LABEL} newer_than:14d`;
     const list = await gmail(`/messages?maxResults=25&q=${encodeURIComponent(q)}`);
     const ids: string[] = (list.messages ?? []).map((m: any) => m.id);
 
@@ -84,16 +100,30 @@ Deno.serve(async (req) => {
     const errors: string[] = [];
     for (const id of ids) {
       const msg = await gmail(`/messages/${id}?format=full`);
-      const parts = csvParts(msg.payload);
-      if (!parts.length) continue;
-      let ok = true;
-      for (const p of parts) {
+      const files: { name: string; csv: string }[] = [];
+      for (const p of csvParts(msg.payload)) {
         const data = p.data ?? (p.id ? (await gmail(`/messages/${id}/attachments/${p.id}`)).data : null);
-        if (!data) continue;
+        if (data) files.push({ name: p.name, csv: b64urlDecode(data) });
+      }
+      // Nayax usually sends a "Report" download link instead of an attachment.
+      if (!files.length) {
+        for (const link of reportLinks(msg.payload)) {
+          const res = await fetch(link);
+          const text = await res.text();
+          if (!res.ok || /<html/i.test(text.slice(0, 500))) {
+            errors.push(`Report link could not be downloaded (${res.status}) — it may have expired.`);
+            continue;
+          }
+          files.push({ name: "Nayax report link", csv: text });
+        }
+      }
+      if (!files.length) continue;
+      let ok = true;
+      for (const p of files) {
         const r = await fetch(`${url}/functions/v1/nayax-ingest?token=${token}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ csv: b64urlDecode(data) }),
+          body: JSON.stringify({ csv: p.csv }),
         });
         const out = await r.json().catch(() => ({}));
         if (!r.ok) { ok = false; errors.push(`${p.name}: ${out.error ?? r.status}`); continue; }
