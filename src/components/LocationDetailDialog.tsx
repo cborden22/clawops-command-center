@@ -49,7 +49,9 @@ import {
   Trash2,
   Loader2,
   AlertTriangle,
+  Download,
 } from "lucide-react";
+import { exportLocationCSV } from "@/utils/locationExport";
 import { Location, MACHINE_TYPE_OPTIONS, CommissionSummaryRecord, LocationAgreementRecord, useLocations } from "@/hooks/useLocationsDB";
 import { useMachineTypesDB } from "@/hooks/useMachineTypesDB";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -578,6 +580,18 @@ export function LocationDetailDialog({
                 {location.isActive ? "Active" : "Inactive"}
               </Badge>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-auto mr-6 gap-1.5"
+              onClick={() => {
+                exportLocationCSV(location, locationCollections);
+                toast({ title: "Export ready", description: `${location.name} data downloaded.` });
+              }}
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
           </DialogTitle>
         </DialogHeader>
 
