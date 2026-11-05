@@ -616,6 +616,7 @@ export type Database = {
       }
       location_machines: {
         Row: {
+          cash_collected_at: string | null
           commission_rate: number | null
           cost_per_play: number | null
           count: number | null
@@ -631,6 +632,7 @@ export type Database = {
           win_probability: number | null
         }
         Insert: {
+          cash_collected_at?: string | null
           commission_rate?: number | null
           cost_per_play?: number | null
           count?: number | null
@@ -646,6 +648,7 @@ export type Database = {
           win_probability?: number | null
         }
         Update: {
+          cash_collected_at?: string | null
           commission_rate?: number | null
           cost_per_play?: number | null
           count?: number | null
@@ -1374,6 +1377,7 @@ export type Database = {
           location_id: string | null
           machine_type: string | null
           nayax_day: string | null
+          nayax_kind: string | null
           notes: string | null
           receipt_url: string | null
           service_period_end: string | null
@@ -1391,6 +1395,7 @@ export type Database = {
           location_id?: string | null
           machine_type?: string | null
           nayax_day?: string | null
+          nayax_kind?: string | null
           notes?: string | null
           receipt_url?: string | null
           service_period_end?: string | null
@@ -1408,6 +1413,7 @@ export type Database = {
           location_id?: string | null
           machine_type?: string | null
           nayax_day?: string | null
+          nayax_kind?: string | null
           notes?: string | null
           receipt_url?: string | null
           service_period_end?: string | null

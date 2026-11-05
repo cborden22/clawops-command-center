@@ -22,6 +22,7 @@ import { StopPhotoCapture, CapturedPhoto } from "./StopPhotoCapture";
 import type { PhotoVerificationMode } from "@/hooks/useMyTeamPermissions";
 import type { NearestLocation } from "@/hooks/useGeofence";
 import { formatDistance } from "@/lib/geo";
+import { useMachineCashbox } from "@/hooks/useMachineCashbox";
 
 const QUARTER_VALUE = 0.25;
 const DEFAULT_COST_PER_PLAY = 0.50;
@@ -77,6 +78,9 @@ export function RouteRunStopView({
   const [lastCollectionDate, setLastCollectionDate] = useState<string | null>(null);
   const [stopPhotos, setStopPhotos] = useState<CapturedPhoto[]>([]);
   const [machinePhotos, setMachinePhotos] = useState<Record<string, CapturedPhoto[]>>({});
+  const [cashCollected, setCashCollected] = useState<Record<string, boolean>>({});
+  const machineIdList = useMemo(() => machines.map((m) => m.id), [machines]);
+  const { stats: cashbox, resetCashbox } = useMachineCashbox(machineIdList);
 
   const locationName = resolvedLocationName || stop.customLocationName || `Stop ${stopIndex + 1}`;
   const isLastStop = stopIndex === totalStops - 1;
@@ -101,6 +105,7 @@ export function RouteRunStopView({
       setSpreadRevenue(true);
       setStopPhotos([]);
       setMachinePhotos({});
+      setCashCollected({});
 
       if (!stop.locationId) {
         setMachines([]);
@@ -220,6 +225,11 @@ export function RouteRunStopView({
         ? format(today, "yyyy-MM-dd")
         : undefined,
     };
+
+    const toReset = Object.keys(cashCollected).filter((id) => cashCollected[id]);
+    if (toReset.length) {
+      try { await resetCashbox(toReset); } catch (e) { console.error("Cashbox reset failed", e); }
+    }
 
     await onComplete(result);
   };
@@ -349,6 +359,35 @@ export function RouteRunStopView({
                       </span>
                     )}
                   </div>
+
+                  {/* Nayax cashbox */}
+                  {cashbox[machine.id] && cashbox[machine.id].total > 0 || cashbox[machine.id]?.since ? (
+                    <div className="rounded-md border border-primary/20 bg-primary/5 p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">Expected in cashbox</span>
+                        <span className="text-lg font-semibold text-foreground tabular-nums">
+                          ${cashbox[machine.id].cash.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div><p className="text-muted-foreground">Cash</p><p className="font-medium tabular-nums">${cashbox[machine.id].cash.toFixed(2)}</p></div>
+                        <div><p className="text-muted-foreground">Card</p><p className="font-medium tabular-nums">${cashbox[machine.id].card.toFixed(2)}</p></div>
+                        <div><p className="text-muted-foreground">Total</p><p className="font-medium tabular-nums">${cashbox[machine.id].total.toFixed(2)}</p></div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {cashbox[machine.id].cashVends} cash vends since{" "}
+                        {cashbox[machine.id].since ? format(new Date(cashbox[machine.id].since!), "MMM d, h:mm a") : "first report"}
+                      </p>
+                      <label className="flex items-center gap-2 min-h-[44px] cursor-pointer">
+                        <Checkbox
+                          checked={!!cashCollected[machine.id]}
+                          onCheckedChange={(v) => setCashCollected((p) => ({ ...p, [machine.id]: v === true }))}
+                        />
+                        <span className="text-sm font-medium text-foreground">Cash collection</span>
+                        <span className="text-xs text-muted-foreground">(resets cashbox to $0)</span>
+                      </label>
+                    </div>
+                  ) : null}
 
                   {/* Coins Input */}
                   <div className="space-y-1">
