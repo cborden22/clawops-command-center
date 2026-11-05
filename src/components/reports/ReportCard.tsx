@@ -58,7 +58,7 @@ export function ReportCard({
       <CardContent>
         {metric !== undefined && (
           <div className="mb-2 min-w-0">
-            <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums truncate">{metric}</p>
+            <p className="text-xl sm:text-2xl font-bold tracking-tight tabular-nums line-clamp-2 break-words leading-tight">{metric}</p>
             {metricLabel && (
               <p className="text-xs text-muted-foreground truncate">{metricLabel}</p>
             )}
