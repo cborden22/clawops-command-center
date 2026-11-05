@@ -855,12 +855,12 @@ export function LocationTrackerComponent() {
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
                     <TableHead className="font-semibold">Location</TableHead>
-                    <TableHead className="font-semibold">Contact</TableHead>
-                    <TableHead className="text-center font-semibold">Machines</TableHead>
-                    <TableHead className="text-center font-semibold">Commission</TableHead>
-                    <TableHead className="text-center font-semibold">Status</TableHead>
-                    <TableHead className="text-right font-semibold w-[120px]">
-                      Actions
+                    <TableHead className="font-semibold hidden md:table-cell">Contact</TableHead>
+                    <TableHead className="text-center font-semibold hidden sm:table-cell">Machines</TableHead>
+                    <TableHead className="text-center font-semibold hidden sm:table-cell">Commission</TableHead>
+                    <TableHead className="text-center font-semibold hidden lg:table-cell">Status</TableHead>
+                    <TableHead className="text-right font-semibold w-[56px] sm:w-[120px]"><span className="sr-only sm:not-sr-only">
+                      Actions</span>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -879,9 +879,14 @@ export function LocationTrackerComponent() {
                               {location.address}
                             </p>
                           )}
+                          <p className="sm:hidden mt-1 text-xs text-muted-foreground tabular-nums">
+                            {location.machineCount} machine{location.machineCount === 1 ? "" : "s"}
+                            {location.commissionRate > 0 ? ` · ${location.commissionRate}%` : ""}
+                            {location.contactPerson ? ` · ${location.contactPerson}` : ""}
+                          </p>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <div className="space-y-1">
                           {location.contactPerson && (
                             <p className="text-sm flex items-center gap-1">
@@ -897,17 +902,17 @@ export function LocationTrackerComponent() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-center font-medium">
+                      <TableCell className="text-center font-medium tabular-nums hidden sm:table-cell">
                         {location.machineCount}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center hidden sm:table-cell">
                         {location.commissionRate > 0 ? (
                           <Badge variant="secondary">{location.commissionRate}%</Badge>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center hidden lg:table-cell">
                         <Badge
                           variant={location.isActive ? "default" : "secondary"}
                           className={cn(
@@ -920,7 +925,7 @@ export function LocationTrackerComponent() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex flex-col sm:flex-row items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="icon"

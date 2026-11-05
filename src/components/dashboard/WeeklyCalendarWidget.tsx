@@ -25,12 +25,12 @@ const TASK_COLORS: Record<TaskType, string> = {
   route: "bg-info/10 text-info border-info/20",
   maintenance: "bg-destructive/10 text-destructive border-destructive/20",
   followup: "bg-warning/10 text-warning border-warning/20",
-  custom: "bg-violet-500/10 text-violet-600 border-violet-500/20",
+  custom: "bg-accent text-accent-foreground border-border",
 };
 
 const STATUS_STYLES: Record<string, string> = {
-  overdue: "ring-2 ring-destructive/50",
-  due_today: "ring-2 ring-warning/50",
+  overdue: "font-medium",
+  due_today: "font-medium",
   due_soon: "",
   upcoming: "",
 };
@@ -73,7 +73,7 @@ export function WeeklyCalendarWidget({ tasksByDate }: WeeklyCalendarWidgetProps)
             <span>Follow-up</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full bg-violet-500" />
+            <div className="w-2 h-2 rounded-full bg-accent-foreground" />
             <span>Custom</span>
           </div>
         </div>
@@ -183,7 +183,7 @@ export function WeeklyCalendarWidget({ tasksByDate }: WeeklyCalendarWidgetProps)
                   </div>
 
                   {/* Tasks */}
-                  <div className="flex-1 p-1 space-y-1 overflow-y-auto max-h-[100px]">
+                  <div className="flex-1 p-1.5 space-y-1">
                     {tasks.length === 0 ? (
                       <p className="text-[10px] text-muted-foreground text-center py-2">
                         —
@@ -194,7 +194,7 @@ export function WeeklyCalendarWidget({ tasksByDate }: WeeklyCalendarWidgetProps)
                           key={task.id}
                           to={task.link}
                           className={cn(
-                            "block p-1 rounded text-xs border truncate transition-all hover:opacity-80",
+                            "block px-1.5 py-1 rounded-md text-[11px] leading-tight border truncate transition-colors hover:opacity-80",
                             TASK_COLORS[task.type],
                             STATUS_STYLES[task.status]
                           )}

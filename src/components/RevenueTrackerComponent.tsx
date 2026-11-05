@@ -923,8 +923,8 @@ export function RevenueTrackerComponent() {
         <div className="lg:col-span-2 space-y-6">
           {/* Filters */}
           <Card className="glass-card">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Filters</CardTitle>
+            <CardHeader className="py-3 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Filters</CardTitle>
               <div className="flex items-center gap-2">
                 {entriesWithReceipts.length > 0 && (
                   <Dialog open={receiptsDialogOpen} onOpenChange={setReceiptsDialogOpen}>
