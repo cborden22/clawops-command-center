@@ -50,15 +50,15 @@ export function LeadCard({ lead, onClick, isDragging }: LeadCardProps) {
     >
       <CardContent className="p-3 space-y-2">
         {/* Header: Name + Priority */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="font-medium text-sm truncate">{lead.business_name}</span>
-          </div>
-          <Badge variant="outline" className={cn('shrink-0 text-xs', priorityConfig[priority].className)}>
+        <div className="space-y-1.5">
+          <Badge variant="outline" className={cn('text-[11px] h-5 px-1.5', priorityConfig[priority].className)}>
             <PriorityIcon className="h-3 w-3 mr-1" />
             {priorityConfig[priority].label}
           </Badge>
+          <div className="flex items-start gap-2 min-w-0">
+            <Building2 className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+            <span className="font-medium text-sm leading-snug line-clamp-2 break-words">{lead.business_name}</span>
+          </div>
         </div>
 
         {/* Contact Info */}

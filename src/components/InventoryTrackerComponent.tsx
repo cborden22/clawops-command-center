@@ -491,19 +491,17 @@ export function InventoryTrackerComponent() {
           <>
             <Button 
               onClick={() => setIsStockRunMode(true)} 
-              className="flex-1"
-              size="lg"
+              className="flex-1 sm:flex-none"
             >
-              <ShoppingCart className="h-5 w-5 mr-2" />
+              <ShoppingCart className="h-4 w-4 mr-2" />
               Start Stock Run
             </Button>
             <Button 
               onClick={() => setIsReturnMode(true)} 
               variant="outline"
-              className="flex-1 border-success/40 text-success hover:bg-success/10 hover:text-success"
-              size="lg"
+              className="flex-1 sm:flex-none"
             >
-              <RotateCcw className="h-5 w-5 mr-2" />
+              <RotateCcw className="h-4 w-4 mr-2" />
               Return Stock
             </Button>
           </>
@@ -677,7 +675,7 @@ export function InventoryTrackerComponent() {
         <Button
           variant="outline"
           onClick={() => setShowBulkAdd(true)}
-          className="w-full"
+          className="w-full sm:w-auto sm:self-start"
         >
           <Plus className="h-4 w-4 mr-2" />
           Bulk Add Items

@@ -55,7 +55,7 @@ export function LeadFilters({
       {/* Selects side-by-side */}
       <div className="flex flex-row gap-2 items-center">
         <Select value={priorityFilter} onValueChange={(v) => onPriorityChange(v as LeadPriority | 'all')}>
-          <SelectTrigger className="flex-1 min-w-0">
+          <SelectTrigger className="flex-1 min-w-[140px]">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
@@ -67,7 +67,7 @@ export function LeadFilters({
         </Select>
 
         <Select value={sourceFilter} onValueChange={onSourceChange}>
-          <SelectTrigger className="flex-1 min-w-0">
+          <SelectTrigger className="flex-1 min-w-[140px]">
             <SelectValue placeholder="Source" />
           </SelectTrigger>
           <SelectContent>

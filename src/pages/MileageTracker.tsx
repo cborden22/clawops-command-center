@@ -591,7 +591,6 @@ const MileageTracker = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
               <CardContent className="pt-6 relative">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
                 <div className="flex items-center gap-4 relative">
                   <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg group-hover:scale-110 transition-transform duration-300">
                     <Route className="h-6 w-6 text-primary-foreground" />
@@ -606,7 +605,6 @@ const MileageTracker = () => {
             
             <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
               <CardContent className="pt-6 relative">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-success/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
                 <div className="flex items-center gap-4 relative">
                   <div className="p-3 rounded-xl bg-success shadow-lg group-hover:scale-110 transition-transform duration-300">
                     <DollarSign className="h-6 w-6 text-primary-foreground" />
@@ -621,7 +619,6 @@ const MileageTracker = () => {
             
             <Card className="glass-card hover:shadow-hover transition-all duration-300 group overflow-hidden">
               <CardContent className="pt-6 relative">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-accent/50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
                 <div className="flex items-center gap-4 relative">
                   <div className="p-3 rounded-xl bg-gradient-to-br from-muted to-muted/80 shadow-md group-hover:scale-110 transition-transform duration-300">
                     <Car className="h-6 w-6 text-muted-foreground" />
