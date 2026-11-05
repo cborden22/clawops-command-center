@@ -37,8 +37,8 @@ function parseCsv(text: string): string[][] {
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 const ALIASES: Record<string, string[]> = {
-  txId: ["transactionid", "transactionnumber", "txid", "transid", "nayaxtransactionid"],
-  machineId: ["machineid", "nayaxmachineid", "devicemachineid"],
+  txId: ["transactionid", "transactionnumber", "txid", "transid", "trxid", "nayaxtransactionid", "transactionidnayaxinternalidentifier", "authorizationretrievalreferencenumber", "pspstransactionid", "paymentserviceprovidertransactionid"],
+  machineId: ["machineid", "nayaxmachineid", "devicemachineid", "operatoridentifier", "terminalid", "deviceid"],
   machineName: ["machinename", "machine", "machinedescription"],
   amount: ["sevalue", "settlementvalue", "settlementamount", "payedvalue", "amount", "authorizationvalue", "value", "price", "totalamount"],
   method: ["paymentmethod", "paymentmethoddescription", "paymentmethoddescr", "paymenttype", "recognitiondescription", "recognitionmethod"],
@@ -63,24 +63,35 @@ function parseDate(v: string): string | null {
 
 function mapRows(rows: string[][]) {
   if (rows.length < 2) throw new Error("The file has no transaction rows.");
-  const header = rows[0].map(norm);
-  const idx: Record<string, number> = {};
-  for (const [k, al] of Object.entries(ALIASES)) {
-    for (const a of al) { const i = header.indexOf(a); if (i >= 0) { idx[k] = i; break; } }
+  // Excel exports often have title/filter rows above the real header — find it.
+  const findIdx = (header: string[]) => {
+    const idx: Record<string, number> = {};
+    for (const [k, al] of Object.entries(ALIASES)) {
+      for (const a of al) { const i = header.indexOf(a); if (i >= 0) { idx[k] = i; break; } }
+    }
+    return idx;
+  };
+  let hRow = 0, idx: Record<string, number> = {}, best = -1;
+  for (let i = 0; i < Math.min(rows.length, 30); i++) {
+    const cand = findIdx(rows[i].map(norm));
+    const score = Object.keys(cand).length + (cand.amount !== undefined && cand.date !== undefined ? 10 : 0);
+    if (score > best) { best = score; hRow = i; idx = cand; }
   }
-  for (const req of ["txId", "amount", "date"]) {
-    if (idx[req] === undefined) throw new Error(`Could not find a "${req === "txId" ? "Transaction ID" : req === "amount" ? "Settlement Value" : "Authorization Date"}" column.`);
+  for (const req of ["amount", "date"]) {
+    if (idx[req] === undefined) throw new Error(`Could not find a "${req === "amount" ? "SeValue / Settlement Value" : "Authorization Time"}" column. Columns found: ${rows[hRow].filter(Boolean).slice(0, 15).join(", ")}`);
   }
+  const header0 = rows[hRow];
   const out = [] as any[];
   let skipped = 0;
-  for (const r of rows.slice(1)) {
+  for (const r of rows.slice(hRow + 1)) {
     const get = (k: string) => (idx[k] !== undefined ? (r[idx[k]] ?? "").trim() : "");
-    const tx = get("txId");
+    // No Transaction ID column? Build a stable one so re-uploads don't double count.
+    const tx = get("txId") || (get("date") ? `gen:${get("machineId")}|${get("date")}|${get("amount")}|${get("method")}` : "");
     const date = parseDate(get("date"));
     const amount = Number(get("amount").replace(/[^0-9.\-]/g, ""));
     if (!tx || !date || !isFinite(amount)) { skipped++; continue; }
     const raw: Record<string, string> = {};
-    rows[0].forEach((h, i) => (raw[h] = r[i] ?? ""));
+    header0.forEach((h, i) => (raw[h] = r[i] ?? ""));
     out.push({
       nayax_transaction_id: tx, transaction_date: date, amount,
       nayax_machine_id: get("machineId") || null, machine_name: get("machineName") || null,
