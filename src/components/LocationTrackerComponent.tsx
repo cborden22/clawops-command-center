@@ -859,8 +859,8 @@ export function LocationTrackerComponent() {
                     <TableHead className="text-center font-semibold hidden sm:table-cell">Machines</TableHead>
                     <TableHead className="text-center font-semibold hidden sm:table-cell">Commission</TableHead>
                     <TableHead className="text-center font-semibold hidden lg:table-cell">Status</TableHead>
-                    <TableHead className="text-right font-semibold w-[120px]"><span className="sr-only sm:not-sr-only">
-                      Actions
+                    <TableHead className="text-right font-semibold w-[56px] sm:w-[120px]"><span className="sr-only sm:not-sr-only">
+                      Actions</span>
                     </TableHead>
                   </TableRow>
                 </TableHeader>
