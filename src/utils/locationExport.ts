@@ -50,3 +50,28 @@ export function exportLocationCSV(location: Location, collections: MachineCollec
   const slug = location.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
   downloadCSV(buildLocationCSV(location, collections), `${slug}-location-export-${new Date().toISOString().slice(0, 10)}`);
 }
+
+/** One row per machine across many locations (in the given order), for route/bulk exports. */
+export function buildBulkLocationsCSV(locations: Location[]): string {
+  const rows: string[][] = [];
+  locations.forEach((loc, i) => {
+    const machines = loc.machines || [];
+    const base = [String(i + 1), loc.name, loc.address || "", loc.contactPerson || "", loc.contactPhone || ""];
+    if (machines.length === 0) {
+      rows.push([...base, "", "", "0", String(loc.commissionRate || 0)]);
+      return;
+    }
+    for (const m of machines) {
+      rows.push([...base, m.label || m.type, m.customLabel || "", String(m.count), String(machineRate(m.commissionRate, loc.commissionRate))]);
+    }
+  });
+  const totalMachines = locations.reduce((s, l) => s + (l.machineCount || 0), 0);
+  rows.push([]);
+  rows.push(["", "Total", `${locations.length} locations`, "", "", "", "", String(totalMachines), ""]);
+  return generateCSV(["Stop", "Location", "Address", "Contact", "Phone", "Machine type", "Machine name", "Machine count", "Commission %"], rows);
+}
+
+export function exportBulkLocationsCSV(locations: Location[], name: string) {
+  const slug = name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  downloadCSV(buildBulkLocationsCSV(locations), `${slug}-locations-${new Date().toISOString().slice(0, 10)}`);
+}
