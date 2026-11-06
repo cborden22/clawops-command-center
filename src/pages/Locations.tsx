@@ -10,6 +10,7 @@ import { useLocations } from "@/hooks/useLocationsDB";
 import { useMobileRefresh } from "@/contexts/MobileRefreshContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { BulkLocationExportDialog } from "@/components/locations/BulkLocationExportDialog";
 
 const LocationMap = React.lazy(() => import("./LocationMap"));
 
@@ -52,7 +53,11 @@ const Locations = () => {
           <PageHeader
             title="Locations"
             description="Manage locations, machines, map view, commissions, and agreements"
+            actions={<BulkLocationExportDialog />}
           />
+        </div>
+        <div className="sm:hidden flex justify-end mb-3">
+          <BulkLocationExportDialog />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
