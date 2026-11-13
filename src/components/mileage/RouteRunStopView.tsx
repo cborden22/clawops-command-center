@@ -23,6 +23,7 @@ import type { PhotoVerificationMode } from "@/hooks/useMyTeamPermissions";
 import type { NearestLocation } from "@/hooks/useGeofence";
 import { formatDistance } from "@/lib/geo";
 import { useMachineCashbox } from "@/hooks/useMachineCashbox";
+import { BulkServicePanel } from "@/components/bulk/BulkServicePanel";
 
 const QUARTER_VALUE = 0.25;
 const DEFAULT_COST_PER_PLAY = 0.50;
@@ -558,6 +559,8 @@ export function RouteRunStopView({
           </CardContent>
         </Card>
       )}
+
+      {stop.locationId && <BulkServicePanel locationId={stop.locationId} />}
 
       {/* Notes */}
       <Card className="glass-card">

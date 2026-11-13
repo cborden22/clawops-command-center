@@ -19,6 +19,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { BulkTab } from "@/components/bulk/BulkTab";
+import { Candy } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -118,7 +120,7 @@ export function LocationDetailDialog({
   
   // Calculate visible tab count for dynamic grid layout
   const visibleTabCount = useMemo(() => {
-    let count = 1; // Details tab is always visible
+    let count = 2; // Details + Bulk tabs always visible
     if (showCollections) count++;
     if (showAgreements) count++;
     if (showCommissions) count++;
@@ -600,7 +602,8 @@ export function LocationDetailDialog({
             visibleTabCount === 1 ? 'grid-cols-1' :
             visibleTabCount === 2 ? 'grid-cols-2' :
             visibleTabCount === 3 ? 'grid-cols-3' :
-            'grid-cols-4'
+            visibleTabCount === 4 ? 'grid-cols-4' :
+            'grid-cols-5'
           }`}>
             <TabsTrigger value="details" className="flex items-center gap-1 text-xs px-2">
               <Building2 className="h-3.5 w-3.5" />
@@ -645,6 +648,10 @@ export function LocationDetailDialog({
                 )}
               </TabsTrigger>
             )}
+            <TabsTrigger value="bulk" className="flex items-center gap-1 text-xs px-2">
+              <Candy className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Bulk</span>
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex-1 min-h-0 overflow-y-auto mt-4 pr-1">
@@ -1113,6 +1120,9 @@ export function LocationDetailDialog({
               )}
             </TabsContent>
             )}
+            <TabsContent value="bulk" className="mt-0">
+              <BulkTab locationId={location.id} />
+            </TabsContent>
           </div>
         </Tabs>
       </DialogContent>

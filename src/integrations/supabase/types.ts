@@ -14,6 +14,120 @@ export type Database = {
   }
   public: {
     Tables: {
+      bulk_machines: {
+        Row: {
+          capacity: number | null
+          fill_percent: number
+          id: string
+          last_restocked_at: string | null
+          machine_type: string
+          nayax_device_id: string | null
+          position: number
+          product_name: string | null
+          tier_id: string
+          user_id: string
+          vend_price: number
+        }
+        Insert: {
+          capacity?: number | null
+          fill_percent?: number
+          id?: string
+          last_restocked_at?: string | null
+          machine_type?: string
+          nayax_device_id?: string | null
+          position?: number
+          product_name?: string | null
+          tier_id: string
+          user_id: string
+          vend_price?: number
+        }
+        Update: {
+          capacity?: number | null
+          fill_percent?: number
+          id?: string
+          last_restocked_at?: string | null
+          machine_type?: string
+          nayax_device_id?: string | null
+          position?: number
+          product_name?: string | null
+          tier_id?: string
+          user_id?: string
+          vend_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_machines_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bulk_racks: {
+        Row: {
+          created_at: string
+          id: string
+          location_id: string
+          name: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          location_id: string
+          name?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          location_id?: string
+          name?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_racks_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bulk_tiers: {
+        Row: {
+          id: string
+          position: number
+          rack_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          position?: number
+          rack_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          position?: number
+          rack_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_tiers_rack_id_fkey"
+            columns: ["rack_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_racks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_tasks: {
         Row: {
           completed: boolean | null

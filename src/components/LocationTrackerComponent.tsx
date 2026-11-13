@@ -1,3 +1,4 @@
+import { fetchLowBulkLocationIds } from "@/hooks/useBulkRacks";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -128,10 +129,16 @@ export function LocationTrackerComponent() {
   }, [locations]);
 
   const [pendingDeleteLocationIds, setPendingDeleteLocationIds] = useState<string[]>([]);
+  const [lowBulkOnly, setLowBulkOnly] = useState(false);
+  const [lowBulkIds, setLowBulkIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (lowBulkOnly) fetchLowBulkLocationIds().then(setLowBulkIds);
+  }, [lowBulkOnly]);
 
   const filteredLocations = locations.filter(
     (loc) =>
       !pendingDeleteLocationIds.includes(loc.id) &&
+      (!lowBulkOnly || lowBulkIds.has(loc.id)) &&
       (loc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         loc.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
         loc.contactPerson.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -824,6 +831,15 @@ export function LocationTrackerComponent() {
                   className="pl-9 h-10 bg-background/50"
                 />
               </div>
+              <Button
+                type="button"
+                size="sm"
+                variant={lowBulkOnly ? "default" : "outline"}
+                onClick={() => { setLowBulkOnly((v) => !v); setLocationsPage(1); }}
+                aria-pressed={lowBulkOnly}
+              >
+                Low bulk
+              </Button>
               <ListSizeSelector
                 storageKey="locations-list-size"
                 value={locationsListSize}
