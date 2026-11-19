@@ -34,3 +34,6 @@ verify_jwt = false
 
 [functions.nayax-ingest]
 verify_jwt = false
+
+[functions.nayax-daily-sales]
+verify_jwt = false
