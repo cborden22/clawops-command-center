@@ -168,7 +168,7 @@ export function BatchQRPrintDialog({ open, onOpenChange, machines }: BatchQRPrin
               display: grid;
               grid-template-columns: 1fr 1fr;
               gap: 0;
-              width: 8in;
+              width: 7in;
               margin: 0 auto;
             }
             .sticker {
@@ -176,7 +176,9 @@ export function BatchQRPrintDialog({ open, onOpenChange, machines }: BatchQRPrin
               height: 2in;
               padding: 0.15in;
               display: flex;
-              border: 1px dashed #ccc;
+              outline: 1px dashed #888;
+              outline-offset: -0.5px;
+              position: relative;
               page-break-inside: avoid;
               break-inside: avoid;
             }
@@ -193,18 +195,18 @@ export function BatchQRPrintDialog({ open, onOpenChange, machines }: BatchQRPrin
               align-items: center;
               justify-content: center;
             }
-            h1 { font-size: 13px; font-weight: 700; margin-bottom: 2px; color: #000; }
-            .subtitle { font-size: 9px; color: #666; margin-bottom: 10px; }
-            .steps { font-size: 9px; line-height: 1.5; color: #333; }
+            h1 { font-size: 17px; font-weight: 700; margin-bottom: 2px; color: #000; }
+            .subtitle { font-size: 12px; color: #444; margin-bottom: 8px; }
+            .steps { font-size: 11.5px; line-height: 1.45; color: #333; }
             .step { margin-bottom: 2px; }
-            .branding { font-size: 8px; color: #999; margin-top: auto; padding-top: 8px; }
+            .branding { font-size: 10px; color: #777; margin-top: auto; padding-top: 8px; }
             .qr-code svg { width: 1.25in; height: 1.25in; }
             .machine-info { text-align: center; margin-top: 4px; }
-            .machine-name { font-size: 8px; font-weight: 600; color: #000; }
-            .location-name { font-size: 7px; color: #666; }
-            @media print {
-              .sticker { border: none; }
-            }
+            .machine-name { font-size: 10px; font-weight: 700; color: #000; }
+            .location-name { font-size: 9px; color: #555; }
+            .sticker::before { content: "\2702"; position: absolute; top: -7px; left: 6px; font-size: 10px; color: #888; background: white; line-height: 1; }
+            .grid { width: 7in; }
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           </style>
         </head>
         <body>

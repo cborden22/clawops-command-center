@@ -146,27 +146,27 @@ export function QRCodeGenerator({
               justify-content: center;
             }
             h1 {
-              font-size: 13px;
+              font-size: 17px;
               font-weight: 700;
               margin-bottom: 2px;
               color: #000;
             }
             .subtitle {
-              font-size: 9px;
-              color: #666;
-              margin-bottom: 10px;
+              font-size: 12px;
+              color: #444;
+              margin-bottom: 8px;
             }
             .steps {
-              font-size: 9px;
-              line-height: 1.5;
+              font-size: 11.5px;
+              line-height: 1.45;
               color: #333;
             }
             .step {
               margin-bottom: 2px;
             }
             .branding {
-              font-size: 8px;
-              color: #999;
+              font-size: 10px;
+              color: #777;
               margin-top: auto;
               padding-top: 8px;
             }
@@ -179,13 +179,13 @@ export function QRCodeGenerator({
               margin-top: 4px;
             }
             .machine-name {
-              font-size: 8px;
-              font-weight: 600;
+              font-size: 10px;
+              font-weight: 700;
               color: #000;
             }
             .location-name {
-              font-size: 7px;
-              color: #666;
+              font-size: 9px;
+              color: #555;
             }
           </style>
         </head>
