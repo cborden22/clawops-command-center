@@ -204,7 +204,7 @@ export function BatchQRPrintDialog({ open, onOpenChange, machines }: BatchQRPrin
             .machine-info { text-align: center; margin-top: 4px; }
             .machine-name { font-size: 10px; font-weight: 700; color: #000; }
             .location-name { font-size: 9px; color: #555; }
-            .sticker::before { content: "\2702"; position: absolute; top: -7px; left: 6px; font-size: 10px; color: #888; background: white; line-height: 1; }
+            .sticker::before { content: "✂"; position: absolute; top: -7px; left: 6px; font-size: 10px; color: #888; background: white; line-height: 1; }
             .grid { width: 7in; }
             * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           </style>
